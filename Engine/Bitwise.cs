@@ -15,7 +15,7 @@ using System.Text;
 using System.Runtime.Intrinsics.X86;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     // See https://graphics.stanford.edu/~seander/bithacks.html.
     public static class Bitwise

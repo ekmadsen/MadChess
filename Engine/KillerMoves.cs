@@ -10,7 +10,7 @@
 using System.Runtime.CompilerServices;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class KillerMoves
     {

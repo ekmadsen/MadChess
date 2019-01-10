@@ -7,7 +7,7 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Tuning
 {
     public sealed class Parameter
     {

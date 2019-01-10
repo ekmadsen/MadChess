@@ -6,6 +6,8 @@
     <RuntimeFrameworkVersion>2.2.0</RuntimeFrameworkVersion>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <OutputType>Exe</OutputType>
+    <RootNamespace>ErikTheCoder.MadChess.Tests</RootNamespace>
+    <AssemblyName>ErikTheCoder.MadChess.Tests</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

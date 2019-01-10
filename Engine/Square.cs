@@ -7,7 +7,7 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public static class Square
     {

@@ -10,7 +10,7 @@
 using System.Collections.Generic;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class MovePriorityComparer : IComparer<ulong>
     {

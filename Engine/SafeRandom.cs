@@ -10,7 +10,7 @@
 using System;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public static class SafeRandom
     {

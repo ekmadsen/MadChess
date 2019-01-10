@@ -10,7 +10,7 @@
 using JetBrains.Annotations;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public enum Direction
     {

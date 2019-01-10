@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 
 
-namespace MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Tuning
 {
     public sealed class ParticleSwarms : List<ParticleSwarm>
     {

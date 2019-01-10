@@ -10,7 +10,7 @@
 using System;
 
 
-namespace MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Tuning
 {
     public sealed class Particle
     {

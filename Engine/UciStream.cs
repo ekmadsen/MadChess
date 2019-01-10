@@ -14,10 +14,10 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using MadChess.Engine.Tuning;
+using ErikTheCoder.MadChess.Engine.Tuning;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class UciStream : IDisposable
     {

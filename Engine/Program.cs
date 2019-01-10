@@ -11,7 +11,7 @@ using System;
 using System.Runtime;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public static class Program
     {

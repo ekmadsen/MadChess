@@ -7,11 +7,11 @@
 // +------------------------------------------------------------------------------+
 
 
-using MadChess.Engine;
+using ErikTheCoder.MadChess.Engine;
 using NUnit.Framework;
 
 
-namespace Tests
+namespace ErikTheCoder.MadChess.Tests
 {
     [TestFixture]
     public sealed class SlidingMoveTests

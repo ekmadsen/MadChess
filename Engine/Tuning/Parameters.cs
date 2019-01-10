@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 
-namespace MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Tuning
 {
     public sealed class Parameters : Collection<Parameter>
     {

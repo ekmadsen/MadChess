@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class Search : IDisposable
     {

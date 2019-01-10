@@ -11,7 +11,7 @@ using System;
 using System.Runtime.CompilerServices;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     // Piece must be a primitive type (not an enum) to use Buffer.BlockCopy in Position.Set method.
     public static class Piece

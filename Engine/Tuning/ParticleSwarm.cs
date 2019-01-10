@@ -7,7 +7,7 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Tuning
 {
     // See https://msdn.microsoft.com/en-us/magazine/dn385711.aspx.
     public sealed class ParticleSwarm

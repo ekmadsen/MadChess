@@ -13,7 +13,7 @@ using System.IO;
 using System.Text;
 
 
-namespace MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class PgnGame
     {
