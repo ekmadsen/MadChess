@@ -219,13 +219,14 @@
     &lt;/Entry&gt;&#xD;
   &lt;/TypePattern&gt;&#xD;
 &lt;/Patterns&gt;</s:String>
-	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue"> +------------------------------------------------------------------------------+&#xD;
- |                                                                              |&#xD;
- |     MadChess is developed by Erik Madsen.  Copyright 2018.                   |&#xD;
- |     MadChess is free software.  It is distributed under the GNU General      |&#xD;
- |     Public License Version 3 (GPLv3).  See License.txt for details.          |&#xD;
- |                                                                              |&#xD;
- +------------------------------------------------------------------------------+</s:String>
+	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">+------------------------------------------------------------------------------+&#xD;
+|                                                                              |&#xD;
+|     MadChess is developed by Erik Madsen.  Copyright 2019.                   |&#xD;
+|     MadChess is free software.  It is distributed under the GNU General      |&#xD;
+|     Public License Version 3 (GPLv3).  See LICENSE file for details.         |&#xD;
+|     See https://www.madchess.net/ for user and developer guides.             |&#xD;
+|                                                                              |&#xD;
++------------------------------------------------------------------------------+</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/PredefinedNamingRules/=Parameters/@EntryIndexedValue">&lt;Policy Inspect="True" Prefix="" Suffix="" Style="AaBb" /&gt;</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/PredefinedNamingRules/=PrivateConstants/@EntryIndexedValue">&lt;Policy Inspect="True" Prefix="_" Suffix="" Style="aaBb" /&gt;</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/PredefinedNamingRules/=PrivateStaticReadonly/@EntryIndexedValue">&lt;Policy Inspect="True" Prefix="_" Suffix="" Style="aaBb" /&gt;</s:String>
