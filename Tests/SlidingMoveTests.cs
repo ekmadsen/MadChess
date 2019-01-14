@@ -1,17 +1,17 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2018.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
-// |     Public License Version 3 (GPLv3).  See License.txt for details.          |
+// |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
+// |     See https://www.madchess.net/ for user and developer guides.             |
 // |                                                                              |
 // +------------------------------------------------------------------------------+
 
-
-using MadChess.Engine;
+using ErikTheCoder.MadChess.Engine;
 using NUnit.Framework;
 
 
-namespace Tests
+namespace ErikTheCoder.MadChess.Tests
 {
     [TestFixture]
     public sealed class SlidingMoveTests
