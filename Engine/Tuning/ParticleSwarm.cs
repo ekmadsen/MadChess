@@ -14,8 +14,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
     public sealed class ParticleSwarm
     {
         public const double Influence = 1.50d;
-        private const double _particleDeathPercent = 0.05d;
         public readonly Particles Particles;
+        private const double _particleDeathPercent = 0.05d;
         private readonly int _winPercentScale;
         
 

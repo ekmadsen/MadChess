@@ -6,7 +6,8 @@
 // |     See https://www.madchess.net/ for user and developer guides.             |
 // |                                                                              |
 // +------------------------------------------------------------------------------+
-// 
+
+
 namespace ErikTheCoder.MadChess.Engine
 {
     public enum GameResult

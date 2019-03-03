@@ -18,6 +18,9 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class Evaluation
     {
         public const int PawnMaterial = 100;
+        public readonly EvaluationConfig Config;
+        public readonly EvaluationStats Stats;
+        public int DrawMoves;
         private const double _passedPawnPower = 2d;
         // Select phase constants such that starting material = 256.
         // This improves integer division speed since x / 256 = x >> 8.
@@ -26,8 +29,6 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _bishopPhase = 14; // + 4 * 14 = 112
         private const int _rookPhase = 20; //   + 4 * 20 = 192
         private const int _queenPhase = 32; //  + 2 * 32 = 256
-        public readonly EvaluationConfig Config;
-        public readonly EvaluationStats Stats;
         private readonly Delegates.GetPositionCount _getPositionCount;
         private readonly Delegates.IsPassedPawn _isPassedPawn;
         private readonly Delegates.IsFreePawn _isFreePawn;
@@ -49,9 +50,8 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _mgPassedPawns = new int[8];
         private readonly int[] _egPassedPawns = new int[8];
         private readonly int[] _egFreePassedPawns = new int[8];
-        public int DrawMoves;
         
-
+        
         public Evaluation(EvaluationConfig Config, Delegates.GetPositionCount GetPositionCount, Delegates.IsPassedPawn IsPassedPawn, Delegates.IsFreePawn IsFreePawn)
         {
             this.Config = Config;

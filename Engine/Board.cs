@@ -20,7 +20,6 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class Board
     {
         public const string StartPositionFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        private const int _maxPositions = 1024;
         public static readonly ulong EdgeSquareMask;
         public static readonly int[] Files;
         public static readonly int[] WhiteRanks;
@@ -58,6 +57,11 @@ namespace ErikTheCoder.MadChess.Engine
         public readonly int[] EnPassantTargetSquares;
         public readonly int[] EnPassantVictimSquares;
         public readonly ulong[] EnPassantAttackerMasks;
+        public PrecalculatedMoves PrecalculatedMoves;
+        public long Nodes;
+        public long NodesInfoUpdate;
+        public long NodesExamineTime;
+        private const int _maxPositions = 1024;
         private readonly int[][] _neighborSquares;
         private readonly ulong[] _whitePassedPawnMasks;
         private readonly ulong[] _whiteFreePawnMasks;
@@ -70,10 +74,6 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly ulong[] _enPassantKeys;
         private readonly Position[] _positions;
         private readonly Delegates.WriteMessageLine _writeMessageLine;
-        public PrecalculatedMoves PrecalculatedMoves;
-        public long Nodes;
-        public long NodesInfoUpdate;
-        public long NodesExamineTime;
         private int _positionIndex;
 
 
@@ -1117,6 +1117,8 @@ namespace ErikTheCoder.MadChess.Engine
             int pawn;
             int king;
             int toRank;
+            // EnPassantVictim variable only used in Debug builds.
+            // ReSharper disable RedundantAssignment
             int enPassantVictim;
             if (CurrentPosition.WhiteMove)
             {
@@ -1150,6 +1152,7 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert(Engine.Move.IsDoublePawnMove(Move) == doublePawnMove, $"{CurrentPosition.ToFen()}{Environment.NewLine}Move = {Engine.Move.ToString(Move)}{Environment.NewLine}{CurrentPosition}");
             bool pawnMove = piece == pawn;
             Debug.Assert(Engine.Move.IsPawnMove(Move) == pawnMove, $"{CurrentPosition.ToFen()}{Environment.NewLine}Move = {Engine.Move.ToString(Move)}{Environment.NewLine}{CurrentPosition}");
+            // ReSharper restore RedundantAssignment
             return true;
         }
 

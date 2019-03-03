@@ -17,11 +17,10 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class StaticScore
     {
         public const int Max = 9999;
-        public const int LongestCheckmate = 100;
+        public const int LongestCheckmate = 64;
         public const int Checkmate = Max - LongestCheckmate;
         public const int Interrupted = Max - LongestCheckmate - 1;
         public const int NotCached = Max - LongestCheckmate - 2;
-        private readonly int _middlegamePhase;
         public int WhiteMaterial;
         public int WhiteMgPieceLocation;
         public int WhiteEgPieceLocation;
@@ -38,6 +37,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int BlackEgFreePassedPawns;
         public int BlackEgKingEscortedPassedPawns;
         public int BlackUnstoppablePassedPawns;
+        private readonly int _middlegamePhase;
 
 
         public int MaterialScore => WhiteMaterial - BlackMaterial;

@@ -20,13 +20,13 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public readonly int Number;
         public readonly GameResult Result;
+        public List<ulong> Moves;
         private readonly string _notation;
         private readonly char[] _buffer;
         private string _cleanNotation;
         private List<string> _standardAlgebraicMoves;
         private List<string> _longAlgebraicMoves;
-        public List<ulong> Moves;
-
+        
 
         public PgnGame(Board Board, int Number, GameResult Result, string Notation)
         {

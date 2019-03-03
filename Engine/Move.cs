@@ -18,8 +18,8 @@ namespace ErikTheCoder.MadChess.Engine
     public static class Move
     {
         public const int LongAlgebraicMaxLength = 5;
-        private const int _historyPadding = 67_108_864; // History has 48 - 22 + 1 = 27 bits.  2 Pow 27 = 134_217_728.
         public static readonly ulong Null;
+        private const int _historyPadding = 67_108_864; // History has 48 - 22 + 1 = 27 bits.  2 Pow 27 = 134_217_728.
         private static readonly int _bestShift;
         private static readonly ulong _bestMask;
         private static readonly ulong _bestUnmask;

@@ -15,17 +15,17 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 {
     public sealed class Particle
     {
-        private const double _maxInitialVelocityPercent = 0.10;
-        private const double _inertia = 0.75d;
-        private const double _influence = 1.50d;
         public readonly PgnGames PgnGames;
         public readonly Parameters Parameters;
         public readonly Parameters BestParameters;
-        private readonly double[] _velocities;
         public double EvaluationError;
         public double BestEvaluationError;
+        private const double _maxInitialVelocityPercent = 0.10;
+        private const double _inertia = 0.75d;
+        private const double _influence = 1.50d;
+        private readonly double[] _velocities;
         
-
+        
         public Particle(PgnGames PgnGames, Parameters Parameters)
         {
             this.PgnGames = PgnGames;

@@ -18,7 +18,6 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public const int MaxMoves = 128;
         public readonly ulong[] Moves;
-        private readonly Board _board;
         public ulong WhitePawns;
         public ulong WhiteKnights;
         public ulong WhiteBishops;
@@ -47,6 +46,7 @@ namespace ErikTheCoder.MadChess.Engine
         public ulong PiecesSquaresKey;
         public ulong Key;
         public ulong PlayedMove;
+        private readonly Board _board;
 
 
         public Position(Board Board)

@@ -24,24 +24,25 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public const long NodesInfoInterval = 1000000;
         public const long NodesTimeInterval = 5000;
+        public Board Board;
+        public Cache Cache;
+        public KillerMoves KillerMoves;
+        public MoveHistory MoveHistory;
+        public Evaluation Evaluation;
+        public Search Search;
+        public bool Debug;
+        private string[] _defaultHalfAndFullMove;
         private const int _cacheSizeMegabytes = 128;
         private const int _minWinPercentScale = 400;
         private const int _maxWinPercentScale = 800;
-        public readonly Board Board;
-        public readonly Cache Cache;
-        public readonly Evaluation Evaluation;
-        public readonly Search Search;
-        public readonly KillerMoves KillerMoves;
-        public readonly MoveHistory MoveHistory;
-        private readonly Stopwatch _stopwatch;
-        private readonly Stopwatch _commandStopwatch;
-        private readonly AutoResetEvent _asyncSignal;
-        private readonly Queue<List<string>> _asyncQueue;
-        private readonly object _messageLock;
-        private readonly string[] _defaultHalfAndFullMove;
-        public bool Debug;
+        private Stopwatch _stopwatch;
+        private Stopwatch _commandStopwatch;
+        private Queue<List<string>> _asyncQueue;
         private Thread _asyncThread;
+        private AutoResetEvent _asyncSignal;
+        private object _asyncLock;
         private StreamWriter _logWriter;
+        private object _messageLock;
         private bool _disposed;
 
 
@@ -74,13 +75,13 @@ namespace ErikTheCoder.MadChess.Engine
 
         public UciStream()
         {
-            // Create synchronization and diagnostic objects.
+            // Create diagnostic and synchronization objects.
             _stopwatch = Stopwatch.StartNew();
             _commandStopwatch = new Stopwatch();
-            _asyncSignal = new AutoResetEvent(false);
             _asyncQueue = new Queue<List<string>>();
+            _asyncSignal = new AutoResetEvent(false);
+            _asyncLock = new object();
             _messageLock = new object();
-            _defaultHalfAndFullMove = new[] {"0", "1"};
             // Create game objects.
             // Cannot use object initializer because it changes order of object construction (to PreCalculatedMoves first, Board second, which causes null reference in PrecalculatedMove.FindMagicMultipliers).
             // ReSharper disable once UseObjectOrCollectionInitializer
@@ -91,6 +92,7 @@ namespace ErikTheCoder.MadChess.Engine
             MoveHistory = new MoveHistory();
             Evaluation = new Evaluation(new EvaluationConfig(), Board.GetPositionCount, Board.IsPassedPawn, Board.IsFreePawn);
             Search = new Search(Cache, KillerMoves, MoveHistory, Evaluation, () => Debug, WriteMessageLine);
+            _defaultHalfAndFullMove = new[] { "0", "1" };
         }
 
 
@@ -104,6 +106,36 @@ namespace ErikTheCoder.MadChess.Engine
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+
+        private void Dispose(bool Disposing)
+        {
+            if (_disposed) return;
+            if (Disposing)
+            {
+                // Release managed resources.
+                Board = null;
+                Cache = null;
+                KillerMoves = null;
+                MoveHistory = null;
+                Evaluation = null;
+                _defaultHalfAndFullMove = null;
+                lock (_messageLock) { _stopwatch = null; }
+                _commandStopwatch = null;
+                lock (_asyncLock) { _asyncQueue = null; }
+                _asyncThread = null;
+                _asyncLock = null;
+                _messageLock = null;
+            }
+            // Release unmanaged resources.
+            Search?.Dispose();
+            Search = null;
+            _logWriter?.Dispose();
+            _logWriter = null;
+            _asyncSignal?.Dispose();
+            _asyncSignal = null;
+            _disposed = true;
         }
 
 
@@ -156,18 +188,6 @@ namespace ErikTheCoder.MadChess.Engine
             } while (exception != null);
             WriteMessageLine(stringBuilder.ToString());
             Quit(-1);
-        }
-
-
-        private void Dispose(bool Disposing)
-        {
-            if (_disposed) return;
-            if (Disposing) Search.Dispose();
-            // Release unmanaged resources.
-            _logWriter?.Dispose();
-            _logWriter = null;
-            _asyncSignal?.Dispose();
-            _disposed = true;
         }
 
 
@@ -300,7 +320,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void DispatchOnAsyncThread(List<string> Tokens)
         {
-            lock (_asyncQueue)
+            lock (_asyncLock)
             {
                 // Queue command.
                 _asyncQueue.Enqueue(Tokens);
@@ -319,7 +339,7 @@ namespace ErikTheCoder.MadChess.Engine
                     // Wait for signal.
                     _asyncSignal.WaitOne();
                     List<string> tokens = null;
-                    lock (_asyncQueue)
+                    lock (_asyncLock)
                     {
                         if (_asyncQueue.Count > 0) tokens = _asyncQueue.Dequeue();
                     }
@@ -657,7 +677,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _commandStopwatch.Restart();
             // Get cached position.
-            ulong cachedPosition = Cache.GetPosition(Board.CurrentPosition.Key);
+            ref CachedPosition cachedPosition = ref Cache.GetPosition(Board.CurrentPosition.Key);
             ulong bestMove = Cache.GetBestMove(cachedPosition);
             // Generate and sort moves.
             Board.CurrentPosition.GenerateMoves();
