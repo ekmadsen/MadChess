@@ -292,7 +292,7 @@ namespace ErikTheCoder.MadChess.Engine
                     WriteMessageLine(Evaluation.ShowParameters());
                     break;
                 case "staticscore":
-                    WriteMessageLine(Evaluation.ToString(Board.CurrentPosition));
+                    WriteMessageLine(Evaluation.ToString(ref Board.CurrentPosition));
                     break;
                 case "testpositions":
                     TestPositions(Tokens);
@@ -682,7 +682,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Generate and sort moves.
             Board.CurrentPosition.GenerateMoves();
             int lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
-            Search.PrioritizeMoves(Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
+            Search.PrioritizeMoves(ref Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
             Search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
             WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer  History              Priority");
             WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  =======  ====================");

@@ -163,14 +163,14 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static bool IsDrawnEndgame(Position Position)
+        public static bool IsDrawnEndgame(ref Position Position)
         {
             if ((Bitwise.CountSetBits(Position.WhitePawns) > 0) || (Bitwise.CountSetBits(Position.BlackPawns) > 0)) return false; // At least one pawn on board.
-            return IsDrawnEndgame(Position, true) || IsDrawnEndgame(Position, false);
+            return IsDrawnEndgame(ref Position, true) || IsDrawnEndgame(ref Position, false);
         }
 
 
-        private static bool IsDrawnEndgame(Position Position, bool WhiteIsSide1)
+        private static bool IsDrawnEndgame(ref Position Position, bool WhiteIsSide1)
         {
             // Return true if position is drawn.
             // Do not terminate search based on this method because a sequence of moves could make the game winnable.
@@ -252,19 +252,19 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetStaticScore(Position Position)
+        public int GetStaticScore(ref Position Position)
         {
             Stats.Count++;
             _staticScore.Reset();
-            GetMaterialScore(Position);
-            EvaluatePieceLocation(Position);
-            EvaluatePawns(Position);
-            int phase = DetermineGamePhase(Position);
+            GetMaterialScore(ref Position);
+            EvaluatePieceLocation(ref Position);
+            EvaluatePawns(ref Position);
+            int phase = DetermineGamePhase(ref Position);
             return Position.WhiteMove ? _staticScore.TotalScore(phase) : -_staticScore.TotalScore(phase);
         }
 
 
-        public int GetMaterialScore(Position Position)
+        public int GetMaterialScore(ref Position Position)
         {
             _staticScore.WhiteMaterial = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial + Bitwise.CountSetBits(Position.WhiteKnights) * Config.KnightMaterial +
                                          Bitwise.CountSetBits(Position.WhiteBishops) * Config.BishopMaterial + Bitwise.CountSetBits(Position.WhiteRooks) * Config.RookMaterial +
@@ -293,7 +293,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int DetermineGamePhase(Position Position)
+        public static int DetermineGamePhase(ref Position Position)
         {
             int phase = _knightPhase * (Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.BlackKnights)) +
                         _bishopPhase * (Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.BlackBishops)) +
@@ -387,15 +387,15 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public string ToString(Position Position)
+        public string ToString(ref Position Position)
         {
-            GetStaticScore(Position);
-            int phase = DetermineGamePhase(Position);
+            GetStaticScore(ref Position);
+            int phase = DetermineGamePhase(ref Position);
             return _staticScore.ToString(phase);
         }
 
 
-        private void EvaluatePieceLocation(Position Position)
+        private void EvaluatePieceLocation(ref Position Position)
         {
             // Pawns
             int square;
@@ -481,7 +481,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void EvaluatePawns(Position Position)
+        private void EvaluatePawns(ref Position Position)
         {
             // White pawns
             ulong pawns = Position.WhitePawns;
@@ -497,7 +497,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _staticScore.WhiteEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (_isFreePawn(pawnSquare, true))
                     {
-                        if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, true, true)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                        if (IsPawnUnstoppable(ref Position, pawnSquare, enemyKingSquare, true, true)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
                         else _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
                     }
                     else
@@ -521,7 +521,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _staticScore.BlackEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (_isFreePawn(pawnSquare, false))
                     {
-                        if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, false, true)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                        if (IsPawnUnstoppable(ref Position, pawnSquare, enemyKingSquare, false, true)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
                         else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
                     }
                     else
@@ -536,7 +536,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static bool IsPawnUnstoppable(Position Position, int PawnSquare, int EnemyKingSquare, bool White, bool IsFree)
+        private static bool IsPawnUnstoppable(ref Position Position, int PawnSquare, int EnemyKingSquare, bool White, bool IsFree)
         {
             if (!IsFree) return false;
             // Pawn is free to advance to promotion square.

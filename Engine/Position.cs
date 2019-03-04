@@ -14,7 +14,10 @@ using System.Text;
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    public sealed class Position
+    // Use a struct instead of a class to ensure allocating an array of Positions uses a contiguous block of memory.
+    // This improves data locality, decreasing chance that accessing a Position causes a CPU cache miss.
+    // See https://stackoverflow.com/questions/16699247/what-is-a-cache-friendly-code.
+    public struct Position
     {
         public const int MaxMoves = 128;
         public readonly ulong[] Moves;
@@ -53,6 +56,34 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _board = Board;
             Moves = new ulong[MaxMoves];
+            WhitePawns = 0;
+            WhiteKnights = 0;
+            WhiteBishops = 0;
+            WhiteRooks = 0;
+            WhiteQueens = 0;
+            WhiteKing = 0;
+            OccupancyWhite = 0;
+            BlackPawns = 0;
+            BlackKnights = 0;
+            BlackBishops = 0;
+            BlackRooks = 0;
+            BlackQueens = 0;
+            BlackKing = 0;
+            OccupancyBlack = 0;
+            Occupancy = 0;
+            PotentiallyPinnedPieces = 0;
+            WhiteMove = true;
+            Castling = 0;
+            EnPassantSquare = Square.Illegal;
+            HalfMoveNumber = 0;
+            FullMoveNumber = 0;
+            KingInCheck = false;
+            CurrentMoveIndex = 0;
+            MoveIndex = 0;
+            MoveGenerationStage = MoveGenerationStage.BestMove;
+            PiecesSquaresKey = 0;
+            Key = 0;
+            PlayedMove = Move.Null;
             Reset();
         }
 
@@ -83,7 +114,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void Set(Position CopyFromPosition)
+        public void Set(ref Position CopyFromPosition)
         {
             // Copy bitboards.
             WhitePawns = CopyFromPosition.WhitePawns;

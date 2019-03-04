@@ -31,7 +31,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetValue(Position Position, ulong Move)
+        public int GetValue(ref Position Position, ulong Move)
         {
             int piece = Position.GetPiece(Engine.Move.From(Move));
             int toSquare = Engine.Move.To(Move);
@@ -40,7 +40,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void UpdateValue(Position Position, ulong Move, int Increment)
+        public void UpdateValue(ref Position Position, ulong Move, int Increment)
         {
             // Don't bother checking for overflow values as it's not likely to happen with 27 bits.
             int piece = Position.GetPiece(Engine.Move.From(Move));
