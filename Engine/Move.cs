@@ -145,7 +145,22 @@ namespace ErikTheCoder.MadChess.Engine
             _toUnmask = Bitwise.CreateULongUnmask(0, 6);
             // Set null move.
             Null = 0;
-            Clear(ref Null);
+            SetIsBest(ref Null, false);
+            SetCaptureVictim(ref Null, Piece.None);
+            SetCaptureAttacker(ref Null, Piece.None);
+            SetPromotedPiece(ref Null, Piece.None);
+            SetKiller(ref Null, 0);
+            SetHistory(ref Null, 0);
+            SetPlayed(ref Null, false);
+            SetIsCastling(ref Null, false);
+            SetIsKingMove(ref Null, false);
+            SetIsEnPassantCapture(ref Null, false);
+            SetIsDoublePawnMove(ref Null, false);
+            SetIsPawnMove(ref Null, false);
+            SetIsCheck(ref Null, false);
+            SetIsQuiet(ref Null, false);
+            SetFrom(ref Null, Square.Illegal);
+            SetTo(ref Null, Square.Illegal);
         }
 
 
@@ -612,27 +627,6 @@ namespace ErikTheCoder.MadChess.Engine
                 return move;
             }
             throw new Exception($"Failed to parse {StandardAlgebraic} standard algebraic notation move.");
-        }
-
-
-        public static void Clear(ref ulong Move)
-        {
-            SetIsBest(ref Move, false);
-            SetCaptureVictim(ref Move, Piece.None);
-            SetCaptureAttacker(ref Move, Piece.None);
-            SetPromotedPiece(ref Move, Piece.None);
-            SetKiller(ref Move, 0);
-            SetHistory(ref Move, 0);
-            SetPlayed(ref Move, false);
-            SetIsCastling(ref Move, false);
-            SetIsKingMove(ref Move, false);
-            SetIsEnPassantCapture(ref Move, false);
-            SetIsDoublePawnMove(ref Move, false);
-            SetIsPawnMove(ref Move, false);
-            SetIsCheck(ref Move, false);
-            SetIsQuiet(ref Move, false);
-            SetFrom(ref Move, Square.Illegal);
-            SetTo(ref Move, Square.Illegal);
         }
 
 
