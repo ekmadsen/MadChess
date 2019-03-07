@@ -10,6 +10,7 @@
 
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 
 
 namespace ErikTheCoder.MadChess.Engine
@@ -217,14 +218,14 @@ namespace ErikTheCoder.MadChess.Engine
                 enPassantVictim = Piece.WhitePawn;
             }
             int fromSquare;
-            ulong move;
             if ((EnPassantSquare != Square.Illegal) && (MoveGeneration != MoveGeneration.OnlyNonCaptures))
             {
                 ulong enPassantAttackers = _board.EnPassantAttackerMasks[EnPassantSquare] & pawns;
                 while ((fromSquare = Bitwise.FindFirstSetBit(enPassantAttackers)) != Square.Illegal)
                 {
                     // Capture pawn en passant.
-                    move = Move.Null;
+                    ref ulong move = ref Moves[MoveIndex];
+                    Move.Clear(ref move);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, EnPassantSquare);
                     Move.SetCaptureAttacker(ref move, attacker);
@@ -232,7 +233,6 @@ namespace ErikTheCoder.MadChess.Engine
                     Move.SetIsEnPassantCapture(ref move, true);
                     Move.SetIsPawnMove(ref move, true);
                     Move.SetIsQuiet(ref move, false);
-                    Moves[MoveIndex] = move;
                     MoveIndex++;
                     Bitwise.ClearBit(ref enPassantAttackers, fromSquare);
                 }
@@ -258,52 +258,52 @@ namespace ErikTheCoder.MadChess.Engine
                         toSquareRank = ranks[toSquare];
                         if (toSquareRank < 7)
                         {
-                            move = Move.Null;
+                            ref ulong move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetIsDoublePawnMove(ref move, doubleMove);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, true);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                         }
                         else
                         {
                             // Promote pawn to queen.
-                            move = Move.Null;
+                            ref ulong move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, queen);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                             // Promote pawn to rook.
-                            move = Move.Null;
+                            move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, rook);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                             // Promote pawn to bishop.
-                            move = Move.Null;
+                            move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, bishop);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                             // Promote pawn to knight.
-                            move = Move.Null;
+                            move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, knight);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                         }
                         Bitwise.ClearBit(ref pawnDestinations, toSquare);
@@ -319,20 +319,21 @@ namespace ErikTheCoder.MadChess.Engine
                         int victim = GetPiece(toSquare);
                         if (toSquareRank < 7)
                         {
-                            move = Move.Null;
+                            ref ulong move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetCaptureAttacker(ref move, attacker);
                             Move.SetCaptureVictim(ref move, victim);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                         }
                         else
                         {
                             // Promote pawn to queen.
-                            move = Move.Null;
+                            ref ulong move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, queen);
@@ -340,10 +341,10 @@ namespace ErikTheCoder.MadChess.Engine
                             Move.SetCaptureVictim(ref move, victim);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                             // Promote pawn to rook.
-                            move = Move.Null;
+                            move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, rook);
@@ -351,10 +352,10 @@ namespace ErikTheCoder.MadChess.Engine
                             Move.SetCaptureVictim(ref move, victim);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                             // Promote pawn to bishop.
-                            move = Move.Null;
+                            move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, bishop);
@@ -362,10 +363,10 @@ namespace ErikTheCoder.MadChess.Engine
                             Move.SetCaptureVictim(ref move, victim);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                             // Promote pawn to knight.
-                            move = Move.Null;
+                            move = ref Moves[MoveIndex];
+                            Move.Clear(ref move);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, knight);
@@ -373,7 +374,6 @@ namespace ErikTheCoder.MadChess.Engine
                             Move.SetCaptureVictim(ref move, victim);
                             Move.SetIsPawnMove(ref move, true);
                             Move.SetIsQuiet(ref move, false);
-                            Moves[MoveIndex] = move;
                             MoveIndex++;
                         }
                         Bitwise.ClearBit(ref pawnDestinations, toSquare);
@@ -428,13 +428,13 @@ namespace ErikTheCoder.MadChess.Engine
                 while ((toSquare = Bitwise.FindFirstSetBit(knightDestinations)) != Square.Illegal)
                 {
                     int victim = GetPiece(toSquare);
-                    ulong move = Move.Null;
+                    ref ulong move = ref Moves[MoveIndex];
+                    Move.Clear(ref move);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
                     Move.SetCaptureVictim(ref move, victim);
                     Move.SetIsQuiet(ref move, victim == Piece.None);
-                    Moves[MoveIndex] = move;
                     MoveIndex++;
                     Bitwise.ClearBit(ref knightDestinations, toSquare);
                 }
@@ -488,13 +488,13 @@ namespace ErikTheCoder.MadChess.Engine
                 while ((toSquare = Bitwise.FindFirstSetBit(bishopDestinations)) != Square.Illegal)
                 {
                     int victim = GetPiece(toSquare);
-                    ulong move = Move.Null;
+                    ref ulong move = ref Moves[MoveIndex];
+                    Move.Clear(ref move);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
                     Move.SetCaptureVictim(ref move, victim);
                     Move.SetIsQuiet(ref move, victim == Piece.None);
-                    Moves[MoveIndex] = move;
                     MoveIndex++;
                     Bitwise.ClearBit(ref bishopDestinations, toSquare);
                 }
@@ -548,13 +548,13 @@ namespace ErikTheCoder.MadChess.Engine
                 while ((toSquare = Bitwise.FindFirstSetBit(rookDestinations)) != Square.Illegal)
                 {
                     int victim = GetPiece(toSquare);
-                    ulong move = Move.Null;
+                    ref ulong move = ref Moves[MoveIndex];
+                    Move.Clear(ref move);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
                     Move.SetCaptureVictim(ref move, victim);
                     Move.SetIsQuiet(ref move, victim == Piece.None);
-                    Moves[MoveIndex] = move;
                     MoveIndex++;
                     Bitwise.ClearBit(ref rookDestinations, toSquare);
                 }
@@ -609,13 +609,13 @@ namespace ErikTheCoder.MadChess.Engine
                 while ((toSquare = Bitwise.FindFirstSetBit(queenDestinations)) != Square.Illegal)
                 {
                     int victim = GetPiece(toSquare);
-                    ulong move = Move.Null;
+                    ref ulong move = ref Moves[MoveIndex];
+                    Move.Clear(ref move);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
                     Move.SetCaptureVictim(ref move, victim);
                     Move.SetIsQuiet(ref move, victim == Piece.None);
-                    Moves[MoveIndex] = move;
                     MoveIndex++;
                     Bitwise.ClearBit(ref queenDestinations, toSquare);
                 }
@@ -658,7 +658,6 @@ namespace ErikTheCoder.MadChess.Engine
                 castleKingside = Engine.Castling.BlackKingside(Castling);
                 castleKingsideMask = Board.BlackCastleKEmptySquaresMask;
             }
-            ulong move;
             int fromSquare = Bitwise.FindFirstSetBit(king);
             ulong kingDestinations;
             switch (MoveGeneration)
@@ -679,14 +678,14 @@ namespace ErikTheCoder.MadChess.Engine
             while ((toSquare = Bitwise.FindFirstSetBit(kingDestinations)) != Square.Illegal)
             {
                 int victim = GetPiece(toSquare);
-                move = Move.Null;
+                ref ulong move = ref Moves[MoveIndex];
+                Move.Clear(ref move);
                 Move.SetFrom(ref move, fromSquare);
                 Move.SetTo(ref move, toSquare);
                 if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
                 Move.SetCaptureVictim(ref move, victim);
                 Move.SetIsKingMove(ref move, true);
                 Move.SetIsQuiet(ref move, victim == Piece.None);
-                Moves[MoveIndex] = move;
                 MoveIndex++;
                 Bitwise.ClearBit(ref kingDestinations, toSquare);
             }
@@ -707,13 +706,13 @@ namespace ErikTheCoder.MadChess.Engine
                         fromSquare = Square.e8;
                         toSquare = Square.c8;
                     }
-                    move = Move.Null;
+                    ref ulong move = ref Moves[MoveIndex];
+                    Move.Clear(ref move);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     Move.SetIsCastling(ref move, true);
                     Move.SetIsKingMove(ref move, true);
                     Move.SetIsQuiet(ref move, false);
-                    Moves[MoveIndex] = move;
                     MoveIndex++;
                 }
                 if (castleKingside && ((Occupancy & castleKingsideMask) == 0))
@@ -731,13 +730,13 @@ namespace ErikTheCoder.MadChess.Engine
                         fromSquare = Square.e8;
                         toSquare = Square.g8;
                     }
-                    move = Move.Null;
+                    ref ulong move = ref Moves[MoveIndex];
+                    Move.Clear(ref move);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     Move.SetIsCastling(ref move, true);
                     Move.SetIsKingMove(ref move, true);
                     Move.SetIsQuiet(ref move, false);
-                    Moves[MoveIndex] = move;
                     MoveIndex++;
                 }
             }
