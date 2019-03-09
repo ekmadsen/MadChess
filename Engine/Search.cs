@@ -52,6 +52,8 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
+        private const int _lateMovePruningMaxToHorizon = 3;
+        private const int _lateMovePruningQuietMoveNumber = 15;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
         private readonly int[] _singlePvAspirationWindows;
@@ -628,7 +630,7 @@ namespace ErikTheCoder.MadChess.Engine
                     }
                 }
                 else continue; // Skip illegal move.
-                if (IsMoveFutile(ref Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
+                if (IsMoveFutile(ref Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 int searchHorizon = GetSearchHorizon(ref Board.CurrentPosition, Horizon, move, quietMoveNumber, drawnEndgame);
                 int moveBeta;
@@ -674,11 +676,11 @@ namespace ErikTheCoder.MadChess.Engine
                         moveIndex--;
                         while (moveIndex >= 0)
                         {
-                            ulong quietMove = Board.CurrentPosition.Moves[moveIndex];
-                            if (Move.IsQuiet(quietMove) && Move.Played(quietMove))
+                            ulong priorMove = Board.CurrentPosition.Moves[moveIndex];
+                            if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                             {
                                 // Update history of prior quiet move that failed to produce cutoff.
-                                _moveHistory.UpdateValue(ref Board.CurrentPosition, quietMove, -historyIncrement);
+                                _moveHistory.UpdateValue(ref Board.CurrentPosition, priorMove, -historyIncrement);
                             }
                             moveIndex--;
                         }
@@ -723,14 +725,7 @@ namespace ErikTheCoder.MadChess.Engine
                     Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
                 }
             } while (true);
-            if (legalMoveNumber == 0)
-            {
-                // Checkmate or stalemate
-                // Terminal node (games ends on this move)
-                score = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0;
-                UpdateBestMoveCache(ref Board.CurrentPosition, ref cachedPosition, Depth, Horizon, Move.Null, score, Alpha, Beta);
-                return score;
-            }
+            if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or stalemate.  Terminal node (games ends on this move).
             UpdateBestMoveCache(ref Board.CurrentPosition, ref cachedPosition, Depth, Horizon, Move.Null, bestScore, Alpha, Beta);
             // Return score of best move.
             return bestScore;
@@ -777,7 +772,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (move == Move.Null) break;
                 if (Board.IsMoveLegal(ref move)) legalMoveNumber++; // Move is legal.
                 else continue; // Skip illegal move.
-                if (IsMoveFutile(ref Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
+                if (IsMoveFutile(ref Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, 1, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 // Play and search move.
                 Board.PlayMove(move);
                 int score = -GetQuietScore(Board, Depth + 1, Horizon, -Beta, -Alpha);
@@ -942,7 +937,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsMoveFutile(ref Position Position, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
+        private bool IsMoveFutile(ref Position Position, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             // TODO: Passed pawn moves are not futile.
             if ((Depth == 0) || (LegalMoveNumber == 1)) return false; // Root moves and first moves are not futile.
@@ -958,6 +953,7 @@ namespace ErikTheCoder.MadChess.Engine
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
+            if ((toHorizon > 0) && (toHorizon <= _lateMovePruningMaxToHorizon) && (QuietMoveNumber >= _lateMovePruningQuietMoveNumber)) return true; // Prune late moves in main search.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore + Evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
