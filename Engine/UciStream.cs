@@ -294,6 +294,9 @@ namespace ErikTheCoder.MadChess.Engine
                 case "staticscore":
                     WriteMessageLine(Evaluation.ToString(ref Board.CurrentPosition));
                     break;
+                case "swapoffscore":
+                    SwapOffScore(Tokens);
+                    break;
                 case "testpositions":
                     TestPositions(Tokens);
                     break;
@@ -710,6 +713,17 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine(legalMoveNumber + " legal moves");
             _commandStopwatch.Stop();
         }
+
+
+        private void SwapOffScore(List<string> Tokens)
+        {
+            ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
+            int staticScore = Evaluation.GetStaticScore(ref Board.CurrentPosition);
+            Search.Reset(false);
+            Evaluation.Reset(false);
+            int swapOffScore = Search.GetSwapOffScore(Board, 0, 0, move, staticScore, -StaticScore.Max, StaticScore.Max);
+            WriteMessageLine(swapOffScore.ToString());
+        }
         
 
         private void TestPositions(List<string> Tokens)
@@ -990,6 +1004,9 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine("showevalparams                        Display evaluation parameters used to calculate static score for a position.");
             WriteMessageLine();
             WriteMessageLine("staticscore                           Display evaluation details of current position.");
+            WriteMessageLine();
+            WriteMessageLine("swapoffscore [move]                   Display static score if pieces are traded on the destination square of the given move.");
+            WriteMessageLine("                                      Move must be specified in long algebraic notation.");
             WriteMessageLine();
             WriteMessageLine("testpositions [filename]              Calculate legal moves for positions in given file and compare to expected results.");
             WriteMessageLine("                                      Each line of file must be formatted as [FEN]|[Depth]|[Legal Move Count].");

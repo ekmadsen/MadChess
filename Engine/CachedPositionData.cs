@@ -201,12 +201,12 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static void Clear(ref ulong Data)
         {
-            // Create null data.
+            // Set score first so padding is applied, ensuring a positive number is stored. 
+            SetScore(ref Data, StaticScore.NotCached);
             SetToHorizon(ref Data, 0);
             SetBestMoveFrom(ref Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
             SetBestMoveTo(ref Data, Square.Illegal);
             SetBestMovePromotedPiece(ref Data, Piece.None);
-            SetScore(ref Data, StaticScore.NotCached);
             SetScorePrecision(ref Data, Engine.ScorePrecision.Unknown);
             SetLastAccessed(ref Data, 0);
         }

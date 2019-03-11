@@ -14,7 +14,7 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public delegate ulong CreateMoveDestinationsMask(int Square, ulong Occupancy, Direction[] Directions);
         public delegate bool ValidateMove(ref ulong Move);
-        public delegate (ulong Move, int MoveIndex) GetNextMove(ref Position Position, int Depth, ulong BestMove);
+        public delegate (ulong Move, int MoveIndex) GetNextMove(ref Position Position, ulong FromSquareMask, ulong ToSquareMask, int Depth, ulong BestMove);
         public delegate int GetPositionCount();
         public delegate bool IsPassedPawn(int Square, bool White);
         public delegate bool IsFreePawn(int Square, bool White);
