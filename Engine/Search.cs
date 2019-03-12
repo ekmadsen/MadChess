@@ -727,7 +727,6 @@ namespace ErikTheCoder.MadChess.Engine
             } while (true);
             if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or stalemate.  Terminal node (games ends on this move).
             UpdateBestMoveCache(ref Board.CurrentPosition, ref cachedPosition, Depth, Horizon, Move.Null, bestScore, Alpha, Beta);
-            // Return score of best move.
             return bestScore;
         }
 
@@ -972,10 +971,7 @@ namespace ErikTheCoder.MadChess.Engine
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            int potentialScoreImprovement = capture || (toHorizon < _swapOffMinToHorizon)
-                ? Evaluation.GetMaterialScore(captureVictim)
-                : GetSwapOffScore(Board, Depth, Horizon, Move, StaticScore, Alpha, Beta);
-            return StaticScore + potentialScoreImprovement + futilityMargin < Alpha;
+            return StaticScore + Evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
         }
 
 
