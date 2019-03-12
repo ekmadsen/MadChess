@@ -93,6 +93,7 @@ namespace ErikTheCoder.MadChess.Engine
             Evaluation = new Evaluation(new EvaluationConfig(), Board.GetPositionCount, Board.IsPassedPawn, Board.IsFreePawn);
             Search = new Search(Cache, KillerMoves, MoveHistory, Evaluation, () => Debug, WriteMessageLine);
             _defaultHalfAndFullMove = new[] { "0", "1" };
+            Board.SetPosition(Board.StartPositionFen);
         }
 
 
@@ -619,11 +620,13 @@ namespace ErikTheCoder.MadChess.Engine
                 Board.NodesInfoUpdate = NodesInfoInterval * (intervals + 1);
             }
             int toHorizon = Horizon - Depth;
-            Board.CurrentPosition.GenerateMoves();
+            // Count moves using staged moved generation (as is done when searching moves).
+            Board.CurrentPosition.PrepareMoveGeneration();
             long moves = 0;
-            for (int moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
+            while (true)
             {
-                ulong move = Board.CurrentPosition.Moves[moveIndex];
+                (ulong move, _) = Search.GetNextMove(ref Board.CurrentPosition, Board.AllSquaresMask, Board.AllSquaresMask, Depth, Move.Null);
+                if (move == Move.Null) break;
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 if (toHorizon > 1)
                 {
@@ -721,7 +724,7 @@ namespace ErikTheCoder.MadChess.Engine
             int staticScore = Evaluation.GetStaticScore(ref Board.CurrentPosition);
             Search.Reset(false);
             Evaluation.Reset(false);
-            int swapOffScore = Search.GetSwapOffScore(Board, 0, 0, move, staticScore, -StaticScore.Max, StaticScore.Max);
+            int swapOffScore = Search.GetSwapOffScore(Board, move, staticScore);
             WriteMessageLine(swapOffScore.ToString());
         }
         
