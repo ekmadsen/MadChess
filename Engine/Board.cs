@@ -83,10 +83,11 @@ namespace ErikTheCoder.MadChess.Engine
         {
             get
             {
-                if (_positionIndex > 0) return ref _positions[_positionIndex];
+                if (_positionIndex > 0) return ref _positions[_positionIndex - 1];
                 return ref _nullPosition;
             }
         }
+
 
 
         public ref Position CurrentPosition => ref _positions[_positionIndex];
@@ -341,6 +342,7 @@ namespace ErikTheCoder.MadChess.Engine
             _positions = new Position[_maxPositions];
             for (int positionIndex = 0; positionIndex < _maxPositions; positionIndex++) _positions[positionIndex] = new Position(this);
             _nullPosition = new Position();
+            _nullPosition.PlayedMove = Move.Null;
             // Create Zobrist position keys.
             _piecesSquaresInitialKey = SafeRandom.NextULong();
             _pieceSquareKeys = new ulong[13][];
@@ -1446,7 +1448,6 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert(fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey);
             return true;
         }
-
 
         private void Reset(bool PreserveMoveCount)
         {

@@ -152,7 +152,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     Board.NodesExamineTime = long.MaxValue;
                     Search.PvInfoUpdate = false;
                     Search.Continue = true;
-                    int quietScore = Search.GetQuietScore(Board, 0, 0, -StaticScore.Max, StaticScore.Max);
+                    int quietScore = Search.GetQuietScore(Board, 1, 1, Board.AllSquaresMask, -StaticScore.Max, StaticScore.Max);
                     // Convert quiet score to win percent.
                     double winPercent = GetWinPercent(quietScore, WinPercentScale);
                     // Compare win percent to game result.

@@ -50,12 +50,10 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _materialAdvantageMovesPer1024 = 25; // This improves integer division speed since x / 1024 = x >> 10.
         private const int _moveTimeHardLimitPer128 = 512; // This improves integer division speed since x / 128 = x >> 7.
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _nullMoveMinReduction = 2;
-        private const int _nullMoveToHorizonReduction = 5;
-        private const int _nullMoveStaticScoreReduction = 100;
-        private const int _nullMoveStaticScoreMaxReduction = 3;
+        private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
+        private const int _quietSearchMaxFromHorizon = 4;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
         private readonly int[] _singlePvAspirationWindows;
@@ -520,10 +518,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private int GetDynamicScore(Board Board, int Depth, int Horizon, bool NullMove, int Alpha, int Beta) => GetDynamicScore(Board, Depth, Horizon, Board.AllSquaresMask, NullMove, Alpha, Beta);
-
-
-        private int GetDynamicScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, bool NullMove, int Alpha, int Beta)
+        private int GetDynamicScore(Board Board, int Depth, int Horizon, bool NullMove, int Alpha, int Beta)
         {
             if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
             {
@@ -561,7 +556,7 @@ namespace ErikTheCoder.MadChess.Engine
                     return cachedScore;
                 }
             }
-            if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Alpha, Beta); // Search for a quiet position.
+            if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(ref Board.CurrentPosition);
             int staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(ref Board.CurrentPosition);
             if (IsPositionFutile(ref Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
@@ -575,7 +570,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
-                if (SearchNullMove(Board, Depth, Horizon, staticScore, Beta))
+                if (SearchNullMove(Board, Depth, Horizon, Beta))
                 {
                     // Enemy is unable to capitalize on position even if player forfeits right to move.
                     // While forfeiting right to move is illegal, this indicates position is strong.
@@ -625,7 +620,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     // Search moves at current position.
                     moves = Board.CurrentPosition.Moves;
-                    (move, moveIndex) = GetNextMove(ref Board.CurrentPosition, Board.AllSquaresMask, ToSquareMask, Depth, bestMove);
+                    (move, moveIndex) = GetNextMove(ref Board.CurrentPosition, Board.AllSquaresMask, Depth, bestMove);
                     if (move == Move.Null) break;
                     if (Board.IsMoveLegal(ref move)) legalMoveNumber++;
                     else continue; // Skip illegal move.
@@ -744,9 +739,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetQuietScore(Board Board, int Depth, int Horizon, int Alpha, int Beta) => GetQuietScore(Board, Depth, Horizon, Board.AllSquaresMask, Alpha, Beta);
-
-
         public int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta)
         {
             if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
@@ -760,24 +752,31 @@ namespace ErikTheCoder.MadChess.Engine
             (bool terminalDraw, _) = Evaluation.IsTerminalDraw(Board.CurrentPosition);
             if ((Depth > 0) && terminalDraw) return 0; // Terminal node (games ends on this move)
             // Search for a quiet position where no captures are possible.
+            int fromHorizon = Depth - Horizon;
             _selectiveHorizon = Math.Max(Depth, _selectiveHorizon);
             bool drawnEndgame = Evaluation.IsDrawnEndgame(ref Board.CurrentPosition);
             Delegates.GetNextMove getNextMove;
             int staticScore;
-            ulong toSquareMask;
+            ulong moveGenerationToSquareMask;
             if (Board.CurrentPosition.KingInCheck)
             {
                 // King is in check.  Search all moves.
                 getNextMove = _getNextMove;
-                toSquareMask = Board.AllSquaresMask;
-                // Don't evaluate static score since moves when king is in check are not futile.
-                staticScore = 0;
+                moveGenerationToSquareMask = Board.AllSquaresMask;
+                staticScore = 0; // Don't evaluate static score since moves when king is in check are not futile.
             }
             else
             {
                 // King is not in check.  Search only captures.
                 getNextMove = _getNextCapture;
-                toSquareMask = ToSquareMask;
+                if (fromHorizon > _quietSearchMaxFromHorizon)
+                {
+                    int lastMoveToSquare = Move.To(Board.PreviousPosition.PlayedMove);
+                    moveGenerationToSquareMask = lastMoveToSquare == Square.Illegal
+                        ? ToSquareMask
+                        : Board.SquareMasks[lastMoveToSquare]; // Search only recaptures.
+                }
+                else moveGenerationToSquareMask = ToSquareMask;
                 staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(ref Board.CurrentPosition);
                 if (staticScore >= Beta) return Beta; // Prevent worsening of position by making a bad capture.  Stand pat.
                 Alpha = Math.Max(staticScore, Alpha);
@@ -786,14 +785,14 @@ namespace ErikTheCoder.MadChess.Engine
             Board.CurrentPosition.PrepareMoveGeneration();
             do
             {
-                (ulong move, _) = getNextMove(ref Board.CurrentPosition, Board.AllSquaresMask, toSquareMask, Depth, Move.Null); // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
+                (ulong move, _) = getNextMove(ref Board.CurrentPosition, moveGenerationToSquareMask, Depth, Move.Null); // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
                 if (move == Move.Null) break;
                 if (Board.IsMoveLegal(ref move)) legalMoveNumber++; // Move is legal.
                 else continue; // Skip illegal move.
                 if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 // Play and search move.
                 Board.PlayMove(move);
-                int score = -GetQuietScore(Board, Depth + 1, Horizon, -Beta, -Alpha);
+                int score = -GetQuietScore(Board, Depth + 1, Horizon, ToSquareMask, -Beta, -Alpha);
                 Board.UndoMove();
                 if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if (score >= Beta) return Beta; // Position is not the result of best play by both players.
@@ -854,18 +853,16 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool SearchNullMove(Board Board, int Depth, int Horizon, int StaticScore, int Beta)
+        private bool SearchNullMove(Board Board, int Depth, int Horizon, int Beta)
         {
-            int toHorizon = Horizon - Depth;
-            int horizon = Horizon - _nullMoveMinReduction - (toHorizon / _nullMoveToHorizonReduction) - Math.Min((StaticScore - Beta) / _nullMoveStaticScoreReduction, _nullMoveStaticScoreMaxReduction);
             Board.PlayNullMove();
-            int score = -GetDynamicScore(Board, Depth + 1, horizon, false, -Beta, -Beta + 1); // Search null move at reduced horizon with zero alpha / beta window.
+            int score = -GetDynamicScore(Board, Depth + 1, Horizon - _nullMoveReduction, false, -Beta, -Beta + 1); // Search with zero alpha / beta window.
             Board.UndoMove();
             return score >= Beta;
         }
 
 
-        public (ulong Move, int MoveIndex) GetNextMove(ref Position Position, ulong FromSquareMask, ulong ToSquareMask, int Depth, ulong BestMove)
+        public (ulong Move, int MoveIndex) GetNextMove(ref Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
         {
             while (true)
             {
@@ -897,7 +894,7 @@ namespace ErikTheCoder.MadChess.Engine
                         continue;
                     case MoveGenerationStage.Captures:
                         firstMoveIndex = Position.MoveIndex;
-                        Position.GenerateMoves(MoveGeneration.OnlyCaptures, FromSquareMask, ToSquareMask);
+                        Position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, ToSquareMask);
                         lastMoveIndex = Math.Max(firstMoveIndex, Position.MoveIndex - 1);
                         if (lastMoveIndex > firstMoveIndex)
                         {
@@ -908,7 +905,7 @@ namespace ErikTheCoder.MadChess.Engine
                         continue;
                     case MoveGenerationStage.NonCaptures:
                         firstMoveIndex = Position.MoveIndex;
-                        Position.GenerateMoves(MoveGeneration.OnlyNonCaptures, FromSquareMask, ToSquareMask);
+                        Position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, ToSquareMask);
                         lastMoveIndex = Math.Max(firstMoveIndex, Position.MoveIndex - 1);
                         if (lastMoveIndex > firstMoveIndex)
                         {
@@ -926,7 +923,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static (ulong Move, int MoveIndex) GetNextCapture(ref Position Position, ulong FromSquareMask, ulong ToSquareMask, int Depth, ulong BestMove)
+        private static (ulong Move, int MoveIndex) GetNextCapture(ref Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
         {
             while (true)
             {
@@ -942,7 +939,7 @@ namespace ErikTheCoder.MadChess.Engine
                     case MoveGenerationStage.Captures:
                         Position.FindPotentiallyPinnedPieces();
                         int firstMoveIndex = Position.MoveIndex;
-                        Position.GenerateMoves(MoveGeneration.OnlyCaptures, FromSquareMask, ToSquareMask);
+                        Position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, ToSquareMask);
                         int lastMoveIndex = Math.Max(firstMoveIndex, Position.MoveIndex - 1);
                         if (lastMoveIndex > firstMoveIndex) SortMovesByPriority(Position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves.  MVV / LVA is good enough when ordering captures.
                         Position.MoveGenerationStage = MoveGenerationStage.End;
