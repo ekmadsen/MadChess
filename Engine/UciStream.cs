@@ -293,7 +293,7 @@ namespace ErikTheCoder.MadChess.Engine
                     WriteMessageLine(Evaluation.ShowParameters());
                     break;
                 case "staticscore":
-                    WriteMessageLine(Evaluation.ToString(ref Board.CurrentPosition));
+                    WriteMessageLine(Evaluation.ToString(Board.CurrentPosition));
                     break;
                 case "swapoffscore":
                     SwapOffScore(Tokens);
@@ -625,7 +625,7 @@ namespace ErikTheCoder.MadChess.Engine
             long moves = 0;
             while (true)
             {
-                (ulong move, _) = Search.GetNextMove(ref Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
+                (ulong move, _) = Search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
                 if (move == Move.Null) break;
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 if (toHorizon > 1)
@@ -683,12 +683,12 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _commandStopwatch.Restart();
             // Get cached position.
-            ref CachedPosition cachedPosition = ref Cache.GetPosition(Board.CurrentPosition.Key);
+            CachedPosition cachedPosition = Cache.GetPosition(Board.CurrentPosition.Key);
             ulong bestMove = Cache.GetBestMove(cachedPosition);
             // Generate and sort moves.
             Board.CurrentPosition.GenerateMoves();
             int lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
-            Search.PrioritizeMoves(ref Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
+            Search.PrioritizeMoves(Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
             Search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
             WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer  History              Priority");
             WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  =======  ====================");
@@ -721,7 +721,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void SwapOffScore(List<string> Tokens)
         {
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
-            int staticScore = Evaluation.GetStaticScore(ref Board.CurrentPosition);
+            int staticScore = Evaluation.GetStaticScore(Board.CurrentPosition);
             Search.Reset(false);
             Evaluation.Reset(false);
             int swapOffScore = Search.GetSwapOffScore(Board, move, staticScore);

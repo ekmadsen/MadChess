@@ -26,16 +26,16 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetValue(ref Position Position, int Depth, ulong Move)
+        public int GetValue(Position Position, int Depth, ulong Move)
         {
-            if (Equals(ref Position, _killerMoves[Depth][0], Move)) return 2;
-            return Equals(ref Position, _killerMoves[Depth][1], Move) ? 1 : 0;
+            if (Equals(Position, _killerMoves[Depth][0], Move)) return 2;
+            return Equals(Position, _killerMoves[Depth][1], Move) ? 1 : 0;
         }
 
 
-        public void UpdateValue(ref Position Position, int Depth, ulong Move)
+        public void UpdateValue(Position Position, int Depth, ulong Move)
         {
-            if (Equals(ref Position, _killerMoves[Depth][0], Move)) return; // Move already is the best killer move.
+            if (Equals(Position, _killerMoves[Depth][0], Move)) return; // Move already is the best killer move.
             // Shift killer move.
             _killerMoves[Depth][1].Piece = _killerMoves[Depth][0].Piece;
             _killerMoves[Depth][1].ToSquare = _killerMoves[Depth][0].ToSquare;
@@ -81,6 +81,6 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool Equals(ref Position Position, KillerMove KillerMove, ulong Move) => (KillerMove.Piece == Position.GetPiece(Engine.Move.From(Move))) && (KillerMove.ToSquare == Engine.Move.To(Move));
+        private static bool Equals(Position Position, KillerMove KillerMove, ulong Move) => (KillerMove.Piece == Position.GetPiece(Engine.Move.From(Move))) && (KillerMove.ToSquare == Engine.Move.To(Move));
     }
 }

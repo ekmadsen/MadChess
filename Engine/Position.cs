@@ -14,10 +14,7 @@ using System.Text;
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    // Use a struct instead of a class to ensure allocating an array of Positions uses a contiguous block of memory.
-    // This improves data locality, decreasing chance that accessing a Position causes a CPU cache miss.
-    // See https://stackoverflow.com/questions/16699247/what-is-a-cache-friendly-code.
-    public struct Position
+    public sealed class Position
     {
         public const int MaxMoves = 128;
         public readonly ulong[] Moves;
@@ -114,7 +111,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void Set(ref Position CopyFromPosition)
+        public void Set(Position CopyFromPosition)
         {
             // Copy bitboards.
             WhitePawns = CopyFromPosition.WhitePawns;

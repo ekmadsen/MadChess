@@ -21,13 +21,12 @@ namespace ErikTheCoder.MadChess.Engine
         public const int CapacityPerMegabyte = 1024 * 1024 / (3 * sizeof(ulong)); // CachedPosition struct contains two ulongs.
         public int Positions;
         public byte Searches;
+        public CachedPosition NullPosition;
         private const int _buckets = 4;
         private readonly Delegates.ValidateMove _validateMove;
         private CachedPosition[][] _positions;
-        private CachedPosition _nullPosition;
-
-
-
+        
+        
         public long Capacity
         {
             get => _positions.Length * _buckets;
@@ -45,38 +44,38 @@ namespace ErikTheCoder.MadChess.Engine
         {
             this.Capacity = Capacity;
             _validateMove = ValidateMove;
-            _nullPosition = new CachedPosition(0, 0);
-            CachedPositionData.Clear(ref _nullPosition.Data);
+            NullPosition = new CachedPosition(0, 0);
+            CachedPositionData.Clear(ref NullPosition.Data);
         }
 
 
-        public ref CachedPosition GetPosition(ulong Key)
+        public CachedPosition GetPosition(ulong Key)
         {
             int index = GetIndex(Key);
             for (int bucket = 0; bucket < _buckets; bucket++)
             {
-                ref CachedPosition cachedPosition = ref _positions[index][bucket];
+                CachedPosition cachedPosition = _positions[index][bucket];
                 if (cachedPosition.Key == Key)
                 {
                     // Position is cached.
                     CachedPositionData.SetLastAccessed(ref cachedPosition.Data, Searches);
-                    return ref cachedPosition;
+                    return cachedPosition;
                 }
             }
             // Position is not cached.
-            return ref _nullPosition;
+            return NullPosition;
         }
 
 
-        public ref CachedPosition GetPositionToOverwrite(ulong Key)
+        public void SetPosition(CachedPosition CachedPosition)
         {
-            int index = GetIndex(Key);
+            int index = GetIndex(CachedPosition.Key);
             // Find oldest bucket.
             byte earliestAccess = byte.MaxValue;
             int oldestBucket = 0;
             for (int bucket = 0; bucket < _buckets; bucket++)
             {
-                ref CachedPosition cachedPosition = ref _positions[index][bucket];
+                CachedPosition cachedPosition = _positions[index][bucket];
                 byte lastAccessed = CachedPositionData.LastAccessed(cachedPosition.Data);
                 if (lastAccessed < earliestAccess)
                 {
@@ -84,13 +83,9 @@ namespace ErikTheCoder.MadChess.Engine
                     oldestBucket = bucket;
                 }
             }
-            ref CachedPosition cachedPositionToOverwrite = ref _positions[index][oldestBucket];
-            if (cachedPositionToOverwrite.Key == 0) Positions++; // Oldest bucket has not been used.
-            // Set key, clear data, and set search counter.
-            cachedPositionToOverwrite.Key = Key;
-            CachedPositionData.Clear(ref cachedPositionToOverwrite.Data);
-            CachedPositionData.SetLastAccessed(ref cachedPositionToOverwrite.Data, Searches);
-            return ref cachedPositionToOverwrite;
+            if (_positions[index][oldestBucket].Key == 0) Positions++; // Oldest bucket has not been used.
+            CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
+            _positions[index][oldestBucket] = CachedPosition;
         }
 
 
@@ -114,7 +109,7 @@ namespace ErikTheCoder.MadChess.Engine
             for (int index = 0; index < _positions.Length; index++)
             {
                 CachedPosition[] position = _positions[index];
-                for (int bucket = 0; bucket < _buckets; bucket++) { position[bucket] = _nullPosition; }
+                for (int bucket = 0; bucket < _buckets; bucket++) { position[bucket] = NullPosition; }
             }
             Positions = 0;
             Searches = 0;

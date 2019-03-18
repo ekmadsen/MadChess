@@ -294,9 +294,7 @@ namespace ErikTheCoder.MadChess.Engine
             for (int index = _intBits - 1; index >= 0; index--)
             {
                 stringBuilder.Append(IsBitSet(Value, index) ? '1' : '0');
-                if (index <= _intBits && index > 0)
-                    if (index % 8 == 0)
-                        stringBuilder.Append('_');
+                if (index <= _intBits && index > 0) if (index % 8 == 0) stringBuilder.Append('_');
             }
             return stringBuilder.ToString();
         }
@@ -308,9 +306,7 @@ namespace ErikTheCoder.MadChess.Engine
             for (int index = _longBits - 1; index >= 0; index--)
             {
                 stringBuilder.Append(IsBitSet(Value, index) ? '1' : '0');
-                if (index <= _longBits && index > 0)
-                    if (index % 8 == 0)
-                        stringBuilder.Append('_');
+                if (index <= _longBits && index > 0) if (index % 8 == 0) stringBuilder.Append('_');
             }
             return stringBuilder.ToString();
         }

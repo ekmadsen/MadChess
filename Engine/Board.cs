@@ -76,21 +76,12 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly Position[] _positions;
         private readonly Delegates.WriteMessageLine _writeMessageLine;
         private int _positionIndex;
-        private Position _nullPosition;
 
 
-        public ref Position PreviousPosition
-        {
-            get
-            {
-                if (_positionIndex > 0) return ref _positions[_positionIndex - 1];
-                return ref _nullPosition;
-            }
-        }
+        public Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
 
 
-
-        public ref Position CurrentPosition => ref _positions[_positionIndex];
+        public Position CurrentPosition => _positions[_positionIndex];
 
 
         static Board()
@@ -341,8 +332,6 @@ namespace ErikTheCoder.MadChess.Engine
             // Create positions.
             _positions = new Position[_maxPositions];
             for (int positionIndex = 0; positionIndex < _maxPositions; positionIndex++) _positions[positionIndex] = new Position(this);
-            _nullPosition = new Position();
-            _nullPosition.PlayedMove = Move.Null;
             // Create Zobrist position keys.
             _piecesSquaresInitialKey = SafeRandom.NextULong();
             _pieceSquareKeys = new ulong[13][];
@@ -1040,8 +1029,8 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert(AssertMoveIntegrity(Move));
             CurrentPosition.PlayedMove = Move;
             // Advance position index.
-            ref Position nextPosition = ref _positions[_positionIndex + 1];
-            nextPosition.Set(ref _positions[_positionIndex]);
+            Position nextPosition = _positions[_positionIndex + 1];
+            nextPosition.Set(_positions[_positionIndex]);
             _positionIndex++;
             int fromSquare = Engine.Move.From(Move);
             int toSquare = Engine.Move.To(Move);
@@ -1249,8 +1238,8 @@ namespace ErikTheCoder.MadChess.Engine
         {
             CurrentPosition.PlayedMove = Move.Null;
             // Advance position index.
-            ref Position nextPosition = ref _positions[_positionIndex + 1];
-            nextPosition.Set(ref _positions[_positionIndex]);
+            Position nextPosition = _positions[_positionIndex + 1];
+            nextPosition.Set(_positions[_positionIndex]);
             _positionIndex++;
             // King cannot be in check, nor is en passant capture possible after null move.
             CurrentPosition.KingInCheck = false;
