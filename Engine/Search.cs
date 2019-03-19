@@ -1117,7 +1117,7 @@ namespace ErikTheCoder.MadChess.Engine
                 string firstMove = Move.ToLongAlgebraic(_bestMoves[pv]);
                 int score = _bestScores[pv];
                 string scorePhrase = Math.Abs(score) >= StaticScore.Checkmate ? $"mate {Evaluation.GetMateDistance(score)}" : $"cp {score}";
-                string principalVariation = IncludePrincipalVariation ? $" pv {_principalVariations[firstMove]}" : null;
+                string principalVariation = IncludePrincipalVariation ? $"pv {_principalVariations[firstMove]}" : null;
                 _writeMessageLine($"info multipv {(pv + 1)} depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
                                   $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {principalVariation}");
             }
