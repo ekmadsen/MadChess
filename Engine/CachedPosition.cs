@@ -10,9 +10,6 @@
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    // Use a struct instead of a class to ensure allocating an array of CachedPositions uses a contiguous block of memory.
-    // This improves data locality, decreasing chance that accessing a CachedPosition causes a CPU cache miss.
-    // See https://stackoverflow.com/questions/16699247/what-is-a-cache-friendly-code.
     public struct CachedPosition
     {
         public ulong Key;

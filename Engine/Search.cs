@@ -619,20 +619,18 @@ namespace ErikTheCoder.MadChess.Engine
             if (Depth > 0) Board.CurrentPosition.PrepareMoveGeneration();
             do
             {
-                ulong[] moves;
                 ulong move;
                 if (Depth == 0)
                 {
                     // Search root moves.
-                    moves = _rootMoves;
                     moveIndex++;
                     if (moveIndex == 0)
                     {
-                        PrioritizeMoves(Board.CurrentPosition, moves, lastMoveIndex, bestMove, Depth);
-                        SortMovesByPriority(moves, _rootScores, lastMoveIndex);
+                        PrioritizeMoves(Board.CurrentPosition, _rootMoves, lastMoveIndex, bestMove, Depth);
+                        SortMovesByPriority(_rootMoves, _rootScores, lastMoveIndex);
                     }
                     if (moveIndex > lastMoveIndex) break;
-                    move = moves[moveIndex];
+                    move = _rootMoves[moveIndex];
                     legalMoveNumber++;
                     _rootMove = move;
                     _rootMoveNumber = legalMoveNumber;
@@ -640,13 +638,12 @@ namespace ErikTheCoder.MadChess.Engine
                 else
                 {
                     // Search moves at current position.
-                    moves = Board.CurrentPosition.Moves;
                     (move, moveIndex) = GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, bestMove);
                     if (move == Move.Null) break;
                     if (Board.IsMoveLegal(ref move)) legalMoveNumber++;
                     else continue; // Skip illegal move.
+                    Board.CurrentPosition.Moves[moveIndex] = move;
                 }
-                moves[moveIndex] = move;
                 if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 int searchHorizon = GetSearchHorizon(Board.CurrentPosition, Horizon, move, quietMoveNumber, drawnEndgame);
@@ -655,7 +652,7 @@ namespace ErikTheCoder.MadChess.Engine
                 else moveBeta = bestScore + 1; // Search with zero alpha / beta window.
                 // Play and search move.
                 Move.SetPlayed(ref move, true);
-                moves[moveIndex] = move;
+                Board.CurrentPosition.Moves[moveIndex] = move;
                 Board.PlayMove(move);
                 int score = -GetDynamicScore(Board, Depth + 1, searchHorizon, true, -moveBeta, -Alpha);
                 if (Math.Abs(score) == StaticScore.Interrupted)

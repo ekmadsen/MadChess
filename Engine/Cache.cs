@@ -59,6 +59,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     // Position is cached.
                     CachedPositionData.SetLastAccessed(ref cachedPosition.Data, Searches);
+                    _positions[index][bucket] = cachedPosition;
                     return cachedPosition;
                 }
             }

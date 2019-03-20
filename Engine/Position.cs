@@ -53,34 +53,6 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _board = Board;
             Moves = new ulong[MaxMoves];
-            WhitePawns = 0;
-            WhiteKnights = 0;
-            WhiteBishops = 0;
-            WhiteRooks = 0;
-            WhiteQueens = 0;
-            WhiteKing = 0;
-            OccupancyWhite = 0;
-            BlackPawns = 0;
-            BlackKnights = 0;
-            BlackBishops = 0;
-            BlackRooks = 0;
-            BlackQueens = 0;
-            BlackKing = 0;
-            OccupancyBlack = 0;
-            Occupancy = 0;
-            PotentiallyPinnedPieces = 0;
-            WhiteMove = true;
-            Castling = 0;
-            EnPassantSquare = Square.Illegal;
-            HalfMoveNumber = 0;
-            FullMoveNumber = 0;
-            KingInCheck = false;
-            CurrentMoveIndex = 0;
-            MoveIndex = 0;
-            MoveGenerationStage = MoveGenerationStage.BestMove;
-            PiecesSquaresKey = 0;
-            Key = 0;
-            PlayedMove = Move.Null;
             Reset();
         }
 

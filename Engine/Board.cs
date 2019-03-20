@@ -84,6 +84,9 @@ namespace ErikTheCoder.MadChess.Engine
         public Position CurrentPosition => _positions[_positionIndex];
 
 
+        public Position NextPosition => _positions[_positionIndex + 1];
+
+
         static Board()
         {
             // The chessboard is represented as an array of 64 squares, shown here as an 8 x 8 grid of square indices.
@@ -1029,8 +1032,7 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert(AssertMoveIntegrity(Move));
             CurrentPosition.PlayedMove = Move;
             // Advance position index.
-            Position nextPosition = _positions[_positionIndex + 1];
-            nextPosition.Set(_positions[_positionIndex]);
+            NextPosition.Set(CurrentPosition);
             _positionIndex++;
             int fromSquare = Engine.Move.From(Move);
             int toSquare = Engine.Move.To(Move);
@@ -1238,8 +1240,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             CurrentPosition.PlayedMove = Move.Null;
             // Advance position index.
-            Position nextPosition = _positions[_positionIndex + 1];
-            nextPosition.Set(_positions[_positionIndex]);
+            NextPosition.Set(CurrentPosition);
             _positionIndex++;
             // King cannot be in check, nor is en passant capture possible after null move.
             CurrentPosition.KingInCheck = false;
