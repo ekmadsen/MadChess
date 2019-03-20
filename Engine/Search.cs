@@ -147,7 +147,7 @@ namespace ErikTheCoder.MadChess.Engine
             _futilityMargins = new[] {50, 100, 175, 275, 400, 550};
             _lateMoveReductions = new[] {3, 7, 15};
             _lateMovePruning = new[] { 99, 15, 19, 23, 27, 31 };
-            _lateMovePruning = new[] { 99, 99 };
+            if (_lateMovePruning.Length != _futilityMargins.Length) throw new Exception($"Length of {nameof(_lateMovePruning)} array must match length of {nameof(_futilityMargins)} array.");
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
