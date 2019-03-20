@@ -718,7 +718,7 @@ namespace ErikTheCoder.MadChess.Engine
                         // Update principal variation.
                         ulong[] principalVariation = _principalVariations[Move.ToLongAlgebraic(move)];
                         Array.Copy(_possibleVariations[0], 0, principalVariation, 0, _possibleVariationLength[0]);
-                        principalVariation[_possibleVariationLength[0]] = Move.Null;
+                        principalVariation[_possibleVariationLength[0]] = Move.Null; // Mark last move of principal variation.
                     }
                 }
                 if (score > bestScore)
@@ -736,16 +736,9 @@ namespace ErikTheCoder.MadChess.Engine
                     Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
                 }
             } while (true);
-            if(legalMoveNumber == 0)
-            {
-                // Checkmate or stalemate
-                // Terminal node (games ends on this move)
-                score = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0;
-                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, score, Alpha, Beta);
-                return score;
-            }
-            if (bestScore == originalAlpha) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, originalAlpha, originalAlpha, Beta); // Position is not in principal variation.
-            // Return score of best move.
+            if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or stalemate.  Terminal node (games ends on this move)
+            // Only update scores outside of original alpha / beta window.  Exact scores (with tighter alpha / beta bounds) are updated in move loop above.
+            if ((bestScore < originalAlpha) || (bestScore > Beta)) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, originalAlpha, Beta);
             return bestScore;
         }
 
@@ -1141,11 +1134,12 @@ namespace ErikTheCoder.MadChess.Engine
                 if (IncludePrincipalVariation)
                 {
                     ulong[] principalVariation = _principalVariations[Move.ToLongAlgebraic(_bestMoves[pv])];
+                    // TODO: Review if long algebraic principal variation can be created without allocating a StringBuilder.
                     StringBuilder stringBuilder = new StringBuilder("pv");
                     for (int pvIndex = 0; pvIndex < principalVariation.Length; pvIndex++)
                     {
                         ulong move = principalVariation[pvIndex];
-                        if (move == Move.Null) break;
+                        if (move == Move.Null) break;  // Null move marks the last move of the principal variation.
                         stringBuilder.Append(' ');
                         stringBuilder.Append(Move.ToLongAlgebraic(move));
                     }
