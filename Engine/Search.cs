@@ -56,26 +56,25 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _quietSearchMaxFromHorizon = 5;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
-        private readonly int[] _singlePvAspirationWindows;
-        private readonly int[] _multiPvAspirationWindows;
-        private readonly int[] _scoreErrorAspirationWindows;
-        private readonly int[] _futilityMargins;
-        private readonly int[] _futilityPruning;
-        private readonly int[] _lateMoveReductions;
-        private readonly ulong[] _rootMoves;
-        private readonly int[] _rootScores;
-        private readonly ulong[] _bestMoves;
-        private readonly int[] _bestScores;
-        private readonly ulong[][] _possibleVariations;
-        private readonly int[] _possibleVariationLength;
+        private int[] _singlePvAspirationWindows;
+        private int[] _multiPvAspirationWindows;
+        private int[] _scoreErrorAspirationWindows;
+        private int[] _futilityMargins;
+        private int[] _lateMoveReductions;
+        private int[] _lateMovePruning;
+        private ulong[] _rootMoves;
+        private int[] _rootScores;
+        private ulong[] _bestMoves;
+        private int[] _bestScores;
+        private ulong[][] _possibleVariations;
+        private int[] _possibleVariationLength;
+        private Dictionary<string, ulong[]> _principalVariations;
         private Cache _cache;
         private KillerMoves _killerMoves;
         private MoveHistory _moveHistory;
         private Func<bool> _debug;
         private Delegates.WriteMessageLine _writeMessageLine;
         private Stopwatch _stopwatch;
-        private StringBuilder[] _pvStringBuilders;
-        private Dictionary<string, StringBuilder> _principalVariations;
         private Delegates.GetNextMove _getNextMove;
         private Delegates.GetNextMove _getNextCapture;
         private int _originalHorizon;
@@ -146,20 +145,18 @@ namespace ErikTheCoder.MadChess.Engine
             _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
             _futilityMargins = new[] {50, 100, 175, 275, 400, 550};
-            _futilityPruning = new[] {99, 15, 19, 23, 27, 31};
             _lateMoveReductions = new[] {3, 7, 15};
+            _lateMovePruning = new[] { 99, 15, 19, 23, 27, 31 };
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
             _bestMoves = new ulong[Position.MaxMoves];
             _bestScores = new int[Position.MaxMoves];
             // Create possible and principal variations.
-            _pvStringBuilders = new StringBuilder[Position.MaxMoves];
-            for (int moveIndex = 0; moveIndex < Position.MaxMoves; moveIndex++) _pvStringBuilders[moveIndex] = new StringBuilder((MaxHorizon + 1) * (Move.LongAlgebraicMaxLength + 1));
             _possibleVariations = new ulong[MaxHorizon + 1][];
             for (int depth = 0; depth < _possibleVariations.Length; depth++) _possibleVariations[depth] = new ulong[MaxHorizon - depth];
             _possibleVariationLength = new int[MaxHorizon + 1];
-            _principalVariations = new Dictionary<string, StringBuilder>(Position.MaxMoves);
+            _principalVariations = new Dictionary<string, ulong[]>();
             _disposed = false;
             // Set default parameters.
             SetDefaultParameters();
@@ -191,16 +188,33 @@ namespace ErikTheCoder.MadChess.Engine
                 // Release managed resources.
                 Evaluation = null;
                 Stats = null;
+                WhiteTimeRemaining = null;
+                BlackTimeRemaining = null;
+                WhiteTimeIncrement = null;
+                BlackTimeIncrement = null;
+                MovesToTimeControl = null;
+                MateInMoves = null;
                 _movePriorityComparer = null;
                 _moveScoreComparer = null;
+                _singlePvAspirationWindows = null;
+                _multiPvAspirationWindows = null;
+                _scoreErrorAspirationWindows = null;
+                _futilityMargins = null;
+                _lateMovePruning = null;
+                _lateMoveReductions = null;
+                _rootMoves = null;
+                _rootScores = null;
+                _bestMoves = null;
+                _bestScores = null;
+                _possibleVariations = null;
+                _possibleVariationLength = null;
+                _principalVariations = null;
                 _cache = null;
                 _killerMoves = null;
                 _moveHistory = null;
                 _debug = null;
                 _writeMessageLine = null;
                 _stopwatch = null;
-                _pvStringBuilders = null;
-                _principalVariations = null;
                 _getNextMove = null;
                 _getNextCapture = null;
             }
@@ -280,7 +294,12 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Copy legal moves to root moves and principal variations.
             Array.Copy(Board.CurrentPosition.Moves, _rootMoves, legalMoveIndex);
-            for (int moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _principalVariations.Add(Move.ToLongAlgebraic(Board.CurrentPosition.Moves[moveIndex]), _pvStringBuilders[moveIndex]);
+            for (int moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
+            {
+                ulong[] principalVariation = new ulong[Position.MaxMoves];
+                principalVariation[0] = Move.Null;
+                _principalVariations.Add(Move.ToLongAlgebraic(Board.CurrentPosition.Moves[moveIndex]), principalVariation);
+            }
             int principalVariations = Math.Min(MultiPv, legalMoveIndex);
             // Determine score error.
             _scoreError = 0;
@@ -298,7 +317,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _originalHorizon++;
                 _selectiveHorizon = 0;
                 // Clear principal variations and age move history.
-                using (Dictionary<string, StringBuilder>.Enumerator pvEnumerator = _principalVariations.GetEnumerator()) { while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value.Clear(); }
+                using (Dictionary<string, ulong[]>.Enumerator pvEnumerator = _principalVariations.GetEnumerator()) { while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null; }
                 _moveHistory.Age(Board.CurrentPosition.WhiteMove);
                 // Get score within aspiration window.
                 int score = GetScoreWithinAspirationWindow(Board, principalVariations);
@@ -628,7 +647,7 @@ namespace ErikTheCoder.MadChess.Engine
                     else continue; // Skip illegal move.
                 }
                 moves[moveIndex] = move;
-                if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
+                if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 int searchHorizon = GetSearchHorizon(Board.CurrentPosition, Horizon, move, quietMoveNumber, drawnEndgame);
                 int moveBeta;
@@ -697,15 +716,9 @@ namespace ErikTheCoder.MadChess.Engine
                     if (Depth == 0)
                     {
                         // Update principal variation.
-                        string rootMove = Move.ToLongAlgebraic(move);
-                        StringBuilder stringBuilder = _principalVariations[rootMove];
-                        stringBuilder.Append(rootMove);
-                        for (int pvIndex = 1; pvIndex < _possibleVariationLength[0]; pvIndex++)
-                        {
-                            string pvMove = Move.ToLongAlgebraic(_possibleVariations[0][pvIndex]);
-                            stringBuilder.Append(" ");
-                            stringBuilder.Append(pvMove);
-                        }
+                        ulong[] principalVariation = _principalVariations[Move.ToLongAlgebraic(move)];
+                        Array.Copy(_possibleVariations[0], 0, principalVariation, 0, _possibleVariationLength[0]);
+                        principalVariation[_possibleVariationLength[0]] = Move.Null;
                     }
                 }
                 if (score > bestScore)
@@ -791,7 +804,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (move == Move.Null) break;
                 if (Board.IsMoveLegal(ref move)) legalMoveNumber++; // Move is legal.
                 else continue; // Skip illegal move.
-                if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
+                if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, 1, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 // Play and search move.
                 Board.PlayMove(move);
                 int score = -GetQuietScore(Board, Depth + 1, Horizon, ToSquareMask, -Beta, -Alpha);
@@ -955,7 +968,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
+        private bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             // TODO: Passed pawn moves are not futile.
             if ((Depth == 0) || (LegalMoveNumber == 1)) return false; // Root moves and first moves are not futile.
@@ -971,6 +984,8 @@ namespace ErikTheCoder.MadChess.Engine
             int whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
+            int lateMoveNumber = _lateMovePruning[Math.Min(Math.Max(toHorizon, 0), _lateMovePruning.Length - 1)];
+            if (QuietMoveNumber >= lateMoveNumber) return true; // Late move pruning.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore + Evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
@@ -1114,12 +1129,25 @@ namespace ErikTheCoder.MadChess.Engine
             long nodes = IncludePrincipalVariation ? Board.Nodes : Board.NodesInfoUpdate;
             for (int pv = 0; pv < PrincipalVariations; pv++)
             {
-                string firstMove = Move.ToLongAlgebraic(_bestMoves[pv]);
+                string pvLongAlgebraic;
+                if (IncludePrincipalVariation)
+                {
+                    ulong[] principalVariation = _principalVariations[Move.ToLongAlgebraic(_bestMoves[pv])];
+                    StringBuilder stringBuilder = new StringBuilder("pv");
+                    for (int pvIndex = 0; pvIndex < principalVariation.Length; pvIndex++)
+                    {
+                        ulong move = principalVariation[pvIndex];
+                        if (move == Move.Null) break;
+                        stringBuilder.Append(' ');
+                        stringBuilder.Append(Move.ToLongAlgebraic(move));
+                    }
+                    pvLongAlgebraic = stringBuilder.ToString();
+                }
+                else pvLongAlgebraic = null;
                 int score = _bestScores[pv];
                 string scorePhrase = Math.Abs(score) >= StaticScore.Checkmate ? $"mate {Evaluation.GetMateDistance(score)}" : $"cp {score}";
-                string principalVariation = IncludePrincipalVariation ? $"pv {_principalVariations[firstMove]}" : null;
                 _writeMessageLine($"info multipv {(pv + 1)} depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
-                                  $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {principalVariation}");
+                                  $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
             }
             int hashFull = (int) (1000L * _cache.Positions / _cache.Capacity);
             _writeMessageLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
@@ -1161,15 +1189,15 @@ namespace ErikTheCoder.MadChess.Engine
             NodeLimit = long.MaxValue;
             MoveTimeSoftLimit = TimeSpan.MaxValue;
             MoveTimeHardLimit = TimeSpan.MaxValue;
-            // Reset score error, best moves, principal variations, and last aspiration window.
+            // Reset score error, best moves, possible and principal variations, and last aspiration window.
             _scoreError = 0;
             for (int moveIndex = 0; moveIndex < MultiPv; moveIndex++)
             {
                 _bestMoves[moveIndex] = Move.Null;
                 _bestScores[moveIndex] = -StaticScore.Max;
             }
-            _principalVariations.Clear();
             for (int depth = 0; depth < _possibleVariationLength.Length; depth++) _possibleVariationLength[depth] = 0;
+            _principalVariations.Clear();
             _lastAspirationWindowIndex = 0;
             if (!PreserveStats) Stats.Reset();
             // Enable PV update, increment search counter, and continue search.
