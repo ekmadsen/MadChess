@@ -53,7 +53,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
-        private const int _quietSearchMaxFromHorizon = 5;
+        private const int _quietSearchMaxFromHorizon = 99;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
         private int[] _singlePvAspirationWindows;
@@ -146,7 +146,7 @@ namespace ErikTheCoder.MadChess.Engine
             _scoreErrorAspirationWindows = new int[1];
             _futilityMargins = new[] {50, 100, 175, 275, 400, 550};
             _lateMoveReductions = new[] {3, 7, 15};
-            _lateMovePruning = new[] { 99, 19, 23, 27, 31, 35 };
+            _lateMovePruning = new[] {99};
             if (_lateMovePruning.Length > _futilityMargins.Length) throw new Exception($"Length of {nameof(_lateMovePruning)} array must be <= {nameof(_futilityMargins)} array.");
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
