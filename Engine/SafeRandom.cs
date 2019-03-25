@@ -23,7 +23,7 @@ namespace ErikTheCoder.MadChess.Engine
         static SafeRandom()
         {
             _buffer = new byte[sizeof(ulong)];
-            _random = new Random();
+            _random = new Random(13); // Ensure Zobrist position keys are identical in each instance of the engine.
             _lock = new object();
         }
 

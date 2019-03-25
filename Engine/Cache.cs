@@ -118,6 +118,6 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetIndex(ulong Key) => (int)((uint)Key.GetHashCode() % (uint)_positions.Length);
+        private int GetIndex(ulong Key) => (int)(Key % (ulong)_positions.Length);
     }
 }

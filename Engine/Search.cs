@@ -612,8 +612,8 @@ namespace ErikTheCoder.MadChess.Engine
                 cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
                 bestMove = _cache.GetBestMove(cachedPosition);
             }
+            int originalAlpha = Alpha;
             int bestScore = Alpha;
-            int score;
             int legalMoveNumber = 0;
             int quietMoveNumber = 0;
             int moveIndex = -1;
@@ -656,7 +656,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Move.SetPlayed(ref move, true);
                 Board.CurrentPosition.Moves[moveIndex] = move;
                 Board.PlayMove(move);
-                score = -GetDynamicScore(Board, Depth + 1, searchHorizon, true, -moveBeta, -Alpha);
+                int score = -GetDynamicScore(Board, Depth + 1, searchHorizon, true, -moveBeta, -Alpha);
                 if (Math.Abs(score) == StaticScore.Interrupted)
                 {
                     // Stop searching.
@@ -737,11 +737,14 @@ namespace ErikTheCoder.MadChess.Engine
             } while (true);
             if (legalMoveNumber == 0)
             {
-                // Checkmate or stalemate
-                // Terminal node (games ends on this move)
-                score = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0;
-                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, score, -StaticScore.Max, StaticScore.Max);
-                return score;
+                // Checkmate or stalemate.  Terminal node (games ends on this move).
+                bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0;
+                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, Alpha, Beta);
+            }
+            else if (bestScore == originalAlpha)
+            {
+                // Score failed low.  Position is not in principal variation.
+                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, originalAlpha, originalAlpha, Beta);
             }
             return bestScore;
         }
@@ -993,10 +996,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (QuietMoveNumber >= lateMoveNumber) return true; // Late move pruning.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            int potentialImprovement = capture
-                ? Evaluation.GetMaterialScore(captureVictim)
-                : GetSwapOffScore(Board, Move, StaticScore);
-            return StaticScore + potentialImprovement + futilityMargin < Alpha;
+            return StaticScore + Evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
         }
 
 
