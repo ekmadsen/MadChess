@@ -735,17 +735,9 @@ namespace ErikTheCoder.MadChess.Engine
                     Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
                 }
             } while (true);
-            if (legalMoveNumber == 0)
-            {
-                // Checkmate or stalemate.  Terminal node (games ends on this move).
-                bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0;
-                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, Alpha, Beta);
-            }
-            else if (bestScore == originalAlpha)
-            {
-                // Score failed low.  Position is not in principal variation.
-                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, originalAlpha, originalAlpha, Beta);
-            }
+            if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or stalemate.  Terminal node (games ends on this move).
+            // Only update scores outside of original alpha / beta window.  Exact scores (with tighter alpha / beta bounds) are updated in move loop above.
+            if ((bestScore < originalAlpha) || (bestScore > Beta)) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, originalAlpha, Beta);
             return bestScore;
         }
 
