@@ -28,6 +28,9 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly int[] DownDiagonals;
         public static readonly int[] CentralSquares;
         public static readonly int[] CornerSquares;
+        public static int[] LightCornerSquares;
+        public static int[] DarkCornerSquares;
+        public static bool[] LightSquares;
         public static readonly string[] SquareLocations;
         public static readonly int[][] SquareDistances;
         public static readonly ulong[] SquareMasks;
@@ -164,6 +167,19 @@ namespace ErikTheCoder.MadChess.Engine
             };
             CentralSquares = new[] { Square.d4, Square.e4, Square.d5, Square.e5 };
             CornerSquares = new[] { Square.a8, Square.h8, Square.a1, Square.h1 };
+            LightCornerSquares = new[] { Square.a8, Square.h1 };
+            DarkCornerSquares = new[] { Square.a1, Square.h8 };
+            LightSquares = new[]
+            {
+                true, false, true, false, true, false, true, false,
+                false, true, false, true, false, true, false, true,
+                true, false, true, false, true, false, true, false,
+                false, true, false, true, false, true, false, true,
+                true, false, true, false, true, false, true, false,
+                false, true, false, true, false, true, false, true,
+                true, false, true, false, true, false, true, false,
+                false, true, false, true, false, true, false, true
+            };
             SquareLocations = new[]
             {
                 "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",

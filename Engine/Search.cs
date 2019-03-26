@@ -1159,7 +1159,7 @@ namespace ErikTheCoder.MadChess.Engine
                 double betaCutoffMoveNumber = (double)Stats.BetaCutoffMoveNumber / Stats.BetaCutoffs;
                 double betaCutoffFirstMovePercent = 100d * Stats.BetaCutoffFirstMove / Stats.BetaCutoffs;
                 _writeMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
-                _writeMessageLine($"info string Evals = {Evaluation.Stats.Count}");
+                _writeMessageLine($"info string Simple Evals = {Evaluation.Stats.SimpleEvaluations} Full Evals = {Evaluation.Stats.FullEvaluations}");
             }
             int intervals = (int) (Board.Nodes / UciStream.NodesInfoInterval);
             Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);

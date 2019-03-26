@@ -12,12 +12,14 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class EvaluationStats
     {
-        public long Count;
+        public long SimpleEvaluations;
+        public long FullEvaluations;
 
 
         public void Reset()
         {
-            Count = 0;
+            SimpleEvaluations = 0;
+            FullEvaluations = 0;
         }
     }
 }

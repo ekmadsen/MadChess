@@ -14,11 +14,12 @@ namespace ErikTheCoder.MadChess.Engine
     {
         // ReSharper disable ConvertToConstant.Global
         // ReSharper disable FieldCanBeMadeReadOnly.Global
-        // Material
+        // Material and Simple Endgame
         public int KnightMaterial = 300;
         public int BishopMaterial = 300;
         public int RookMaterial = 500;
         public int QueenMaterial = 975;
+        public int SimpleEndgame = 975;
         // Pawn Location
         public int MgPawnAdvancement = 2;
         public int EgPawnAdvancement = 5;

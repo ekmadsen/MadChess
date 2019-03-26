@@ -21,6 +21,7 @@ namespace ErikTheCoder.MadChess.Engine
         public const int Checkmate = Max - LongestCheckmate;
         public const int Interrupted = Max - LongestCheckmate - 1;
         public const int NotCached = Max - LongestCheckmate - 2;
+        public int WhiteSimpleEndgame;
         public int WhiteMaterial;
         public int WhiteMgPieceLocation;
         public int WhiteEgPieceLocation;
@@ -29,6 +30,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int WhiteEgFreePassedPawns;
         public int WhiteEgKingEscortedPassedPawns;
         public int WhiteUnstoppablePassedPawns;
+        public int BlackSimpleEndgame;
         public int BlackMaterial;
         public int BlackMgPieceLocation;
         public int BlackEgPieceLocation;
@@ -43,16 +45,16 @@ namespace ErikTheCoder.MadChess.Engine
         public int MaterialScore => WhiteMaterial - BlackMaterial;
 
 
-        private int MiddlegameWhite => WhiteMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns;
+        private int MiddlegameWhite => WhiteSimpleEndgame + WhiteMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns;
 
 
-        private int MiddlegameBlack => BlackMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns;
+        private int MiddlegameBlack => BlackSimpleEndgame + BlackMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns;
 
 
-        private int EndgameWhite => WhiteMaterial + WhiteEgPieceLocation + WhiteEgPassedPawns + WhiteEgFreePassedPawns + WhiteEgKingEscortedPassedPawns + WhiteUnstoppablePassedPawns;
+        private int EndgameWhite => WhiteSimpleEndgame + WhiteMaterial + WhiteEgPieceLocation + WhiteEgPassedPawns + WhiteEgFreePassedPawns + WhiteEgKingEscortedPassedPawns + WhiteUnstoppablePassedPawns;
 
 
-        private int EndgameBlack => BlackMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns;
+        private int EndgameBlack => BlackSimpleEndgame + BlackMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns;
 
 
         public StaticScore(int MiddlegamePhase)
@@ -66,6 +68,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public void Reset()
         {
+            WhiteSimpleEndgame = 0;
             WhiteMaterial = 0;
             WhiteMgPieceLocation = 0;
             WhiteEgPieceLocation = 0;
@@ -74,6 +77,7 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteEgFreePassedPawns = 0;
             WhiteEgKingEscortedPassedPawns = 0;
             WhiteUnstoppablePassedPawns = 0;
+            BlackSimpleEndgame = 0;
             BlackMaterial = 0;
             BlackMgPieceLocation = 0;
             BlackEgPieceLocation = 0;
@@ -91,6 +95,7 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine("                             |         Middlegame        |          Endgame          |           Total           |");
             stringBuilder.AppendLine("Evaluation Term              |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |");
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
+            AppendLine(stringBuilder, "Simple Endgame", WhiteSimpleEndgame, BlackSimpleEndgame, WhiteSimpleEndgame, BlackSimpleEndgame, Phase);
             AppendLine(stringBuilder, "Material", WhiteMaterial, BlackMaterial, WhiteMaterial, BlackMaterial, Phase);
             AppendLine(stringBuilder, "Piece Location", WhiteMgPieceLocation, BlackMgPieceLocation, WhiteEgPieceLocation, BlackEgPieceLocation, Phase);
             AppendLine(stringBuilder, "Passed Pawns", WhiteMgPassedPawns, BlackMgPassedPawns, WhiteEgPassedPawns, BlackEgPassedPawns, Phase);
