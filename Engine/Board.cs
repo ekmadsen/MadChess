@@ -20,7 +20,7 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class Board
     {
         public const string StartPositionFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        public static readonly ulong EdgeSquareMask;
+        
         public static readonly int[] Files;
         public static readonly int[] WhiteRanks;
         public static readonly int[] BlackRanks;
@@ -28,17 +28,22 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly int[] DownDiagonals;
         public static readonly int[] CentralSquares;
         public static readonly int[] CornerSquares;
+        public static bool[] LightSquares;
         public static int[] LightCornerSquares;
         public static int[] DarkCornerSquares;
-        public static bool[] LightSquares;
-        public static readonly string[] SquareLocations;
         public static readonly int[][] SquareDistances;
+        public static readonly int[] DistanceToCentralSquares;
+        public static readonly int[] DistanceToNearestCorner;
+        public static readonly int[] DistanceToNearestLightCorner;
+        public static readonly int[] DistanceToNearestDarkCorner;
+        public static readonly string[] SquareLocations;
         public static readonly ulong[] SquareMasks;
         public static readonly ulong[] SquareUnmasks;
         public static readonly ulong[] FileMasks;
         public static readonly ulong[] RankMasks;
         public static readonly ulong[] UpDiagonalMasks;
         public static readonly ulong[] DownDiagonalMasks;
+        public static readonly ulong EdgeSquareMask;
         public static readonly ulong WhiteCastleQEmptySquaresMask;
         public static readonly ulong WhiteCastleQAttackedSquareMask;
         public static readonly ulong WhiteCastleKEmptySquaresMask;
@@ -167,8 +172,6 @@ namespace ErikTheCoder.MadChess.Engine
             };
             CentralSquares = new[] { Square.d4, Square.e4, Square.d5, Square.e5 };
             CornerSquares = new[] { Square.a8, Square.h8, Square.a1, Square.h1 };
-            LightCornerSquares = new[] { Square.a8, Square.h1 };
-            DarkCornerSquares = new[] { Square.a1, Square.h8 };
             LightSquares = new[]
             {
                 true, false, true, false, true, false, true, false,
@@ -180,17 +183,8 @@ namespace ErikTheCoder.MadChess.Engine
                 true, false, true, false, true, false, true, false,
                 false, true, false, true, false, true, false, true
             };
-            SquareLocations = new[]
-            {
-                "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-                "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-                "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-                "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-                "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-                "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-                "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-                "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
-            };
+            LightCornerSquares = new[] { Square.a8, Square.h1 };
+            DarkCornerSquares = new[] { Square.a1, Square.h8 };
             // Determine distances between squares.
             SquareDistances = new int[64][];
             for (int square1 = 0; square1 < 64; square1++)
@@ -203,6 +197,30 @@ namespace ErikTheCoder.MadChess.Engine
                     SquareDistances[square1][square2] = Math.Max(fileDistance, rankDistance);
                 }
             }
+            // Determine distances to central and nearest corner squares.
+            DistanceToCentralSquares = new int[64];
+            DistanceToNearestCorner = new int[64];
+            DistanceToNearestLightCorner = new int[64];
+            DistanceToNearestDarkCorner = new int[64];
+            for (int square = 0; square < 64; square++)
+            {
+                DistanceToCentralSquares[square] = GetShortestDistance(square, CentralSquares);
+                DistanceToNearestCorner[square] = GetShortestDistance(square, CornerSquares);
+                DistanceToNearestLightCorner[square] = GetShortestDistance(square, LightCornerSquares);
+                DistanceToNearestDarkCorner[square] = GetShortestDistance(square, DarkCornerSquares);
+            }
+            SquareLocations = new[]
+            {
+                "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+                "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+                "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+                "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+                "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+                "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+                "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+                "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
+            };
+            
             // Create square, file, rank, diagonal, and edge masks.
             SquareMasks = new ulong[64];
             SquareUnmasks = new ulong[64];

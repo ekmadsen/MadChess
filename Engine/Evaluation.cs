@@ -72,9 +72,9 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 int rank = Board.WhiteRanks[square];
                 int file = Board.Files[square];
-                int squareCentrality = 3 - Board.GetShortestDistance(square, Board.CentralSquares);
+                int squareCentrality = 3 - Board.DistanceToCentralSquares[square];
                 int fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
-                int nearCorner = 3 - Board.GetShortestDistance(square, Board.CornerSquares);
+                int nearCorner = 3 - Board.DistanceToNearestCorner[square];
                 _mgPawnLocations[square] = rank * Config.MgPawnAdvancement + squareCentrality * Config.MgPawnCentrality;
                 _egPawnLocations[square] = rank * Config.EgPawnAdvancement + squareCentrality * Config.EgPawnCentrality + Config.EgPawnConstant;
                 _mgKnightLocations[square] = rank * Config.MgKnightAdvancement + squareCentrality * Config.MgKnightCentrality + nearCorner * Config.MgKnightCorner + Config.MgKnightConstant;
@@ -343,29 +343,29 @@ namespace ErikTheCoder.MadChess.Engine
                     break;
             }
             // ReSharper disable once SwitchStatementMissingSomeCases
-            switch (blackPawnsAndPieces)
-            {
-                // Lone black king
-                case 0 when loneWhitePawn:
-                    // King versus pawn
-                    return EvaluateKingVersusPawn(Position, true);
-                // ReSharper disable once SwitchStatementMissingSomeCases
-                case 0:
-                    switch (_board.CurrentPosition.WhitePawns)
-                    {
-                        case 0 when (_board.CurrentPosition.WhiteKnights == 1) && (_board.CurrentPosition.WhiteBishops == 1) && (_board.CurrentPosition.WhiteMajorPieces == 0):
-                            // Knight and bishop versus king
-                            bool lightSquareBishop = _board.LightSquares[WhiteBishopSquares[0]];
-                            cornerSquares = lightSquareBishop ? _board.LightCornerSquares : _board.DarkCornerSquares;
-                            return materialScore - _board.GetShortestDistance(blackKingSquare, cornerSquares) - _board.GetDistance(whiteKingSquare, blackKingSquare);
-                        case 0 when (_board.CurrentPosition.WhiteMinorPieces == 0) && (_board.CurrentPosition.WhiteMajorPieces >= 1):
-                            // Major pieces versus king
-                            return materialScore - _board.GetShortestDistance(blackKingSquare, _board.CornerSquares) - _board.GetDistance(whiteKingSquare, blackKingSquare);
-                    }
-                    break;
-            }
-            // Use regular evaluation.
-            return null;
+            //switch (blackPawnsAndPieces)
+            //{
+            //    // Lone black king
+            //    case 0 when loneWhitePawn:
+            //        // King versus pawn
+            //        return EvaluateKingVersusPawn(Position, true);
+            //    // ReSharper disable once SwitchStatementMissingSomeCases
+            //    case 0:
+            //        switch (_board.CurrentPosition.WhitePawns)
+            //        {
+            //            case 0 when (_board.CurrentPosition.WhiteKnights == 1) && (_board.CurrentPosition.WhiteBishops == 1) && (_board.CurrentPosition.WhiteMajorPieces == 0):
+            //                // Knight and bishop versus king
+            //                bool lightSquareBishop = _board.LightSquares[WhiteBishopSquares[0]];
+            //                cornerSquares = lightSquareBishop ? _board.LightCornerSquares : _board.DarkCornerSquares;
+            //                return materialScore - _board.GetShortestDistance(blackKingSquare, cornerSquares) - _board.GetDistance(whiteKingSquare, blackKingSquare);
+            //            case 0 when (_board.CurrentPosition.WhiteMinorPieces == 0) && (_board.CurrentPosition.WhiteMajorPieces >= 1):
+            //                // Major pieces versus king
+            //                return materialScore - _board.GetShortestDistance(blackKingSquare, _board.CornerSquares) - _board.GetDistance(whiteKingSquare, blackKingSquare);
+            //        }
+            //        break;
+            //}
+            //// Use regular evaluation.
+            //return null;
         }
 
 
