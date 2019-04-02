@@ -19,7 +19,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int BishopMaterial = 300;
         public int RookMaterial = 500;
         public int QueenMaterial = 975;
-        public int SimpleEndgame = 975;
+        public int SimpleEndgame => QueenMaterial - Evaluation.PawnMaterial;
         // Pawn Location
         public int MgPawnAdvancement = 2;
         public int EgPawnAdvancement = 5;

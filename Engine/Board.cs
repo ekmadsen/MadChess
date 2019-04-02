@@ -789,7 +789,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static int GetBlackSquare(int Square) => 63 - Square;
 
 
-        public static int GetShortestDistance(int Square, int[] OtherSquares)
+        private static int GetShortestDistance(int Square, int[] OtherSquares)
         {
             int shortestDistance = int.MaxValue;
             for (int index = 0; index < OtherSquares.Length; index++)

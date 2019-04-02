@@ -316,161 +316,140 @@ namespace ErikTheCoder.MadChess.Engine
             bool loneBlackPawn = (blackPawns == 1) && (blackPawnsAndPieces == 1) && (whitePawnsAndPieces == 0);
             int whiteKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
             int blackKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
-            int[] cornerSquares;
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (whitePawnsAndPieces)
             {
-                // Lone white king
+                // Case 0 = Lone white king
                 case 0 when loneBlackPawn:
-                    // King versus pawn
-                    EvaluateKingVersusPawn(Position, false);
-                    return true;
+                    return EvaluateKingVersusPawn(Position, false);
                 // ReSharper disable once SwitchStatementMissingSomeCases
                 case 0:
                     switch (blackPawns)
                     {
                         case 0 when (blackKnights == 1) && (blackBishops == 1) && (blackMajorPieces == 0):
-                            // Knight and bishop versus king
+                            // King versus knight and bishop
                             bool lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.BlackBishops)];
-                            cornerSquares = lightSquareBishop ? Board.LightCornerSquares : Board.DarkCornerSquares;
-                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - Board.GetShortestDistance(whiteKingSquare, cornerSquares) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            int distanceToCorrectColorCorner = lightSquareBishop
+                                ? Board.DistanceToNearestLightCorner[whiteKingSquare]
+                                : Board.DistanceToNearestDarkCorner[whiteKingSquare];
+                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                         case 0 when (blackMinorPieces == 0) && (blackMajorPieces >= 1):
-                            // Major pieces versus king
-                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - Board.GetShortestDistance(whiteKingSquare, Board.CornerSquares) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            // King versus major pieces
+                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[whiteKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
                     break;
             }
             // ReSharper disable once SwitchStatementMissingSomeCases
-            //switch (blackPawnsAndPieces)
-            //{
-            //    // Lone black king
-            //    case 0 when loneWhitePawn:
-            //        // King versus pawn
-            //        return EvaluateKingVersusPawn(Position, true);
-            //    // ReSharper disable once SwitchStatementMissingSomeCases
-            //    case 0:
-            //        switch (_board.CurrentPosition.WhitePawns)
-            //        {
-            //            case 0 when (_board.CurrentPosition.WhiteKnights == 1) && (_board.CurrentPosition.WhiteBishops == 1) && (_board.CurrentPosition.WhiteMajorPieces == 0):
-            //                // Knight and bishop versus king
-            //                bool lightSquareBishop = _board.LightSquares[WhiteBishopSquares[0]];
-            //                cornerSquares = lightSquareBishop ? _board.LightCornerSquares : _board.DarkCornerSquares;
-            //                return materialScore - _board.GetShortestDistance(blackKingSquare, cornerSquares) - _board.GetDistance(whiteKingSquare, blackKingSquare);
-            //            case 0 when (_board.CurrentPosition.WhiteMinorPieces == 0) && (_board.CurrentPosition.WhiteMajorPieces >= 1):
-            //                // Major pieces versus king
-            //                return materialScore - _board.GetShortestDistance(blackKingSquare, _board.CornerSquares) - _board.GetDistance(whiteKingSquare, blackKingSquare);
-            //        }
-            //        break;
-            //}
-            //// Use regular evaluation.
-            //return null;
+            switch (blackPawnsAndPieces)
+            {
+                // Case 0 = Lone black king
+                case 0 when loneWhitePawn:
+                    return EvaluateKingVersusPawn(Position, true);
+                // ReSharper disable once SwitchStatementMissingSomeCases
+                case 0:
+                    switch (whitePawns)
+                    {
+                        case 0 when (whiteKnights == 1) && (whiteBishops == 1) && (whiteMajorPieces == 0):
+                            // King versus knight and bishop
+                            bool lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.WhiteBishops)];
+                            int distanceToCorrectColorCorner = lightSquareBishop
+                                ? Board.DistanceToNearestLightCorner[blackKingSquare]
+                                : Board.DistanceToNearestDarkCorner[blackKingSquare];
+                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[blackKingSquare][whiteKingSquare];
+                            return true;
+                        case 0 when (whiteMinorPieces == 0) && (whiteMajorPieces >= 1):
+                            // King versus major pieces
+                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[blackKingSquare] - Board.SquareDistances[blackKingSquare][whiteKingSquare];
+                            return true;
+                    }
+                    break;
+            }
+            // Use regular evaluation.
+            return false;
         }
 
 
-        private void EvaluateKingVersusPawn(Position Position, bool LoneWhitePawn)
+        private bool EvaluateKingVersusPawn(Position Position, bool LoneWhitePawn)
         {
-            //int winningKingRank;
-            //int winningKingFile;
-            //bool winningKingMove;
-            //int defendingKingRank;
-            //int defendingKingFile;
-            //int pawnRank = 0;
-            //int pawnFile = 0;
-            //int score;
-            //// Get rank and file of all pieces.  Translate to a white winning position.
-            //bool whiteWinning = _board.CurrentPosition.WhiteMove ? MaterialScore >= 0 : MaterialScore <= 0;
-            //if (whiteWinning)
-            //{
-            //    // White winning
-            //    winningKingRank = _board.WhiteRanks[_board.CurrentPosition.WhiteKingSquare];
-            //    winningKingFile = _board.Files[_board.CurrentPosition.WhiteKingSquare];
-            //    winningKingMove = _board.CurrentPosition.WhiteMove;
-            //    defendingKingRank = _board.WhiteRanks[_board.CurrentPosition.BlackKingSquare];
-            //    defendingKingFile = _board.Files[_board.CurrentPosition.BlackKingSquare];
-            //    for (int file = 1; file <= 8; file++)
-            //    {
-            //        int rank = _whiteMostAdvancedPawns[file];
-            //        if (rank > 0)
-            //        {
-            //            pawnRank = rank;
-            //            pawnFile = file;
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    // Black winning
-            //    winningKingRank = _board.BlackRanks[_board.CurrentPosition.BlackKingSquare];
-            //    winningKingFile = _board.Files[_board.CurrentPosition.BlackKingSquare];
-            //    winningKingMove = !_board.CurrentPosition.WhiteMove;
-            //    defendingKingRank = _board.BlackRanks[_board.CurrentPosition.WhiteKingSquare];
-            //    defendingKingFile = _board.Files[_board.CurrentPosition.WhiteKingSquare];
-            //    for (int file = 1; file <= 8; file++)
-            //    {
-            //        int rank = _blackMostAdvancedPawns[file];
-            //        if (rank > 0)
-            //        {
-            //            pawnRank = rank;
-            //            pawnFile = file;
-            //        }
-            //    }
-            //}
-            //if ((pawnFile == 1) || (pawnFile == 8))
-            //{
-            //    // Pawn is on rook file.
-            //    if ((defendingKingFile == pawnFile) && (defendingKingRank > pawnRank))
-            //    {
-            //        // Defending king is in front of pawn and on same file.
-            //        // Game is drawn.
-            //        return 0;
-            //    }
-            //    if ((defendingKingRank >= 7) && (Math.Abs(defendingKingFile - pawnFile) <= 2))
-            //    {
-            //        // Defending king is in front of pawn and within two files of pawn.
-            //        if ((pawnRank >= 6) && (winningKingRank == 6) && (Math.Abs(winningKingFile - pawnFile) == 1) && winningKingMove)
-            //        {
-            //            // Pawn promotes.
-            //            score = QueenMaterialScore - _pawnMaterialScore + pawnRank;
-            //            return whiteWinning ? score : -score;
-            //        }
-            //        // Defending king stops pawn.
-            //        return 0;
-            //    }
-            //}
-            //else
-            //{
-            //    // Pawn is not on rook file.
-            //    bool winningKingOnKeySquare;
-            //    int kingPawnRankDifference = winningKingRank - pawnRank;
-            //    int kingPawnAbsoluteFileDifference = Math.Abs(winningKingFile - pawnFile);
-            //    switch (pawnRank)
-            //    {
-            //        case 2:
-            //        case 3:
-            //        case 4:
-            //            winningKingOnKeySquare = (winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1);
-            //            break;
-            //        case 5:
-            //        case 6:
-            //            winningKingOnKeySquare = (kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1);
-            //            break;
-            //        case 7:
-            //            winningKingOnKeySquare = (kingPawnRankDifference >= 0) && (kingPawnRankDifference <= 1) && (kingPawnAbsoluteFileDifference <= 1);
-            //            break;
-            //        default:
-            //            winningKingOnKeySquare = false;
-            //            break;
-            //    }
-            //    if (winningKingOnKeySquare)
-            //    {
-            //        score = QueenMaterialScore - _pawnMaterialScore + pawnRank;
-            //        return whiteWinning ? score : -score;
-            //    }
-            //}
-            //// Use regular evaluation.
-            //return null;
+            int winningKingRank;
+            int winningKingFile;
+            int defendingKingRank;
+            int defendingKingFile;
+            int pawnRank;
+            int pawnFile;
+            // Get rank and file of all pieces.  Translate to a white winning position.
+            if (LoneWhitePawn)
+            {
+                // White winning
+                int winningKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+                winningKingRank = Board.WhiteRanks[winningKingSquare];
+                winningKingFile = Board.Files[winningKingSquare];
+                int defendingKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+                defendingKingRank = Board.WhiteRanks[defendingKingSquare];
+                defendingKingFile = Board.Files[defendingKingSquare];
+                int pawnSquare = Bitwise.FindFirstSetBit(Position.WhitePawns);
+                pawnRank = Board.WhiteRanks[pawnSquare];
+                pawnFile = Board.Files[pawnSquare];
+            }
+            else
+            {
+                // Black winning
+                int winningKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+                winningKingRank = Board.BlackRanks[winningKingSquare];
+                winningKingFile = Board.Files[winningKingSquare];
+                int defendingKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+                defendingKingRank = Board.BlackRanks[defendingKingSquare];
+                defendingKingFile = Board.Files[defendingKingSquare];
+                int pawnSquare = Bitwise.FindFirstSetBit(Position.BlackPawns);
+                pawnRank = Board.BlackRanks[pawnSquare];
+                pawnFile = Board.Files[pawnSquare];
+            }
+            if ((pawnFile == 0) || (pawnFile == 7))
+            {
+                // Pawn is on rook file.
+                if ((defendingKingFile == pawnFile) && (defendingKingRank > pawnRank))
+                {
+                    // Defending king is in front of pawn and on same file.
+                    // Game is drawn.
+                    return true;
+                }
+            }
+            else
+            {
+                // Pawn is not on rook file.
+                bool winningKingOnKeySquare;
+                int kingPawnRankDifference = winningKingRank - pawnRank;
+                int kingPawnAbsoluteFileDifference = Math.Abs(winningKingFile - pawnFile);
+                switch (pawnRank)
+                {
+                    case 1:
+                    case 2:
+                    case 3:
+                        winningKingOnKeySquare = (winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1);
+                        break;
+                    case 4:
+                    case 5:
+                        winningKingOnKeySquare = (kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1);
+                        break;
+                    case 6:
+                        winningKingOnKeySquare = (kingPawnRankDifference >= 0) && (kingPawnRankDifference <= 1) && (kingPawnAbsoluteFileDifference <= 1);
+                        break;
+                    default:
+                        winningKingOnKeySquare = false;
+                        break;
+                }
+                if (winningKingOnKeySquare)
+                {
+                    // Pawn promotes.
+                    if (LoneWhitePawn) _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame + pawnRank;
+                    else _staticScore.BlackSimpleEndgame = Config.SimpleEndgame + pawnRank;
+                    return true;
+                }
+            }
+            // Use regular evaluation.
+            return false;
         }
 
 
