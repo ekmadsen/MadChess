@@ -19,7 +19,8 @@ namespace ErikTheCoder.MadChess.Engine
         public int BishopMaterial = 300;
         public int RookMaterial = 500;
         public int QueenMaterial = 975;
-        public int SimpleEndgame => QueenMaterial - Evaluation.PawnMaterial;
+
+        public int SimpleEndgame => UnstoppablePassedPawn;  // Incentivize engine to promote pawn in king and pawn endgames.
         // Pawn Location
         public int MgPawnAdvancement = 2;
         public int EgPawnAdvancement = 5;

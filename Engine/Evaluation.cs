@@ -256,10 +256,10 @@ namespace ErikTheCoder.MadChess.Engine
         {
             Stats.SimpleEvaluations++;
             _staticScore.Reset();
-            GetMaterialScore(Position);
             if (!EvaluateSimpleEndgame(Position))
             {
                 // Not a simple endgame.
+                GetMaterialScore(Position);
                 EvaluatePieceLocation(Position);
                 EvaluatePawns(Position);
             }
@@ -272,10 +272,10 @@ namespace ErikTheCoder.MadChess.Engine
         {
             Stats.FullEvaluations++;
             _staticScore.Reset();
-            GetMaterialScore(Position);
             if (!EvaluateSimpleEndgame(Position))
             {
                 // Not a simple endgame.
+                GetMaterialScore(Position);
                 EvaluatePieceLocation(Position);
                 EvaluatePawns(Position);
             }
@@ -379,7 +379,7 @@ namespace ErikTheCoder.MadChess.Engine
             int defendingKingFile;
             int pawnRank;
             int pawnFile;
-            // Get rank and file of all pieces.  Translate to a white winning position.
+            // Get rank and file of all pieces.
             if (LoneWhitePawn)
             {
                 // White winning
