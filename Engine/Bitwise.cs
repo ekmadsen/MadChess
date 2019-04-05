@@ -10,7 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Linq; // Use LINQ only for Debug.Asserts.
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Runtime.Intrinsics.X86;
@@ -267,9 +267,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static IEnumerable<ulong> GetAllPermutations(ulong Mask)
         {
             List<int> setBits = new List<int>();
-            for (int index = 0; index < 64; index++)
-                if (IsBitSet(Mask, index))
-                    setBits.Add(index);
+            for (int index = 0; index < 64; index++) if (IsBitSet(Mask, index)) setBits.Add(index);
             return GetAllPermutations(setBits, 0, 0);
         }
 

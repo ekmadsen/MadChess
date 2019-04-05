@@ -304,13 +304,13 @@ namespace ErikTheCoder.MadChess.Engine
             int whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
             int whiteMinorPieces = whiteKnights + whiteBishops;
             int whiteMajorPieces = Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens);
-            int whitePawnsAndPieces = whitePawns + whiteKnights + whiteBishops + whiteMajorPieces;
+            int whitePawnsAndPieces = whitePawns + whiteMinorPieces + whiteMajorPieces;
             int blackPawns = Bitwise.CountSetBits(Position.BlackPawns);
             int blackKnights = Bitwise.CountSetBits(Position.BlackKnights);
             int blackBishops = Bitwise.CountSetBits(Position.BlackBishops);
             int blackMinorPieces = blackKnights + blackBishops;
             int blackMajorPieces = Bitwise.CountSetBits(Position.BlackRooks) + Bitwise.CountSetBits(Position.BlackQueens);
-            int blackPawnsAndPieces = blackPawns + blackKnights + blackBishops + blackMajorPieces;
+            int blackPawnsAndPieces = blackPawns + blackMinorPieces + blackMajorPieces;
             if ((whitePawnsAndPieces > 0) && (blackPawnsAndPieces > 0)) return false; // Position is not a simple endgame.
             bool loneWhitePawn = (whitePawns == 1) && (whitePawnsAndPieces == 1) && (blackPawnsAndPieces == 0);
             bool loneBlackPawn = (blackPawns == 1) && (blackPawnsAndPieces == 1) && (whitePawnsAndPieces == 0);
@@ -357,11 +357,11 @@ namespace ErikTheCoder.MadChess.Engine
                             int distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[blackKingSquare]
                                 : Board.DistanceToNearestDarkCorner[blackKingSquare];
-                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[blackKingSquare][whiteKingSquare];
+                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                         case 0 when (whiteMinorPieces == 0) && (whiteMajorPieces >= 1):
                             // King versus major pieces
-                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[blackKingSquare] - Board.SquareDistances[blackKingSquare][whiteKingSquare];
+                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[blackKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
                     break;
@@ -576,6 +576,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Pawns
             int square;
+            int blackSquare;
             ulong pieces = Position.WhitePawns;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
@@ -586,7 +587,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackPawns;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                int blackSquare = Board.GetBlackSquare(square);
+                blackSquare = Board.GetBlackSquare(square);
                 _staticScore.BlackMgPieceLocation += _mgPawnLocations[blackSquare];
                 _staticScore.BlackEgPieceLocation += _egPawnLocations[blackSquare];
                 Bitwise.ClearBit(ref pieces, square);
@@ -602,7 +603,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                int blackSquare = Board.GetBlackSquare(square);
+                blackSquare = Board.GetBlackSquare(square);
                 _staticScore.BlackMgPieceLocation += _mgKnightLocations[blackSquare];
                 _staticScore.BlackEgPieceLocation += _egKnightLocations[blackSquare];
                 Bitwise.ClearBit(ref pieces, square);
@@ -618,7 +619,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                int blackSquare = Board.GetBlackSquare(square);
+                blackSquare = Board.GetBlackSquare(square);
                 _staticScore.BlackMgPieceLocation += _mgBishopLocations[blackSquare];
                 _staticScore.BlackEgPieceLocation += _egBishopLocations[blackSquare];
                 Bitwise.ClearBit(ref pieces, square);
@@ -634,7 +635,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                int blackSquare = Board.GetBlackSquare(square);
+                blackSquare = Board.GetBlackSquare(square);
                 _staticScore.BlackMgPieceLocation += _mgRookLocations[blackSquare];
                 _staticScore.BlackEgPieceLocation += _egRookLocations[blackSquare];
                 Bitwise.ClearBit(ref pieces, square);
@@ -650,11 +651,18 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                int blackSquare = Board.GetBlackSquare(square);
+                blackSquare = Board.GetBlackSquare(square);
                 _staticScore.BlackMgPieceLocation += _mgQueenLocations[blackSquare];
                 _staticScore.BlackEgPieceLocation += _egQueenLocations[blackSquare];
                 Bitwise.ClearBit(ref pieces, square);
             }
+            // Kings
+            square = Bitwise.FindFirstSetBit(Position.WhiteKing);
+            _staticScore.WhiteMgPieceLocation += _mgKingLocations[square];
+            _staticScore.WhiteEgPieceLocation += _egKingLocations[square];
+            blackSquare = Board.GetBlackSquare(Bitwise.FindFirstSetBit(Position.BlackKing));
+            _staticScore.BlackMgPieceLocation += _mgKingLocations[blackSquare];
+            _staticScore.BlackEgPieceLocation += _egKingLocations[blackSquare];
         }
 
 

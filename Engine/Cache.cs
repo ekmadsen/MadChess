@@ -118,6 +118,12 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetIndex(ulong Key) => (int)(Key % (ulong)_positions.Length);
+        private int GetIndex(ulong Key)
+        {
+            // Ensure even distribution of indices by using GetHashCode method rather than using raw Zobrist Key for modular division.
+            int index = Key.GetHashCode() % _positions.Length; // Index may be negative.
+            // TODO: Replace with http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs.
+            return (index + (index >> 31)) ^ (index >> 31);  // Ensure index is positive. See https://jacksondunstan.com/articles/1941.
+        }
     }
 }

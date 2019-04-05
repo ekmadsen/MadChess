@@ -612,7 +612,6 @@ namespace ErikTheCoder.MadChess.Engine
                 cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
                 bestMove = _cache.GetBestMove(cachedPosition);
             }
-            int originalAlpha = Alpha;
             int bestScore = Alpha;
             int legalMoveNumber = 0;
             int quietMoveNumber = 0;
@@ -654,7 +653,8 @@ namespace ErikTheCoder.MadChess.Engine
                 else moveBeta = bestScore + 1; // Search with zero alpha / beta window.
                 // Play and search move.
                 Move.SetPlayed(ref move, true);
-                Board.CurrentPosition.Moves[moveIndex] = move;
+                if (Depth == 0) _rootMoves[moveIndex] = move;
+                else Board.CurrentPosition.Moves[moveIndex] = move;
                 Board.PlayMove(move);
                 int score = -GetDynamicScore(Board, Depth + 1, searchHorizon, true, -moveBeta, -Alpha);
                 if (Math.Abs(score) == StaticScore.Interrupted)
@@ -735,9 +735,16 @@ namespace ErikTheCoder.MadChess.Engine
                     Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
                 }
             } while (true);
-            if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or stalemate.  Terminal node (games ends on this move).
-            // Only update scores outside of original alpha / beta window.  Exact scores (with tighter alpha / beta bounds) are updated in move loop above.
-            if ((bestScore < originalAlpha) || (bestScore > Beta)) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, originalAlpha, Beta);
+            if (legalMoveNumber == 0)
+            {
+                if (Board.CurrentPosition.KingInCheck)
+                {
+                    // Checkmate
+                    bestScore = Evaluation.GetMateScore(Depth);
+                    UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, Alpha, Beta);
+                }
+                else bestScore = 0; // Stalemate
+            }
             return bestScore;
         }
 
