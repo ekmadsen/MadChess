@@ -236,7 +236,7 @@ namespace ErikTheCoder.MadChess.Engine
             double scale = 16d;
             int power = 4;
             int constant = 100;
-            double ratingClass = (double)(_elo - MinElo) / 200;
+            double ratingClass = (double) (_elo - MinElo) / 200;
             NodesPerSecond = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant);
             // Allow errors on every move.
             // Rating      400  600  800 1000 1200 1400 1600 1800 2000 2200
@@ -244,7 +244,7 @@ namespace ErikTheCoder.MadChess.Engine
             scale = 1d;
             power = 2;
             constant = 0;
-            ratingClass = (double)(MaxElo - _elo) / 200;
+            ratingClass = (double) (MaxElo - _elo) / 200;
             MoveError = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant);
             // Allow occasional blunders.
             // Rating         400  600  800  1000  1200  1400  1600  1800  2000  2200
@@ -318,7 +318,10 @@ namespace ErikTheCoder.MadChess.Engine
                 _originalHorizon++;
                 _selectiveHorizon = 0;
                 // Clear principal variations and age move history.
-                using (Dictionary<string, ulong[]>.Enumerator pvEnumerator = _principalVariations.GetEnumerator()) { while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null; }
+                using (Dictionary<string, ulong[]>.Enumerator pvEnumerator = _principalVariations.GetEnumerator())
+                {
+                    while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
+                }
                 _moveHistory.Age(Board.CurrentPosition.WhiteMove);
                 // Get score within aspiration window.
                 int score = GetScoreWithinAspirationWindow(Board, principalVariations);
@@ -546,7 +549,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Examine time.
                 ExamineTime(Board.Nodes);
-                int intervals = (int)(Board.Nodes / UciStream.NodesTimeInterval);
+                int intervals = (int) (Board.Nodes / UciStream.NodesTimeInterval);
                 Board.NodesExamineTime = UciStream.NodesTimeInterval * (intervals + 1);
             }
             if (!Continue && (_bestMoves[0] != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
@@ -612,6 +615,7 @@ namespace ErikTheCoder.MadChess.Engine
                 cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
                 bestMove = _cache.GetBestMove(cachedPosition);
             }
+            int originalAlpha = Alpha;
             int bestScore = Alpha;
             int legalMoveNumber = 0;
             int quietMoveNumber = 0;
@@ -731,20 +735,12 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     // Update info.
                     UpdateInfo(Board, 1, false);
-                    int intervals = (int)(Board.Nodes / UciStream.NodesInfoInterval);
+                    int intervals = (int) (Board.Nodes / UciStream.NodesInfoInterval);
                     Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
                 }
             } while (true);
-            if (legalMoveNumber == 0)
-            {
-                if (Board.CurrentPosition.KingInCheck)
-                {
-                    // Checkmate
-                    bestScore = Evaluation.GetMateScore(Depth);
-                    UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, Alpha, Beta);
-                }
-                else bestScore = 0; // Stalemate
-            }
+            if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or stalemate
+            if ((bestScore <= originalAlpha) || (bestScore >= Beta)) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, originalAlpha, Beta); // Score fails low or high.
             return bestScore;
         }
 

@@ -32,10 +32,11 @@ namespace ErikTheCoder.MadChess.Engine
             get => _positions.Length * _buckets;
             set
             {
+                _positions = null;
+                GC.Collect();
                 _positions = new CachedPosition[value / _buckets][];
                 for (int index = 0; index < _positions.Length; index++) _positions[index] = new CachedPosition[_buckets];
                 Reset();
-                GC.Collect();
             }
         }
 
@@ -82,9 +83,17 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     earliestAccess = lastAccessed;
                     oldestBucket = bucket;
+                    if (cachedPosition.Key == CachedPosition.Key)
+                    {
+                        // Position is cached.  Overwrite position.
+                        CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
+                        _positions[index][oldestBucket] = CachedPosition;
+                        return;
+                    }
                 }
             }
             if (_positions[index][oldestBucket].Key == 0) Positions++; // Oldest bucket has not been used.
+            // Overwrite oldest bucket.
             CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
             _positions[index][oldestBucket] = CachedPosition;
         }
@@ -122,8 +131,9 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Ensure even distribution of indices by using GetHashCode method rather than using raw Zobrist Key for modular division.
             int index = Key.GetHashCode() % _positions.Length; // Index may be negative.
-            // TODO: Replace with http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs.
-            return (index + (index >> 31)) ^ (index >> 31);  // Ensure index is positive. See https://jacksondunstan.com/articles/1941.
+            // Ensure index is positive using faster technique than Math.Abs().  See http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs.
+            int mask = index >> 31;
+            return (index ^ mask) - mask;
         }
     }
 }
