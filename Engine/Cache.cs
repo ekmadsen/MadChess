@@ -131,7 +131,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Ensure even distribution of indices by using GetHashCode method rather than using raw Zobrist Key for modular division.
             int index = Key.GetHashCode() % _positions.Length; // Index may be negative.
-            // Ensure index is positive using faster technique than Math.Abs().  See http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs.
+            // Ensure index is positive using technique faster than Math.Abs().  See http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs.
             int mask = index >> 31;
             return (index ^ mask) - mask;
         }
