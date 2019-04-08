@@ -71,6 +71,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public void SetPosition(CachedPosition CachedPosition)
         {
+            CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
             int index = GetIndex(CachedPosition.Key);
             // Find oldest bucket.
             byte earliestAccess = byte.MaxValue;
@@ -78,23 +79,21 @@ namespace ErikTheCoder.MadChess.Engine
             for (int bucket = 0; bucket < _buckets; bucket++)
             {
                 CachedPosition cachedPosition = _positions[index][bucket];
+                if (cachedPosition.Key == CachedPosition.Key)
+                {
+                    // Position is cached.  Overwrite position.
+                    _positions[index][bucket] = CachedPosition;
+                    return;
+                }
                 byte lastAccessed = CachedPositionData.LastAccessed(cachedPosition.Data);
                 if (lastAccessed < earliestAccess)
                 {
                     earliestAccess = lastAccessed;
                     oldestBucket = bucket;
-                    if (cachedPosition.Key == CachedPosition.Key)
-                    {
-                        // Position is cached.  Overwrite position.
-                        CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
-                        _positions[index][oldestBucket] = CachedPosition;
-                        return;
-                    }
                 }
             }
             if (_positions[index][oldestBucket].Key == 0) Positions++; // Oldest bucket has not been used.
             // Overwrite oldest bucket.
-            CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
             _positions[index][oldestBucket] = CachedPosition;
         }
 

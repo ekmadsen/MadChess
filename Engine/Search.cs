@@ -282,6 +282,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (Board.IsMoveLegal(ref move))
                 {
                     // Move is legal.
+                    Move.SetPlayed(ref move, true); // All root moves will be played so set this in advance.
                     Board.CurrentPosition.Moves[legalMoveIndex] = move;
                     legalMoveIndex++;
                 }
@@ -657,8 +658,7 @@ namespace ErikTheCoder.MadChess.Engine
                 else moveBeta = bestScore + 1; // Search with zero alpha / beta window.
                 // Play and search move.
                 Move.SetPlayed(ref move, true);
-                if (Depth == 0) _rootMoves[moveIndex] = move;
-                else Board.CurrentPosition.Moves[moveIndex] = move;
+                Board.CurrentPosition.Moves[moveIndex] = move;
                 Board.PlayMove(move);
                 int score = -GetDynamicScore(Board, Depth + 1, searchHorizon, true, -moveBeta, -Alpha);
                 if (Math.Abs(score) == StaticScore.Interrupted)
@@ -1015,11 +1015,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int GetCachedScore(ulong PositionData, int Depth, int Horizon, int Alpha, int Beta)
         {
             int score = CachedPositionData.Score(PositionData);
-            if (score == StaticScore.NotCached)
-            {
-                // Score is not cached.
-                return StaticScore.NotCached;
-            }
+            if (score == StaticScore.NotCached) return StaticScore.NotCached; // Score is not cached.
             int toHorizon = Horizon - Depth;
             int cachedToHorizon = CachedPositionData.ToHorizon(PositionData);
             if (cachedToHorizon < toHorizon) return StaticScore.NotCached; // Cached position is shallower than current horizon. Do not use cached score.
