@@ -61,7 +61,6 @@ namespace ErikTheCoder.MadChess.Engine
         private int[] _scoreErrorAspirationWindows;
         private int[] _futilityMargins;
         private int[] _lateMoveReductions;
-        private int[] _lateMovePruning;
         private ulong[] _rootMoves;
         private int[] _rootScores;
         private ulong[] _bestMoves;
@@ -146,8 +145,6 @@ namespace ErikTheCoder.MadChess.Engine
             _scoreErrorAspirationWindows = new int[1];
             _futilityMargins = new[] {50, 100, 175, 275, 400, 550};
             _lateMoveReductions = new[] {3, 7, 15};
-            _lateMovePruning = new[] {99};
-            if (_lateMovePruning.Length > _futilityMargins.Length) throw new Exception($"Length of {nameof(_lateMovePruning)} array must be <= {nameof(_futilityMargins)} array.");
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -201,7 +198,6 @@ namespace ErikTheCoder.MadChess.Engine
                 _multiPvAspirationWindows = null;
                 _scoreErrorAspirationWindows = null;
                 _futilityMargins = null;
-                _lateMovePruning = null;
                 _lateMoveReductions = null;
                 _rootMoves = null;
                 _rootScores = null;
@@ -987,8 +983,7 @@ namespace ErikTheCoder.MadChess.Engine
             int whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
-            int lateMoveNumber = _lateMovePruning[Math.Min(Math.Max(toHorizon, 0), _lateMovePruning.Length - 1)];
-            if (QuietMoveNumber >= lateMoveNumber) return true; // Late move pruning.
+            // TODO: Test factoring swap off score into futility calculation.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore + Evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
