@@ -625,7 +625,7 @@ namespace ErikTheCoder.MadChess.Engine
             long moves = 0;
             while (true)
             {
-                (ulong move, _) = Search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
+                (ulong move, _) = Search.GetNextMove(Board.CurrentPosition, Depth, Move.Null);
                 if (move == Move.Null) break;
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 if (toHorizon > 1)
@@ -722,8 +722,6 @@ namespace ErikTheCoder.MadChess.Engine
         {
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
             int staticScore = Evaluation.GetStaticScore(Board.CurrentPosition);
-            Search.Reset(false);
-            Evaluation.Reset(false);
             int swapOffScore = Search.GetSwapOffScore(Board, move, staticScore);
             WriteMessageLine(swapOffScore.ToString());
         }
