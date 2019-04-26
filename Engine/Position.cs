@@ -632,6 +632,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             ulong move;
             int fromSquare = Bitwise.FindFirstSetBit(king);
+            if (fromSquare == Square.Illegal) return;
             ulong kingDestinations;
             switch (MoveGeneration)
             {
