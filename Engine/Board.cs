@@ -52,6 +52,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong BlackCastleQAttackedSquareMask;
         public static readonly ulong BlackCastleKEmptySquaresMask;
         public static readonly ulong BlackCastleKAttackedSquareMask;
+        public static readonly ulong AllSquaresMask;
         public readonly ulong[] WhitePawnMoveMasks;
         public readonly ulong[] WhitePawnDoubleMoveMasks;
         public readonly ulong[] WhitePawnAttackMasks;
@@ -281,6 +282,7 @@ namespace ErikTheCoder.MadChess.Engine
             DownDiagonalMasks[13] = Bitwise.CreateULongMask(new[] {06, 15});
             DownDiagonalMasks[14] = Bitwise.CreateULongMask(new[] {07});
             EdgeSquareMask = FileMasks[0] | RankMasks[7] | FileMasks[7] | RankMasks[0];
+            AllSquaresMask = Bitwise.CreateULongMask(0, 63);
             // Create castling masks.
             WhiteCastleQEmptySquaresMask = Bitwise.CreateULongMask(new[] {Square.b1, Square.c1, Square.d1});
             WhiteCastleQAttackedSquareMask = Bitwise.CreateULongMask(Square.d1);

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyTitle>MadChess.Engine</AssemblyTitle>
-    <AssemblyName>MadChess.Engine</AssemblyName>
+    <AssemblyName>ErikTheCoder.MadChess.Engine</AssemblyName>
     <Version>3.0</Version>
     <Authors>Erik Madsen</Authors>
     <Description>A UCI chess engine.</Description>
