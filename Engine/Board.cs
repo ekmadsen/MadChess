@@ -28,9 +28,9 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly int[] DownDiagonals;
         public static readonly int[] CentralSquares;
         public static readonly int[] CornerSquares;
-        public static bool[] LightSquares;
-        public static int[] LightCornerSquares;
-        public static int[] DarkCornerSquares;
+        public static readonly bool[] LightSquares;
+        public static readonly int[] LightCornerSquares;
+        public static readonly int[] DarkCornerSquares;
         public static readonly int[][] SquareDistances;
         public static readonly int[] DistanceToCentralSquares;
         public static readonly int[] DistanceToNearestCorner;
