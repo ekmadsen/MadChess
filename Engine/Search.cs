@@ -61,7 +61,6 @@ namespace ErikTheCoder.MadChess.Engine
         private int[] _scoreErrorAspirationWindows;
         private int[] _futilityMargins;
         private int[] _lateMoveReductions;
-        private int[] _lateMoveMinDepth;
         private ulong[] _rootMoves;
         private int[] _rootScores;
         private ulong[] _bestMoves;
@@ -144,9 +143,8 @@ namespace ErikTheCoder.MadChess.Engine
             _singlePvAspirationWindows = new[] {100, 200, 500};
             _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
-            _futilityMargins = new[] {100, 200, 500};
-            _lateMoveReductions = new[] {1, 3, 7, 15};
-            _lateMoveMinDepth = new[] {0, 2, 6, 14};
+            _futilityMargins = new[] {50, 100, 175, 275, 400, 550};
+            _lateMoveReductions = new[] {3, 7, 13, 21, 31};
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -201,7 +199,6 @@ namespace ErikTheCoder.MadChess.Engine
                 _scoreErrorAspirationWindows = null;
                 _futilityMargins = null;
                 _lateMoveReductions = null;
-                _lateMoveMinDepth = null;
                 _rootMoves = null;
                 _rootScores = null;
                 _bestMoves = null;
@@ -1014,12 +1011,7 @@ namespace ErikTheCoder.MadChess.Engine
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce search horizon of moves with lone king on board.
             // Reduce search horizon based on quiet move number.
             int lastIndex = _lateMoveReductions.Length - 1;
-            for (int index = lastIndex; index >= 0; index--)
-            {
-                int minQuietMoveNumber = _lateMoveReductions[index];
-                int minDepth = _lateMoveMinDepth[index];
-                if ((QuietMoveNumber >= minQuietMoveNumber) && (Depth >= minDepth)) return Horizon - index - 1; // Reduce search horizon of late move.
-            }
+            for (int index = lastIndex; index >= 0; index--) if (QuietMoveNumber >= _lateMoveReductions[index]) return Horizon - index - 1; // Reduce search horizon of late move.
             return Horizon;
         }
 
