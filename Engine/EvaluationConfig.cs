@@ -19,7 +19,6 @@ namespace ErikTheCoder.MadChess.Engine
         public int BishopMaterial = 300;
         public int RookMaterial = 500;
         public int QueenMaterial = 975;
-
         public int SimpleEndgame => UnstoppablePassedPawn;  // Incentivize engine to promote pawn in king and pawn endgames.
         // Pawn Location
         public int MgPawnAdvancement = 4;
@@ -76,6 +75,11 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgFreePassedPawnScalePercent = 922;
         public int EgKingEscortedPassedPawn = 9;
         public int UnstoppablePassedPawn => QueenMaterial - (2 * Evaluation.PawnMaterial);  // Incentivize engine to promote pawn.
+        // Piece Mobility
+        public int MgKnightMobilityScale = 15;
+        public int MgKnightMobilityConstant = -30;
+        public int EgKnightMobilityScale = 23;
+        public int EgKnightMobilityConstant = -45;
         // ReSharper restore FieldCanBeMadeReadOnly.Global
         // ReSharper restore ConvertToConstant.Global
     }

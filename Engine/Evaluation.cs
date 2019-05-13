@@ -22,6 +22,7 @@ namespace ErikTheCoder.MadChess.Engine
         public readonly EvaluationStats Stats;
         public int DrawMoves;
         private const double _passedPawnPower = 2d;
+        private const double _pieceMobilityPower = 0.5d;
         // Select phase constants such that starting material = 256.
         // This improves integer division speed since x / 256 = x >> 8.
         private const int _middlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + 2 * _queenPhase;
@@ -34,23 +35,33 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly Delegates.IsFreePawn _isFreePawn;
         private readonly StaticScore _staticScore;
         // Piece Location
-        private readonly int[] _mgPawnLocations = new int[64];
-        private readonly int[] _egPawnLocations = new int[64];
-        private readonly int[] _mgKnightLocations = new int[64];
-        private readonly int[] _egKnightLocations = new int[64];
-        private readonly int[] _mgBishopLocations = new int[64];
-        private readonly int[] _egBishopLocations = new int[64];
-        private readonly int[] _mgRookLocations = new int[64];
-        private readonly int[] _egRookLocations = new int[64];
-        private readonly int[] _mgQueenLocations = new int[64];
-        private readonly int[] _egQueenLocations = new int[64];
-        private readonly int[] _mgKingLocations = new int[64];
-        private readonly int[] _egKingLocations = new int[64];
+        private readonly int[] _mgPawnLocations;
+        private readonly int[] _egPawnLocations;
+        private readonly int[] _mgKnightLocations;
+        private readonly int[] _egKnightLocations;
+        private readonly int[] _mgBishopLocations;
+        private readonly int[] _egBishopLocations;
+        private readonly int[] _mgRookLocations;
+        private readonly int[] _egRookLocations;
+        private readonly int[] _mgQueenLocations;
+        private readonly int[] _egQueenLocations;
+        private readonly int[] _mgKingLocations;
+        private readonly int[] _egKingLocations;
         // Passed Pawns
-        private readonly int[] _mgPassedPawns = new int[8];
-        private readonly int[] _egPassedPawns = new int[8];
-        private readonly int[] _egFreePassedPawns = new int[8];
-        
+        private readonly int[] _mgPassedPawns;
+        private readonly int[] _egPassedPawns;
+        private readonly int[] _egFreePassedPawns;
+        // Piece mobility
+        private readonly int[] _mgKnightMobility;
+        private readonly int[] _egKnightMobility;
+        private readonly int[] _mgBishopMobility;
+        private readonly int[] _egBishopMobility;
+        private readonly int[] _mgRookMobility;
+        private readonly int[] _egRookMobility;
+        private readonly int[] _mgQueenMobility;
+        private readonly int[] _egQueenMobility;
+
+
         
         public Evaluation(EvaluationConfig Config, Delegates.GetPositionCount GetPositionCount, Delegates.IsPassedPawn IsPassedPawn, Delegates.IsFreePawn IsFreePawn)
         {
@@ -58,6 +69,29 @@ namespace ErikTheCoder.MadChess.Engine
             _getPositionCount = GetPositionCount;
             _isPassedPawn = IsPassedPawn;
             _isFreePawn = IsFreePawn;
+            _mgPawnLocations = new int[64];
+            _egPawnLocations = new int[64];
+            _mgKnightLocations = new int[64];
+            _egKnightLocations = new int[64];
+            _mgBishopLocations = new int[64];
+            _egBishopLocations = new int[64];
+            _mgRookLocations = new int[64];
+            _egRookLocations = new int[64];
+            _mgQueenLocations = new int[64];
+            _egQueenLocations = new int[64];
+            _mgKingLocations = new int[64];
+            _egKingLocations = new int[64];
+            _mgPassedPawns = new int[8];
+            _egPassedPawns = new int[8];
+            _egFreePassedPawns = new int[8];
+            _mgKnightMobility = new int[17]; // ( 8 moves * 2 pieces) + zero moves
+            _egKnightMobility = new int[17]; // ( 8 moves * 2 pieces) + zero moves
+            _mgBishopMobility = new int[33]; // (13 moves * 2 pieces) + zero moves
+            _egBishopMobility = new int[33]; // (13 moves * 2 pieces) + zero moves
+            _mgRookMobility = new int[29];   // (14 moves * 2 pieces) + zero moves
+            _egRookMobility = new int[29];   // (14 moves * 2 pieces) + zero moves
+            _mgQueenMobility = new int[28];  //  14 moves + 13 moves  + zero moves
+            _egQueenMobility = new int[28];  //  14 moves + 13 moves  + zero moves
             _staticScore = new StaticScore(_middlegamePhase);
             Stats = new EvaluationStats();
             DrawMoves = 2;
@@ -97,6 +131,12 @@ namespace ErikTheCoder.MadChess.Engine
                 _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, _passedPawnPower, 0);
                 _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, _passedPawnPower, 0);
                 _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, _passedPawnPower, 0);
+            }
+            // Calculate piece mobility values.
+            for (int moves = 0; moves < _mgKnightMobility.Length; moves++)
+            {
+                _mgKnightMobility[moves] = GetNonLinearBonus(moves, Config.MgKnightMobilityScale, _pieceMobilityPower, Config.MgKnightMobilityConstant);
+                _egKnightMobility[moves] = GetNonLinearBonus(moves, Config.EgKnightMobilityScale, _pieceMobilityPower, Config.EgKnightMobilityConstant);
             }
         }
 
@@ -482,96 +522,8 @@ namespace ErikTheCoder.MadChess.Engine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetNonLinearBonus(double Bonus, double Scale, double Power, int Constant) => (int)(Scale * Math.Pow(Bonus, Power)) + Constant;
-
-
-        public string ShowParameters()
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            // Material
-            stringBuilder.AppendLine("Material");
-            stringBuilder.AppendLine("===========");
-            stringBuilder.AppendLine($"Pawn:    {PawnMaterial}");
-            stringBuilder.AppendLine($"Knight:  {Config.KnightMaterial}");
-            stringBuilder.AppendLine($"Bishop:  {Config.BishopMaterial}");
-            stringBuilder.AppendLine($"Rook:    {Config.RookMaterial}");
-            stringBuilder.AppendLine($"Queen:   {Config.QueenMaterial}");
-            stringBuilder.AppendLine();
-            // Piece Location
-            stringBuilder.AppendLine("Middlegame Pawn Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_mgPawnLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Pawn Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_egPawnLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame Knight Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_mgKnightLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Knight Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_egKnightLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame Bishop Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_mgBishopLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Bishop Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_egBishopLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame Rook Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_mgRookLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Rook Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_egRookLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame Queen Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_mgQueenLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Queen Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_egQueenLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame King Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_mgKingLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame King Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowSquareParameters(_egKingLocations, stringBuilder);
-            stringBuilder.AppendLine();
-            // Passed Pawns
-            stringBuilder.Append("Middlegame Passed Pawns:            ");
-            ShowRankParameters(_mgPassedPawns, stringBuilder);
-            stringBuilder.Append("Endgame Passed Pawns:               ");
-            ShowRankParameters(_egPassedPawns, stringBuilder);
-            stringBuilder.Append("Endgame Free Passed Pawns:          ");
-            ShowRankParameters(_egFreePassedPawns, stringBuilder);
-            stringBuilder.AppendLine($"Endgame King Escorted Passed Pawn:  {Config.EgKingEscortedPassedPawn}");
-            stringBuilder.AppendLine($"Unstoppable Passed Pawn:            {Config.UnstoppablePassedPawn}");
-            return stringBuilder.ToString();
-        }
-
-
-        public void Reset(bool PreserveStats)
-        {
-            if (!PreserveStats) Stats.Reset();
-        }
-
-
-        public string ToString(Position Position)
-        {
-            GetStaticScore(Position);
-            int phase = DetermineGamePhase(Position);
-            return _staticScore.ToString(phase);
-        }
-
-
+        
+        
         private void EvaluatePieceLocation(Position Position)
         {
             // Pawns
@@ -750,9 +702,88 @@ namespace ErikTheCoder.MadChess.Engine
             }
             return false;
         }
+        
+        public string ShowParameters()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            // Material
+            stringBuilder.AppendLine("Material");
+            stringBuilder.AppendLine("===========");
+            stringBuilder.AppendLine($"Pawn:    {PawnMaterial}");
+            stringBuilder.AppendLine($"Knight:  {Config.KnightMaterial}");
+            stringBuilder.AppendLine($"Bishop:  {Config.BishopMaterial}");
+            stringBuilder.AppendLine($"Rook:    {Config.RookMaterial}");
+            stringBuilder.AppendLine($"Queen:   {Config.QueenMaterial}");
+            stringBuilder.AppendLine();
+            // Piece Location
+            stringBuilder.AppendLine("Middlegame Pawn Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_mgPawnLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Endgame Pawn Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_egPawnLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Middlegame Knight Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_mgKnightLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Endgame Knight Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_egKnightLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Middlegame Bishop Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_mgBishopLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Endgame Bishop Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_egBishopLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Middlegame Rook Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_mgRookLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Endgame Rook Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_egRookLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Middlegame Queen Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_mgQueenLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Endgame Queen Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_egQueenLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Middlegame King Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_mgKingLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Endgame King Location");
+            stringBuilder.AppendLine("==============================================");
+            ShowParameterSquares(_egKingLocations, stringBuilder);
+            stringBuilder.AppendLine();
+            // Passed Pawns
+            stringBuilder.Append("Middlegame Passed Pawns:            ");
+            ShowParameterArray(_mgPassedPawns, stringBuilder);
+            stringBuilder.Append("Endgame Passed Pawns:               ");
+            ShowParameterArray(_egPassedPawns, stringBuilder);
+            stringBuilder.Append("Endgame Free Passed Pawns:          ");
+            ShowParameterArray(_egFreePassedPawns, stringBuilder);
+            stringBuilder.AppendLine($"Endgame King Escorted Passed Pawn:  {Config.EgKingEscortedPassedPawn}");
+            stringBuilder.AppendLine($"Unstoppable Passed Pawn:            {Config.UnstoppablePassedPawn}");
+            stringBuilder.AppendLine();
+            // Piece Mobility
+            stringBuilder.Append("Middlegame Knight Mobility:  ");
+            ShowParameterArray(_mgKnightMobility, stringBuilder);
+            stringBuilder.Append("Endgame Knight Mobility:     ");
+            ShowParameterArray(_egKnightMobility, stringBuilder);
+            return stringBuilder.ToString();
+        }
 
 
-        private static void ShowSquareParameters(int[] Parameters, StringBuilder StringBuilder)
+        private static void ShowParameterSquares(int[] Parameters, StringBuilder StringBuilder)
         {
             for (int rank = 7; rank >= 0; rank--)
             {
@@ -766,10 +797,24 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static void ShowRankParameters(int[] Parameters, StringBuilder StringBuilder)
+        private static void ShowParameterArray(int[] Parameters, StringBuilder StringBuilder)
         {
-            for (int rank = 0; rank < 8; rank++) StringBuilder.Append(Parameters[rank].ToString("000").PadRight(5));
+            for (int index = 0; index < Parameters.Length; index++) StringBuilder.Append(Parameters[index].ToString("+000;-000").PadRight(5));
             StringBuilder.AppendLine();
+        }
+
+
+        public void Reset(bool PreserveStats)
+        {
+            if (!PreserveStats) Stats.Reset();
+        }
+
+
+        public string ToString(Position Position)
+        {
+            GetStaticScore(Position);
+            int phase = DetermineGamePhase(Position);
+            return _staticScore.ToString(phase);
         }
     }
 }
