@@ -52,14 +52,14 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _egPassedPawns;
         private readonly int[] _egFreePassedPawns;
         // Piece mobility
-        private readonly int[] _mgKnightMobility;
-        private readonly int[] _egKnightMobility;
-        private readonly int[] _mgBishopMobility;
-        private readonly int[] _egBishopMobility;
-        private readonly int[] _mgRookMobility;
-        private readonly int[] _egRookMobility;
-        private readonly int[] _mgQueenMobility;
-        private readonly int[] _egQueenMobility;
+        private readonly int[][] _mgKnightMobility;
+        private readonly int[][] _egKnightMobility;
+        private readonly int[][] _mgBishopMobility;
+        private readonly int[][] _egBishopMobility;
+        private readonly int[][] _mgRookMobility;
+        private readonly int[][] _egRookMobility;
+        private readonly int[][] _mgQueenMobility;
+        private readonly int[][] _egQueenMobility;
 
 
         
@@ -84,14 +84,30 @@ namespace ErikTheCoder.MadChess.Engine
             _mgPassedPawns = new int[8];
             _egPassedPawns = new int[8];
             _egFreePassedPawns = new int[8];
-            _mgKnightMobility = new int[17]; // ( 8 moves * 2 pieces) + zero moves
-            _egKnightMobility = new int[17]; // ( 8 moves * 2 pieces) + zero moves
-            _mgBishopMobility = new int[33]; // (13 moves * 2 pieces) + zero moves
-            _egBishopMobility = new int[33]; // (13 moves * 2 pieces) + zero moves
-            _mgRookMobility = new int[29];   // (14 moves * 2 pieces) + zero moves
-            _egRookMobility = new int[29];   // (14 moves * 2 pieces) + zero moves
-            _mgQueenMobility = new int[28];  //  14 moves + 13 moves  + zero moves
-            _egQueenMobility = new int[28];  //  14 moves + 13 moves  + zero moves
+            _mgKnightMobility = new int[2][];
+            _egKnightMobility = new int[2][];
+            _mgKnightMobility[0] = new int[9];
+            _egKnightMobility[0] = new int[9];
+            _mgKnightMobility[1] = new int[17];
+            _egKnightMobility[1] = new int[17];
+            _mgBishopMobility = new int[2][];
+            _egBishopMobility = new int[2][];
+            _mgBishopMobility[0] = new int[14];
+            _egBishopMobility[0] = new int[14];
+            _mgBishopMobility[1] = new int[27];
+            _egBishopMobility[1] = new int[27];
+            _mgRookMobility = new int[2][];
+            _egRookMobility = new int[2][];
+            _mgRookMobility[0] = new int[15];
+            _egRookMobility[0] = new int[15];
+            _mgRookMobility[1] = new int[29];
+            _egRookMobility[1] = new int[29];
+            _mgQueenMobility = new int[2][];
+            _egQueenMobility = new int[2][];
+            _mgQueenMobility[0] = new int[28];
+            _egQueenMobility[0] = new int[28];
+            _mgQueenMobility[1] = new int[55];
+            _egQueenMobility[1] = new int[55];
             _staticScore = new StaticScore(_middlegamePhase);
             Stats = new EvaluationStats();
             DrawMoves = 2;
@@ -132,11 +148,47 @@ namespace ErikTheCoder.MadChess.Engine
                 _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, _passedPawnPower, 0);
                 _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, _passedPawnPower, 0);
             }
-            // Calculate piece mobility values.
-            for (int moves = 0; moves < _mgKnightMobility.Length; moves++)
+            // Calculate piece mobility values (negative for less than half the possible moves, positive for more than half the possible moves).
+            for (int pieceIndex = 0; pieceIndex < 2; pieceIndex++)
             {
-                _mgKnightMobility[moves] = GetNonLinearBonus(moves, Config.MgKnightMobilityScale, _pieceMobilityPower, Config.MgKnightMobilityConstant);
-                _egKnightMobility[moves] = GetNonLinearBonus(moves, Config.EgKnightMobilityScale, _pieceMobilityPower, Config.EgKnightMobilityConstant);
+                int distanceFromHalf;
+                int absDistanceFromHalf;
+                // Knight mobility
+                for (int moveIndex = 0; moveIndex < _mgKnightMobility[pieceIndex].Length; moveIndex++)
+                {
+                    distanceFromHalf = moveIndex - (_mgKnightMobility[pieceIndex].Length / 2);
+                    absDistanceFromHalf = Math.Abs(distanceFromHalf);
+                    if (distanceFromHalf >= 0)
+                    {
+                        mgScale = Config.MgKnightMobilityScale;
+                        egScale = Config.EgKnightMobilityScale;
+                    }
+                    else
+                    {
+                        mgScale = -Config.MgKnightMobilityScale;
+                        egScale = -Config.EgKnightMobilityScale;
+                    }
+                    _mgKnightMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
+                    _egKnightMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
+                }
+                // Bishop mobility
+                for (int moveIndex = 0; moveIndex < _mgBishopMobility[pieceIndex].Length; moveIndex++)
+                {
+                    distanceFromHalf = moveIndex - (_mgBishopMobility[pieceIndex].Length / 2);
+                    absDistanceFromHalf = Math.Abs(distanceFromHalf);
+                    if (distanceFromHalf >= 0)
+                    {
+                        mgScale = Config.MgBishopMobilityScale;
+                        egScale = Config.EgBishopMobilityScale;
+                    }
+                    else
+                    {
+                        mgScale = -Config.MgBishopMobilityScale;
+                        egScale = -Config.EgBishopMobilityScale;
+                    }
+                    _mgBishopMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
+                    _egBishopMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
+                }
             }
         }
 
@@ -774,11 +826,25 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine($"Endgame King Escorted Passed Pawn:  {Config.EgKingEscortedPassedPawn}");
             stringBuilder.AppendLine($"Unstoppable Passed Pawn:            {Config.UnstoppablePassedPawn}");
             stringBuilder.AppendLine();
-            // Piece Mobility
-            stringBuilder.Append("Middlegame Knight Mobility:  ");
-            ShowParameterArray(_mgKnightMobility, stringBuilder);
-            stringBuilder.Append("Endgame Knight Mobility:     ");
-            ShowParameterArray(_egKnightMobility, stringBuilder);
+            // Knight Mobility
+            stringBuilder.Append("Middlegame Knight Mobility (1 piece ):  ");
+            ShowParameterArray(_mgKnightMobility[0], stringBuilder);
+            stringBuilder.Append("   Endgame Knight Mobility (1 piece ):  ");
+            ShowParameterArray(_egKnightMobility[0], stringBuilder);
+            stringBuilder.Append("Middlegame Knight Mobility (2 pieces):  ");
+            ShowParameterArray(_mgKnightMobility[1], stringBuilder);
+            stringBuilder.Append("   Endgame Knight Mobility (2 pieces):  ");
+            ShowParameterArray(_egKnightMobility[1], stringBuilder);
+            stringBuilder.AppendLine();
+            // Bishop Mobility
+            stringBuilder.Append("Middlegame Bishop Mobility (1 piece ):  ");
+            ShowParameterArray(_mgBishopMobility[0], stringBuilder);
+            stringBuilder.Append("   Endgame Bishop Mobility (1 piece ):  ");
+            ShowParameterArray(_egBishopMobility[0], stringBuilder);
+            stringBuilder.Append("Middlegame Bishop Mobility (2 pieces):  ");
+            ShowParameterArray(_mgBishopMobility[1], stringBuilder);
+            stringBuilder.Append("   Endgame Bishop Mobility (2 pieces):  ");
+            ShowParameterArray(_egBishopMobility[1], stringBuilder);
             return stringBuilder.ToString();
         }
 
