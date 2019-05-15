@@ -43,6 +43,10 @@ namespace ErikTheCoder.MadChess.Engine
         public int CurrentMoveIndex;
         public int MoveIndex;
         public MoveGenerationStage MoveGenerationStage;
+        public ulong KnightDestinations;
+        public ulong BishopDestinations;
+        public ulong RookDestinations;
+        public ulong QueenDestinations;
         public ulong PiecesSquaresKey;
         public ulong Key;
         public ulong PlayedMove;
@@ -101,7 +105,7 @@ namespace ErikTheCoder.MadChess.Engine
             BlackKing = CopyFromPosition.BlackKing;
             OccupancyBlack = CopyFromPosition.OccupancyBlack;
             Occupancy = CopyFromPosition.Occupancy;
-            // Copy board state.  Do not copy values that will be set after move is played.
+            // Copy board state.  Do not copy values that will be set after moves are generated or played.
             WhiteMove = CopyFromPosition.WhiteMove;
             Castling = CopyFromPosition.Castling;
             EnPassantSquare = CopyFromPosition.EnPassantSquare;
@@ -138,6 +142,10 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
+            KnightDestinations = 0;
+            BishopDestinations = 0;
+            RookDestinations = 0;
+            QueenDestinations = 0;
         }
 
 
@@ -396,6 +404,7 @@ namespace ErikTheCoder.MadChess.Engine
                     default:
                         throw new Exception($"{MoveGeneration} move generation not supported.");
                 }
+                KnightDestinations |= knightDestinations;
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(knightDestinations)) != Square.Illegal)
                 {
@@ -456,6 +465,7 @@ namespace ErikTheCoder.MadChess.Engine
                     default:
                         throw new Exception($"{MoveGeneration} move generation not supported.");
                 }
+                BishopDestinations |= bishopDestinations;
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(bishopDestinations)) != Square.Illegal)
                 {
@@ -516,6 +526,7 @@ namespace ErikTheCoder.MadChess.Engine
                     default:
                         throw new Exception($"{MoveGeneration} move generation not supported.");
                 }
+                RookDestinations |= rookDestinations;
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(rookDestinations)) != Square.Illegal)
                 {
@@ -577,6 +588,7 @@ namespace ErikTheCoder.MadChess.Engine
                     default:
                         throw new Exception($"{MoveGeneration} move generation not supported.");
                 }
+                QueenDestinations |= queenDestinations;
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(queenDestinations)) != Square.Illegal)
                 {
@@ -784,6 +796,10 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
+            KnightDestinations = 0;
+            BishopDestinations = 0;
+            RookDestinations = 0;
+            QueenDestinations = 0;
             PiecesSquaresKey = 0;
             Key = 0;
             PlayedMove = Move.Null;

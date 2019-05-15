@@ -9,6 +9,7 @@
 
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -148,46 +149,41 @@ namespace ErikTheCoder.MadChess.Engine
                 _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, _passedPawnPower, 0);
                 _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, _passedPawnPower, 0);
             }
-            // Calculate piece mobility values (negative for less than half the possible moves, positive for more than half the possible moves).
-            for (int pieceIndex = 0; pieceIndex < 2; pieceIndex++)
+            // Calculate piece mobility values.
+            CalculatePieceMobility(_mgKnightMobility, _egKnightMobility, Config.MgKnightMobilityScale, Config.EgKnightMobilityScale);
+            CalculatePieceMobility(_mgBishopMobility, _egBishopMobility, Config.MgBishopMobilityScale, Config.EgBishopMobilityScale);
+            CalculatePieceMobility(_mgRookMobility, _egRookMobility, Config.MgRookMobilityScale, Config.EgRookMobilityScale);
+            CalculatePieceMobility(_mgQueenMobility, _egQueenMobility, Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
+        }
+
+
+        private static void CalculatePieceMobility(int[][] MgPieceMobility, int[][] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
+        {
+            Debug.Assert(MgPieceMobility.GetLength(0) == EgPieceMobility.GetLength(0));
+            Debug.Assert(MgPieceMobility.GetLength(1) == EgPieceMobility.GetLength(1));
+            for (int pieceIndex = 0; pieceIndex < MgPieceMobility.Length; pieceIndex++)
             {
-                int distanceFromHalf;
-                int absDistanceFromHalf;
-                // Knight mobility
-                for (int moveIndex = 0; moveIndex < _mgKnightMobility[pieceIndex].Length; moveIndex++)
+                int halfMoves = MgPieceMobility[pieceIndex].Length / 2;
+                for (int moveIndex = 0; moveIndex < MgPieceMobility[pieceIndex].Length; moveIndex++)
                 {
-                    distanceFromHalf = moveIndex - (_mgKnightMobility[pieceIndex].Length / 2);
-                    absDistanceFromHalf = Math.Abs(distanceFromHalf);
+                    int distanceFromHalf = moveIndex - halfMoves;
+                    int absDistanceFromHalf = Math.Abs(distanceFromHalf);
+                    int mgScale;
+                    int egScale;
                     if (distanceFromHalf >= 0)
                     {
-                        mgScale = Config.MgKnightMobilityScale;
-                        egScale = Config.EgKnightMobilityScale;
+                        // Assign positive values when more than half the maximum moves are possible.
+                        mgScale = MgMobilityScale;
+                        egScale = EgMobilityScale;
                     }
                     else
                     {
-                        mgScale = -Config.MgKnightMobilityScale;
-                        egScale = -Config.EgKnightMobilityScale;
+                        // Assign negative values when less than half the maximum moves are possible.
+                        mgScale = -MgMobilityScale;
+                        egScale = -EgMobilityScale;
                     }
-                    _mgKnightMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
-                    _egKnightMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
-                }
-                // Bishop mobility
-                for (int moveIndex = 0; moveIndex < _mgBishopMobility[pieceIndex].Length; moveIndex++)
-                {
-                    distanceFromHalf = moveIndex - (_mgBishopMobility[pieceIndex].Length / 2);
-                    absDistanceFromHalf = Math.Abs(distanceFromHalf);
-                    if (distanceFromHalf >= 0)
-                    {
-                        mgScale = Config.MgBishopMobilityScale;
-                        egScale = Config.EgBishopMobilityScale;
-                    }
-                    else
-                    {
-                        mgScale = -Config.MgBishopMobilityScale;
-                        egScale = -Config.EgBishopMobilityScale;
-                    }
-                    _mgBishopMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
-                    _egBishopMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
+                    MgPieceMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
+                    EgPieceMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
                 }
             }
         }
@@ -845,6 +841,26 @@ namespace ErikTheCoder.MadChess.Engine
             ShowParameterArray(_mgBishopMobility[1], stringBuilder);
             stringBuilder.Append("   Endgame Bishop Mobility (2 pieces):  ");
             ShowParameterArray(_egBishopMobility[1], stringBuilder);
+            stringBuilder.AppendLine();
+            // Rook Mobility
+            stringBuilder.Append("Middlegame Rook Mobility (1 piece ):  ");
+            ShowParameterArray(_mgRookMobility[0], stringBuilder);
+            stringBuilder.Append("   Endgame Rook Mobility (1 piece ):  ");
+            ShowParameterArray(_egRookMobility[0], stringBuilder);
+            stringBuilder.Append("Middlegame Rook Mobility (2 pieces):  ");
+            ShowParameterArray(_mgRookMobility[1], stringBuilder);
+            stringBuilder.Append("   Endgame Rook Mobility (2 pieces):  ");
+            ShowParameterArray(_egRookMobility[1], stringBuilder);
+            stringBuilder.AppendLine();
+            // Queen Mobility
+            stringBuilder.Append("Middlegame Queen Mobility (1 piece ):  ");
+            ShowParameterArray(_mgQueenMobility[0], stringBuilder);
+            stringBuilder.Append("   Endgame Queen Mobility (1 piece ):  ");
+            ShowParameterArray(_egQueenMobility[0], stringBuilder);
+            stringBuilder.Append("Middlegame Queen Mobility (2 pieces):  ");
+            ShowParameterArray(_mgQueenMobility[1], stringBuilder);
+            stringBuilder.Append("   Endgame Queen Mobility (2 pieces):  ");
+            ShowParameterArray(_egQueenMobility[1], stringBuilder);
             return stringBuilder.ToString();
         }
 
