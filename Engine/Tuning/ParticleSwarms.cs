@@ -59,7 +59,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Cache cache = new Cache(1, board.ValidateMove);
             KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
             MoveHistory moveHistory = new MoveHistory();
-            Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn);
+            Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, board.PlayNullMove, board.UndoMove);
             Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
@@ -90,6 +90,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         {
             return new Parameters
             {
+                // Piece Location
                 // Pawns
                 new Parameter(nameof(EvaluationConfig.MgPawnAdvancement), 0, 25),
                 new Parameter(nameof(EvaluationConfig.EgPawnAdvancement), 0, 25),
@@ -144,6 +145,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePercent), 200, 1000),
                 new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePercent), 400, 1000),
                 new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 50)
+                // Piece Mobility
+                
             };
         }
 
@@ -231,7 +234,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn);
+                Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, board.PlayNullMove, board.UndoMove);
                 evaluations[index] = evaluation;
                 searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
             }

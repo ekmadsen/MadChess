@@ -580,7 +580,27 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
-            int staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(Board.CurrentPosition);
+            int staticScore;
+            bool alreadyGeneratedAllMoves;
+            if (drawnEndgame)
+            {
+                staticScore = 0;
+                alreadyGeneratedAllMoves = false;
+            }
+            else
+            {
+                if (toHorizon < _futilityMargins.Length)
+                {
+                    staticScore = Evaluation.GetStaticScore(Board.CurrentPosition, Board.NextPosition);
+                    alreadyGeneratedAllMoves = true;
+                }
+                else
+                {
+                    // Avoid cost of calculating precise static score far from horizon.
+                    staticScore = Evaluation.GetSimpleStaticScore(Board.CurrentPosition);
+                    alreadyGeneratedAllMoves = false;
+                }
+            }
             if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
             {
                 // Position is futile.
@@ -618,6 +638,7 @@ namespace ErikTheCoder.MadChess.Engine
             int quietMoveNumber = 0;
             int moveIndex = -1;
             int lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
+            // TODO: Skip move generation if already done to calculate static score piece mobility.
             if (Depth > 0) Board.CurrentPosition.PrepareMoveGeneration();
             do
             {
@@ -791,7 +812,7 @@ namespace ErikTheCoder.MadChess.Engine
                         : Board.SquareMasks[lastMoveToSquare]; // Search only recaptures.
                 }
                 else moveGenerationToSquareMask = ToSquareMask;
-                staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(Board.CurrentPosition);
+                staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(Board.CurrentPosition, Board.NextPosition);
                 if (staticScore >= Beta) return Beta; // Prevent worsening of position by making a bad capture.  Stand pat.
                 Alpha = Math.Max(staticScore, Alpha);
             }
@@ -944,6 +965,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (Position.CurrentMoveIndex < Position.MoveIndex)
                 {
                     (ulong Move, int MoveIndex) nextMove = (Position.Moves[Position.CurrentMoveIndex], Position.CurrentMoveIndex);
+                    if (Move.CaptureVictim(nextMove.Move) == Piece.None) continue;
                     Position.CurrentMoveIndex++;
                     return nextMove;
                 }

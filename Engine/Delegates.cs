@@ -18,6 +18,8 @@ namespace ErikTheCoder.MadChess.Engine
         public delegate int GetPositionCount();
         public delegate bool IsPassedPawn(int Square, bool White);
         public delegate bool IsFreePawn(int Square, bool White);
+        public delegate void PlayNullMove();
+        public delegate void UndoMove();
         public delegate void WriteMessageLine(string Message);
     }
 }
