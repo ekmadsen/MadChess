@@ -96,7 +96,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgPawnAdvancement), 0, 25),
                 new Parameter(nameof(EvaluationConfig.MgPawnCentrality), 0, 25),
                 new Parameter(nameof(EvaluationConfig.EgPawnCentrality), 0, 25),
-                new Parameter(nameof(EvaluationConfig.EgPawnConstant), 0, 25),
+                new Parameter(nameof(EvaluationConfig.EgPawnConstant), 0, 50),
                 // Knights
                 new Parameter(nameof(EvaluationConfig.MgKnightAdvancement), 0, 25),
                 new Parameter(nameof(EvaluationConfig.EgKnightAdvancement), 0, 25),
@@ -120,7 +120,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgRookCentrality), 0, 25),
                 new Parameter(nameof(EvaluationConfig.MgRookCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgRookCorner), -25, 0),
-                new Parameter(nameof(EvaluationConfig.EgRookConstant), -250, 250),
+                new Parameter(nameof(EvaluationConfig.EgRookConstant), -100, 100),
                 // Queens
                 new Parameter(nameof(EvaluationConfig.MgQueenAdvancement), 0, 25),
                 new Parameter(nameof(EvaluationConfig.EgQueenAdvancement), 0, 25),
@@ -128,7 +128,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgQueenCentrality), 0, 25),
                 new Parameter(nameof(EvaluationConfig.MgQueenCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgQueenCorner), -25, 0),
-                new Parameter(nameof(EvaluationConfig.EgQueenConstant), -400, 400),
+                new Parameter(nameof(EvaluationConfig.EgQueenConstant), -100, 100),
                 // King
                 new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgKingAdvancement), 0, 25),
@@ -142,6 +142,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePercent), 400, 1000),
                 new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 50)
                 // Piece Mobility
+
                 
             };
         }
