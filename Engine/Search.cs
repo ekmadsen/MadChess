@@ -580,27 +580,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
-            int staticScore;
-            bool alreadyGeneratedAllMoves;
-            if (drawnEndgame)
-            {
-                staticScore = 0;
-                alreadyGeneratedAllMoves = false;
-            }
-            else
-            {
-                if (toHorizon < _futilityMargins.Length)
-                {
-                    staticScore = Evaluation.GetStaticScore(Board.CurrentPosition, Board.NextPosition);
-                    alreadyGeneratedAllMoves = true;
-                }
-                else
-                {
-                    // Avoid cost of calculating precise static score far from horizon.
-                    staticScore = Evaluation.GetSimpleStaticScore(Board.CurrentPosition);
-                    alreadyGeneratedAllMoves = false;
-                }
-            }
+            int staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(Board.CurrentPosition);
             if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
             {
                 // Position is futile.
@@ -638,7 +618,6 @@ namespace ErikTheCoder.MadChess.Engine
             int quietMoveNumber = 0;
             int moveIndex = -1;
             int lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
-            // TODO: Skip move generation if already done to calculate static score piece mobility.
             if (Depth > 0) Board.CurrentPosition.PrepareMoveGeneration();
             do
             {
@@ -812,7 +791,7 @@ namespace ErikTheCoder.MadChess.Engine
                         : Board.SquareMasks[lastMoveToSquare]; // Search only recaptures.
                 }
                 else moveGenerationToSquareMask = ToSquareMask;
-                staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(Board.CurrentPosition, Board.NextPosition);
+                staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(Board.CurrentPosition);
                 if (staticScore >= Beta) return Beta; // Prevent worsening of position by making a bad capture.  Stand pat.
                 Alpha = Math.Max(staticScore, Alpha);
             }
@@ -989,7 +968,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // TODO: Don't consider pawn pushes futile.
         private bool IsMoveFutile(Position Position, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             if ((Depth == 0) || (LegalMoveNumber == 1)) return false; // Root moves and first moves are not futile.
@@ -1016,7 +994,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // TODO: Don't reduce a pawn push.
         private int GetSearchHorizon(Position Position, int Depth, int Horizon, ulong Move, int QuietMoveNumber, bool IsDrawnEndgame)
         {
             if (IsDrawnEndgame || (Engine.Move.CaptureVictim(Move) != Piece.None)) return Horizon; // Do not reduce search horizon of drawn endgames or captures.
@@ -1184,7 +1161,7 @@ namespace ErikTheCoder.MadChess.Engine
                 double betaCutoffMoveNumber = (double)Stats.BetaCutoffMoveNumber / Stats.BetaCutoffs;
                 double betaCutoffFirstMovePercent = 100d * Stats.BetaCutoffFirstMove / Stats.BetaCutoffs;
                 _writeMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
-                _writeMessageLine($"info string Simple Evals = {Evaluation.Stats.SimpleEvaluations} Full Evals = {Evaluation.Stats.FullEvaluations}");
+                _writeMessageLine($"info string Evals = {Evaluation.Stats.Evaluations}");
             }
             int intervals = (int) (Board.Nodes / UciStream.NodesInfoInterval);
             Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);

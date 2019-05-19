@@ -885,14 +885,14 @@ namespace ErikTheCoder.MadChess.Engine
             int enPassantVictim;
             if (CurrentPosition.WhiteMove)
             {
-                // White move
+                // White Move
                 pawn = Piece.WhitePawn;
                 king = Piece.WhiteKing;
                 enPassantVictim = Piece.BlackPawn;
             }
             else
             {
-                // Black move
+                // Black Move
                 pawn = Piece.BlackPawn;
                 king = Piece.BlackKing;
                 enPassantVictim = Piece.WhitePawn;
@@ -1016,7 +1016,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong king;
             if (CurrentPosition.WhiteMove)
             {
-                // White move
+                // White Move
                 pawns = CurrentPosition.WhitePawns;
                 pawnAttackMask = BlackPawnAttackMasks[Square]; // Attacked by white pawn masks = black pawn attack masks
                 knights = CurrentPosition.WhiteKnights;
@@ -1027,7 +1027,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 pawns = CurrentPosition.BlackPawns;
                 pawnAttackMask = WhitePawnAttackMasks[Square];  // Attacked by black pawn masks = white pawn attack masks
                 knights = CurrentPosition.BlackKnights;
@@ -1162,7 +1162,7 @@ namespace ErikTheCoder.MadChess.Engine
             int enPassantVictim;
             if (CurrentPosition.WhiteMove)
             {
-                // White move
+                // White Move
                 pawn = Piece.WhitePawn;
                 king = Piece.WhiteKing;
                 toRank = WhiteRanks[toSquare];
@@ -1170,7 +1170,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 pawn = Piece.BlackPawn;
                 king = Piece.BlackKing;
                 toRank = BlackRanks[toSquare];

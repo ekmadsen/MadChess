@@ -55,13 +55,13 @@ namespace ErikTheCoder.MadChess.Engine
             int maxPiece;
             if (WhiteMove)
             {
-                // White move
+                // White Move
                 minPiece = Piece.WhitePawn;
                 maxPiece = Piece.WhiteKing;
             }
             else
             {
-                // Black move
+                // Black Move
                 minPiece = Piece.BlackPawn;
                 maxPiece = Piece.BlackKing;
             }

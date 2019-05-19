@@ -59,7 +59,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Cache cache = new Cache(1, board.ValidateMove);
             KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
             MoveHistory moveHistory = new MoveHistory();
-            Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, board.PlayNullMove, board.UndoMove);
+            Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn);
             Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
@@ -104,7 +104,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgKnightCentrality), 0, 25),
                 new Parameter(nameof(EvaluationConfig.MgKnightCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgKnightCorner), -25, 0),
-                new Parameter(nameof(EvaluationConfig.MgKnightConstant), -100, 100),
                 new Parameter(nameof(EvaluationConfig.EgKnightConstant), -100, 100),
                 // Bishops
                 new Parameter(nameof(EvaluationConfig.MgBishopAdvancement), 0, 25),
@@ -113,7 +112,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgBishopCentrality), 0, 25),
                 new Parameter(nameof(EvaluationConfig.MgBishopCorner), -25, 25),
                 new Parameter(nameof(EvaluationConfig.EgBishopCorner), 0, 25),
-                new Parameter(nameof(EvaluationConfig.MgBishopConstant), -100, 100),
                 new Parameter(nameof(EvaluationConfig.EgBishopConstant), -100, 100),
                 // Rooks
                 new Parameter(nameof(EvaluationConfig.MgRookAdvancement), 0, 25),
@@ -122,7 +120,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgRookCentrality), 0, 25),
                 new Parameter(nameof(EvaluationConfig.MgRookCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgRookCorner), -25, 0),
-                new Parameter(nameof(EvaluationConfig.MgRookConstant), -250, 250),
                 new Parameter(nameof(EvaluationConfig.EgRookConstant), -250, 250),
                 // Queens
                 new Parameter(nameof(EvaluationConfig.MgQueenAdvancement), 0, 25),
@@ -131,7 +128,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgQueenCentrality), 0, 25),
                 new Parameter(nameof(EvaluationConfig.MgQueenCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgQueenCorner), -25, 0),
-                new Parameter(nameof(EvaluationConfig.MgQueenConstant), -400, 400),
                 new Parameter(nameof(EvaluationConfig.EgQueenConstant), -400, 400),
                 // King
                 new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -25, 0),
@@ -167,7 +163,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value = evaluationConfig.EgKnightCentrality;
             Parameters[nameof(EvaluationConfig.MgKnightCorner)].Value = evaluationConfig.MgKnightCorner;
             Parameters[nameof(EvaluationConfig.EgKnightCorner)].Value = evaluationConfig.EgKnightCorner;
-            Parameters[nameof(EvaluationConfig.MgKnightConstant)].Value = evaluationConfig.MgKnightConstant;
             Parameters[nameof(EvaluationConfig.EgKnightConstant)].Value = evaluationConfig.EgKnightConstant;
             // Bishops
             Parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value = evaluationConfig.MgBishopAdvancement;
@@ -176,7 +171,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value = evaluationConfig.EgBishopCentrality;
             Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value = evaluationConfig.MgBishopCorner;
             Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value = evaluationConfig.EgBishopCorner;
-            Parameters[nameof(EvaluationConfig.MgBishopConstant)].Value = evaluationConfig.MgBishopConstant;
             Parameters[nameof(EvaluationConfig.EgBishopConstant)].Value = evaluationConfig.EgBishopConstant;
             // Rooks
             Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value = evaluationConfig.MgRookAdvancement;
@@ -185,7 +179,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value = evaluationConfig.EgRookCentrality;
             Parameters[nameof(EvaluationConfig.MgRookCorner)].Value = evaluationConfig.MgRookCorner;
             Parameters[nameof(EvaluationConfig.EgRookCorner)].Value = evaluationConfig.EgRookCorner;
-            Parameters[nameof(EvaluationConfig.MgRookConstant)].Value = evaluationConfig.MgRookConstant;
             Parameters[nameof(EvaluationConfig.EgRookConstant)].Value = evaluationConfig.EgRookConstant;
             // Queens
             Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value = evaluationConfig.MgQueenAdvancement;
@@ -194,7 +187,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value = evaluationConfig.EgQueenCentrality;
             Parameters[nameof(EvaluationConfig.MgQueenCorner)].Value = evaluationConfig.MgQueenCorner;
             Parameters[nameof(EvaluationConfig.EgQueenCorner)].Value = evaluationConfig.EgQueenCorner;
-            Parameters[nameof(EvaluationConfig.MgQueenConstant)].Value = evaluationConfig.MgQueenConstant;
             Parameters[nameof(EvaluationConfig.EgQueenConstant)].Value = evaluationConfig.EgQueenConstant;
             // King
             Parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value = evaluationConfig.MgKingAdvancement;
@@ -234,7 +226,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, board.PlayNullMove, board.UndoMove);
+                Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn);
                 evaluations[index] = evaluation;
                 searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
             }

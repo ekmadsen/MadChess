@@ -43,10 +43,6 @@ namespace ErikTheCoder.MadChess.Engine
         public int CurrentMoveIndex;
         public int MoveIndex;
         public MoveGenerationStage MoveGenerationStage;
-        public ulong KnightDestinations;
-        public ulong BishopDestinations;
-        public ulong RookDestinations;
-        public ulong QueenDestinations;
         public ulong PiecesSquaresKey;
         public ulong Key;
         public ulong PlayedMove;
@@ -123,9 +119,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void GenerateMoves(MoveGeneration MoveGeneration) => GenerateMoves(MoveGeneration, Board.AllSquaresMask, Board.AllSquaresMask);
-
-
         public void GenerateMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             GeneratePawnMoves(MoveGeneration, FromSquareMask, ToSquareMask);
@@ -142,10 +135,6 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
-            KnightDestinations = 0;
-            BishopDestinations = 0;
-            RookDestinations = 0;
-            QueenDestinations = 0;
         }
 
 
@@ -166,7 +155,7 @@ namespace ErikTheCoder.MadChess.Engine
             int enPassantVictim;
             if (WhiteMove)
             {
-                // White move
+                // White Move
                 pawns = WhitePawns & FromSquareMask;
                 pawnMoveMasks = _board.WhitePawnMoveMasks;
                 pawnDoubleMoveMasks = _board.WhitePawnDoubleMoveMasks;
@@ -182,7 +171,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 pawns = BlackPawns & FromSquareMask;
                 pawnMoveMasks = _board.BlackPawnMoveMasks;
                 pawnDoubleMoveMasks = _board.BlackPawnDoubleMoveMasks;
@@ -372,7 +361,7 @@ namespace ErikTheCoder.MadChess.Engine
             int attacker;
             if (WhiteMove)
             {
-                // White move
+                // White Move
                 knights = WhiteKnights & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyWhite;
                 enemyOccupiedSquares = OccupancyBlack;
@@ -380,7 +369,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 knights = BlackKnights & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyBlack;
                 enemyOccupiedSquares = OccupancyWhite;
@@ -404,7 +393,6 @@ namespace ErikTheCoder.MadChess.Engine
                     default:
                         throw new Exception($"{MoveGeneration} move generation not supported.");
                 }
-                KnightDestinations |= knightDestinations;
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(knightDestinations)) != Square.Illegal)
                 {
@@ -424,6 +412,33 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        public ulong GetKnightDestinations(bool White)
+        {
+            ulong knightDestinations = 0;
+            ulong knights;
+            ulong unOrEnemyOccupiedSquares;
+            if (White)
+            {
+                // White Move
+                knights = WhiteKnights;
+                unOrEnemyOccupiedSquares = ~OccupancyWhite;
+            }
+            else
+            {
+                // Black Move
+                knights = BlackKnights;
+                unOrEnemyOccupiedSquares = ~OccupancyBlack;
+            }
+            int fromSquare;
+            while ((fromSquare = Bitwise.FindFirstSetBit(knights)) != Square.Illegal)
+            {
+                knightDestinations |= _board.KnightMoveMasks[fromSquare] & unOrEnemyOccupiedSquares;
+                Bitwise.ClearBit(ref knights, fromSquare);
+            }
+            return knightDestinations;
+        }
+
+
         private void GenerateBishopMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong bishops;
@@ -432,7 +447,7 @@ namespace ErikTheCoder.MadChess.Engine
             int attacker;
             if (WhiteMove)
             {
-                // White move
+                // White Move
                 bishops = WhiteBishops & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyWhite;
                 enemyOccupiedSquares = OccupancyBlack;
@@ -440,7 +455,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 bishops = BlackBishops & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyBlack;
                 enemyOccupiedSquares = OccupancyWhite;
@@ -465,7 +480,6 @@ namespace ErikTheCoder.MadChess.Engine
                     default:
                         throw new Exception($"{MoveGeneration} move generation not supported.");
                 }
-                BishopDestinations |= bishopDestinations;
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(bishopDestinations)) != Square.Illegal)
                 {
@@ -485,6 +499,34 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        public ulong GetBishopDestinations(bool White)
+        {
+            ulong bishopDestinations = 0;
+            ulong bishops;
+            ulong unOrEnemyOccupiedSquares;
+            if (White)
+            {
+                // White Move
+                bishops = WhiteBishops;
+                unOrEnemyOccupiedSquares = ~OccupancyWhite;
+            }
+            else
+            {
+                // Black Move
+                bishops = BlackBishops;
+                unOrEnemyOccupiedSquares = ~OccupancyBlack;
+            }
+            int fromSquare;
+            while ((fromSquare = Bitwise.FindFirstSetBit(bishops)) != Square.Illegal)
+            {
+                ulong occupancy = _board.BishopMoveMasks[fromSquare] & Occupancy;
+                bishopDestinations |= _board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares;
+                Bitwise.ClearBit(ref bishops, fromSquare);
+            }
+            return bishopDestinations;
+        }
+
+
         private void GenerateRookMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong rooks;
@@ -493,7 +535,7 @@ namespace ErikTheCoder.MadChess.Engine
             int attacker;
             if (WhiteMove)
             {
-                // White move
+                // White Move
                 rooks = WhiteRooks & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyWhite;
                 enemyOccupiedSquares = OccupancyBlack;
@@ -501,7 +543,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 rooks = BlackRooks & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyBlack;
                 enemyOccupiedSquares = OccupancyWhite;
@@ -526,7 +568,6 @@ namespace ErikTheCoder.MadChess.Engine
                     default:
                         throw new Exception($"{MoveGeneration} move generation not supported.");
                 }
-                RookDestinations |= rookDestinations;
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(rookDestinations)) != Square.Illegal)
                 {
@@ -546,6 +587,34 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        public ulong GetRookDestinations(bool White)
+        {
+            ulong rookDestinations = 0;
+            ulong rooks;
+            ulong unOrEnemyOccupiedSquares;
+            if (White)
+            {
+                // White Move
+                rooks = WhiteRooks;
+                unOrEnemyOccupiedSquares = ~OccupancyWhite;
+            }
+            else
+            {
+                // Black Move
+                rooks = BlackRooks;
+                unOrEnemyOccupiedSquares = ~OccupancyBlack;
+            }
+            int fromSquare;
+            while ((fromSquare = Bitwise.FindFirstSetBit(rooks)) != Square.Illegal)
+            {
+                ulong occupancy = _board.RookMoveMasks[fromSquare] & Occupancy;
+                rookDestinations |= _board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares;
+                Bitwise.ClearBit(ref rooks, fromSquare);
+            }
+            return rookDestinations;
+        }
+
+
         private void GenerateQueenMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong queens;
@@ -554,7 +623,7 @@ namespace ErikTheCoder.MadChess.Engine
             int attacker;
             if (WhiteMove)
             {
-                // White move
+                // White Move
                 queens = WhiteQueens & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyWhite;
                 enemyOccupiedSquares = OccupancyBlack;
@@ -562,7 +631,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 queens = BlackQueens & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyBlack;
                 enemyOccupiedSquares = OccupancyWhite;
@@ -588,7 +657,6 @@ namespace ErikTheCoder.MadChess.Engine
                     default:
                         throw new Exception($"{MoveGeneration} move generation not supported.");
                 }
-                QueenDestinations |= queenDestinations;
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(queenDestinations)) != Square.Illegal)
                 {
@@ -608,6 +676,35 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        public ulong GetQueenDestinations(bool White)
+        {
+            ulong queenDestinations = 0;
+            ulong queens;
+            ulong unOrEnemyOccupiedSquares;
+            if (White)
+            {
+                // White Move
+                queens = WhiteQueens;
+                unOrEnemyOccupiedSquares = ~OccupancyWhite;
+            }
+            else
+            {
+                // Black Move
+                queens = BlackQueens;
+                unOrEnemyOccupiedSquares = ~OccupancyBlack;
+            }
+            int fromSquare;
+            while ((fromSquare = Bitwise.FindFirstSetBit(queens)) != Square.Illegal)
+            {
+                ulong bishopOccupancy = _board.BishopMoveMasks[fromSquare] & Occupancy;
+                ulong rookOccupancy = _board.RookMoveMasks[fromSquare] & Occupancy;
+                queenDestinations |= (_board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | _board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares;
+                Bitwise.ClearBit(ref queens, fromSquare);
+            }
+            return queenDestinations;
+        }
+
+
         private void GenerateKingMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong king;
@@ -620,7 +717,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong castleKingsideMask;
             if (WhiteMove)
             {
-                // White move
+                // White Move
                 king = WhiteKing & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyWhite;
                 enemyOccupiedSquares = OccupancyBlack;
@@ -632,7 +729,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 king = BlackKing & FromSquareMask;
                 unOrEnemyOccupiedSquares = ~OccupancyBlack;
                 enemyOccupiedSquares = OccupancyWhite;
@@ -682,13 +779,13 @@ namespace ErikTheCoder.MadChess.Engine
                     // Castle queenside
                     if (WhiteMove)
                     {
-                        // White move
+                        // White Move
                         fromSquare = Square.e1;
                         toSquare = Square.c1;
                     }
                     else
                     {
-                        // Black move
+                        // Black Move
                         fromSquare = Square.e8;
                         toSquare = Square.c8;
                     }
@@ -709,13 +806,13 @@ namespace ErikTheCoder.MadChess.Engine
                     // Castle kingside
                     if (WhiteMove)
                     {
-                        // White move
+                        // White Move
                         fromSquare = Square.e1;
                         toSquare = Square.g1;
                     }
                     else
                     {
-                        // Black move
+                        // Black Move
                         fromSquare = Square.e8;
                         toSquare = Square.g8;
                     }
@@ -743,7 +840,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong enemyRooksQueens;
             if (WhiteMove)
             {
-                // White move
+                // White Move
                 kingSquare = Bitwise.FindFirstSetBit(WhiteKing);
                 pieces = OccupancyWhite;
                 enemyBishopsQueens = BlackBishops | BlackQueens;
@@ -751,7 +848,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black move
+                // Black Move
                 kingSquare = Bitwise.FindFirstSetBit(BlackKing);
                 pieces = OccupancyBlack;
                 enemyBishopsQueens = WhiteBishops | WhiteQueens;
@@ -796,10 +893,6 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
-            KnightDestinations = 0;
-            BishopDestinations = 0;
-            RookDestinations = 0;
-            QueenDestinations = 0;
             PiecesSquaresKey = 0;
             Key = 0;
             PlayedMove = Move.Null;

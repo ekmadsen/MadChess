@@ -74,61 +74,56 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         public void ConfigureEvaluation(Evaluation Evaluation)
         {
-            EvaluationConfig evalConfig = Evaluation.Config;
             // Pawns
-            evalConfig.MgPawnAdvancement = Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value;
-            evalConfig.EgPawnAdvancement = Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value;
-            evalConfig.MgPawnCentrality = Parameters[nameof(EvaluationConfig.MgPawnCentrality)].Value;
-            evalConfig.EgPawnCentrality = Parameters[nameof(EvaluationConfig.EgPawnCentrality)].Value;
-            evalConfig.EgPawnConstant = Parameters[nameof(EvaluationConfig.EgPawnConstant)].Value;
+            Evaluation.Config.MgPawnAdvancement = Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value;
+            Evaluation.Config.EgPawnAdvancement = Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value;
+            Evaluation.Config.MgPawnCentrality = Parameters[nameof(EvaluationConfig.MgPawnCentrality)].Value;
+            Evaluation.Config.EgPawnCentrality = Parameters[nameof(EvaluationConfig.EgPawnCentrality)].Value;
+            Evaluation.Config.EgPawnConstant = Parameters[nameof(EvaluationConfig.EgPawnConstant)].Value;
             // Knights
-            evalConfig.MgKnightAdvancement = Parameters[nameof(EvaluationConfig.MgKnightAdvancement)].Value;
-            evalConfig.EgKnightAdvancement = Parameters[nameof(EvaluationConfig.EgKnightAdvancement)].Value;
-            evalConfig.MgKnightCentrality = Parameters[nameof(EvaluationConfig.MgKnightCentrality)].Value;
-            evalConfig.EgKnightCentrality = Parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value;
-            evalConfig.MgKnightCorner = Parameters[nameof(EvaluationConfig.MgKnightCorner)].Value;
-            evalConfig.EgKnightCorner = Parameters[nameof(EvaluationConfig.EgKnightCorner)].Value;
-            evalConfig.MgKnightConstant = Parameters[nameof(EvaluationConfig.MgKnightConstant)].Value;
-            evalConfig.EgKnightConstant = Parameters[nameof(EvaluationConfig.EgKnightConstant)].Value;
+            Evaluation.Config.MgKnightAdvancement = Parameters[nameof(EvaluationConfig.MgKnightAdvancement)].Value;
+            Evaluation.Config.EgKnightAdvancement = Parameters[nameof(EvaluationConfig.EgKnightAdvancement)].Value;
+            Evaluation.Config.MgKnightCentrality = Parameters[nameof(EvaluationConfig.MgKnightCentrality)].Value;
+            Evaluation.Config.EgKnightCentrality = Parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value;
+            Evaluation.Config.MgKnightCorner = Parameters[nameof(EvaluationConfig.MgKnightCorner)].Value;
+            Evaluation.Config.EgKnightCorner = Parameters[nameof(EvaluationConfig.EgKnightCorner)].Value;
+            Evaluation.Config.EgKnightConstant = Parameters[nameof(EvaluationConfig.EgKnightConstant)].Value;
             // Bishops
-            evalConfig.MgBishopAdvancement = Parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value;
-            evalConfig.EgBishopAdvancement = Parameters[nameof(EvaluationConfig.EgBishopAdvancement)].Value;
-            evalConfig.MgBishopCentrality = Parameters[nameof(EvaluationConfig.MgBishopCentrality)].Value;
-            evalConfig.EgBishopCentrality = Parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value;
-            evalConfig.MgBishopCorner = Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value;
-            evalConfig.EgBishopCorner = Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value;
-            evalConfig.MgBishopConstant = Parameters[nameof(EvaluationConfig.MgBishopConstant)].Value;
-            evalConfig.EgBishopConstant = Parameters[nameof(EvaluationConfig.EgBishopConstant)].Value;
+            Evaluation.Config.MgBishopAdvancement = Parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value;
+            Evaluation.Config.EgBishopAdvancement = Parameters[nameof(EvaluationConfig.EgBishopAdvancement)].Value;
+            Evaluation.Config.MgBishopCentrality = Parameters[nameof(EvaluationConfig.MgBishopCentrality)].Value;
+            Evaluation.Config.EgBishopCentrality = Parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value;
+            Evaluation.Config.MgBishopCorner = Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value;
+            Evaluation.Config.EgBishopCorner = Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value;
+            Evaluation.Config.EgBishopConstant = Parameters[nameof(EvaluationConfig.EgBishopConstant)].Value;
             // Rooks
-            evalConfig.MgRookAdvancement = Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value;
-            evalConfig.EgRookAdvancement = Parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value;
-            evalConfig.MgRookCentrality = Parameters[nameof(EvaluationConfig.MgRookCentrality)].Value;
-            evalConfig.EgRookCentrality = Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value;
-            evalConfig.MgRookCorner = Parameters[nameof(EvaluationConfig.MgRookCorner)].Value;
-            evalConfig.EgRookCorner = Parameters[nameof(EvaluationConfig.EgRookCorner)].Value;
-            evalConfig.MgRookConstant = Parameters[nameof(EvaluationConfig.MgRookConstant)].Value;
-            evalConfig.EgRookConstant = Parameters[nameof(EvaluationConfig.EgRookConstant)].Value;
+            Evaluation.Config.MgRookAdvancement = Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value;
+            Evaluation.Config.EgRookAdvancement = Parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value;
+            Evaluation.Config.MgRookCentrality = Parameters[nameof(EvaluationConfig.MgRookCentrality)].Value;
+            Evaluation.Config.EgRookCentrality = Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value;
+            Evaluation.Config.MgRookCorner = Parameters[nameof(EvaluationConfig.MgRookCorner)].Value;
+            Evaluation.Config.EgRookCorner = Parameters[nameof(EvaluationConfig.EgRookCorner)].Value;
+            Evaluation.Config.EgRookConstant = Parameters[nameof(EvaluationConfig.EgRookConstant)].Value;
             // Queens
-            evalConfig.MgQueenAdvancement = Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value;
-            evalConfig.EgQueenAdvancement = Parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value;
-            evalConfig.MgQueenCentrality = Parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value;
-            evalConfig.EgQueenCentrality = Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value;
-            evalConfig.MgQueenCorner = Parameters[nameof(EvaluationConfig.MgQueenCorner)].Value;
-            evalConfig.EgQueenCorner = Parameters[nameof(EvaluationConfig.EgQueenCorner)].Value;
-            evalConfig.MgQueenConstant = Parameters[nameof(EvaluationConfig.MgQueenConstant)].Value;
-            evalConfig.EgQueenConstant = Parameters[nameof(EvaluationConfig.EgQueenConstant)].Value;
+            Evaluation.Config.MgQueenAdvancement = Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value;
+            Evaluation.Config.EgQueenAdvancement = Parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value;
+            Evaluation.Config.MgQueenCentrality = Parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value;
+            Evaluation.Config.EgQueenCentrality = Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value;
+            Evaluation.Config.MgQueenCorner = Parameters[nameof(EvaluationConfig.MgQueenCorner)].Value;
+            Evaluation.Config.EgQueenCorner = Parameters[nameof(EvaluationConfig.EgQueenCorner)].Value;
+            Evaluation.Config.EgQueenConstant = Parameters[nameof(EvaluationConfig.EgQueenConstant)].Value;
             // King
-            evalConfig.MgKingAdvancement = Parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value;
-            evalConfig.EgKingAdvancement = Parameters[nameof(EvaluationConfig.EgKingAdvancement)].Value;
-            evalConfig.MgKingCentrality = Parameters[nameof(EvaluationConfig.MgKingCentrality)].Value;
-            evalConfig.EgKingCentrality = Parameters[nameof(EvaluationConfig.EgKingCentrality)].Value;
-            evalConfig.MgKingCorner = Parameters[nameof(EvaluationConfig.MgKingCorner)].Value;
-            evalConfig.EgKingCorner = Parameters[nameof(EvaluationConfig.EgKingCorner)].Value;
+            Evaluation.Config.MgKingAdvancement = Parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value;
+            Evaluation.Config.EgKingAdvancement = Parameters[nameof(EvaluationConfig.EgKingAdvancement)].Value;
+            Evaluation.Config.MgKingCentrality = Parameters[nameof(EvaluationConfig.MgKingCentrality)].Value;
+            Evaluation.Config.EgKingCentrality = Parameters[nameof(EvaluationConfig.EgKingCentrality)].Value;
+            Evaluation.Config.MgKingCorner = Parameters[nameof(EvaluationConfig.MgKingCorner)].Value;
+            Evaluation.Config.EgKingCorner = Parameters[nameof(EvaluationConfig.EgKingCorner)].Value;
             // Passed Pawns
-            evalConfig.MgPassedPawnScalePercent = Parameters[nameof(EvaluationConfig.MgPassedPawnScalePercent)].Value;
-            evalConfig.EgPassedPawnScalePercent = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePercent)].Value;
-            evalConfig.EgFreePassedPawnScalePercent = Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePercent)].Value;
-            evalConfig.EgKingEscortedPassedPawn = Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value;
+            Evaluation.Config.MgPassedPawnScalePercent = Parameters[nameof(EvaluationConfig.MgPassedPawnScalePercent)].Value;
+            Evaluation.Config.EgPassedPawnScalePercent = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePercent)].Value;
+            Evaluation.Config.EgFreePassedPawnScalePercent = Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePercent)].Value;
+            Evaluation.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value;
             Evaluation.Configure();
         }
         

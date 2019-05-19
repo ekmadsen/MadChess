@@ -90,7 +90,7 @@ namespace ErikTheCoder.MadChess.Engine
             Cache = new Cache(_cacheSizeMegabytes * Cache.CapacityPerMegabyte, Board.ValidateMove);
             KillerMoves = new KillerMoves(Search.MaxHorizon);
             MoveHistory = new MoveHistory();
-            Evaluation = new Evaluation(new EvaluationConfig(), Board.GetPositionCount, Board.IsPassedPawn, Board.IsFreePawn, Board.PlayNullMove, Board.UndoMove);
+            Evaluation = new Evaluation(new EvaluationConfig(), Board.GetPositionCount, Board.IsPassedPawn, Board.IsFreePawn);
             Search = new Search(Cache, KillerMoves, MoveHistory, Evaluation, () => Debug, WriteMessageLine);
             _defaultHalfAndFullMove = new[] { "0", "1" };
             Board.SetPosition(Board.StartPositionFen);
@@ -293,7 +293,7 @@ namespace ErikTheCoder.MadChess.Engine
                     WriteMessageLine(Evaluation.ShowParameters());
                     break;
                 case "staticscore":
-                    WriteMessageLine(Evaluation.ToString(Board.CurrentPosition, Board.NextPosition));
+                    WriteMessageLine(Evaluation.ToString(Board.CurrentPosition));
                     break;
                 case "swapoffscore":
                     SwapOffScore(Tokens);
@@ -721,7 +721,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void SwapOffScore(List<string> Tokens)
         {
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
-            int staticScore = Evaluation.GetStaticScore(Board.CurrentPosition, Board.NextPosition);
+            int staticScore = Evaluation.GetStaticScore(Board.CurrentPosition);
             Search.Reset(false);
             Evaluation.Reset(false);
             int swapOffScore = Search.GetSwapOffScore(Board, move, staticScore);
@@ -947,7 +947,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, board.PlayNullMove, board.UndoMove);
+                Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn);
                 Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
                 tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
             }
