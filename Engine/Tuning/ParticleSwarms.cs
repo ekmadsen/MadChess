@@ -140,10 +140,16 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePercent), 0, 400),
                 new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePercent), 200, 1000),
                 new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePercent), 400, 1000),
-                new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 50)
+                new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 50),
                 // Piece Mobility
-
-                
+                new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 50),
+                new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 50),
+                new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 50),
+                new Parameter(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 50),
+                new Parameter(nameof(EvaluationConfig.MgRookMobilityScale), 0, 50),
+                new Parameter(nameof(EvaluationConfig.EgRookMobilityScale), 0, 50),
+                new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 50),
+                new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 50)
             };
         }
 
@@ -201,6 +207,15 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Parameters[nameof(EvaluationConfig.EgPassedPawnScalePercent)].Value = evaluationConfig.EgPassedPawnScalePercent;
             Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePercent)].Value = evaluationConfig.EgFreePassedPawnScalePercent;
             Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value = evaluationConfig.EgKingEscortedPassedPawn;
+            // Piece Mobility
+            Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value = evaluationConfig.MgKnightMobilityScale;
+            Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value = evaluationConfig.EgKnightMobilityScale;
+            Parameters[nameof(EvaluationConfig.MgBishopMobilityScale)].Value = evaluationConfig.MgBishopMobilityScale;
+            Parameters[nameof(EvaluationConfig.EgBishopMobilityScale)].Value = evaluationConfig.EgBishopMobilityScale;
+            Parameters[nameof(EvaluationConfig.MgRookMobilityScale)].Value = evaluationConfig.MgRookMobilityScale;
+            Parameters[nameof(EvaluationConfig.EgRookMobilityScale)].Value = evaluationConfig.EgRookMobilityScale;
+            Parameters[nameof(EvaluationConfig.MgQueenMobilityScale)].Value = evaluationConfig.MgQueenMobilityScale;
+            Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value = evaluationConfig.EgQueenMobilityScale;
         }
 
 

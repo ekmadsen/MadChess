@@ -14,6 +14,7 @@ using System.Collections.ObjectModel;
 
 namespace ErikTheCoder.MadChess.Engine.Tuning
 {
+    // Derive from Collection class in order to intercept insertions.
     public sealed class Parameters : Collection<Parameter>
     {
         private readonly Dictionary<string, int> _namesToIndices;
