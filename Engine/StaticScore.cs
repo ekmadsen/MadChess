@@ -48,9 +48,6 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int _middlegamePhase;
 
 
-        public int MaterialScore => WhiteMaterial - BlackMaterial;
-
-
         private int MiddlegameWhite => WhiteSimpleEndgame + WhiteMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility;
 
 

@@ -17,7 +17,6 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public static class Move
     {
-        public const int LongAlgebraicMaxLength = 5;
         public static readonly ulong Null;
         private const int _historyPadding = 67_108_864; // History has 48 - 22 + 1 = 27 bits.  2 Pow 27 = 134_217_728.
         private static readonly int _bestShift;
@@ -145,12 +144,12 @@ namespace ErikTheCoder.MadChess.Engine
             _toUnmask = Bitwise.CreateULongUnmask(0, 6);
             // Set null move.
             Null = 0;
+            SetHistory(ref Null, 0); // Set history first to avoid debug assertion failing.
             SetIsBest(ref Null, false);
             SetCaptureVictim(ref Null, Piece.None);
             SetCaptureAttacker(ref Null, Piece.None);
             SetPromotedPiece(ref Null, Piece.None);
             SetKiller(ref Null, 0);
-            SetHistory(ref Null, 0);
             SetPlayed(ref Null, false);
             SetIsCastling(ref Null, false);
             SetIsKingMove(ref Null, false);
@@ -630,7 +629,29 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static bool IsValid(ulong Move) => true; // TODO: Validate move.
+        private static bool IsValid(ulong Move)
+        {
+            Debug.Assert(CaptureVictim(Move) >= Piece.None);
+            Debug.Assert(CaptureVictim(Move) < Piece.BlackKing);
+            Debug.Assert(CaptureVictim(Move) != Piece.WhiteKing);
+            Debug.Assert(CaptureVictim(Move) != Piece.BlackKing);
+            Debug.Assert(CaptureAttacker(Move) >= Piece.None);
+            Debug.Assert(CaptureAttacker(Move) <= Piece.BlackKing);
+            Debug.Assert(PromotedPiece(Move) >= Piece.None);
+            Debug.Assert(PromotedPiece(Move) < Piece.BlackKing);
+            Debug.Assert(PromotedPiece(Move) != Piece.WhitePawn);
+            Debug.Assert(PromotedPiece(Move) != Piece.BlackPawn);
+            Debug.Assert(PromotedPiece(Move) != Piece.WhiteKing);
+            Debug.Assert(PromotedPiece(Move) != Piece.BlackKing);
+            Debug.Assert(Killer(Move) >= 0);
+            Debug.Assert(Killer(Move) <= 2);
+            Debug.Assert(History(Move) >= 0);
+            Debug.Assert(From(Move) >= Square.a8);
+            Debug.Assert(From(Move) <= Square.Illegal);
+            Debug.Assert(To(Move) >= Square.a8);
+            Debug.Assert(To(Move) <= Square.Illegal);
+            return true;
+        }
 
 
         public static string ToLongAlgebraic(ulong Move)

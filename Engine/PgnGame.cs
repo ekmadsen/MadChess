@@ -18,6 +18,7 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class PgnGame
     {
+        // ReSharper disable once MemberCanBePrivate.Global
         public readonly int Number;
         public readonly GameResult Result;
         public List<ulong> Moves;

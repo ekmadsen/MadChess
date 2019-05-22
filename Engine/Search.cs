@@ -23,7 +23,6 @@ namespace ErikTheCoder.MadChess.Engine
         public const int MaxHorizon = 64;
         public const int MinElo = 400;
         public const int MaxElo = 2200;
-        public Evaluation Evaluation;
         public SearchStats Stats;
         public AutoResetEvent Signal;
         public bool PvInfoUpdate;
@@ -71,7 +70,8 @@ namespace ErikTheCoder.MadChess.Engine
         private Cache _cache;
         private KillerMoves _killerMoves;
         private MoveHistory _moveHistory;
-        private Func<bool> _debug;
+        private Evaluation _evaluation;
+        private Delegates.Debug _debug;
         private Delegates.WriteMessageLine _writeMessageLine;
         private Stopwatch _stopwatch;
         private Delegates.GetNextMove _getNextMove;
@@ -94,7 +94,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _limitStrength = value;
                 if (_limitStrength && (_elo >= MinElo) && (_elo <= MaxElo))
                 {
-                    Evaluation.ConfigureStrength(_elo);
+                    _evaluation.ConfigureStrength(_elo);
                     ConfigureStrength();
                 }
             }
@@ -110,7 +110,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _elo = value;
                     if (_limitStrength)
                     {
-                        Evaluation.ConfigureStrength(_elo);
+                        _evaluation.ConfigureStrength(_elo);
                         ConfigureStrength();
                     }
                 }
@@ -125,12 +125,12 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public Search(Cache Cache, KillerMoves KillerMoves, MoveHistory MoveHistory, Evaluation Evaluation, Func<bool> Debug, Delegates.WriteMessageLine WriteMessageLine)
+        public Search(Cache Cache, KillerMoves KillerMoves, MoveHistory MoveHistory, Evaluation Evaluation, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
         {
             _cache = Cache;
             _killerMoves = KillerMoves;
             _moveHistory = MoveHistory;
-            this.Evaluation = Evaluation;
+            _evaluation = Evaluation;
             _debug = Debug;
             _writeMessageLine = WriteMessageLine;
             _getNextMove = GetNextMove;
@@ -184,7 +184,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (Disposing)
             {
                 // Release managed resources.
-                Evaluation = null;
+                _evaluation = null;
                 Stats = null;
                 WhiteTimeRemaining = null;
                 BlackTimeRemaining = null;
@@ -371,7 +371,7 @@ namespace ErikTheCoder.MadChess.Engine
                 // Estimate moves remaining.
                 int pieces = Bitwise.CountSetBits(Position.Occupancy) - 2; // Don't include kings.
                 piecesMovesRemaining = (pieces * _piecesMovesPer128) / 128;
-                int materialAdvantage = Math.Abs(Evaluation.GetMaterialScore(Position));
+                int materialAdvantage = Math.Abs(_evaluation.GetMaterialScore(Position));
                 materialAdvantageMovesRemaining = (materialAdvantage * _materialAdvantageMovesPer1024) / 1024;
                 movesRemaining = Math.Max(piecesMovesRemaining - materialAdvantageMovesRemaining, _minMovesRemaining);
             }
@@ -550,7 +550,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Board.NodesExamineTime = UciStream.NodesTimeInterval * (intervals + 1);
             }
             if (!Continue && (_bestMoves[0] != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
-            (bool terminalDraw, int positionCount) = Evaluation.IsTerminalDraw(Board.CurrentPosition);
+            (bool terminalDraw, int positionCount) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
             if ((Depth > 0) && terminalDraw) return 0; // Terminal node (games ends on this move)
             // Get cached position.
             int toHorizon = Horizon - Depth;
@@ -580,7 +580,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
-            int staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(Board.CurrentPosition);
+            int staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
             if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
             {
                 // Position is futile.
@@ -763,7 +763,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Board.NodesExamineTime = UciStream.NodesTimeInterval * (intervals + 1);
             }
             if (!Continue && (_bestMoves[0] != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
-            (bool terminalDraw, _) = Evaluation.IsTerminalDraw(Board.CurrentPosition);
+            (bool terminalDraw, _) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
             if ((Depth > 0) && terminalDraw) return 0; // Terminal node (games ends on this move)
             // Search for a quiet position where no captures are possible.
             int fromHorizon = Depth - Horizon;
@@ -791,7 +791,7 @@ namespace ErikTheCoder.MadChess.Engine
                         : Board.SquareMasks[lastMoveToSquare]; // Search only recaptures.
                 }
                 else moveGenerationToSquareMask = ToSquareMask;
-                staticScore = drawnEndgame ? 0 : Evaluation.GetStaticScore(Board.CurrentPosition);
+                staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
                 if (staticScore >= Beta) return Beta; // Prevent worsening of position by making a bad capture.  Stand pat.
                 Alpha = Math.Max(staticScore, Alpha);
             }
@@ -990,12 +990,13 @@ namespace ErikTheCoder.MadChess.Engine
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore + Evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
+            return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
         }
 
 
         private int GetSearchHorizon(Position Position, int Depth, int Horizon, ulong Move, int QuietMoveNumber, bool IsDrawnEndgame)
         {
+            if ((Depth == 0) && ((MultiPv > 1) || (_scoreError > 0))) return Horizon; // Do not reduce root moves when MultiPV is enabled or engine playing strength is reduced.
             if (IsDrawnEndgame || (Engine.Move.CaptureVictim(Move) != Piece.None)) return Horizon; // Do not reduce search horizon of drawn endgames or captures.
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon; // Do not reduce search horizon of killer moves, pawn promotions, or castling.
             if (Engine.Move.IsPawnMove(Move))
@@ -1075,7 +1076,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static void SortMovesByPriority(ulong[] Moves, int LastMoveIndex) => Array.Sort(Moves, 0, LastMoveIndex + 1, _movePriorityComparer);
 
 
-        public static void SortMovesByPriority(ulong[] Moves, int FirstMoveIndex, int LastMoveIndex) => Array.Sort(Moves, FirstMoveIndex, LastMoveIndex - FirstMoveIndex + 1, _movePriorityComparer);
+        private static void SortMovesByPriority(ulong[] Moves, int FirstMoveIndex, int LastMoveIndex) => Array.Sort(Moves, FirstMoveIndex, LastMoveIndex - FirstMoveIndex + 1, _movePriorityComparer);
 
 
         private static void SortMovesByPriority(ulong[] Moves, int[] Scores, int LastMoveIndex) => Array.Sort(Moves, Scores, 0, LastMoveIndex + 1, _movePriorityComparer);
@@ -1161,7 +1162,7 @@ namespace ErikTheCoder.MadChess.Engine
                 double betaCutoffMoveNumber = (double)Stats.BetaCutoffMoveNumber / Stats.BetaCutoffs;
                 double betaCutoffFirstMovePercent = 100d * Stats.BetaCutoffFirstMove / Stats.BetaCutoffs;
                 _writeMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
-                _writeMessageLine($"info string Evals = {Evaluation.Stats.Evaluations}");
+                _writeMessageLine($"info string Evals = {_evaluation.Stats.Evaluations}");
             }
             int intervals = (int) (Board.Nodes / UciStream.NodesInfoInterval);
             Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);

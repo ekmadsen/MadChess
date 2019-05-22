@@ -25,16 +25,16 @@ namespace ErikTheCoder.MadChess.Engine
         public const long NodesInfoInterval = 1000000;
         public const long NodesTimeInterval = 5000;
         public Board Board;
-        public Cache Cache;
-        public KillerMoves KillerMoves;
-        public MoveHistory MoveHistory;
-        public Evaluation Evaluation;
-        public Search Search;
-        public bool Debug;
         private string[] _defaultHalfAndFullMove;
         private const int _cacheSizeMegabytes = 128;
         private const int _minWinPercentScale = 400;
         private const int _maxWinPercentScale = 800;
+        private Cache _cache;
+        private KillerMoves _killerMoves;
+        private MoveHistory _moveHistory;
+        private Evaluation _evaluation;
+        private Search _search;
+        private bool _debug;
         private Stopwatch _stopwatch;
         private Stopwatch _commandStopwatch;
         private Queue<List<string>> _asyncQueue;
@@ -87,11 +87,11 @@ namespace ErikTheCoder.MadChess.Engine
             // ReSharper disable once UseObjectOrCollectionInitializer
             Board = new Board(WriteMessageLine);
             Board.PrecalculatedMoves = new PrecalculatedMoves(Board.BishopMoveMasks, Board.RookMoveMasks, Board.CreateMoveDestinationsMask, WriteMessageLine);
-            Cache = new Cache(_cacheSizeMegabytes * Cache.CapacityPerMegabyte, Board.ValidateMove);
-            KillerMoves = new KillerMoves(Search.MaxHorizon);
-            MoveHistory = new MoveHistory();
-            Evaluation = new Evaluation(new EvaluationConfig(), Board.GetPositionCount, Board.IsPassedPawn, Board.IsFreePawn);
-            Search = new Search(Cache, KillerMoves, MoveHistory, Evaluation, () => Debug, WriteMessageLine);
+            _cache = new Cache(_cacheSizeMegabytes * Cache.CapacityPerMegabyte, Board.ValidateMove);
+            _killerMoves = new KillerMoves(Search.MaxHorizon);
+            _moveHistory = new MoveHistory();
+            _evaluation = new Evaluation(Board.GetPositionCount, Board.IsPassedPawn, Board.IsFreePawn, ()=> _debug, WriteMessageLine);
+            _search = new Search(_cache, _killerMoves, _moveHistory, _evaluation, () => _debug, WriteMessageLine);
             _defaultHalfAndFullMove = new[] { "0", "1" };
             Board.SetPosition(Board.StartPositionFen);
         }
@@ -117,10 +117,10 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Release managed resources.
                 Board = null;
-                Cache = null;
-                KillerMoves = null;
-                MoveHistory = null;
-                Evaluation = null;
+                _cache = null;
+                _killerMoves = null;
+                _moveHistory = null;
+                _evaluation = null;
                 _defaultHalfAndFullMove = null;
                 lock (_messageLock) { _stopwatch = null; }
                 _commandStopwatch = null;
@@ -130,8 +130,8 @@ namespace ErikTheCoder.MadChess.Engine
                 _messageLock = null;
             }
             // Release unmanaged resources.
-            Search?.Dispose();
-            Search = null;
+            _search?.Dispose();
+            _search = null;
             _logWriter?.Dispose();
             _logWriter = null;
             _asyncSignal?.Dispose();
@@ -247,7 +247,7 @@ namespace ErikTheCoder.MadChess.Engine
                     WriteMessageLine("readyok");
                     break;
                 case "debug":
-                    Debug = Tokens[1].Equals("on", StringComparison.CurrentCultureIgnoreCase);
+                    _debug = Tokens[1].Equals("on", StringComparison.CurrentCultureIgnoreCase);
                     break;
                 case "setoption":
                     SetOption(Tokens);
@@ -263,9 +263,9 @@ namespace ErikTheCoder.MadChess.Engine
                     writeMessageLine = false;
                     break;
                 case "stop":
-                    Search.Continue = false;
+                    _search.Continue = false;
                     // Wait for search to complete.
-                    Search.Signal.WaitOne();
+                    _search.Signal.WaitOne();
                     break;
                 case "quit":
                     Quit(0);
@@ -287,13 +287,13 @@ namespace ErikTheCoder.MadChess.Engine
                     ListMoves();
                     break;
                 case "shiftkillermoves":
-                    KillerMoves.Shift(int.Parse(Tokens[1]));
+                    _killerMoves.Shift(int.Parse(Tokens[1]));
                     break;
                 case "showevalparams":
-                    WriteMessageLine(Evaluation.ShowParameters());
+                    WriteMessageLine(_evaluation.ShowParameters());
                     break;
                 case "staticscore":
-                    WriteMessageLine(Evaluation.ToString(Board.CurrentPosition));
+                    WriteMessageLine(_evaluation.ToString(Board.CurrentPosition));
                     break;
                 case "swapoffscore":
                     SwapOffScore(Tokens);
@@ -375,8 +375,25 @@ namespace ErikTheCoder.MadChess.Engine
             // Display engine name and author.
             WriteMessageLine("id name MadChess 3.0");
             WriteMessageLine("id author Erik Madsen");
-            // TODO: Display engine options.
             WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See http://www.madchess.net.");
+            WriteMessageLine("option name Debug type check default false");
+            WriteMessageLine("option name Log type check default false");
+            WriteMessageLine("option name Hash type spin default 128 min 0 max 1024");
+            WriteMessageLine("option name ClearHash type button");
+            WriteMessageLine("option name UCI_AnalyseMode type check default false");
+            WriteMessageLine("option name Analyze type check default false");
+            WriteMessageLine($"option name MultiPV type spin default 1 min 1 max {Engine.Position.MaxMoves}");
+            WriteMessageLine("option name PieceLocation type check default true");
+            WriteMessageLine("option name PassedPawns type check default true");
+            WriteMessageLine("option name Mobility type check default true");
+            WriteMessageLine("option name NPS type spin default 0 min 0 max 1000000");
+            WriteMessageLine("option name MoveError type spin default 0 min 0 max 1000");
+            WriteMessageLine("option name BlunderError type spin default 0 min 0 max 1000");
+            WriteMessageLine("option name BlunderPercent type spin default 0 min 0 max 100");
+            WriteMessageLine("option name UCI_LimitStrength type check default false");
+            WriteMessageLine("option name LimitStrength type check default false");
+            WriteMessageLine($"option name UCI_Elo type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
+            WriteMessageLine($"option name ELO type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
             WriteMessageLine("uciok");
         }
 
@@ -388,58 +405,67 @@ namespace ErikTheCoder.MadChess.Engine
             switch (optionName.ToLowerInvariant())
             {
                 case "debug":
-                    Debug = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    _debug = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
                     break;
                 case "log":
                     Log = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
                     break;
                 case "hash":
                     int cacheSizeMegabytes = int.Parse(optionValue);
-                    Cache.Capacity = cacheSizeMegabytes * Cache.CapacityPerMegabyte;
+                    _cache.Capacity = cacheSizeMegabytes * Cache.CapacityPerMegabyte;
                     break;
                 case "clearhash":
                     // Reset cache and move heuristics.
-                    Cache.Reset();
-                    KillerMoves.Reset();
-                    MoveHistory.Reset();
+                    _cache.Reset();
+                    _killerMoves.Reset();
+                    _moveHistory.Reset();
                     break;
                 case "uci_analysemode":
                 case "analyze":
                     bool analysisMode = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
                     if (analysisMode)
                     {
-                        Search.TruncatePrincipalVariation = false;
-                        Evaluation.DrawMoves = 3;
+                        _search.TruncatePrincipalVariation = false;
+                        _evaluation.DrawMoves = 3;
                     }
                     else
                     {
-                        Search.TruncatePrincipalVariation = true;
-                        Evaluation.DrawMoves = 2;
+                        _search.TruncatePrincipalVariation = true;
+                        _evaluation.DrawMoves = 2;
                     }
                     break;
+                case "piecelocation":
+                    _evaluation.UnderstandsPieceLocation = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    break;
+                case "passedpawns":
+                    _evaluation.UnderstandsPassedPawns = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    break;
+                case "mobility":
+                    _evaluation.UnderstandsMobility = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    break;
                 case "multipv":
-                    Search.MultiPv = int.Parse(optionValue);
+                    _search.MultiPv = int.Parse(optionValue);
                     break;
                 case "nps":
-                    if (optionValue == "0") Search.NodesPerSecond = null;
-                    else Search.NodesPerSecond = int.Parse(optionValue);
+                    if (optionValue == "0") _search.NodesPerSecond = null;
+                    else _search.NodesPerSecond = int.Parse(optionValue);
                     break;
                 case "moveerror":
-                    Search.MoveError = int.Parse(optionValue);
+                    _search.MoveError = int.Parse(optionValue);
                     break;
                 case "blundererror":
-                    Search.BlunderError = int.Parse(optionValue);
+                    _search.BlunderError = int.Parse(optionValue);
                     break;
                 case "blunderpercent":
-                    Search.BlunderPercent = int.Parse(optionValue);
+                    _search.BlunderPercent = int.Parse(optionValue);
                     break;
                 case "uci_limitstrength":
                 case "limitstrength":
-                    Search.LimitStrength = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    _search.LimitStrength = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
                     break;
                 case "uci_elo":
                 case "elo":
-                    Search.Elo = int.Parse(optionValue);
+                    _search.Elo = int.Parse(optionValue);
                     break;
                 default:
                     WriteMessageLine(optionName + " option not supported.");
@@ -451,9 +477,9 @@ namespace ErikTheCoder.MadChess.Engine
         private void UciNewGame(bool PreserveMoveCount = false)
         {
             // Reset cache and move heuristics.
-            Cache.Reset();
-            KillerMoves.Reset();
-            MoveHistory.Reset();
+            _cache.Reset();
+            _killerMoves.Reset();
+            _moveHistory.Reset();
             // Set up start position.
             Board.SetPosition(Board.StartPositionFen, PreserveMoveCount);
         }
@@ -513,9 +539,9 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _commandStopwatch.Restart();
             // Reset search and evaluation.  Shift killer moves.
-            Search.Reset(false);
-            Evaluation.Reset(false);
-            KillerMoves.Shift(2);
+            _search.Reset(false);
+            _evaluation.Reset(false);
+            _killerMoves.Shift(2);
             for (int tokenIndex = 1; tokenIndex < Tokens.Count; tokenIndex++)
             {
                 string token = Tokens[tokenIndex];
@@ -523,39 +549,39 @@ namespace ErikTheCoder.MadChess.Engine
                 switch (token.ToLowerInvariant())
                 {
                     case "wtime":
-                        Search.WhiteTimeRemaining = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
+                        _search.WhiteTimeRemaining = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
                         break;
                     case "btime":
-                        Search.BlackTimeRemaining = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
+                        _search.BlackTimeRemaining = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
                         break;
                     case "winc":
-                        Search.WhiteTimeIncrement = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
+                        _search.WhiteTimeIncrement = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
                         break;
                     case "binc":
-                        Search.BlackTimeIncrement = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
+                        _search.BlackTimeIncrement = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
                         break;
                     case "movestogo":
-                        Search.MovesToTimeControl = int.Parse(Tokens[tokenIndex + 1]);
+                        _search.MovesToTimeControl = int.Parse(Tokens[tokenIndex + 1]);
                         break;
                     case "depth":
-                        Search.HorizonLimit = Math.Min(int.Parse(Tokens[tokenIndex + 1]), Search.MaxHorizon);
+                        _search.HorizonLimit = Math.Min(int.Parse(Tokens[tokenIndex + 1]), Search.MaxHorizon);
                         break;
                     case "nodes":
-                        Search.NodeLimit = long.Parse(Tokens[tokenIndex + 1]);
+                        _search.NodeLimit = long.Parse(Tokens[tokenIndex + 1]);
                         break;
                     case "mate":
-                        Search.MateInMoves = int.Parse(Tokens[tokenIndex + 1]);
-                        Search.MoveTimeHardLimit = TimeSpan.MaxValue;
-                        Search.WhiteTimeRemaining = TimeSpan.MaxValue;
-                        Search.BlackTimeRemaining = TimeSpan.MaxValue;
+                        _search.MateInMoves = int.Parse(Tokens[tokenIndex + 1]);
+                        _search.MoveTimeHardLimit = TimeSpan.MaxValue;
+                        _search.WhiteTimeRemaining = TimeSpan.MaxValue;
+                        _search.BlackTimeRemaining = TimeSpan.MaxValue;
                         break;
                     case "movetime":
-                        Search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
+                        _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
                         break;
                     case "infinite":
-                        Search.MoveTimeHardLimit = TimeSpan.MaxValue;
-                        Search.WhiteTimeRemaining = TimeSpan.MaxValue;
-                        Search.BlackTimeRemaining = TimeSpan.MaxValue;
+                        _search.MoveTimeHardLimit = TimeSpan.MaxValue;
+                        _search.WhiteTimeRemaining = TimeSpan.MaxValue;
+                        _search.BlackTimeRemaining = TimeSpan.MaxValue;
                         break;
                 }
             }
@@ -565,11 +591,11 @@ namespace ErikTheCoder.MadChess.Engine
         private void GoAsync()
         {
             // Find best move and respond.
-            ulong bestMove = Search.FindBestMove(Board);
+            ulong bestMove = _search.FindBestMove(Board);
             WriteMessageLine($"bestmove {Move.ToLongAlgebraic(bestMove)}");
             // Signal search has stopped.
             _commandStopwatch.Stop();
-            Search.Signal.Set();
+            _search.Signal.Set();
             // Collect memory from unreferenced objects in generation 0 and 1.
             // Do not collect memory from generation 2 which contains the large object heap, since it's mostly arrays whose lifetime is the duration of the application.
             GC.Collect(1, GCCollectionMode.Forced, true, true);
@@ -625,7 +651,7 @@ namespace ErikTheCoder.MadChess.Engine
             long moves = 0;
             while (true)
             {
-                (ulong move, _) = Search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
+                (ulong move, _) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
                 if (move == Move.Null) break;
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 if (toHorizon > 1)
@@ -683,12 +709,12 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _commandStopwatch.Restart();
             // Get cached position.
-            CachedPosition cachedPosition = Cache.GetPosition(Board.CurrentPosition.Key);
-            ulong bestMove = Cache.GetBestMove(cachedPosition);
+            CachedPosition cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
+            ulong bestMove = _cache.GetBestMove(cachedPosition);
             // Generate and sort moves.
             Board.CurrentPosition.GenerateMoves();
             int lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
-            Search.PrioritizeMoves(Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
+            _search.PrioritizeMoves(Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
             Search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
             WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer  History              Priority");
             WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  =======  ====================");
@@ -721,10 +747,10 @@ namespace ErikTheCoder.MadChess.Engine
         private void SwapOffScore(List<string> Tokens)
         {
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
-            int staticScore = Evaluation.GetStaticScore(Board.CurrentPosition);
-            Search.Reset(false);
-            Evaluation.Reset(false);
-            int swapOffScore = Search.GetSwapOffScore(Board, move, staticScore);
+            int staticScore = _evaluation.GetStaticScore(Board.CurrentPosition);
+            _search.Reset(false);
+            _evaluation.Reset(false);
+            int swapOffScore = _search.GetSwapOffScore(Board, move, staticScore);
             WriteMessageLine(swapOffScore.ToString());
         }
         
@@ -837,14 +863,14 @@ namespace ErikTheCoder.MadChess.Engine
                         expectedMoves[moveIndex] = expectedMove;
                         expectedMovesLongAlgebraic[moveIndex] = Move.ToLongAlgebraic(expectedMove);
                     }
-                    Search.Reset(true);
+                    _search.Reset(true);
                     // Find best move.  Do not update node count or PV.
                     Board.NodesInfoUpdate = long.MaxValue;
-                    Search.PvInfoUpdate = false;
-                    Search.MoveTimeSoftLimit = TimeSpan.MaxValue;
-                    Search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
-                    ulong bestMove = Search.FindBestMove(Board);
-                    Search.Signal.Set();
+                    _search.PvInfoUpdate = false;
+                    _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
+                    _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
+                    ulong bestMove = _search.FindBestMove(Board);
+                    _search.Signal.Set();
                     // Determine if search found correct move.
                     bool correct;
                     // ReSharper disable once SwitchStatementMissingSomeCases
@@ -892,9 +918,9 @@ namespace ErikTheCoder.MadChess.Engine
             double nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
             WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
             // Update stats.
-            double nullMoveCutoffPercent = 100d * Search.Stats.NullMoveCutoffs / Search.Stats.NullMoves;
-            double betaCutoffMoveNumber = (double)Search.Stats.BetaCutoffMoveNumber / Search.Stats.BetaCutoffs;
-            double betaCutoffFirstMovePercent = 100d * Search.Stats.BetaCutoffFirstMove / Search.Stats.BetaCutoffs;
+            double nullMoveCutoffPercent = 100d * _search.Stats.NullMoveCutoffs / _search.Stats.NullMoves;
+            double betaCutoffMoveNumber = (double)_search.Stats.BetaCutoffMoveNumber / _search.Stats.BetaCutoffs;
+            double betaCutoffFirstMovePercent = 100d * _search.Stats.BetaCutoffFirstMove / _search.Stats.BetaCutoffs;
             WriteMessageLine();
             WriteMessageLine($"Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent:0.00}%");
         }
@@ -947,7 +973,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn);
+                Evaluation evaluation = new Evaluation(board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, () => false, WriteMessageLine);
                 Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
                 tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
             }

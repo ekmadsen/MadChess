@@ -59,7 +59,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Cache cache = new Cache(1, board.ValidateMove);
             KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
             MoveHistory moveHistory = new MoveHistory();
-            Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn);
+            Evaluation evaluation = new Evaluation(board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, () => false, WriteMessageLine);
             Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
@@ -68,7 +68,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
 
 
-        public Particle GetBestParticle()
+        private Particle GetBestParticle()
         {
             Particle bestParticle = this[0].GetBestParticle();
             for (int index = 1; index < Count; index++)
@@ -80,7 +80,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
 
 
-        public void RandomizeParticles(Particle BestParticle)
+        private void RandomizeParticles(Particle BestParticle)
         {
             for (int index = 0; index < Count; index++) this[index].RandomizeParticles(BestParticle);
         }
@@ -154,7 +154,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
 
 
-        public void SetDefaultParameters(Parameters Parameters)
+        private void SetDefaultParameters(Parameters Parameters)
         {
             EvaluationConfig evaluationConfig = new EvaluationConfig();
             // Pawns
@@ -242,7 +242,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(new EvaluationConfig(), board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn);
+                Evaluation evaluation = new Evaluation(board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, () => false, _writeMessageLine);
                 evaluations[index] = evaluation;
                 searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
             }
@@ -283,11 +283,11 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         private void UpdateVelocity()
         {
-            Particle globallyBestParticle = GetBestParticle();
+            Particle bestParticle = GetBestParticle();
             for (int index = 0; index < Count; index++)
             {
                 ParticleSwarm particleSwarm = this[index];
-                particleSwarm.UpdateVelocity(globallyBestParticle);
+                particleSwarm.UpdateVelocity(bestParticle);
             }
         }
 

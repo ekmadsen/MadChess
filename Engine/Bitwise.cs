@@ -23,26 +23,10 @@ namespace ErikTheCoder.MadChess.Engine
     {
         private const int _intBits = 32;
         private const int _longBits = 64;
-        //private const ulong _deBruijnSequence = 0x37E84A99DAE458F;
-        //private static readonly int[] _multiplyDeBruijnBitPosition;
+        
 
-
-        //static Bitwise()
-        //{
-        //    _multiplyDeBruijnBitPosition = new[]
-        //    {
-        //        00, 01, 17, 02, 18, 50, 03, 57,
-        //        47, 19, 22, 51, 29, 04, 33, 58,
-        //        15, 48, 20, 27, 25, 23, 52, 41,
-        //        54, 30, 38, 05, 43, 34, 59, 08,
-        //        63, 16, 49, 56, 46, 21, 28, 32,
-        //        14, 26, 24, 40, 53, 37, 42, 07,
-        //        62, 55, 45, 31, 13, 39, 36, 06,
-        //        61, 44, 12, 35, 60, 11, 10, 09
-        //    };
-        //}
-
-
+        // ReSharper disable UnusedMember.Global
+        // ReSharper disable once MemberCanBePrivate.Global
         public static uint CreateUIntMask(int Index)
         {
             Debug.Assert((Index >= 0) && (Index < _intBits));
@@ -61,14 +45,11 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        // ReSharper disable once MemberCanBePrivate.Global
         public static uint CreateUIntMask(int[] Indices)
         {
             uint mask = 0;
-            for (int i = 0; i < Indices.Length; i++)
-            {
-                int index = Indices[i];
-                SetBit(ref mask, index);
-            }
+            for (int index = 0; index < Indices.Length; index++) SetBit(ref mask, Indices[index]);
             Debug.Assert(Indices.All(Index => (Index >= 0) && (Index < _intBits)));
             return mask;
         }
@@ -95,11 +76,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static ulong CreateULongMask(int[] Indices)
         {
             ulong mask = 0;
-            for (int i = 0; i < Indices.Length; i++)
-            {
-                int index = Indices[i];
-                SetBit(ref mask, index);
-            }
+            for (int index = 0; index < Indices.Length; index++) SetBit(ref mask, Indices[index]);
             Debug.Assert(Indices.All(Index => (Index >= 0) && (Index < _longBits)));
             return mask;
         }
@@ -152,6 +129,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // ReSharper disable once MemberCanBePrivate.Global
         public static void SetBit(ref uint Value, int Index)
         {
             Debug.Assert((Index >= 0) && (Index < _intBits));
@@ -200,6 +178,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // ReSharper disable once MemberCanBePrivate.Global
         public static bool IsBitSet(uint Value, int Index)
         {
             Debug.Assert((Index >= 0) && (Index < _intBits));
@@ -215,49 +194,12 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public static int CountSetBits(uint Value)
-        //{
-        //    int count = 0;
-        //    while (Value > 0)
-        //    {
-        //        count++;
-        //        Value &= Value - 1u;
-        //    }
-        //    Debug.Assert((count >= 0) && (count <= _intBits));
-        //    return count;
-        //}
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(uint Value) => Popcnt.PopCount(Value);
 
 
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public static int CountSetBits(ulong Value)
-        //{
-        //    int count = 0;
-        //    while (Value > 0)
-        //    {
-        //        count++;
-        //        Value &= Value - 1ul;
-        //    }
-        //    Debug.Assert((count >= 0) && (count <= _longBits));
-        //    return count;
-        //}
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(ulong Value) => (int) Popcnt.PopCount(Value);
-
-
-        // See https://stackoverflow.com/questions/37083402/fastest-way-to-get-last-significant-bit-position-in-a-ulong-c
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public static int FindFirstSetBit(ulong Value)
-        //{
-        //    if (Value == 0) return -1;
-        //    return _multiplyDeBruijnBitPosition[((ulong) ((long) Value & -(long) Value) * _deBruijnSequence) >> 58];
-        //}
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -308,5 +250,6 @@ namespace ErikTheCoder.MadChess.Engine
             }
             return stringBuilder.ToString();
         }
+        // ReSharper restore UnusedMember.Global
     }
 }

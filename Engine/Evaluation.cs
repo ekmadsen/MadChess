@@ -23,6 +23,9 @@ namespace ErikTheCoder.MadChess.Engine
         public readonly EvaluationConfig Config;
         public readonly EvaluationStats Stats;
         public int DrawMoves;
+        public bool UnderstandsPieceLocation;
+        public bool UnderstandsPassedPawns;
+        public bool UnderstandsMobility;
         private const double _passedPawnPower = 2d;
         private const double _pieceMobilityPower = 0.5d;
         // Select phase constants such that starting material = 256.
@@ -32,9 +35,12 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _bishopPhase = 14; // + 4 * 14 = 112
         private const int _rookPhase = 20; //   + 4 * 20 = 192
         private const int _queenPhase = 32; //  + 2 * 32 = 256
+        private readonly EvaluationConfig _defaultConfig;
         private readonly Delegates.GetPositionCount _getPositionCount;
         private readonly Delegates.IsPassedPawn _isPassedPawn;
         private readonly Delegates.IsFreePawn _isFreePawn;
+        private readonly Delegates.Debug _debug;
+        private readonly Delegates.WriteMessageLine _writeMessageLine;
         private readonly StaticScore _staticScore;
         // Piece Location
         private readonly int[] _mgPawnLocations;
@@ -65,12 +71,18 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         
-        public Evaluation(EvaluationConfig Config, Delegates.GetPositionCount GetPositionCount, Delegates.IsPassedPawn IsPassedPawn, Delegates.IsFreePawn IsFreePawn)
+        public Evaluation(Delegates.GetPositionCount GetPositionCount, Delegates.IsPassedPawn IsPassedPawn, Delegates.IsFreePawn IsFreePawn, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
         {
-            this.Config = Config;
+            // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureStrength method overwriting defaults.
+            Config = new EvaluationConfig();
+            _defaultConfig = new EvaluationConfig();
             _getPositionCount = GetPositionCount;
             _isPassedPawn = IsPassedPawn;
             _isFreePawn = IsFreePawn;
+            _debug = Debug;
+            _writeMessageLine = WriteMessageLine;
+            _staticScore = new StaticScore(_middlegamePhase);
+            // Create arrays for quick lookup of positional factors.
             _mgPawnLocations = new int[64];
             _egPawnLocations = new int[64];
             _mgKnightLocations = new int[64];
@@ -110,10 +122,14 @@ namespace ErikTheCoder.MadChess.Engine
             _egQueenMobility[0] = new int[28];
             _mgQueenMobility[1] = new int[55];
             _egQueenMobility[1] = new int[55];
-            _staticScore = new StaticScore(_middlegamePhase);
+            // Calculate positional factor values.
+            Configure();
+            // Set default values.
             Stats = new EvaluationStats();
             DrawMoves = 2;
-            Configure();
+            UnderstandsPieceLocation = true;
+            UnderstandsPassedPawns = true;
+            UnderstandsMobility = true;
         }
 
 
@@ -160,8 +176,10 @@ namespace ErikTheCoder.MadChess.Engine
 
         private static void CalculatePieceMobility(int[][] MgPieceMobility, int[][] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
         {
-            Debug.Assert(MgPieceMobility.GetLength(0) == EgPieceMobility.GetLength(0));
-            Debug.Assert(MgPieceMobility.GetLength(1) == EgPieceMobility.GetLength(1));
+            Debug.Assert(MgPieceMobility.Length == 2);
+            Debug.Assert(EgPieceMobility.Length == 2);
+            Debug.Assert(MgPieceMobility[0].Length == EgPieceMobility[0].Length);
+            Debug.Assert(MgPieceMobility[1].Length == EgPieceMobility[1].Length);
             for (int pieceIndex = 0; pieceIndex < MgPieceMobility.Length; pieceIndex++)
             {
                 int halfMoves = MgPieceMobility[pieceIndex].Length / 2;
@@ -190,9 +208,72 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static void ConfigureStrength(int Elo)
+        public void ConfigureStrength(int Elo)
         {
-            // TODO: Configure strength of evaluation.
+            // Set default parameters.
+            Config.Set(_defaultConfig);
+            UnderstandsPieceLocation = true;
+            UnderstandsPassedPawns = true;
+            UnderstandsMobility = true;
+            // Limit material and positional understanding.
+            if (Elo < 800)
+            {
+                // Beginner
+                // Undervalue rook and overvalue queen.
+                Config.RookMaterial = 300;
+                Config.QueenMaterial = 1200;
+            }
+            if (Elo < 1000)
+            {
+                // Novice
+                // Value knight and bishop equally.
+                Config.KnightMaterial = 300;
+                Config.BishopMaterial = 300;
+                // Misjudge the danger of passed pawns.
+                UnderstandsPassedPawns = false;
+                // Misplace pieces.
+                UnderstandsPieceLocation = false;
+            }
+            if (Elo < 1200)
+            {
+                // Social
+                UnderstandsMobility = false;
+            }
+            if (Elo < 1400)
+            {
+                // Strong Social
+                //UnderstandsThreats = false;
+                //UnderstandsKingSafety = false;
+            }
+            if (Elo < 1600)
+            {
+                // Club
+                //UnderstandsBishopPair = false;
+                //UnderstandsOutposts = false;
+            }
+            if (Elo < 1800)
+            {
+                // Strong Club
+                //Understands7thRank = false;
+                //UnderstandsTrades = false;
+            }
+            if (_debug())
+            {
+                _writeMessageLine($"info string PawnMaterialScore = {PawnMaterial}");
+                _writeMessageLine($"info string KnightMaterialScore = {Config.KnightMaterial}");
+                _writeMessageLine($"info string BishopMaterialScore = {Config.BishopMaterial}");
+                _writeMessageLine($"info string RookMaterialScore = {Config.RookMaterial}");
+                _writeMessageLine($"info string QueenMaterialScore = {Config.QueenMaterial}");
+                _writeMessageLine($"info string UnderstandsPieceLocation = {UnderstandsPieceLocation}");
+                _writeMessageLine($"info string UnderstandsPassedPawns = {UnderstandsPassedPawns}");
+                _writeMessageLine($"info string UnderstandsMobility = {UnderstandsMobility}");
+                //_writeMessageLine($"info string UnderstandsThreats = {UnderstandsThreats}");
+                //_writeMessageLine($"info string UnderstandsKingSafety = {UnderstandsKingSafety}");
+                //_writeMessageLine($"info string UnderstandsBishopPair = {UnderstandsBishopPair}");
+                //_writeMessageLine($"info string UnderstandsOutposts = {UnderstandsOutposts}");
+                //_writeMessageLine($"info string Understands7thRank = {Understands7thRank}");
+                //_writeMessageLine($"info string UnderstandsTrades = {UnderstandsTrades}");
+            }
         }
 
 
@@ -349,9 +430,9 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Not a simple endgame.
                 GetMaterialScore(Position);
-                EvaluatePieceLocation(Position);
-                EvaluatePawns(Position);
-                EvaluatePieceMobility(Position);
+                if (UnderstandsPieceLocation) EvaluatePieceLocation(Position);
+                if (UnderstandsPassedPawns) EvaluatePawns(Position);
+                if (UnderstandsMobility) EvaluatePieceMobility(Position);
             }
             int phase = DetermineGamePhase(Position);
             return Position.WhiteMove ? _staticScore.TotalScore(phase) : -_staticScore.TotalScore(phase);
@@ -544,7 +625,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int DetermineGamePhase(Position Position)
+        private static int DetermineGamePhase(Position Position)
         {
             int phase = _knightPhase * (Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.BlackKnights)) +
                         _bishopPhase * (Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.BlackBishops)) +
