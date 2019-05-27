@@ -49,8 +49,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _materialAdvantageMovesPer1024 = 25; // This improves integer division speed since x / 1024 = x >> 10.
         private const int _moveTimeHardLimitPer128 = 512; // This improves integer division speed since x / 128 = x >> 7.
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _nullMoveReduction = 3;
-        private const int _estimateBestMoveReduction = 2;
+        private const int _estimateBestMoveReduction = 3;
         private const int _pvsMinToHorizon = 3;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
@@ -59,6 +58,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int[] _multiPvAspirationWindows;
         private int[] _scoreErrorAspirationWindows;
         private int[] _futilityMargins;
+        private int[] _nullMoveReductions;
         private int[] _lateMoveReductions;
         private ulong[] _rootMoves;
         private int[] _rootScores;
@@ -143,8 +143,9 @@ namespace ErikTheCoder.MadChess.Engine
             _singlePvAspirationWindows = new[] {100, 200, 500};
             _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
-            _futilityMargins = new[] {50, 100, 175, 275, 400, 550};
-            _lateMoveReductions = new[] {3, 7, 13, 21, 31};
+            _futilityMargins = new[] { 50, 100, 175, 275, 400, 550 };
+            _nullMoveReductions = new[] { 0, 0, 0, 300, 500 };
+            _lateMoveReductions = new[] { 3, 7, 15 };
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -198,6 +199,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _multiPvAspirationWindows = null;
                 _scoreErrorAspirationWindows = null;
                 _futilityMargins = null;
+                _nullMoveReductions = null;
                 _lateMoveReductions = null;
                 _rootMoves = null;
                 _rootScores = null;
@@ -592,7 +594,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
-                if (SearchNullMove(Board, Depth, Horizon, Beta))
+                if (NullMoveCausesBetaCutoff(Board, Depth, Horizon, staticScore, Beta))
                 {
                     // Enemy is unable to capitalize on position even if player forfeits right to move.
                     // While forfeiting right to move is illegal, this indicates position is strong.
@@ -858,7 +860,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
         {
-            if ((StaticScore < Beta) || Position.KingInCheck) return false; // Do not attempt null move if static score is less than beta or king is in check.
+            if ((StaticScore < Beta) || Position.KingInCheck) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
             int minorAndMajorPieces = Position.WhiteMove
                 ? Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens)
@@ -867,10 +869,23 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool SearchNullMove(Board Board, int Depth, int Horizon, int Beta)
+        private bool NullMoveCausesBetaCutoff(Board Board, int Depth, int Horizon, int StaticScore, int Beta)
         {
+            // Reduce search horizon based on static score.
+            int lastIndex = _nullMoveReductions.Length - 1;
+            int staticScoreOverBeta = StaticScore - Beta;
+            int horizon = Horizon;
+            for (int index = lastIndex; index >= 0; index--)
+            {
+                if (staticScoreOverBeta >= _nullMoveReductions[index])
+                {
+                    horizon = Horizon - index - 1;
+                    break;
+                }
+            }
+            // Play and search null move.
             Board.PlayNullMove();
-            int score = -GetDynamicScore(Board, Depth + 1, Horizon - _nullMoveReduction, false, -Beta, -Beta + 1); // Search with zero alpha / beta window.
+            int score = -GetDynamicScore(Board, Depth + 1, horizon, false, -Beta, -Beta + 1); // Search with zero alpha / beta window.
             Board.UndoMove();
             return score >= Beta;
         }
