@@ -49,9 +49,9 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _materialAdvantageMovesPer1024 = 25; // This improves integer division speed since x / 1024 = x >> 10.
         private const int _moveTimeHardLimitPer128 = 512; // This improves integer division speed since x / 128 = x >> 7.
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _estimateBestMoveReduction = 3;
-        private const int _pvsMinToHorizon = 3;
-        private const int _quietSearchMaxFromHorizon = 3;
+        private const int _estimateBestMoveReduction = 2;
+        private const int _pvsMinToHorizon = 2;
+        private const int _quietSearchMaxFromHorizon = 4;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
         private int[] _singlePvAspirationWindows;
@@ -143,9 +143,9 @@ namespace ErikTheCoder.MadChess.Engine
             _singlePvAspirationWindows = new[] {100, 200, 500};
             _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
-            _futilityMargins = new[] { 50, 100, 175, 275, 400, 550 };
-            _nullMoveReductions = new[] { 0, 0, 0, 300, 500 };
-            _lateMoveReductions = new[] { 3, 7, 15 };
+            _futilityMargins = new[] { 50, 100, 300, 500, 900 };
+            _nullMoveReductions = new[] { 0, 0, 300, 500 };
+            _lateMoveReductions = new[] { 3, 7, 15, 31 };
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -583,13 +583,6 @@ namespace ErikTheCoder.MadChess.Engine
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
             int staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
-            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
-            {
-                // Position is futile.
-                // Position is not the result of best play by both players.
-                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
-                return Beta;
-            }
             if (NullMove && IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
             {
                 // Null move is allowed.
@@ -847,17 +840,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Beta)
-        {
-            if ((Depth == 0) || Position.KingInCheck || IsDrawnEndgame) return false; // Root, king in check, and drawn endgame positions are not futile.
-            int toHorizon = Horizon - Depth;
-            if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
-            // Determine if any move can lower score to beta.
-            int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore - futilityMargin > Beta;
-        }
-
-
         private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
         {
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
@@ -885,7 +867,8 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Play and search null move.
             Board.PlayNullMove();
-            int score = -GetDynamicScore(Board, Depth + 1, horizon, false, -Beta, -Beta + 1); // Search with zero alpha / beta window.
+            // Do not play two null moves consecutively.  Search with zero alpha / beta window.
+            int score = -GetDynamicScore(Board, Depth + 1, horizon, false, -Beta, -Beta + 1);
             Board.UndoMove();
             return score >= Beta;
         }
