@@ -50,8 +50,8 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _moveTimeHardLimitPer128 = 512; // This improves integer division speed since x / 128 = x >> 7.
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
         private const int _estimateBestMoveReduction = 2;
-        private const int _pvsMinToHorizon = 2;
-        private const int _quietSearchMaxFromHorizon = 4;
+        private const int _pvsMinToHorizon = 3;
+        private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
         private int[] _singlePvAspirationWindows;
@@ -143,9 +143,9 @@ namespace ErikTheCoder.MadChess.Engine
             _singlePvAspirationWindows = new[] {100, 200, 500};
             _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
-            _futilityMargins = new[] { 50, 100, 300, 500, 900 };
-            _nullMoveReductions = new[] { 0, 0, 300, 500 };
-            _lateMoveReductions = new[] { 3, 7, 15, 31 };
+            _futilityMargins = new[] {50, 100, 175, 275, 400, 550};
+            _nullMoveReductions = new[] {0, 0, 100, 300};
+            _lateMoveReductions = new[] {3, 7, 15};
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
