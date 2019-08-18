@@ -91,7 +91,7 @@ namespace ErikTheCoder.MadChess.Engine
             for (int moveIndex = 0; moveIndex < moves.Length; moveIndex++)
             {
                 string move = moves[moveIndex];
-                string cleanMove = move?.Trim();
+                string cleanMove = move.Trim();
                 if (string.IsNullOrEmpty(cleanMove)) continue;
                 char firstCharacter = cleanMove[0];
                 if (char.IsNumber(firstCharacter)) continue; // Skip move number or result.

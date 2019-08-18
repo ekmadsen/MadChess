@@ -437,7 +437,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int To(ulong Move) => (int) ((Move & _toMask) >> 0);
+        public static int To(ulong Move) => (int) (Move & _toMask);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -446,7 +446,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _toUnmask;
             // Set
-            Move |= (ulong) To << 0;
+            Move |= (uint) To;
             // Validate move.
             Debug.Assert(Engine.Move.To(Move) == To);
             Debug.Assert(IsValid(Move));

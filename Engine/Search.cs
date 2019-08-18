@@ -59,7 +59,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int[] _scoreErrorAspirationWindows;
         private int[] _futilityMargins;
         private int[] _nullMoveReductions;
-        private int[] _lateMoveReductions;
+        private int[][] _lateMoveReductions;
         private ulong[] _rootMoves;
         private int[] _rootScores;
         private ulong[] _bestMoves;
@@ -144,8 +144,20 @@ namespace ErikTheCoder.MadChess.Engine
             _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
             _futilityMargins = new[] {50, 100, 175, 275, 400, 550};
-            _nullMoveReductions = new[] {0, 0, 100, 300};
-            _lateMoveReductions = new[] {3, 7, 15};
+            _nullMoveReductions = new[] {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4 };
+            _lateMoveReductions = new int[12][];
+            _lateMoveReductions[00] = new[] {0};
+            _lateMoveReductions[01] = new[] {0, 0, 0, 0, 0, 0, 0, 1};
+            _lateMoveReductions[02] = new[] {0, 0, 0, 0, 0, 0, 1, 1};
+            _lateMoveReductions[03] = new[] {0, 0, 0, 0, 0, 1, 1, 1};
+            _lateMoveReductions[04] = new[] {0, 0, 0, 0, 1, 1, 1, 2};
+            _lateMoveReductions[05] = new[] {0, 0, 0, 1, 1, 1, 1, 2};
+            _lateMoveReductions[06] = new[] {0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3};
+            _lateMoveReductions[07] = new[] {0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3};
+            _lateMoveReductions[08] = new[] {0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3};
+            _lateMoveReductions[09] = new[] {0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3};
+            _lateMoveReductions[10] = new[] {0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3};
+            _lateMoveReductions[11] = new[] {0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4};
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -583,7 +595,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
             int staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
-            if (NullMove && IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
+            if (NullMove && IsNullMoveAllowed(Board.CurrentPosition, Depth, Horizon, staticScore, Beta))
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
@@ -840,9 +852,11 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
+        private bool IsNullMoveAllowed(Position Position, int Depth, int Horizon, int StaticScore, int Beta)
         {
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
+            int toHorizon = Horizon - Depth;
+            if (_nullMoveReductions[Math.Min(toHorizon, _nullMoveReductions.Length - 1)] == 0) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
             int minorAndMajorPieces = Position.WhiteMove
                 ? Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens)
@@ -853,18 +867,8 @@ namespace ErikTheCoder.MadChess.Engine
 
         private bool NullMoveCausesBetaCutoff(Board Board, int Depth, int Horizon, int StaticScore, int Beta)
         {
-            // Reduce search horizon based on static score.
-            int lastIndex = _nullMoveReductions.Length - 1;
-            int staticScoreOverBeta = StaticScore - Beta;
-            int horizon = Horizon;
-            for (int index = lastIndex; index >= 0; index--)
-            {
-                if (staticScoreOverBeta >= _nullMoveReductions[index])
-                {
-                    horizon = Horizon - index - 1;
-                    break;
-                }
-            }
+            int toHorizon = Horizon - Depth;
+            int horizon = Horizon - _nullMoveReductions[Math.Min(toHorizon, _nullMoveReductions.Length - 1)];
             // Play and search null move.
             Board.PlayNullMove();
             // Do not play two null moves consecutively.  Search with zero alpha / beta window.
@@ -1007,10 +1011,11 @@ namespace ErikTheCoder.MadChess.Engine
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce search horizon of moves with lone king on board.
-            // Reduce search horizon based on quiet move number.
-            int lastIndex = _lateMoveReductions.Length - 1;
-            for (int index = lastIndex; index >= 0; index--) if (QuietMoveNumber >= _lateMoveReductions[index]) return Horizon - index - 1; // Reduce search horizon of late move.
-            return Horizon;
+            // Reduce search horizon based on distance to horizon and quiet move number.
+            int toHorizon = Horizon - Depth;
+            int toHorizonIndex = Math.Min(toHorizon, _lateMoveReductions.Length - 1);
+            int quietMoveIndex = Math.Min(QuietMoveNumber, _lateMoveReductions[toHorizonIndex].Length - 1);
+            return Horizon - _lateMoveReductions[toHorizonIndex][quietMoveIndex];
         }
 
         
