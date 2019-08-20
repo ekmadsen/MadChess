@@ -144,10 +144,10 @@ namespace ErikTheCoder.MadChess.Engine
             _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017
-            _futilityMargins =    new[] {050, 100, 225, 375, 550};
+            _futilityMargins = new[]    {050, 100, 175, 275, 400, 550};
             _nullMoveReductions = new[] {000, 001, 002, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 005};
-            // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015
-            _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003};
+            // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
+            _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
