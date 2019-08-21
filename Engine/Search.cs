@@ -49,6 +49,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _materialAdvantageMovesPer1024 = 25; // This improves integer division speed since x / 1024 = x >> 10.
         private const int _moveTimeHardLimitPer128 = 512; // This improves integer division speed since x / 128 = x >> 7.
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
+        private const int _nullMoveReduction = 2;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
         private const int _quietSearchMaxFromHorizon = 3;
@@ -58,7 +59,6 @@ namespace ErikTheCoder.MadChess.Engine
         private int[] _multiPvAspirationWindows;
         private int[] _scoreErrorAspirationWindows;
         private int[] _futilityMargins;
-        private int[] _nullMoveReductions;
         private int[] _lateMoveReductions;
         private ulong[] _rootMoves;
         private int[] _rootScores;
@@ -145,9 +145,8 @@ namespace ErikTheCoder.MadChess.Engine
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017
             _futilityMargins = new[]    {050, 100, 175, 275, 400, 550};
-            _nullMoveReductions = new[] {000, 001, 002, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 005};
-            // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
-            _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
+            // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017
+            _lateMoveReductions = new[] {000, 000, 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003};
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -201,7 +200,6 @@ namespace ErikTheCoder.MadChess.Engine
                 _multiPvAspirationWindows = null;
                 _scoreErrorAspirationWindows = null;
                 _futilityMargins = null;
-                _nullMoveReductions = null;
                 _lateMoveReductions = null;
                 _rootMoves = null;
                 _rootScores = null;
@@ -585,7 +583,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
             int staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
-            if (NullMove && IsNullMoveAllowed(Board.CurrentPosition, Depth, Horizon, staticScore, Beta))
+            if (NullMove && IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
@@ -842,11 +840,9 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsNullMoveAllowed(Position Position, int Depth, int Horizon, int StaticScore, int Beta)
+        private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
         {
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
-            int toHorizon = Horizon - Depth;
-            if (_nullMoveReductions[Math.Min(toHorizon, _nullMoveReductions.Length - 1)] == 0) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
             int minorAndMajorPieces = Position.WhiteMove
                 ? Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens)
@@ -857,8 +853,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private bool NullMoveCausesBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
         {
-            int toHorizon = Horizon - Depth;
-            int horizon = Horizon - _nullMoveReductions[Math.Min(toHorizon, _nullMoveReductions.Length - 1)];
+            int horizon = Horizon - _nullMoveReduction;
             // Play and search null move.
             Board.PlayNullMove();
             // Do not play two null moves consecutively.  Search with zero alpha / beta window.
