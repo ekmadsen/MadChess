@@ -9,7 +9,6 @@
 
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -39,6 +38,10 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly Delegates.GetPositionCount _getPositionCount;
         private readonly Delegates.IsPassedPawn _isPassedPawn;
         private readonly Delegates.IsFreePawn _isFreePawn;
+        private readonly Delegates.GetPieceDestinations _getKnightDestinations;
+        private readonly Delegates.GetPieceDestinations _getBishopDestinations;
+        private readonly Delegates.GetPieceDestinations _getRookDestinations;
+        private readonly Delegates.GetPieceDestinations _getQueenDestinations;
         private readonly Delegates.Debug _debug;
         private readonly Delegates.WriteMessageLine _writeMessageLine;
         private readonly StaticScore _staticScore;
@@ -60,18 +63,21 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _egPassedPawns;
         private readonly int[] _egFreePassedPawns;
         // Piece mobility
-        private readonly int[][] _mgKnightMobility;
-        private readonly int[][] _egKnightMobility;
-        private readonly int[][] _mgBishopMobility;
-        private readonly int[][] _egBishopMobility;
-        private readonly int[][] _mgRookMobility;
-        private readonly int[][] _egRookMobility;
-        private readonly int[][] _mgQueenMobility;
-        private readonly int[][] _egQueenMobility;
+        private readonly int[] _mgKnightMobility;
+        private readonly int[] _egKnightMobility;
+        private readonly int[] _mgBishopMobility;
+        private readonly int[] _egBishopMobility;
+        private readonly int[] _mgRookMobility;
+        private readonly int[] _egRookMobility;
+        private readonly int[] _mgQueenMobility;
+        private readonly int[] _egQueenMobility;
 
 
         
-        public Evaluation(Delegates.GetPositionCount GetPositionCount, Delegates.IsPassedPawn IsPassedPawn, Delegates.IsFreePawn IsFreePawn, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
+        // TODO: Refactor Evaluation constructor to take a single parameter.
+        public Evaluation(Delegates.GetPositionCount GetPositionCount, Delegates.IsPassedPawn IsPassedPawn, Delegates.IsFreePawn IsFreePawn, Delegates.GetPieceDestinations GetKnightDestinations,
+            Delegates.GetPieceDestinations GetBishopDestinations, Delegates.GetPieceDestinations GetRookDestinations, Delegates.GetPieceDestinations GetQueenDestinations, Delegates.Debug Debug,
+            Delegates.WriteMessageLine WriteMessageLine)
         {
             // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureStrength method overwriting defaults.
             Config = new EvaluationConfig();
@@ -79,6 +85,10 @@ namespace ErikTheCoder.MadChess.Engine
             _getPositionCount = GetPositionCount;
             _isPassedPawn = IsPassedPawn;
             _isFreePawn = IsFreePawn;
+            _getKnightDestinations = GetKnightDestinations;
+            _getBishopDestinations = GetBishopDestinations;
+            _getRookDestinations = GetRookDestinations;
+            _getQueenDestinations = GetQueenDestinations;
             _debug = Debug;
             _writeMessageLine = WriteMessageLine;
             _staticScore = new StaticScore(_middlegamePhase);
@@ -98,30 +108,14 @@ namespace ErikTheCoder.MadChess.Engine
             _mgPassedPawns = new int[8];
             _egPassedPawns = new int[8];
             _egFreePassedPawns = new int[8];
-            _mgKnightMobility = new int[2][];
-            _egKnightMobility = new int[2][];
-            _mgKnightMobility[0] = new int[9];
-            _egKnightMobility[0] = new int[9];
-            _mgKnightMobility[1] = new int[17];
-            _egKnightMobility[1] = new int[17];
-            _mgBishopMobility = new int[2][];
-            _egBishopMobility = new int[2][];
-            _mgBishopMobility[0] = new int[14];
-            _egBishopMobility[0] = new int[14];
-            _mgBishopMobility[1] = new int[27];
-            _egBishopMobility[1] = new int[27];
-            _mgRookMobility = new int[2][];
-            _egRookMobility = new int[2][];
-            _mgRookMobility[0] = new int[15];
-            _egRookMobility[0] = new int[15];
-            _mgRookMobility[1] = new int[29];
-            _egRookMobility[1] = new int[29];
-            _mgQueenMobility = new int[2][];
-            _egQueenMobility = new int[2][];
-            _mgQueenMobility[0] = new int[28];
-            _egQueenMobility[0] = new int[28];
-            _mgQueenMobility[1] = new int[55];
-            _egQueenMobility[1] = new int[55];
+            _mgKnightMobility = new int[9];
+            _egKnightMobility = new int[9];
+            _mgBishopMobility = new int[14];
+            _egBishopMobility = new int[14];
+            _mgRookMobility = new int[15];
+            _egRookMobility = new int[15];
+            _mgQueenMobility = new int[28];
+            _egQueenMobility = new int[28];
             // Calculate positional factor values.
             Configure();
             // Set default values.
@@ -174,36 +168,29 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static void CalculatePieceMobility(int[][] MgPieceMobility, int[][] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
+        private static void CalculatePieceMobility(int[] MgPieceMobility, int[] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
         {
-            Debug.Assert(MgPieceMobility.Length == 2);
-            Debug.Assert(EgPieceMobility.Length == 2);
-            Debug.Assert(MgPieceMobility[0].Length == EgPieceMobility[0].Length);
-            Debug.Assert(MgPieceMobility[1].Length == EgPieceMobility[1].Length);
-            for (int pieceIndex = 0; pieceIndex < MgPieceMobility.Length; pieceIndex++)
+            int halfMoves = MgPieceMobility.Length / 2;
+            for (int moveIndex = 0; moveIndex < MgPieceMobility.Length; moveIndex++)
             {
-                int halfMoves = MgPieceMobility[pieceIndex].Length / 2;
-                for (int moveIndex = 0; moveIndex < MgPieceMobility[pieceIndex].Length; moveIndex++)
+                int distanceFromHalf = moveIndex - halfMoves;
+                int absDistanceFromHalf = Math.Abs(distanceFromHalf);
+                int mgScale;
+                int egScale;
+                if (distanceFromHalf >= 0)
                 {
-                    int distanceFromHalf = moveIndex - halfMoves;
-                    int absDistanceFromHalf = Math.Abs(distanceFromHalf);
-                    int mgScale;
-                    int egScale;
-                    if (distanceFromHalf >= 0)
-                    {
-                        // Assign positive values when more than half the maximum moves are possible.
-                        mgScale = MgMobilityScale;
-                        egScale = EgMobilityScale;
-                    }
-                    else
-                    {
-                        // Assign negative values when less than half the maximum moves are possible.
-                        mgScale = -MgMobilityScale;
-                        egScale = -EgMobilityScale;
-                    }
-                    MgPieceMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
-                    EgPieceMobility[pieceIndex][moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
+                    // Assign positive values when more than half the maximum moves are possible.
+                    mgScale = MgMobilityScale;
+                    egScale = EgMobilityScale;
                 }
+                else
+                {
+                    // Assign negative values when less than half the maximum moves are possible.
+                    mgScale = -MgMobilityScale;
+                    egScale = -EgMobilityScale;
+                }
+                MgPieceMobility[moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
+                EgPieceMobility[moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
             }
         }
 
@@ -790,82 +777,43 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void EvaluatePieceMobility(Position Position)
         {
-            return;
+            // Knights
+            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteKnights, _getKnightDestinations, _mgKnightMobility);
+            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteKnights, _getKnightDestinations, _egKnightMobility);
+            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackKnights, _getKnightDestinations, _mgKnightMobility);
+            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackKnights, _getKnightDestinations, _egKnightMobility);
+            // Bishops
+            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteBishops, _getBishopDestinations, _mgBishopMobility);
+            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteBishops, _getBishopDestinations, _egBishopMobility);
+            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackBishops, _getBishopDestinations, _mgBishopMobility);
+            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackBishops, _getBishopDestinations, _egBishopMobility);
+            // Rooks
+            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteRooks, _getRookDestinations, _mgRookMobility);
+            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteRooks, _getRookDestinations, _egRookMobility);
+            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackRooks, _getRookDestinations, _mgRookMobility);
+            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackRooks, _getRookDestinations, _egRookMobility);
+            // Queens
+            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteQueens, _getQueenDestinations, _mgQueenMobility);
+            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteQueens, _getQueenDestinations, _egQueenMobility);
+            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackQueens, _getQueenDestinations, _mgQueenMobility);
+            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackQueens, _getQueenDestinations, _egQueenMobility);
+        }
 
-            // White Knights
-            int pieceIndex = Math.Min(Bitwise.CountSetBits(Position.WhiteKnights), _mgKnightMobility.Length) - 1;
-            ulong pieceDestinations;
-            int moveIndex;
-            if (pieceIndex >= 0)
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetPieceMobility(Position Position, bool White, ulong Pieces, Delegates.GetPieceDestinations GetPieceDestinations, int[] PieceMobility)
+        {
+            int pieceMobility = 0;
+            int fromSquare;
+            // Evaluate mobility of individual pieces.
+            while ((fromSquare = Bitwise.FindFirstSetBit(Pieces)) != Square.Illegal)
             {
-                pieceDestinations = Position.GetKnightDestinations(true);
-                moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), _mgKnightMobility[pieceIndex].Length - 1);
-                _staticScore.WhiteMgPieceMobility += _mgKnightMobility[pieceIndex][moveIndex];
-                _staticScore.WhiteEgPieceMobility += _egKnightMobility[pieceIndex][moveIndex];
+                ulong pieceDestinations = GetPieceDestinations(Position, White);
+                int moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), PieceMobility.Length - 1);
+                pieceMobility += PieceMobility[moveIndex];
+                Bitwise.ClearBit(ref Pieces, fromSquare);
             }
-            // Black Knights
-            pieceIndex = Math.Min(Bitwise.CountSetBits(Position.BlackKnights), _mgKnightMobility.Length) - 1;
-            if (pieceIndex >= 0)
-            {
-                pieceDestinations = Position.GetKnightDestinations(false);
-                moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), _mgKnightMobility[pieceIndex].Length - 1);
-                _staticScore.BlackMgPieceMobility += _mgKnightMobility[pieceIndex][moveIndex];
-                _staticScore.BlackEgPieceMobility += _egKnightMobility[pieceIndex][moveIndex];
-            }
-            // White Bishops
-            pieceIndex = Math.Min(Bitwise.CountSetBits(Position.WhiteBishops), _mgBishopMobility.Length) - 1;
-            if (pieceIndex >= 0)
-            {
-                pieceDestinations = Position.GetBishopDestinations(true);
-                moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), _mgBishopMobility[pieceIndex].Length - 1);
-                _staticScore.WhiteMgPieceMobility += _mgBishopMobility[pieceIndex][moveIndex];
-                _staticScore.WhiteEgPieceMobility += _egBishopMobility[pieceIndex][moveIndex];
-            }
-            // Black Bishops
-            pieceIndex = Math.Min(Bitwise.CountSetBits(Position.BlackBishops), _mgBishopMobility.Length) - 1;
-            if (pieceIndex >= 0)
-            {
-                pieceDestinations = Position.GetBishopDestinations(false);
-                moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), _mgBishopMobility[pieceIndex].Length - 1);
-                _staticScore.BlackMgPieceMobility += _mgBishopMobility[pieceIndex][moveIndex];
-                _staticScore.BlackEgPieceMobility += _egBishopMobility[pieceIndex][moveIndex];
-            }
-            // White Rooks
-            pieceIndex = Math.Min(Bitwise.CountSetBits(Position.WhiteRooks), _mgRookMobility.Length) - 1;
-            if (pieceIndex >= 0)
-            {
-                pieceDestinations = Position.GetRookDestinations(true);
-                moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), _mgRookMobility[pieceIndex].Length - 1);
-                _staticScore.WhiteMgPieceMobility += _mgRookMobility[pieceIndex][moveIndex];
-                _staticScore.WhiteEgPieceMobility += _egRookMobility[pieceIndex][moveIndex];
-            }
-            // Black Rooks
-            pieceIndex = Math.Min(Bitwise.CountSetBits(Position.BlackRooks), _mgRookMobility.Length) - 1;
-            if (pieceIndex >= 0)
-            {
-                pieceDestinations = Position.GetRookDestinations(false);
-                moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), _mgRookMobility[pieceIndex].Length - 1);
-                _staticScore.BlackMgPieceMobility += _mgRookMobility[pieceIndex][moveIndex];
-                _staticScore.BlackEgPieceMobility += _egRookMobility[pieceIndex][moveIndex];
-            }
-            // White Queens
-            pieceIndex = Math.Min(Bitwise.CountSetBits(Position.WhiteQueens), _mgQueenMobility.Length) - 1;
-            if (pieceIndex >= 0)
-            {
-                pieceDestinations = Position.GetQueenDestinations(true);
-                moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), _mgQueenMobility[pieceIndex].Length - 1);
-                _staticScore.WhiteMgPieceMobility += _mgQueenMobility[pieceIndex][moveIndex];
-                _staticScore.WhiteEgPieceMobility += _egQueenMobility[pieceIndex][moveIndex];
-            }
-            // Black Queens
-            pieceIndex = Math.Min(Bitwise.CountSetBits(Position.BlackQueens), _mgQueenMobility.Length) - 1;
-            if (pieceIndex >= 0)
-            {
-                pieceDestinations = Position.GetQueenDestinations(false);
-                moveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), _mgQueenMobility[pieceIndex].Length - 1);
-                _staticScore.BlackMgPieceMobility += _mgQueenMobility[pieceIndex][moveIndex];
-                _staticScore.BlackEgPieceMobility += _egQueenMobility[pieceIndex][moveIndex];
-            }
+            return pieceMobility;
         }
         
 
@@ -971,44 +919,28 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine($"Unstoppable Passed Pawn:            {Config.UnstoppablePassedPawn}");
             stringBuilder.AppendLine();
             // Knight Mobility
-            stringBuilder.Append("Middlegame Knight Mobility (1 piece ):  ");
-            ShowParameterArray(_mgKnightMobility[0], stringBuilder);
-            stringBuilder.Append("   Endgame Knight Mobility (1 piece ):  ");
-            ShowParameterArray(_egKnightMobility[0], stringBuilder);
-            stringBuilder.Append("Middlegame Knight Mobility (2 pieces):  ");
-            ShowParameterArray(_mgKnightMobility[1], stringBuilder);
-            stringBuilder.Append("   Endgame Knight Mobility (2 pieces):  ");
-            ShowParameterArray(_egKnightMobility[1], stringBuilder);
+            stringBuilder.Append("Middlegame Knight Mobility:  ");
+            ShowParameterArray(_mgKnightMobility, stringBuilder);
+            stringBuilder.Append("   Endgame Knight Mobility:  ");
+            ShowParameterArray(_egKnightMobility, stringBuilder);
             stringBuilder.AppendLine();
             // Bishop Mobility
-            stringBuilder.Append("Middlegame Bishop Mobility (1 piece ):  ");
-            ShowParameterArray(_mgBishopMobility[0], stringBuilder);
-            stringBuilder.Append("   Endgame Bishop Mobility (1 piece ):  ");
-            ShowParameterArray(_egBishopMobility[0], stringBuilder);
-            stringBuilder.Append("Middlegame Bishop Mobility (2 pieces):  ");
-            ShowParameterArray(_mgBishopMobility[1], stringBuilder);
-            stringBuilder.Append("   Endgame Bishop Mobility (2 pieces):  ");
-            ShowParameterArray(_egBishopMobility[1], stringBuilder);
+            stringBuilder.Append("Middlegame Bishop Mobility:  ");
+            ShowParameterArray(_mgBishopMobility, stringBuilder);
+            stringBuilder.Append("   Endgame Bishop Mobility:  ");
+            ShowParameterArray(_egBishopMobility, stringBuilder);
             stringBuilder.AppendLine();
             // Rook Mobility
-            stringBuilder.Append("Middlegame Rook Mobility (1 piece ):  ");
-            ShowParameterArray(_mgRookMobility[0], stringBuilder);
-            stringBuilder.Append("   Endgame Rook Mobility (1 piece ):  ");
-            ShowParameterArray(_egRookMobility[0], stringBuilder);
-            stringBuilder.Append("Middlegame Rook Mobility (2 pieces):  ");
-            ShowParameterArray(_mgRookMobility[1], stringBuilder);
-            stringBuilder.Append("   Endgame Rook Mobility (2 pieces):  ");
-            ShowParameterArray(_egRookMobility[1], stringBuilder);
+            stringBuilder.Append("Middlegame Rook Mobility:    ");
+            ShowParameterArray(_mgRookMobility, stringBuilder);
+            stringBuilder.Append("   Endgame Rook Mobility:    ");
+            ShowParameterArray(_egRookMobility, stringBuilder);
             stringBuilder.AppendLine();
             // Queen Mobility
-            stringBuilder.Append("Middlegame Queen Mobility (1 piece ):  ");
-            ShowParameterArray(_mgQueenMobility[0], stringBuilder);
-            stringBuilder.Append("   Endgame Queen Mobility (1 piece ):  ");
-            ShowParameterArray(_egQueenMobility[0], stringBuilder);
-            stringBuilder.Append("Middlegame Queen Mobility (2 pieces):  ");
-            ShowParameterArray(_mgQueenMobility[1], stringBuilder);
-            stringBuilder.Append("   Endgame Queen Mobility (2 pieces):  ");
-            ShowParameterArray(_egQueenMobility[1], stringBuilder);
+            stringBuilder.Append("Middlegame Queen Mobility:   ");
+            ShowParameterArray(_mgQueenMobility, stringBuilder);
+            stringBuilder.Append("   Endgame Queen Mobility:   ");
+            ShowParameterArray(_egQueenMobility, stringBuilder);
             return stringBuilder.ToString();
         }
 

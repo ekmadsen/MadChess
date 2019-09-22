@@ -12,7 +12,7 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public static class Delegates
     {
-        public delegate ulong CreateMoveDestinationsMask(int Square, ulong Occupancy, Direction[] Directions);
+        // Allocate delegates at program startup so they aren't allocated inside search loop.
         public delegate bool ValidateMove(ref ulong Move);
         public delegate bool Debug();
         public delegate (ulong Move, int MoveIndex) GetNextMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove);
@@ -20,5 +20,6 @@ namespace ErikTheCoder.MadChess.Engine
         public delegate bool IsPassedPawn(int Square, bool White);
         public delegate bool IsFreePawn(int Square, bool White);
         public delegate void WriteMessageLine(string Message);
+        public delegate ulong GetPieceDestinations(Position Position, bool White);
     }
 }

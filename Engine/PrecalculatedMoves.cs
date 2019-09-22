@@ -18,8 +18,6 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class PrecalculatedMoves
     {
-        private readonly ulong[] _unoccupiedBishopMoveMasks;
-        private readonly ulong[] _unoccupiedRookMoveMasks;
         private readonly ulong[] _bishopRelevantOccupancyMasks;
         private readonly ulong[] _bishopMagicMultipliers;
         private readonly int[] _bishopShifts;
@@ -28,15 +26,11 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly ulong[] _rookMagicMultipliers;
         private readonly int[] _rookShifts;
         private readonly ulong[][] _rookMoveMasks; // [Square][Index]
-        private readonly Delegates.CreateMoveDestinationsMask _createMoveDestinationsMask;
         private readonly Delegates.WriteMessageLine _writeMessageLine;
 
 
-        public PrecalculatedMoves(ulong[] BishopMoveMasks, ulong[] RookMoveMasks, Delegates.CreateMoveDestinationsMask CreateMoveDestinationsMask, Delegates.WriteMessageLine WriteMessageLine)
+        public PrecalculatedMoves(Delegates.WriteMessageLine WriteMessageLine)
         {
-            _unoccupiedBishopMoveMasks = BishopMoveMasks;
-            _unoccupiedRookMoveMasks = RookMoveMasks;
-            _createMoveDestinationsMask = CreateMoveDestinationsMask;
             _writeMessageLine = WriteMessageLine;
             _bishopRelevantOccupancyMasks = new ulong[64];
             _bishopMagicMultipliers = new ulong[64];
@@ -47,8 +41,8 @@ namespace ErikTheCoder.MadChess.Engine
             _rookShifts = new int[64];
             _rookMoveMasks = new ulong[64][];
             // Calculate relevant occupancy masks.
-            for (int square = 0; square < 64; square++) _bishopRelevantOccupancyMasks[square] = _unoccupiedBishopMoveMasks[square] & GetRelevantOccupancy(square, false);
-            for (int square = 0; square < 64; square++) _rookRelevantOccupancyMasks[square] = _unoccupiedRookMoveMasks[square] & GetRelevantOccupancy(square, true);
+            for (int square = 0; square < 64; square++) _bishopRelevantOccupancyMasks[square] = Board.BishopMoveMasks[square] & GetRelevantOccupancy(square, false);
+            for (int square = 0; square < 64; square++) _rookRelevantOccupancyMasks[square] = Board.RookMoveMasks[square] & GetRelevantOccupancy(square, true);
 
             // Find magic multipliers if not already known.
             _bishopMagicMultipliers[Square.a8] = 0x7099C1ECF439F7FEul;
@@ -229,7 +223,7 @@ namespace ErikTheCoder.MadChess.Engine
                 case Engine.Piece.WhiteBishop:
                 case Engine.Piece.BlackBishop:
                     directions = new[] {Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest};
-                    unoccupiedMoveMasks = _unoccupiedBishopMoveMasks;
+                    unoccupiedMoveMasks = Board.BishopMoveMasks;
                     relevantOccupancyMasks = _bishopRelevantOccupancyMasks;
                     magicMultipliers = _bishopMagicMultipliers;
                     shifts = _bishopShifts;
@@ -238,7 +232,7 @@ namespace ErikTheCoder.MadChess.Engine
                 case Engine.Piece.WhiteRook:
                 case Engine.Piece.BlackRook:
                     directions = new[] {Direction.North, Direction.East, Direction.South, Direction.West};
-                    unoccupiedMoveMasks = _unoccupiedRookMoveMasks;
+                    unoccupiedMoveMasks = Board.RookMoveMasks;
                     relevantOccupancyMasks = _rookRelevantOccupancyMasks;
                     magicMultipliers = _rookMagicMultipliers;
                     shifts = _rookShifts;
@@ -267,7 +261,7 @@ namespace ErikTheCoder.MadChess.Engine
                         if (!occupancyToMovesMask.ContainsKey(occupancy))
                         {
                             // Have not yet generated moves for this occupancy mask.
-                            ulong movesMask = _createMoveDestinationsMask(square, occupancy, directions);
+                            ulong movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
                             occupancyToMovesMask.Add(occupancy, movesMask);
                             if (!uniqueMovesMasks.Contains(movesMask)) uniqueMovesMasks.Add(movesMask);
                         }

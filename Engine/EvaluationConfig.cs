@@ -77,9 +77,9 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgKnightMobilityScale = 1;
         public int MgBishopMobilityScale = 9;
         public int EgBishopMobilityScale = 35;
-        public int MgRookMobilityScale = 18;
+        public int MgRookMobilityScale = 6;
         public int EgRookMobilityScale = 34;
-        public int MgQueenMobilityScale = 12;
+        public int MgQueenMobilityScale = 5;
         public int EgQueenMobilityScale = 23;
         // ReSharper restore FieldCanBeMadeReadOnly.Global
         // ReSharper restore ConvertToConstant.Global
