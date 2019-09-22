@@ -146,8 +146,8 @@ namespace ErikTheCoder.MadChess.Engine
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017
             _futilityMargins = new[]    {050, 100, 175, 275, 400, 550};
-            // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015
-            _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003};
+            // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
+            _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005};
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -559,12 +559,27 @@ namespace ErikTheCoder.MadChess.Engine
             int toHorizon = Horizon - Depth;
             int historyIncrement = toHorizon * toHorizon;
             CachedPosition cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
+            ulong bestMove;
             if ((cachedPosition.Key != 0) && (Depth > 0) && (positionCount < 2))
             {
                 // Not a root or repeat position.
                 // Determine if score is cached.
                 int cachedScore = GetCachedScore(cachedPosition.Data, Depth, Horizon, Alpha, Beta);
-                if (cachedScore != StaticScore.NotCached) return cachedScore; // Score is cached.
+                if (cachedScore != StaticScore.NotCached)
+                {
+                    // Score is cached.
+                    if (cachedScore >= Beta)
+                    {
+                        bestMove = _cache.GetBestMove(cachedPosition);
+                        if ((bestMove != Move.Null) && Move.IsQuiet(bestMove))
+                        {
+                            // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
+                            // Update history heuristic.
+                            _moveHistory.UpdateValue(Board.CurrentPosition, bestMove, historyIncrement);
+                        }
+                    }
+                    return cachedScore;
+                }
             }
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
@@ -584,7 +599,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             // Get best move.
-            ulong bestMove = _cache.GetBestMove(cachedPosition);
+            bestMove = _cache.GetBestMove(cachedPosition);
             if ((bestMove == Move.Null) && (toHorizon > _estimateBestMoveReduction) && ((Beta - Alpha) > 1))
             {
                 // Cached position in a principal variation does not specify a best move.

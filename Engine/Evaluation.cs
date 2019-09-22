@@ -790,6 +790,8 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void EvaluatePieceMobility(Position Position)
         {
+            return;
+
             // White Knights
             int pieceIndex = Math.Min(Bitwise.CountSetBits(Position.WhiteKnights), _mgKnightMobility.Length) - 1;
             ulong pieceDestinations;
