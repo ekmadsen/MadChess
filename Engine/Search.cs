@@ -49,9 +49,10 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _materialAdvantageMovesPer1024 = 25; // This improves integer division speed since x / 1024 = x >> 10.
         private const int _moveTimeHardLimitPer128 = 512; // This improves integer division speed since x / 128 = x >> 7.
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _nullMoveReduction = 2;
+        private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
+        private const int _historyPriorMovePer128 = 64;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
@@ -145,8 +146,8 @@ namespace ErikTheCoder.MadChess.Engine
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017
             _futilityMargins = new[]    {050, 100, 175, 275, 400, 550};
-            // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017
-            _lateMoveReductions = new[] {000, 000, 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003};
+            // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015
+            _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003};
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -558,27 +559,12 @@ namespace ErikTheCoder.MadChess.Engine
             int toHorizon = Horizon - Depth;
             int historyIncrement = toHorizon * toHorizon;
             CachedPosition cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
-            ulong bestMove;
             if ((cachedPosition.Key != 0) && (Depth > 0) && (positionCount < 2))
             {
                 // Not a root or repeat position.
                 // Determine if score is cached.
                 int cachedScore = GetCachedScore(cachedPosition.Data, Depth, Horizon, Alpha, Beta);
-                if (cachedScore != StaticScore.NotCached)
-                {
-                    // Score is cached.
-                    if (cachedScore >= Beta)
-                    {
-                        bestMove = _cache.GetBestMove(cachedPosition);
-                        if ((bestMove != Move.Null) && Move.IsQuiet(bestMove))
-                        {
-                            // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
-                            // Update history heuristic.
-                            _moveHistory.UpdateValue(Board.CurrentPosition, bestMove, historyIncrement);
-                        }
-                    }
-                    return cachedScore;
-                }
+                if (cachedScore != StaticScore.NotCached) return cachedScore; // Score is cached.
             }
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
@@ -598,7 +584,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             // Get best move.
-            bestMove = _cache.GetBestMove(cachedPosition);
+            ulong bestMove = _cache.GetBestMove(cachedPosition);
             if ((bestMove == Move.Null) && (toHorizon > _estimateBestMoveReduction) && ((Beta - Alpha) > 1))
             {
                 // Cached position in a principal variation does not specify a best move.
@@ -687,11 +673,11 @@ namespace ErikTheCoder.MadChess.Engine
                         moveIndex--;
                         while (moveIndex >= 0)
                         {
-                            ulong quietMove = Board.CurrentPosition.Moves[moveIndex];
-                            if (Move.IsQuiet(quietMove) && Move.Played(quietMove))
+                            ulong priorMove = Board.CurrentPosition.Moves[moveIndex];
+                            if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                             {
                                 // Update history of prior quiet move that failed to produce cutoff.
-                                _moveHistory.UpdateValue(Board.CurrentPosition, quietMove, -historyIncrement);
+                                _moveHistory.UpdateValue(Board.CurrentPosition, priorMove, (-historyIncrement * _historyPriorMovePer128) / 128 );
                             }
                             moveIndex--;
                         }
