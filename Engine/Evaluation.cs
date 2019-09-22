@@ -16,6 +16,7 @@ using System.Text;
 namespace ErikTheCoder.MadChess.Engine
 {
     // TODO: Capitalize first letter of each word in comment if the comment is not a complete sentence.
+    // TODO: Refactor evaluation into color-agnostic methods using delegates.
     public sealed class Evaluation
     {
         public const int PawnMaterial = 100;

@@ -353,7 +353,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // TODO: Refactor move generation into sliders and non-sliders using a Func to get move masks.
+        // TODO: Refactor move generation into sliders and non-sliders using a delegate to get move masks.
         private void GenerateKnightMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong knights;
