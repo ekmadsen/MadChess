@@ -52,7 +52,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
-        private const int _historyPriorMovePer128 = 64;
+        private const int _historyPriorMovePer128 = 32;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
@@ -147,7 +147,7 @@ namespace ErikTheCoder.MadChess.Engine
             // To Horizon =              000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017
             _futilityMargins = new[]    {050, 100, 175, 275, 400, 550};
             // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
-            _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005};
+            _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 003, 003, 003, 003, 003, 003, 003, 003, 004};
             // Create move and score arrays.
             _rootMoves = new ulong[Position.MaxMoves];
             _rootScores = new int[Position.MaxMoves];
@@ -584,11 +584,18 @@ namespace ErikTheCoder.MadChess.Engine
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
             int staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
+            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
+            {
+                // Position is futile.
+                // Position is not the result of best play by both players.
+                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
+                return Beta;
+            }
             if (NullMove && IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
-                if (NullMoveCausesBetaCutoff(Board, Depth, Horizon, Beta))
+                if (DoesNullMoveCauseBetaCutoff(Board, Depth, Horizon, Beta))
                 {
                     // Enemy is unable to capitalize on position even if player forfeits right to move.
                     // While forfeiting right to move is illegal, this indicates position is strong.
@@ -852,7 +859,18 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool NullMoveCausesBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
+        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Beta)
+        {
+            if ((Depth == 0) || Position.KingInCheck || IsDrawnEndgame) return false; // Root, king in check, and drawn endgame positions are not futile.
+            int toHorizon = Horizon - Depth;
+            if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
+            // Determine if any move can lower score to beta.
+            int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
+            return StaticScore - futilityMargin > Beta;
+        }
+
+
+        private bool DoesNullMoveCauseBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
         {
             int horizon = Horizon - _nullMoveReduction;
             // Play and search null move.

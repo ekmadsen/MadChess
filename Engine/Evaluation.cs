@@ -420,7 +420,7 @@ namespace ErikTheCoder.MadChess.Engine
                 GetMaterialScore(Position);
                 if (UnderstandsPieceLocation) EvaluatePieceLocation(Position);
                 if (UnderstandsPassedPawns) EvaluatePawns(Position);
-                if (UnderstandsMobility) EvaluatePieceMobility(Position);
+                //if (UnderstandsMobility) EvaluatePieceMobility(Position);
             }
             int phase = DetermineGamePhase(Position);
             return Position.WhiteMove ? _staticScore.TotalScore(phase) : -_staticScore.TotalScore(phase);
