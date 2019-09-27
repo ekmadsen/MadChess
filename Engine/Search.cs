@@ -848,17 +848,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
-        {
-            if ((StaticScore < Beta) || Position.KingInCheck) return false;
-            // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
-            int minorAndMajorPieces = Position.WhiteMove
-                ? Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens)
-                : Bitwise.CountSetBits(Position.BlackKnights) + Bitwise.CountSetBits(Position.BlackBishops) + Bitwise.CountSetBits(Position.BlackRooks) + Bitwise.CountSetBits(Position.BlackQueens);
-            return minorAndMajorPieces > 0;
-        }
-
-
         private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Beta)
         {
             if ((Depth == 0) || Position.KingInCheck || IsDrawnEndgame) return false; // Root, king in check, and drawn endgame positions are not futile.
@@ -867,6 +856,17 @@ namespace ErikTheCoder.MadChess.Engine
             // Determine if any move can lower score to beta.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore - futilityMargin > Beta;
+        }
+
+
+        private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
+        {
+            if ((StaticScore < Beta) || Position.KingInCheck) return false;
+            // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
+            int minorAndMajorPieces = Position.WhiteMove
+                ? Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens)
+                : Bitwise.CountSetBits(Position.BlackKnights) + Bitwise.CountSetBits(Position.BlackBishops) + Bitwise.CountSetBits(Position.BlackRooks) + Bitwise.CountSetBits(Position.BlackQueens);
+            return minorAndMajorPieces > 0;
         }
 
 

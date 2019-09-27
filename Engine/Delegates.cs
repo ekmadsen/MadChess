@@ -12,7 +12,7 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public static class Delegates
     {
-        // Allocate delegates at program startup so they aren't allocated inside search loop.
+        // Allocate delegates at program startup so they aren't allocated repeatedly via lambda syntax inside search loop.
         public delegate bool ValidateMove(ref ulong Move);
         public delegate bool Debug();
         public delegate (ulong Move, int MoveIndex) GetNextMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove);
