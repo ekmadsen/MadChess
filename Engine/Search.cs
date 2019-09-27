@@ -52,7 +52,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
-        private const int _historyPriorMovePer128 = 32;
+        private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
@@ -543,7 +543,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private int GetDynamicScore(Board Board, int Depth, int Horizon, bool NullMove, int Alpha, int Beta)
+        private int GetDynamicScore(Board Board, int Depth, int Horizon, bool IsNullMoveAllowed, int Alpha, int Beta)
         {
             if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
             {
@@ -591,7 +591,7 @@ namespace ErikTheCoder.MadChess.Engine
                 UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
                 return Beta;
             }
-            if (NullMove && IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
+            if (IsNullMoveAllowed && Search.IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
@@ -872,11 +872,10 @@ namespace ErikTheCoder.MadChess.Engine
 
         private bool DoesNullMoveCauseBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
         {
-            int horizon = Horizon - _nullMoveReduction;
             // Play and search null move.
             Board.PlayNullMove();
             // Do not play two null moves consecutively.  Search with zero alpha / beta window.
-            int score = -GetDynamicScore(Board, Depth + 1, horizon, false, -Beta, -Beta + 1);
+            int score = -GetDynamicScore(Board, Depth + 1, Horizon - _nullMoveReduction, false, -Beta, -Beta + 1);
             Board.UndoMove();
             return score >= Beta;
         }
