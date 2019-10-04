@@ -27,7 +27,7 @@ namespace ErikTheCoder.MadChess.Engine
         public bool UnderstandsPassedPawns;
         public bool UnderstandsMobility;
         private const double _passedPawnPower = 2d;
-        private const double _pieceMobilityPower = 0.5d;
+        private const double _pieceMobilityPower = 0.67d;
         // Select phase constants such that starting material = 256.
         // This improves integer division speed since x / 256 = x >> 8.
         private const int _middlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + 2 * _queenPhase;
