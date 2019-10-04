@@ -36,15 +36,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _rookPhase = 20; //   + 4 * 20 = 192
         private const int _queenPhase = 32; //  + 2 * 32 = 256
         private readonly EvaluationConfig _defaultConfig;
-        private readonly Delegates.GetPositionCount _getPositionCount;
-        private readonly Delegates.IsPassedPawn _isPassedPawn;
-        private readonly Delegates.IsFreePawn _isFreePawn;
-        private readonly Delegates.GetPieceDestinations _getKnightDestinations;
-        private readonly Delegates.GetPieceDestinations _getBishopDestinations;
-        private readonly Delegates.GetPieceDestinations _getRookDestinations;
-        private readonly Delegates.GetPieceDestinations _getQueenDestinations;
-        private readonly Delegates.Debug _debug;
-        private readonly Delegates.WriteMessageLine _writeMessageLine;
+        private readonly EvaluationDelegates _delegates;
         private readonly StaticScore _staticScore;
         // Piece Location
         private readonly int[] _mgPawnLocations;
@@ -73,25 +65,13 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _mgQueenMobility;
         private readonly int[] _egQueenMobility;
 
-
         
-        // TODO: Refactor Evaluation constructor to take a single parameter.
-        public Evaluation(Delegates.GetPositionCount GetPositionCount, Delegates.IsPassedPawn IsPassedPawn, Delegates.IsFreePawn IsFreePawn, Delegates.GetPieceDestinations GetKnightDestinations,
-            Delegates.GetPieceDestinations GetBishopDestinations, Delegates.GetPieceDestinations GetRookDestinations, Delegates.GetPieceDestinations GetQueenDestinations, Delegates.Debug Debug,
-            Delegates.WriteMessageLine WriteMessageLine)
+        public Evaluation(EvaluationDelegates Delegates)
         {
             // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureStrength method overwriting defaults.
             Config = new EvaluationConfig();
             _defaultConfig = new EvaluationConfig();
-            _getPositionCount = GetPositionCount;
-            _isPassedPawn = IsPassedPawn;
-            _isFreePawn = IsFreePawn;
-            _getKnightDestinations = GetKnightDestinations;
-            _getBishopDestinations = GetBishopDestinations;
-            _getRookDestinations = GetRookDestinations;
-            _getQueenDestinations = GetQueenDestinations;
-            _debug = Debug;
-            _writeMessageLine = WriteMessageLine;
+            _delegates = Delegates;
             _staticScore = new StaticScore(_middlegamePhase);
             // Create arrays for quick lookup of positional factors.
             _mgPawnLocations = new int[64];
@@ -245,22 +225,22 @@ namespace ErikTheCoder.MadChess.Engine
                 //Understands7thRank = false;
                 //UnderstandsTrades = false;
             }
-            if (_debug())
+            if (_delegates.Debug())
             {
-                _writeMessageLine($"info string PawnMaterialScore = {PawnMaterial}");
-                _writeMessageLine($"info string KnightMaterialScore = {Config.KnightMaterial}");
-                _writeMessageLine($"info string BishopMaterialScore = {Config.BishopMaterial}");
-                _writeMessageLine($"info string RookMaterialScore = {Config.RookMaterial}");
-                _writeMessageLine($"info string QueenMaterialScore = {Config.QueenMaterial}");
-                _writeMessageLine($"info string UnderstandsPieceLocation = {UnderstandsPieceLocation}");
-                _writeMessageLine($"info string UnderstandsPassedPawns = {UnderstandsPassedPawns}");
-                _writeMessageLine($"info string UnderstandsMobility = {UnderstandsMobility}");
-                //_writeMessageLine($"info string UnderstandsThreats = {UnderstandsThreats}");
-                //_writeMessageLine($"info string UnderstandsKingSafety = {UnderstandsKingSafety}");
-                //_writeMessageLine($"info string UnderstandsBishopPair = {UnderstandsBishopPair}");
-                //_writeMessageLine($"info string UnderstandsOutposts = {UnderstandsOutposts}");
-                //_writeMessageLine($"info string Understands7thRank = {Understands7thRank}");
-                //_writeMessageLine($"info string UnderstandsTrades = {UnderstandsTrades}");
+                _delegates.WriteMessageLine($"info string PawnMaterialScore = {PawnMaterial}");
+                _delegates.WriteMessageLine($"info string KnightMaterialScore = {Config.KnightMaterial}");
+                _delegates.WriteMessageLine($"info string BishopMaterialScore = {Config.BishopMaterial}");
+                _delegates.WriteMessageLine($"info string RookMaterialScore = {Config.RookMaterial}");
+                _delegates.WriteMessageLine($"info string QueenMaterialScore = {Config.QueenMaterial}");
+                _delegates.WriteMessageLine($"info string UnderstandsPieceLocation = {UnderstandsPieceLocation}");
+                _delegates.WriteMessageLine($"info string UnderstandsPassedPawns = {UnderstandsPassedPawns}");
+                _delegates.WriteMessageLine($"info string UnderstandsMobility = {UnderstandsMobility}");
+                //_delegates.WriteMessageLine($"info string UnderstandsThreats = {UnderstandsThreats}");
+                //_delegates.WriteMessageLine($"info string UnderstandsKingSafety = {UnderstandsKingSafety}");
+                //_delegates.WriteMessageLine($"info string UnderstandsBishopPair = {UnderstandsBishopPair}");
+                //_delegates.WriteMessageLine($"info string UnderstandsOutposts = {UnderstandsOutposts}");
+                //_delegates.WriteMessageLine($"info string Understands7thRank = {Understands7thRank}");
+                //_delegates.WriteMessageLine($"info string UnderstandsTrades = {UnderstandsTrades}");
             }
         }
 
@@ -305,7 +285,7 @@ namespace ErikTheCoder.MadChess.Engine
         public (bool TerminalDraw, int PositionCount) IsTerminalDraw(Position Position)
         {
             // Only return true if position is drawn and no sequence of moves can make game winnable.
-            int positionCount = _getPositionCount();
+            int positionCount = _delegates.GetPositionCount();
             if (positionCount >= DrawMoves) return (true, positionCount); // Draw by repetition of position
             if (Position.HalfMoveNumber >= 99) return (true, positionCount); // Draw by fifty moves without a capture or pawn move
             // Determine if insufficient material remains for checkmate.
@@ -420,7 +400,7 @@ namespace ErikTheCoder.MadChess.Engine
                 GetMaterialScore(Position);
                 if (UnderstandsPieceLocation) EvaluatePieceLocation(Position);
                 if (UnderstandsPassedPawns) EvaluatePawns(Position);
-                //if (UnderstandsMobility) EvaluatePieceMobility(Position);
+                if (UnderstandsMobility) EvaluatePieceMobility(Position);
             }
             int phase = DetermineGamePhase(Position);
             return Position.WhiteMove ? _staticScore.TotalScore(phase) : -_staticScore.TotalScore(phase);
@@ -731,11 +711,11 @@ namespace ErikTheCoder.MadChess.Engine
             int rank;
             while ((pawnSquare = Bitwise.FindFirstSetBit(pawns)) != Square.Illegal)
             {
-                if (_isPassedPawn(pawnSquare, true))
+                if (_delegates.IsPassedPawn(pawnSquare, true))
                 {
                     rank = Board.WhiteRanks[pawnSquare];
                     _staticScore.WhiteEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
-                    if (_isFreePawn(pawnSquare, true))
+                    if (_delegates.IsFreePawn(pawnSquare, true))
                     {
                         if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, true, true)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
                         else _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
@@ -755,11 +735,11 @@ namespace ErikTheCoder.MadChess.Engine
             enemyKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
             while ((pawnSquare = Bitwise.FindFirstSetBit(pawns)) != Square.Illegal)
             {
-                if (_isPassedPawn(pawnSquare, false))
+                if (_delegates.IsPassedPawn(pawnSquare, false))
                 {
                     rank = Board.BlackRanks[pawnSquare];
                     _staticScore.BlackEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
-                    if (_isFreePawn(pawnSquare, false))
+                    if (_delegates.IsFreePawn(pawnSquare, false))
                     {
                         if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, false, true)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
                         else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
@@ -779,25 +759,25 @@ namespace ErikTheCoder.MadChess.Engine
         private void EvaluatePieceMobility(Position Position)
         {
             // Knights
-            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteKnights, _getKnightDestinations, _mgKnightMobility);
-            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteKnights, _getKnightDestinations, _egKnightMobility);
-            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackKnights, _getKnightDestinations, _mgKnightMobility);
-            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackKnights, _getKnightDestinations, _egKnightMobility);
+            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteKnights, _delegates.GetKnightDestinations, _mgKnightMobility);
+            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteKnights, _delegates.GetKnightDestinations, _egKnightMobility);
+            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackKnights, _delegates.GetKnightDestinations, _mgKnightMobility);
+            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackKnights, _delegates.GetKnightDestinations, _egKnightMobility);
             // Bishops
-            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteBishops, _getBishopDestinations, _mgBishopMobility);
-            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteBishops, _getBishopDestinations, _egBishopMobility);
-            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackBishops, _getBishopDestinations, _mgBishopMobility);
-            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackBishops, _getBishopDestinations, _egBishopMobility);
+            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteBishops, _delegates.GetBishopDestinations, _mgBishopMobility);
+            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteBishops, _delegates.GetBishopDestinations, _egBishopMobility);
+            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackBishops, _delegates.GetBishopDestinations, _mgBishopMobility);
+            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackBishops, _delegates.GetBishopDestinations, _egBishopMobility);
             // Rooks
-            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteRooks, _getRookDestinations, _mgRookMobility);
-            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteRooks, _getRookDestinations, _egRookMobility);
-            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackRooks, _getRookDestinations, _mgRookMobility);
-            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackRooks, _getRookDestinations, _egRookMobility);
+            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteRooks, _delegates.GetRookDestinations, _mgRookMobility);
+            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteRooks, _delegates.GetRookDestinations, _egRookMobility);
+            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackRooks, _delegates.GetRookDestinations, _mgRookMobility);
+            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackRooks, _delegates.GetRookDestinations, _egRookMobility);
             // Queens
-            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteQueens, _getQueenDestinations, _mgQueenMobility);
-            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteQueens, _getQueenDestinations, _egQueenMobility);
-            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackQueens, _getQueenDestinations, _mgQueenMobility);
-            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackQueens, _getQueenDestinations, _egQueenMobility);
+            _staticScore.WhiteMgPieceMobility += GetPieceMobility(Position, true, Position.WhiteQueens, _delegates.GetQueenDestinations, _mgQueenMobility);
+            _staticScore.WhiteEgPieceMobility += GetPieceMobility(Position, true, Position.WhiteQueens, _delegates.GetQueenDestinations, _egQueenMobility);
+            _staticScore.BlackMgPieceMobility += GetPieceMobility(Position, false, Position.BlackQueens, _delegates.GetQueenDestinations, _mgQueenMobility);
+            _staticScore.BlackEgPieceMobility += GetPieceMobility(Position, false, Position.BlackQueens, _delegates.GetQueenDestinations, _egQueenMobility);
         }
 
 

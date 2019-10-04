@@ -86,12 +86,22 @@ namespace ErikTheCoder.MadChess.Engine
             // Cannot use object initializer because it changes order of object construction (to PreCalculatedMoves first, Board second, which causes null reference in PrecalculatedMove.FindMagicMultipliers).
             // ReSharper disable once UseObjectOrCollectionInitializer
             Board = new Board(WriteMessageLine);
-            Board.PrecalculatedMoves = new PrecalculatedMoves(WriteMessageLine);
             _cache = new Cache(_cacheSizeMegabytes * Cache.CapacityPerMegabyte, Board.ValidateMove);
             _killerMoves = new KillerMoves(Search.MaxHorizon);
             _moveHistory = new MoveHistory();
-            _evaluation = new Evaluation(Board.GetPositionCount, Board.IsPassedPawn, Board.IsFreePawn, Board.GetKnightDestinations, Board.GetBishopDestinations, Board.GetRookDestinations, Board.GetQueenDestinations,
-                () => _debug, WriteMessageLine);
+            EvaluationDelegates evaluationDelegates = new EvaluationDelegates
+            {
+                GetPositionCount = Board.GetPositionCount,
+                IsPassedPawn = Board.IsPassedPawn,
+                IsFreePawn = Board.IsFreePawn,
+                GetKnightDestinations = Board.GetKnightDestinations,
+                GetBishopDestinations = Board.GetBishopDestinations,
+                GetRookDestinations = Board.GetRookDestinations,
+                GetQueenDestinations = Board.GetQueenDestinations,
+                Debug = () => _debug,
+                WriteMessageLine = WriteMessageLine
+            };
+            _evaluation = new Evaluation(evaluationDelegates);
             _search = new Search(_cache, _killerMoves, _moveHistory, _evaluation, () => _debug, WriteMessageLine);
             _defaultHalfAndFullMove = new[] { "0", "1" };
             Board.SetPosition(Board.StartPositionFen);
@@ -617,8 +627,8 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine("======  ======  =====  ==================  ============  ================");
             // Find magic multipliers for bishop and rook moves.
             // No need to find magic multipliers for queen moves since the queen combines bishop and rook moves.
-            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteBishop, true);
-            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteRook, true);
+            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteBishop, WriteMessageLine);
+            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteRook, WriteMessageLine);
         }
 
 
@@ -970,12 +980,22 @@ namespace ErikTheCoder.MadChess.Engine
                 int winPercentScale = _minWinPercentScale + index;
                 Particle particle = new Particle(pgnGames, parameters);
                 Board board = new Board(WriteMessageLine);
-                Board.PrecalculatedMoves = new PrecalculatedMoves(WriteMessageLine);
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, Board.GetKnightDestinations, Board.GetBishopDestinations, Board.GetRookDestinations, Board.GetQueenDestinations,
-                    () => false, WriteMessageLine);
+                EvaluationDelegates evaluationDelegates = new EvaluationDelegates
+                {
+                    GetPositionCount = board.GetPositionCount,
+                    IsPassedPawn = board.IsPassedPawn,
+                    IsFreePawn = board.IsFreePawn,
+                    GetKnightDestinations = Board.GetKnightDestinations,
+                    GetBishopDestinations = Board.GetBishopDestinations,
+                    GetRookDestinations = Board.GetRookDestinations,
+                    GetQueenDestinations = Board.GetQueenDestinations,
+                    Debug = () => false,
+                    WriteMessageLine = WriteMessageLine
+                };
+                Evaluation evaluation = new Evaluation(evaluationDelegates);
                 Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
                 tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
             }

@@ -32,7 +32,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             Board board = new Board(WriteMessageLine);
-            Board.PrecalculatedMoves = new PrecalculatedMoves(WriteMessageLine);
             PgnGames pgnGames = new PgnGames();
             pgnGames.Load(board, PgnFilename);
             stopwatch.Stop();
@@ -59,8 +58,19 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Cache cache = new Cache(1, board.ValidateMove);
             KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
             MoveHistory moveHistory = new MoveHistory();
-            Evaluation evaluation = new Evaluation(board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, Board.GetKnightDestinations, Board.GetBishopDestinations, Board.GetRookDestinations, Board.GetQueenDestinations,
-                () => false, WriteMessageLine);
+            EvaluationDelegates evaluationDelegates = new EvaluationDelegates
+            {
+                GetPositionCount = board.GetPositionCount,
+                IsPassedPawn = board.IsPassedPawn,
+                IsFreePawn = board.IsFreePawn,
+                GetKnightDestinations = Board.GetKnightDestinations,
+                GetBishopDestinations = Board.GetBishopDestinations,
+                GetRookDestinations = Board.GetRookDestinations,
+                GetQueenDestinations = Board.GetQueenDestinations,
+                Debug = () => false,
+                WriteMessageLine = WriteMessageLine
+            };
+            Evaluation evaluation = new Evaluation(evaluationDelegates);
             Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
@@ -238,13 +248,23 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             for (int index = 0; index < Count; index++)
             {
                 Board board = new Board(_writeMessageLine);
-                Board.PrecalculatedMoves = new PrecalculatedMoves(_writeMessageLine);
                 boards[index] = board;
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, Board.GetKnightDestinations, Board.GetBishopDestinations, Board.GetRookDestinations, Board.GetQueenDestinations,
-                    () => false, _writeMessageLine);
+                EvaluationDelegates evaluationDelegates = new EvaluationDelegates
+                {
+                    GetPositionCount = board.GetPositionCount,
+                    IsPassedPawn = board.IsPassedPawn,
+                    IsFreePawn = board.IsFreePawn,
+                    GetKnightDestinations = Board.GetKnightDestinations,
+                    GetBishopDestinations = Board.GetBishopDestinations,
+                    GetRookDestinations = Board.GetRookDestinations,
+                    GetQueenDestinations = Board.GetQueenDestinations,
+                    Debug = () => false,
+                    WriteMessageLine = _writeMessageLine
+                };
+                Evaluation evaluation = new Evaluation(evaluationDelegates);
                 evaluations[index] = evaluation;
                 searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
             }

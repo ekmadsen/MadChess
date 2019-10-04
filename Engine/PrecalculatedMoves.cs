@@ -26,12 +26,10 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly ulong[] _rookMagicMultipliers;
         private readonly int[] _rookShifts;
         private readonly ulong[][] _rookMoveMasks; // [Square][Index]
-        private readonly Delegates.WriteMessageLine _writeMessageLine;
 
 
-        public PrecalculatedMoves(Delegates.WriteMessageLine WriteMessageLine)
+        public PrecalculatedMoves()
         {
-            _writeMessageLine = WriteMessageLine;
             _bishopRelevantOccupancyMasks = new ulong[64];
             _bishopMagicMultipliers = new ulong[64];
             _bishopShifts = new int[64];
@@ -189,8 +187,8 @@ namespace ErikTheCoder.MadChess.Engine
             _rookMagicMultipliers[Square.g1] = 0x0003FFEF27EEBE74ul;
             _rookMagicMultipliers[Square.h1] = 0x7645FFFECBFEA79Eul;
 
-            FindMagicMultipliers(Piece.WhiteBishop, false);
-            FindMagicMultipliers(Piece.WhiteRook, false);
+            FindMagicMultipliers(Piece.WhiteBishop);
+            FindMagicMultipliers(Piece.WhiteRook);
         }
 
 
@@ -210,7 +208,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void FindMagicMultipliers(int Piece, bool DisplayStatus)
+        public void FindMagicMultipliers(int Piece, Delegates.WriteMessageLine WriteMessageLine = null)
         {
             Direction[] directions;
             ulong[] unoccupiedMoveMasks;
@@ -276,9 +274,8 @@ namespace ErikTheCoder.MadChess.Engine
                 ulong magicMultiplier = magicMultipliers[square];
                 if (magicMultiplier == 0) (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
                 else (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, magicMultiplier);
-                if (DisplayStatus) 
-                    _writeMessageLine($"{Board.SquareLocations[square].PadLeft(6)}  {Engine.Piece.GetName(Piece).PadLeft(6)}  {shift.ToString().PadLeft(5)}  " +
-                        $"{occupancyToMovesMask.Count.ToString().PadLeft(18)}  {uniqueMovesMasks.Count.ToString().PadLeft(12)}  {magicMultipliers[square].ToString("X16").PadLeft(16)}");
+                WriteMessageLine?.Invoke($"{Board.SquareLocations[square].PadLeft(6)}  {Engine.Piece.GetName(Piece).PadLeft(6)}  {shift.ToString().PadLeft(5)}  " +
+                                         $"{occupancyToMovesMask.Count.ToString().PadLeft(18)}  {uniqueMovesMasks.Count.ToString().PadLeft(12)}  {magicMultipliers[square].ToString("X16").PadLeft(16)}");
             }
         }
 

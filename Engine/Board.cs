@@ -54,7 +54,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong[] BishopMoveMasks;
         public static readonly ulong[] RookMoveMasks;
         public static readonly ulong[] KingMoveMasks;
-        public static PrecalculatedMoves PrecalculatedMoves;
+        public static readonly PrecalculatedMoves PrecalculatedMoves;
         public long Nodes;
         public long NodesInfoUpdate;
         public long NodesExamineTime;
@@ -308,7 +308,7 @@ namespace ErikTheCoder.MadChess.Engine
             int[] squareIndices1212To88 = MapSquareIndices1212To88();
             _neighborSquares = CreateNeighborSquares(directionOffsets1212, squareIndices1212To88);
             
-            // Create move masks.
+            // Create move masks and precalculated moves.
             WhitePawnMoveMasks = CreateWhitePawnMoveMasks();
             WhitePawnDoubleMoveMasks = CreateWhitePawnDoubleMoveMasks();
             WhitePawnAttackMasks = CreateWhitePawnAttackMasks();
@@ -320,6 +320,7 @@ namespace ErikTheCoder.MadChess.Engine
             BishopMoveMasks = CreateBishopMoveMasks();
             RookMoveMasks = CreateRookMoveMasks();
             KingMoveMasks = CreateKingMoveMasks();
+            PrecalculatedMoves = new PrecalculatedMoves();
         }
 
 
@@ -331,7 +332,7 @@ namespace ErikTheCoder.MadChess.Engine
             _whiteFreePawnMasks = CreateWhiteFreePawnMasks();
             _blackPassedPawnMasks = CreateBlackPassedPawnMasks();
             _blackFreePawnMasks = CreateBlackFreePawnMasks();
-            // Create positions.
+            // Create positions and precalculated moves.
             _positions = new Position[_maxPositions];
             for (int positionIndex = 0; positionIndex < _maxPositions; positionIndex++) _positions[positionIndex] = new Position(this);
             // Create Zobrist position keys.
