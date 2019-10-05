@@ -195,15 +195,15 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(uint Value) => Popcnt.PopCount(Value);
+        public static int CountSetBits(uint Value) => (int) Popcnt.PopCount(Value);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(ulong Value) => (int) Popcnt.PopCount(Value);
+        public static int CountSetBits(ulong Value) => (int) Popcnt.X64.PopCount(Value);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int FindFirstSetBit(ulong Value) => Value == 0 ? Square.Illegal : _longBits - (int) Lzcnt.LeadingZeroCount(Value) - 1;
+        public static int FindFirstSetBit(ulong Value) => Value == 0 ? Square.Illegal : _longBits - (int) Lzcnt.X64.LeadingZeroCount(Value) - 1;
 
 
         public static IEnumerable<ulong> GetAllPermutations(ulong Mask)

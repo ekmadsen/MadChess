@@ -52,7 +52,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
-        private const int _historyPriorMovePer128 = 256;
+        private const int _historyPriorMovePer128 = 64;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
@@ -584,13 +584,6 @@ namespace ErikTheCoder.MadChess.Engine
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
             int staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
-            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
-            {
-                // Position is futile.
-                // Position is not the result of best play by both players.
-                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
-                return Beta;
-            }
             if (IsNullMoveAllowed && Search.IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
             {
                 // Null move is allowed.
@@ -845,17 +838,6 @@ namespace ErikTheCoder.MadChess.Engine
                 // Search at full speed until hard time limit is exceeded.
                 if (_stopwatch.Elapsed >= MoveTimeHardLimit) Continue = false; // No time is available to continue searching.
             }
-        }
-
-
-        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Beta)
-        {
-            if ((Depth == 0) || Position.KingInCheck || IsDrawnEndgame) return false; // Root, king in check, and drawn endgame positions are not futile.
-            int toHorizon = Horizon - Depth;
-            if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
-            // Determine if any move can lower score to beta.
-            int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore - futilityMargin > Beta;
         }
 
 

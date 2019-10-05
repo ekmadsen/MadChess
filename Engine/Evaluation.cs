@@ -9,6 +9,7 @@
 
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -27,7 +28,7 @@ namespace ErikTheCoder.MadChess.Engine
         public bool UnderstandsPassedPawns;
         public bool UnderstandsMobility;
         private const double _passedPawnPower = 2d;
-        private const double _pieceMobilityPower = 0.67d;
+        private const double _pieceMobilityPower = 0.5d;
         // Select phase constants such that starting material = 256.
         // This improves integer division speed since x / 256 = x >> 8.
         private const int _middlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + 2 * _queenPhase;
@@ -151,27 +152,13 @@ namespace ErikTheCoder.MadChess.Engine
 
         private static void CalculatePieceMobility(int[] MgPieceMobility, int[] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
         {
-            int halfMoves = MgPieceMobility.Length / 2;
-            for (int moveIndex = 0; moveIndex < MgPieceMobility.Length; moveIndex++)
+            Debug.Assert(MgPieceMobility.Length == EgPieceMobility.Length);
+            int maxMoves = MgPieceMobility.Length - 1;
+            for (int moves = 0; moves <= maxMoves; moves++)
             {
-                int distanceFromHalf = moveIndex - halfMoves;
-                int absDistanceFromHalf = Math.Abs(distanceFromHalf);
-                int mgScale;
-                int egScale;
-                if (distanceFromHalf >= 0)
-                {
-                    // Assign positive values when more than half the maximum moves are possible.
-                    mgScale = MgMobilityScale;
-                    egScale = EgMobilityScale;
-                }
-                else
-                {
-                    // Assign negative values when less than half the maximum moves are possible.
-                    mgScale = -MgMobilityScale;
-                    egScale = -EgMobilityScale;
-                }
-                MgPieceMobility[moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
-                EgPieceMobility[moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
+                double percentMaxMoves = (double) moves / maxMoves;
+                MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, _pieceMobilityPower, -MgMobilityScale / 2);
+                EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, _pieceMobilityPower, -EgMobilityScale / 2);
             }
         }
 
