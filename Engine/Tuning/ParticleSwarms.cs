@@ -141,26 +141,26 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgQueenCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgQueenConstant), -100, 100),
                 // King
-                new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -25, 0),
-                new Parameter(nameof(EvaluationConfig.EgKingAdvancement), 0, 25),
-                new Parameter(nameof(EvaluationConfig.MgKingCentrality), -25, 0),
-                new Parameter(nameof(EvaluationConfig.EgKingCentrality), 0, 25),
-                new Parameter(nameof(EvaluationConfig.MgKingCorner), 0, 25),
-                new Parameter(nameof(EvaluationConfig.EgKingCorner), -25, 0),
+                new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -50, 0),
+                new Parameter(nameof(EvaluationConfig.EgKingAdvancement), 0, 50),
+                new Parameter(nameof(EvaluationConfig.MgKingCentrality), -50, 0),
+                new Parameter(nameof(EvaluationConfig.EgKingCentrality), 0, 50),
+                new Parameter(nameof(EvaluationConfig.MgKingCorner), 0, 50),
+                new Parameter(nameof(EvaluationConfig.EgKingCorner), -50, 0),
                 // Passed Pawns
-                new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePercent), 0, 400),
+                new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePercent), 0, 200),
                 new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePercent), 200, 1000),
                 new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePercent), 400, 1000),
                 new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 50),
                 // Piece Mobility
-                new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 50),
-                new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 50),
-                new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 50),
-                new Parameter(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 50),
-                new Parameter(nameof(EvaluationConfig.MgRookMobilityScale), 0, 50),
-                new Parameter(nameof(EvaluationConfig.EgRookMobilityScale), 0, 50),
-                new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 50),
-                new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 50)
+                new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 100),
+                new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 100),
+                new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 100),
+                new Parameter(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 200),
+                new Parameter(nameof(EvaluationConfig.MgRookMobilityScale), 0, 100),
+                new Parameter(nameof(EvaluationConfig.EgRookMobilityScale), 0, 200),
+                new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 200),
+                new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 400)
             };
         }
 
