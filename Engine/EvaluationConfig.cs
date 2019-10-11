@@ -29,57 +29,57 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgPawnConstant = 33;
         // Knight Location 
         public int MgKnightAdvancement = 5;
-        public int EgKnightAdvancement = 19;
+        public int EgKnightAdvancement = 20;
         public int MgKnightCentrality = 12;
         public int EgKnightCentrality = 16;
         public int MgKnightCorner = -4;
         public int EgKnightCorner = -6;
-        public int EgKnightConstant = 17;
+        public int EgKnightConstant = -2;
         // Bishop Location
-        public int MgBishopAdvancement = 6;
+        public int MgBishopAdvancement = 4;
         public int EgBishopAdvancement = 2;
         public int MgBishopCentrality = 7;
-        public int EgBishopCentrality = 12;
+        public int EgBishopCentrality = 10;
         public int MgBishopCorner = 4;
-        public int EgBishopCorner = 1;
-        public int EgBishopConstant = 36;
+        public int EgBishopCorner = 0;
+        public int EgBishopConstant = 40;
         // Rook Location
         public int MgRookAdvancement = 2;
         public int EgRookAdvancement = 16;
         public int MgRookCentrality = 0;
-        public int EgRookCentrality = 8;
+        public int EgRookCentrality = 5;
         public int MgRookCorner = -13;
         public int EgRookCorner = -3;
-        public int EgRookConstant = 50;
+        public int EgRookConstant = 54;
         // Queen Location
         public int MgQueenAdvancement = 1;
         public int EgQueenAdvancement = 20;
-        public int MgQueenCentrality = 7;
+        public int MgQueenCentrality = 8;
         public int EgQueenCentrality = 8;
         public int MgQueenCorner = -4;
         public int EgQueenCorner = -1;
-        public int EgQueenConstant = 91;
+        public int EgQueenConstant = 93;
         // King Location
-        public int MgKingAdvancement = -19;
+        public int MgKingAdvancement = -20;
         public int EgKingAdvancement = 13;
-        public int MgKingCentrality = -3;
-        public int EgKingCentrality = 17;
-        public int MgKingCorner = 19;
-        public int EgKingCorner = -2;
+        public int MgKingCentrality = -1;
+        public int EgKingCentrality = 18;
+        public int MgKingCorner = 20;
+        public int EgKingCorner = -4;
         // Passed Pawns
-        public int MgPassedPawnScalePercent = 72;
-        public int EgPassedPawnScalePercent = 437;
-        public int EgFreePassedPawnScalePercent = 789;
-        public int EgKingEscortedPassedPawn = 10;
+        public int MgPassedPawnScalePercent = 71;
+        public int EgPassedPawnScalePercent = 453;
+        public int EgFreePassedPawnScalePercent = 801;
+        public int EgKingEscortedPassedPawn = 9;
         public int UnstoppablePassedPawn => QueenMaterial - (2 * Evaluation.PawnMaterial);  // Incentivize engine to promote pawn.
-        public int MgKnightMobilityScale = 31;
-        public int EgKnightMobilityScale = 25;
-        public int MgBishopMobilityScale = 45;
-        public int EgBishopMobilityScale = 113;
-        public int MgRookMobilityScale = 14;
-        public int EgRookMobilityScale = 106;
-        public int MgQueenMobilityScale = 76;
-        public int EgQueenMobilityScale = 44;
+        public int MgKnightMobilityScale = 33;
+        public int EgKnightMobilityScale = 50;
+        public int MgBishopMobilityScale = 44;
+        public int EgBishopMobilityScale = 114;
+        public int MgRookMobilityScale = 19;
+        public int EgRookMobilityScale = 102;
+        public int MgQueenMobilityScale = 117;
+        public int EgQueenMobilityScale = 25;
         // ReSharper restore FieldCanBeMadeReadOnly.Global
         // ReSharper restore ConvertToConstant.Global
 
