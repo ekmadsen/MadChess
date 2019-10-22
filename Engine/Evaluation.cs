@@ -156,9 +156,18 @@ namespace ErikTheCoder.MadChess.Engine
             int maxMoves = MgPieceMobility.Length - 1;
             for (int moves = 0; moves <= maxMoves; moves++)
             {
-                double percentMaxMoves = (double) moves / maxMoves;
+                double percentMaxMoves = (double)moves / maxMoves;
                 MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, _pieceMobilityPower, -MgMobilityScale / 2);
                 EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, _pieceMobilityPower, -EgMobilityScale / 2);
+            }
+            // Adjust constant so piece mobility bonus for average number of moves is zero.
+            int averageMoves = maxMoves / 2;
+            int averageMgBonus = MgPieceMobility[averageMoves];
+            int averageEgBonus = EgPieceMobility[averageMoves];
+            for (int moves = 0; moves <= maxMoves; moves++)
+            {
+                MgPieceMobility[moves] -= averageMgBonus;
+                EgPieceMobility[moves] -= averageEgBonus;
             }
         }
 
