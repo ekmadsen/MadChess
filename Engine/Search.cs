@@ -52,7 +52,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
-        private const int _historyPriorMovePer128 = 64;
+        private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
