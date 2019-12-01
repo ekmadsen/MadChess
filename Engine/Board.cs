@@ -1081,32 +1081,22 @@ namespace ErikTheCoder.MadChess.Engine
             if (CurrentPosition.WhiteMove)
             {
                 // Black castled, now white move.
-                switch (toSquare)
+                attackedSquaresMask = toSquare switch
                 {
-                    case Square.c8:
-                        attackedSquaresMask = _blackCastleQAttackedSquareMask;
-                        break;
-                    case Square.g8:
-                        attackedSquaresMask = _blackCastleKAttackedSquareMask;
-                        break;
-                    default:
-                        throw new Exception($"Black king cannot castle to {SquareLocations[toSquare]}.");
-                }
+                    Square.c8 => _blackCastleQAttackedSquareMask,
+                    Square.g8 => _blackCastleKAttackedSquareMask,
+                    _ => throw new Exception($"Black king cannot castle to {SquareLocations[toSquare]}.")
+                };
             }
             else
             {
                 // White castled, now black move.
-                switch (toSquare)
+                attackedSquaresMask = toSquare switch
                 {
-                    case Square.c1:
-                        attackedSquaresMask = _whiteCastleQAttackedSquareMask;
-                        break;
-                    case Square.g1:
-                        attackedSquaresMask = _whiteCastleKAttackedSquareMask;
-                        break;
-                    default:
-                        throw new Exception($"White king cannot castle to {SquareLocations[toSquare]}.");
-                }
+                    Square.c1 => _whiteCastleQAttackedSquareMask,
+                    Square.g1 => _whiteCastleKAttackedSquareMask,
+                    _ => throw new Exception($"White king cannot castle to {SquareLocations[toSquare]}.")
+                };
             }
             while ((toSquare = Bitwise.FindFirstSetBit(attackedSquaresMask)) != Square.Illegal)
             {

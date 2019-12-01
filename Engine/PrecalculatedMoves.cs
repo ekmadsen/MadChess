@@ -289,6 +289,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong occupancy;
             int file = Board.Files[Square];
             int rank = Board.WhiteRanks[Square];
+            // ReSharper disable ConvertSwitchStatementToSwitchExpression
             switch (file)
             {
                 case 0:
@@ -347,6 +348,7 @@ namespace ErikTheCoder.MadChess.Engine
                     // Occupancy of edge ranks does not affect pseudo-legal moves.
                     return occupancy & ~Board.RankMasks[0] & ~Board.RankMasks[7];
             }
+            // ReSharper restore ConvertSwitchStatementToSwitchExpression
         }
 
 

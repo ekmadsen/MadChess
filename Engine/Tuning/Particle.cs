@@ -160,22 +160,14 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     // Convert quiet score to win percent.
                     double winPercent = GetWinPercent(quietScore, WinPercentScale);
                     // Compare win percent to game result.
-                    double result;
                     // ReSharper disable once SwitchStatementMissingSomeCases
-                    switch (game.Result)
+                    var result = game.Result switch
                     {
-                        case GameResult.WhiteWon:
-                            result = Board.CurrentPosition.WhiteMove ? 1d : 0;
-                            break;
-                        case GameResult.Draw:
-                            result = 0.5d;
-                            break;
-                        case GameResult.BlackWon:
-                            result = Board.CurrentPosition.WhiteMove ? 0 : 1d;
-                            break;
-                        default:
-                            throw new InvalidOperationException($"{game.Result} game result not supported.");
-                    }
+                        GameResult.WhiteWon => (Board.CurrentPosition.WhiteMove ? 1d : 0),
+                        GameResult.Draw => 0.5d,
+                        GameResult.BlackWon => (Board.CurrentPosition.WhiteMove ? 0 : 1d),
+                        _ => throw new InvalidOperationException($"{game.Result} game result not supported.")
+                    };
                     evaluationError += Math.Pow(winPercent - result, 2);
                 }
             }

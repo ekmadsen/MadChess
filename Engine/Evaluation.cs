@@ -244,37 +244,23 @@ namespace ErikTheCoder.MadChess.Engine
         public int GetMaterialScore(int Piece)
         {
             // Sequence cases in order of enum integer value to improve performance of switch statement.
-            switch (Piece)
+            return Piece switch
             {
-                case Engine.Piece.None:
-                    return 0;
-                case Engine.Piece.WhitePawn:
-                    return PawnMaterial;
-                case Engine.Piece.WhiteKnight:
-                    return Config.KnightMaterial;
-                case Engine.Piece.WhiteBishop:
-                    return Config.BishopMaterial;
-                case Engine.Piece.WhiteRook:
-                    return Config.RookMaterial;
-                case Engine.Piece.WhiteQueen:
-                    return Config.QueenMaterial;
-                case Engine.Piece.WhiteKing:
-                    return 0;
-                case Engine.Piece.BlackPawn:
-                    return PawnMaterial;
-                case Engine.Piece.BlackKnight:
-                    return Config.KnightMaterial;
-                case Engine.Piece.BlackBishop:
-                    return Config.BishopMaterial;
-                case Engine.Piece.BlackRook:
-                    return Config.RookMaterial;
-                case Engine.Piece.BlackQueen:
-                    return Config.QueenMaterial;
-                case Engine.Piece.BlackKing:
-                    return 0;
-                default:
-                    throw new ArgumentException($"{Piece} piece not supported.");
-            }
+                Engine.Piece.None => 0,
+                Engine.Piece.WhitePawn => PawnMaterial,
+                Engine.Piece.WhiteKnight => Config.KnightMaterial,
+                Engine.Piece.WhiteBishop => Config.BishopMaterial,
+                Engine.Piece.WhiteRook => Config.RookMaterial,
+                Engine.Piece.WhiteQueen => Config.QueenMaterial,
+                Engine.Piece.WhiteKing => 0,
+                Engine.Piece.BlackPawn => PawnMaterial,
+                Engine.Piece.BlackKnight => Config.KnightMaterial,
+                Engine.Piece.BlackBishop => Config.BishopMaterial,
+                Engine.Piece.BlackRook => Config.RookMaterial,
+                Engine.Piece.BlackQueen => Config.QueenMaterial,
+                Engine.Piece.BlackKing => 0,
+                _ => throw new ArgumentException($"{Piece} piece not supported.")
+            };
         }
 
 
@@ -538,27 +524,18 @@ namespace ErikTheCoder.MadChess.Engine
             else
             {
                 // Pawn is not on rook file.
-                bool winningKingOnKeySquare;
                 int kingPawnRankDifference = winningKingRank - pawnRank;
                 int kingPawnAbsoluteFileDifference = Math.Abs(winningKingFile - pawnFile);
-                switch (pawnRank)
+                bool winningKingOnKeySquare = pawnRank switch
                 {
-                    case 1:
-                    case 2:
-                    case 3:
-                        winningKingOnKeySquare = (winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1);
-                        break;
-                    case 4:
-                    case 5:
-                        winningKingOnKeySquare = (kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1);
-                        break;
-                    case 6:
-                        winningKingOnKeySquare = (kingPawnRankDifference >= 0) && (kingPawnRankDifference <= 1) && (kingPawnAbsoluteFileDifference <= 1);
-                        break;
-                    default:
-                        winningKingOnKeySquare = false;
-                        break;
-                }
+                    1 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
+                    2 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
+                    3 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
+                    4 => ((kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1)),
+                    5 => ((kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1)),
+                    6 => ((kingPawnRankDifference >= 0) && (kingPawnRankDifference <= 1) && (kingPawnAbsoluteFileDifference <= 1)),
+                    _ => false
+                };
                 if (winningKingOnKeySquare)
                 {
                     // Pawn promotes.

@@ -35,74 +35,46 @@ namespace ErikTheCoder.MadChess.Engine
         public static char GetChar(int Piece)
         {
             // Sequence cases in order of enum integer value to improve performance of switch statement.
-            switch (Piece)
+            return Piece switch
             {
-                case None:
-                    return ' ';
-                case WhitePawn:
-                    return 'P';
-                case WhiteKnight:
-                    return 'N';
-                case WhiteBishop:
-                    return 'B';
-                case WhiteRook:
-                    return 'R';
-                case WhiteQueen:
-                    return 'Q';
-                case WhiteKing:
-                    return 'K';
-                case BlackPawn:
-                    return 'p';
-                case BlackKnight:
-                    return 'n';
-                case BlackBishop:
-                    return 'b';
-                case BlackRook:
-                    return 'r';
-                case BlackQueen:
-                    return 'q';
-                case BlackKing:
-                    return 'k';
-                default:
-                    throw new ArgumentException($"{Piece} piece not supported.");
-            }
+                None => ' ',
+                WhitePawn => 'P',
+                WhiteKnight => 'N',
+                WhiteBishop => 'B',
+                WhiteRook => 'R',
+                WhiteQueen => 'Q',
+                WhiteKing => 'K',
+                BlackPawn => 'p',
+                BlackKnight => 'n',
+                BlackBishop => 'b',
+                BlackRook => 'r',
+                BlackQueen => 'q',
+                BlackKing => 'k',
+                _ => throw new ArgumentException($"{Piece} piece not supported.")
+            };
         }
 
 
         public static string GetName(int Piece)
         {
             // Sequence cases in order of enum integer value to improve performance of switch statement.
-            switch (Piece)
+            return Piece switch
             {
-                case None:
-                    return string.Empty;
-                case WhitePawn:
-                    return "Pawn";
-                case WhiteKnight:
-                    return "Knight";
-                case WhiteBishop:
-                    return "Bishop";
-                case WhiteRook:
-                    return "Rook";
-                case WhiteQueen:
-                    return "Queen";
-                case WhiteKing:
-                    return "King";
-                case BlackPawn:
-                    return "Pawn";
-                case BlackKnight:
-                    return "Knight";
-                case BlackBishop:
-                    return "Bishop";
-                case BlackRook:
-                    return "Rook";
-                case BlackQueen:
-                    return "Queen";
-                case BlackKing:
-                    return "King";
-                default:
-                    throw new ArgumentException($"{Piece} piece not supported.");
-            }
+                None => string.Empty,
+                WhitePawn => "Pawn",
+                WhiteKnight => "Knight",
+                WhiteBishop => "Bishop",
+                WhiteRook => "Rook",
+                WhiteQueen => "Queen",
+                WhiteKing => "King",
+                BlackPawn => "Pawn",
+                BlackKnight => "Knight",
+                BlackBishop => "Bishop",
+                BlackRook => "Rook",
+                BlackQueen => "Queen",
+                BlackKing => "King",
+                _ => throw new ArgumentException($"{Piece} piece not supported.")
+            };
         }
 
 
@@ -112,35 +84,22 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static int ParseChar(char Character)
         {
-            switch (Character)
+            return Character switch
             {
-                case 'P':
-                    return WhitePawn;
-                case 'N':
-                    return WhiteKnight;
-                case 'B':
-                    return WhiteBishop;
-                case 'R':
-                    return WhiteRook;
-                case 'Q':
-                    return WhiteQueen;
-                case 'K':
-                    return WhiteKing;
-                case 'p':
-                    return BlackPawn;
-                case 'n':
-                    return BlackKnight;
-                case 'b':
-                    return BlackBishop;
-                case 'r':
-                    return BlackRook;
-                case 'q':
-                    return BlackQueen;
-                case 'k':
-                    return BlackKing;
-                default:
-                    throw new ArgumentException($"{Character} character not supported.");
-            }
+                'P' => WhitePawn,
+                'N' => WhiteKnight,
+                'B' => WhiteBishop,
+                'R' => WhiteRook,
+                'Q' => WhiteQueen,
+                'K' => WhiteKing,
+                'p' => BlackPawn,
+                'n' => BlackKnight,
+                'b' => BlackBishop,
+                'r' => BlackRook,
+                'q' => BlackQueen,
+                'k' => BlackKing,
+                _ => throw new ArgumentException($"{Character} character not supported.")
+            };
         }
     }
 }
