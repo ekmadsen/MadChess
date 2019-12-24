@@ -153,27 +153,21 @@ namespace ErikTheCoder.MadChess.Engine
         private static void CalculatePieceMobility(int[] MgPieceMobility, int[] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
         {
             Debug.Assert(MgPieceMobility.Length == EgPieceMobility.Length);
-            int halfMoves = MgPieceMobility.Length / 2;
-            for (int moveIndex = 0; moveIndex < MgPieceMobility.Length; moveIndex++)
+            int maxMoves = MgPieceMobility.Length - 1;
+            for (int moves = 0; moves <= maxMoves; moves++)
             {
-                int distanceFromHalf = moveIndex - halfMoves;
-                int absDistanceFromHalf = Math.Abs(distanceFromHalf);
-                int mgScale;
-                int egScale;
-                if (distanceFromHalf >= 0)
-                {
-                    // Assign positive values when more than half the maximum moves are possible.
-                    mgScale = MgMobilityScale;
-                    egScale = EgMobilityScale;
-                }
-                else
-                {
-                    // Assign negative values when less than half the maximum moves are possible.
-                    mgScale = -MgMobilityScale;
-                    egScale = -EgMobilityScale;
-                }
-                MgPieceMobility[moveIndex] = GetNonLinearBonus(absDistanceFromHalf, mgScale, _pieceMobilityPower, 0);
-                EgPieceMobility[moveIndex] = GetNonLinearBonus(absDistanceFromHalf, egScale, _pieceMobilityPower, 0);
+                double percentMaxMoves = (double)moves / maxMoves;
+                MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, _pieceMobilityPower, -MgMobilityScale / 2);
+                EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, _pieceMobilityPower, -EgMobilityScale / 2);
+            }
+            // Adjust constant so piece mobility bonus for average number of moves is zero.
+            int averageMoves = maxMoves / 2;
+            int averageMgBonus = MgPieceMobility[averageMoves];
+            int averageEgBonus = EgPieceMobility[averageMoves];
+            for (int moves = 0; moves <= maxMoves; moves++)
+            {
+                MgPieceMobility[moves] -= averageMgBonus;
+                EgPieceMobility[moves] -= averageEgBonus;
             }
         }
 
