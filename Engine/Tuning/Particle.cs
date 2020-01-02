@@ -124,7 +124,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.EgPassedPawnScalePercent = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePercent)].Value;
             Evaluation.Config.EgFreePassedPawnScalePercent = Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePercent)].Value;
             Evaluation.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value;
-            Evaluation.Configure();
             // Piece Mobility
             Evaluation.Config.MgKnightMobilityScale = Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value;
             Evaluation.Config.EgKnightMobilityScale = Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value;
@@ -134,6 +133,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.EgRookMobilityScale = Parameters[nameof(EvaluationConfig.EgRookMobilityScale)].Value;
             Evaluation.Config.MgQueenMobilityScale = Parameters[nameof(EvaluationConfig.MgQueenMobilityScale)].Value;
             Evaluation.Config.EgQueenMobilityScale = Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value;
+            Evaluation.Configure();
         }
         
 
@@ -160,8 +160,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     // Convert quiet score to win percent.
                     double winPercent = GetWinPercent(quietScore, WinPercentScale);
                     // Compare win percent to game result.
-                    // ReSharper disable once SwitchStatementMissingSomeCases
-                    var result = game.Result switch
+                    // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
+                    double result = game.Result switch
                     {
                         GameResult.WhiteWon => (Board.CurrentPosition.WhiteMove ? 1d : 0),
                         GameResult.Draw => 0.5d,

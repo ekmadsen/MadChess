@@ -900,6 +900,7 @@ namespace ErikTheCoder.MadChess.Engine
                     Position.CurrentMoveIndex++;
                     return nextMove;
                 }
+                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                 switch (Position.MoveGenerationStage)
                 {
                     case MoveGenerationStage.BestMove:
@@ -953,6 +954,7 @@ namespace ErikTheCoder.MadChess.Engine
                     Position.CurrentMoveIndex++;
                     return nextMove;
                 }
+                // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
                 switch (Position.MoveGenerationStage)
                 {
                     case MoveGenerationStage.BestMove:

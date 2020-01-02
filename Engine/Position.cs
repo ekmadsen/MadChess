@@ -379,7 +379,7 @@ namespace ErikTheCoder.MadChess.Engine
             int fromSquare;
             while ((fromSquare = Bitwise.FindFirstSetBit(knights)) != Square.Illegal)
             {
-                var knightDestinations = MoveGeneration switch
+                ulong knightDestinations = MoveGeneration switch
                 {
                     MoveGeneration.AllMoves => (Board.KnightMoveMasks[fromSquare] & unOrEnemyOccupiedSquares & ToSquareMask),
                     MoveGeneration.OnlyCaptures => (Board.KnightMoveMasks[fromSquare] & enemyOccupiedSquares & ToSquareMask),
@@ -430,7 +430,7 @@ namespace ErikTheCoder.MadChess.Engine
             while ((fromSquare = Bitwise.FindFirstSetBit(bishops)) != Square.Illegal)
             {
                 ulong occupancy = Board.BishopMoveMasks[fromSquare] & Occupancy;
-                var bishopDestinations = MoveGeneration switch
+                ulong bishopDestinations = MoveGeneration switch
                 {
                     MoveGeneration.AllMoves => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & ToSquareMask),
                     MoveGeneration.OnlyCaptures => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & ToSquareMask),
@@ -482,7 +482,7 @@ namespace ErikTheCoder.MadChess.Engine
             while ((fromSquare = Bitwise.FindFirstSetBit(rooks)) != Square.Illegal)
             {
                 ulong occupancy = Board.RookMoveMasks[fromSquare] & Occupancy;
-                var rookDestinations = MoveGeneration switch
+                ulong rookDestinations = MoveGeneration switch
                 {
                     MoveGeneration.AllMoves => (Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & ToSquareMask),
                     MoveGeneration.OnlyCaptures => (Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & ToSquareMask),
@@ -535,7 +535,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 ulong bishopOccupancy = Board.BishopMoveMasks[fromSquare] & Occupancy;
                 ulong rookOccupancy = Board.RookMoveMasks[fromSquare] & Occupancy;
-                var queenDestinations = MoveGeneration switch
+                ulong queenDestinations = MoveGeneration switch
                 {
                     MoveGeneration.AllMoves => ((Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares & ToSquareMask),
                     MoveGeneration.OnlyCaptures => ((Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & enemyOccupiedSquares & ToSquareMask),
@@ -598,7 +598,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong move;
             int fromSquare = Bitwise.FindFirstSetBit(king);
             if (fromSquare == Square.Illegal) return;
-            var kingDestinations = MoveGeneration switch
+            ulong kingDestinations = MoveGeneration switch
             {
                 MoveGeneration.AllMoves => (Board.KingMoveMasks[fromSquare] & unOrEnemyOccupiedSquares & ToSquareMask),
                 MoveGeneration.OnlyCaptures => (Board.KingMoveMasks[fromSquare] & enemyOccupiedSquares & ToSquareMask),
