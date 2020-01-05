@@ -386,7 +386,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Display engine name and author.
             WriteMessageLine("id name MadChess 3.0");
             WriteMessageLine("id author Erik Madsen");
-            WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See http://www.madchess.net.");
+            WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
             WriteMessageLine("option name Debug type check default false");
             WriteMessageLine("option name Log type check default false");
             WriteMessageLine("option name Hash type spin default 128 min 0 max 1024");
