@@ -72,14 +72,14 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgFreePassedPawnScalePercent = 921;
         public int EgKingEscortedPassedPawn = 8;
         public int UnstoppablePassedPawn => QueenMaterial - (2 * Evaluation.PawnMaterial);  // Incentivize engine to promote pawn.
-        public int MgKnightMobilityScale = 9;
-        public int EgKnightMobilityScale = 11;
-        public int MgBishopMobilityScale = 32;
-        public int EgBishopMobilityScale = 199;
-        public int MgRookMobilityScale = 33;
-        public int EgRookMobilityScale = 171;
-        public int MgQueenMobilityScale = 64;
-        public int EgQueenMobilityScale = 377;
+        public int MgKnightMobilityScale = 0;
+        public int EgKnightMobilityScale = 25;
+        public int MgBishopMobilityScale = 75;
+        public int EgBishopMobilityScale = 200;
+        public int MgRookMobilityScale = 100;
+        public int EgRookMobilityScale = 250;
+        public int MgQueenMobilityScale = 150;
+        public int EgQueenMobilityScale = 375;
         // ReSharper restore FieldCanBeMadeReadOnly.Global
         // ReSharper restore ConvertToConstant.Global
 

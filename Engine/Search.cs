@@ -436,7 +436,7 @@ namespace ErikTheCoder.MadChess.Engine
                 case 0:
                     // Use multi PV aspiration windows.
                     aspirationWindows = _multiPvAspirationWindows;
-                    aspirationStartingIndex = _originalHorizon == 1 ? 0 : _lastAspirationWindowIndex;
+                    aspirationStartingIndex = _lastAspirationWindowIndex;
                     break;
                 default:
                     _scoreErrorAspirationWindows[0] = (_scoreError + 1) * 2;

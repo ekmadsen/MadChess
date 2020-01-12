@@ -20,6 +20,6 @@ namespace ErikTheCoder.MadChess.Engine
         public delegate bool IsPassedPawn(int Square, bool White);
         public delegate bool IsFreePawn(int Square, bool White);
         public delegate void WriteMessageLine(string Message);
-        public delegate ulong GetPieceDestinations(Position Position, bool White);
+        public delegate ulong GetPieceDestinations(Position Position, int FromSquare, bool White);
     }
 }

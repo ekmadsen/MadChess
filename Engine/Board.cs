@@ -802,115 +802,43 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static ulong GetKnightDestinations(Position Position, bool White)
+        public static ulong GetKnightDestinations(Position Position, int FromSquare, bool White)
         {
-            ulong knightDestinations = 0;
-            ulong knights;
-            ulong unOrEnemyOccupiedSquares;
-            if (White)
-            {
-                // White
-                knights = Position.WhiteKnights;
-                unOrEnemyOccupiedSquares = ~Position.OccupancyWhite;
-            }
-            else
-            {
-                // Black
-                knights = Position.BlackKnights;
-                unOrEnemyOccupiedSquares = ~Position.OccupancyBlack;
-            }
-            int fromSquare;
-            while ((fromSquare = Bitwise.FindFirstSetBit(knights)) != Square.Illegal)
-            {
-                knightDestinations |= KnightMoveMasks[fromSquare] & unOrEnemyOccupiedSquares;
-                Bitwise.ClearBit(ref knights, fromSquare);
-            }
-            return knightDestinations;
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            return KnightMoveMasks[FromSquare] & unOrEnemyOccupiedSquares;
         }
 
 
-        public static ulong GetBishopDestinations(Position Position, bool White)
+        public static ulong GetBishopDestinations(Position Position, int FromSquare, bool White)
         {
-            ulong bishopDestinations = 0;
-            ulong bishops;
-            ulong unOrEnemyOccupiedSquares;
-            if (White)
-            {
-                // White
-                bishops = Position.WhiteBishops;
-                unOrEnemyOccupiedSquares = ~Position.OccupancyWhite;
-            }
-            else
-            {
-                // Black
-                bishops = Position.BlackBishops;
-                unOrEnemyOccupiedSquares = ~Position.OccupancyBlack;
-            }
-            int fromSquare;
-            while ((fromSquare = Bitwise.FindFirstSetBit(bishops)) != Square.Illegal)
-            {
-                ulong occupancy = BishopMoveMasks[fromSquare] & Position.Occupancy;
-                bishopDestinations |= PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares;
-                Bitwise.ClearBit(ref bishops, fromSquare);
-            }
-            return bishopDestinations;
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            ulong occupancy = BishopMoveMasks[FromSquare] & Position.Occupancy;
+            return PrecalculatedMoves.GetBishopMovesMask(FromSquare, occupancy) & unOrEnemyOccupiedSquares;
         }
 
 
-        public static ulong GetRookDestinations(Position Position, bool White)
+        public static ulong GetRookDestinations(Position Position, int FromSquare, bool White)
         {
-            ulong rookDestinations = 0;
-            ulong rooks;
-            ulong unOrEnemyOccupiedSquares;
-            if (White)
-            {
-                // White
-                rooks = Position.WhiteRooks;
-                unOrEnemyOccupiedSquares = ~Position.OccupancyWhite;
-            }
-            else
-            {
-                // Black
-                rooks = Position.BlackRooks;
-                unOrEnemyOccupiedSquares = ~Position.OccupancyBlack;
-            }
-            int fromSquare;
-            while ((fromSquare = Bitwise.FindFirstSetBit(rooks)) != Square.Illegal)
-            {
-                ulong occupancy = RookMoveMasks[fromSquare] & Position.Occupancy;
-                rookDestinations |= PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares;
-                Bitwise.ClearBit(ref rooks, fromSquare);
-            }
-            return rookDestinations;
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            ulong occupancy = RookMoveMasks[FromSquare] & Position.Occupancy;
+            return PrecalculatedMoves.GetRookMovesMask(FromSquare, occupancy) & unOrEnemyOccupiedSquares;
         }
 
 
-        public static ulong GetQueenDestinations(Position Position, bool White)
+        public static ulong GetQueenDestinations(Position Position, int FromSquare, bool White)
         {
-            ulong queenDestinations = 0;
-            ulong queens;
-            ulong unOrEnemyOccupiedSquares;
-            if (White)
-            {
-                // White
-                queens = Position.WhiteQueens;
-                unOrEnemyOccupiedSquares = ~Position.OccupancyWhite;
-            }
-            else
-            {
-                // Black
-                queens = Position.BlackQueens;
-                unOrEnemyOccupiedSquares = ~Position.OccupancyBlack;
-            }
-            int fromSquare;
-            while ((fromSquare = Bitwise.FindFirstSetBit(queens)) != Square.Illegal)
-            {
-                ulong bishopOccupancy = BishopMoveMasks[fromSquare] & Position.Occupancy;
-                ulong rookOccupancy = RookMoveMasks[fromSquare] & Position.Occupancy;
-                queenDestinations |= (PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares;
-                Bitwise.ClearBit(ref queens, fromSquare);
-            }
-            return queenDestinations;
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            ulong bishopOccupancy = BishopMoveMasks[FromSquare] & Position.Occupancy;
+            ulong rookOccupancy = RookMoveMasks[FromSquare] & Position.Occupancy;
+            return (PrecalculatedMoves.GetBishopMovesMask(FromSquare, bishopOccupancy) | PrecalculatedMoves.GetRookMovesMask(FromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares;
         }
 
 
