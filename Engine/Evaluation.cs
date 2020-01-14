@@ -746,57 +746,55 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void EvaluatePawn(Position Position, int Square, bool White)
         {
-            if (_delegates.IsPassedPawn(Square, White))
+            if (!_delegates.IsPassedPawn(Square, White)) return;
+            int rank;
+            int kingSquare;
+            int enemyKingSquare;
+            if (White)
             {
-                int rank;
-                int kingSquare;
-                int enemyKingSquare;
+                // White Pawn
+                rank = Board.WhiteRanks[Square];
+                kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+                enemyKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+                _staticScore.WhiteEgKingEscortedPassedPawns += (Board.SquareDistances[Square][enemyKingSquare] - Board.SquareDistances[Square][kingSquare]) * Config.EgKingEscortedPassedPawn;
+            }
+            else
+            {
+                // Black Pawn
+                rank = Board.BlackRanks[Square];
+                kingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+                enemyKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+                _staticScore.BlackEgKingEscortedPassedPawns += (Board.SquareDistances[Square][enemyKingSquare] - Board.SquareDistances[Square][kingSquare]) * Config.EgKingEscortedPassedPawn;
+            }
+            if (_delegates.IsFreePawn(Square, White))
+            {
+                if (IsPawnUnstoppable(Position, Square, enemyKingSquare, White, true))
+                {
+                    // Pawn is unstoppable.
+                    if (White) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn;
+                    else _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn;
+                }
+                else
+                {
+                    // Pawn is passed and free.
+                    if (White) _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank];
+                    else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank];
+                }
+            }
+            else
+            {
+                // Pawn is passed.
                 if (White)
                 {
                     // White Pawn
-                    rank = Board.WhiteRanks[Square];
-                    kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
-                    enemyKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
-                    _staticScore.WhiteEgKingEscortedPassedPawns += (Board.SquareDistances[Square][enemyKingSquare] - Board.SquareDistances[Square][kingSquare]) * Config.EgKingEscortedPassedPawn;
+                    _staticScore.WhiteMgPassedPawns += _mgPassedPawns[rank];
+                    _staticScore.WhiteEgPassedPawns += _egPassedPawns[rank];
                 }
                 else
                 {
                     // Black Pawn
-                    rank = Board.BlackRanks[Square];
-                    kingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
-                    enemyKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
-                    _staticScore.BlackEgKingEscortedPassedPawns += (Board.SquareDistances[Square][enemyKingSquare] - Board.SquareDistances[Square][kingSquare]) * Config.EgKingEscortedPassedPawn;
-                }
-                if (_delegates.IsFreePawn(Square, White))
-                {
-                    if (IsPawnUnstoppable(Position, Square, enemyKingSquare, White, true))
-                    {
-                        // Pawn is unstoppable.
-                        if (White) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn;
-                        else _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn;
-                    }
-                    else
-                    {
-                        // Pawn is passed and free.
-                        if (White) _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank];
-                        else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank];
-                    }
-                }
-                else
-                {
-                    // Pawn is passed.
-                    if (White)
-                    {
-                        // White Pawn
-                        _staticScore.WhiteMgPassedPawns += _mgPassedPawns[rank];
-                        _staticScore.WhiteEgPassedPawns += _egPassedPawns[rank];
-                    }
-                    else
-                    {
-                        // Black Pawn
-                        _staticScore.BlackMgPassedPawns += _mgPassedPawns[rank];
-                        _staticScore.BlackEgPassedPawns += _egPassedPawns[rank];
-                    }
+                    _staticScore.BlackMgPassedPawns += _mgPassedPawns[rank];
+                    _staticScore.BlackEgPassedPawns += _egPassedPawns[rank];
                 }
             }
         }
@@ -805,6 +803,9 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static (int MiddlegameMobility, int EndgameMobility) GetPieceMobilityScore(Position Position, int FromSquare, bool White, Delegates.GetPieceDestinations GetPieceDestinations, int[] MgPieceMobility, int[] EgPieceMobility)
         {
+            return (0, 0);
+
+
             ulong pieceDestinations = GetPieceDestinations(Position, FromSquare, White);
             int mgMoveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), MgPieceMobility.Length - 1);
             int egMoveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), EgPieceMobility.Length - 1);
