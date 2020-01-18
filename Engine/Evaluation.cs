@@ -614,7 +614,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         if (UnderstandsMobility)
                         {
-                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, true, _delegates.GetKnightDestinations, _mgKnightMobility, _egKnightMobility);
+                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetKnightUnoccupiedDestinations, _mgKnightMobility, _egKnightMobility);
                             _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                             _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
                         }
@@ -627,7 +627,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         if (UnderstandsMobility)
                         {
-                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, true, _delegates.GetBishopDestinations, _mgBishopMobility, _egBishopMobility);
+                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetBishopUnoccupiedDestinations, _mgBishopMobility, _egBishopMobility);
                             _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                             _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
                         }
@@ -640,7 +640,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         if (UnderstandsMobility)
                         {
-                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, true, _delegates.GetRookDestinations, _mgRookMobility, _egRookMobility);
+                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetRookUnoccupiedDestinations, _mgRookMobility, _egRookMobility);
                             _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                             _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
                         }
@@ -653,7 +653,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         if (UnderstandsMobility)
                         {
-                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, true, _delegates.GetQueenDestinations, _mgQueenMobility, _egQueenMobility);
+                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetQueenUnoccupiedDestinations, _mgQueenMobility, _egQueenMobility);
                             _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                             _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
                         }
@@ -683,7 +683,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         if (UnderstandsMobility)
                         {
-                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, false, _delegates.GetKnightDestinations, _mgKnightMobility, _egKnightMobility);
+                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetKnightUnoccupiedDestinations, _mgKnightMobility, _egKnightMobility);
                             _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                             _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
                         }
@@ -697,7 +697,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         if (UnderstandsMobility)
                         {
-                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, false, _delegates.GetBishopDestinations, _mgBishopMobility, _egBishopMobility);
+                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetBishopUnoccupiedDestinations, _mgBishopMobility, _egBishopMobility);
                             _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                             _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
                         }
@@ -711,7 +711,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         if (UnderstandsMobility)
                         {
-                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, false, _delegates.GetRookDestinations, _mgRookMobility, _egRookMobility);
+                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetRookUnoccupiedDestinations, _mgRookMobility, _egRookMobility);
                             _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                             _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
                         }
@@ -725,7 +725,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         if (UnderstandsMobility)
                         {
-                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, false, _delegates.GetQueenDestinations, _mgQueenMobility, _egQueenMobility);
+                            (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetQueenUnoccupiedDestinations, _mgQueenMobility, _egQueenMobility);
                             _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                             _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
                         }
@@ -798,17 +798,14 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
         }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (int MiddlegameMobility, int EndgameMobility) GetPieceMobilityScore(Position Position, int FromSquare, bool White, Delegates.GetPieceDestinations GetPieceDestinations, int[] MgPieceMobility, int[] EgPieceMobility)
+        
+        
+        private static (int MiddlegameMobility, int EndgameMobility) GetPieceMobilityScore(Position Position, int FromSquare, Delegates.GetPieceUnoccupiedDestinations GetPieceUnoccupiedDestinations, int[] MgPieceMobility, int[] EgPieceMobility)
         {
-            return (0, 0);
-
-
-            ulong pieceDestinations = GetPieceDestinations(Position, FromSquare, White);
-            int mgMoveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), MgPieceMobility.Length - 1);
-            int egMoveIndex = Math.Min(Bitwise.CountSetBits(pieceDestinations), EgPieceMobility.Length - 1);
+            ulong pieceDestinations = GetPieceUnoccupiedDestinations(Position, FromSquare);
+            int moves = Bitwise.CountSetBits(pieceDestinations);
+            int mgMoveIndex = Math.Min(moves, MgPieceMobility.Length - 1);
+            int egMoveIndex = Math.Min(moves, EgPieceMobility.Length - 1);
             return (MgPieceMobility[mgMoveIndex], EgPieceMobility[egMoveIndex]);
         }
         

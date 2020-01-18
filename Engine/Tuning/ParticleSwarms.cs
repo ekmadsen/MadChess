@@ -63,10 +63,10 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 GetPositionCount = board.GetPositionCount,
                 IsPassedPawn = board.IsPassedPawn,
                 IsFreePawn = board.IsFreePawn,
-                GetKnightDestinations = Board.GetKnightDestinations,
-                GetBishopDestinations = Board.GetBishopDestinations,
-                GetRookDestinations = Board.GetRookDestinations,
-                GetQueenDestinations = Board.GetQueenDestinations,
+                GetKnightUnoccupiedDestinations = Board.GetKnightUnoccupiedDestinations,
+                GetBishopUnoccupiedDestinations = Board.GetBishopUnoccupiedDestinations,
+                GetRookUnoccupiedDestinations = Board.GetRookUnoccupiedDestinations,
+                GetQueenUnoccupiedDestinations = Board.GetQueenUnoccupiedDestinations,
                 Debug = () => false,
                 WriteMessageLine = WriteMessageLine
             };
@@ -257,10 +257,10 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     GetPositionCount = board.GetPositionCount,
                     IsPassedPawn = board.IsPassedPawn,
                     IsFreePawn = board.IsFreePawn,
-                    GetKnightDestinations = Board.GetKnightDestinations,
-                    GetBishopDestinations = Board.GetBishopDestinations,
-                    GetRookDestinations = Board.GetRookDestinations,
-                    GetQueenDestinations = Board.GetQueenDestinations,
+                    GetKnightUnoccupiedDestinations = Board.GetKnightUnoccupiedDestinations,
+                    GetBishopUnoccupiedDestinations = Board.GetBishopUnoccupiedDestinations,
+                    GetRookUnoccupiedDestinations = Board.GetRookUnoccupiedDestinations,
+                    GetQueenUnoccupiedDestinations = Board.GetQueenUnoccupiedDestinations,
                     Debug = () => false,
                     WriteMessageLine = _writeMessageLine
                 };
