@@ -59,6 +59,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int GetPiece(int Square)
         {
+            // TODO: Determine how to improve performance of this code.
             ulong squareMask = Board.SquareMasks[Square];
             if ((Occupancy & squareMask) == 0) return Piece.None;
             if ((OccupancyWhite & squareMask) > 0)
