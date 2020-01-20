@@ -59,7 +59,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int GetPiece(int Square)
         {
-            // TODO: Determine how to improve performance of this code.
+            // TODO: Test whether redundant piece array improves the performance of the GetPiece method.
             ulong squareMask = Board.SquareMasks[Square];
             if ((Occupancy & squareMask) == 0) return Piece.None;
             if ((OccupancyWhite & squareMask) > 0)

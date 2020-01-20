@@ -802,28 +802,43 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static ulong GetKnightUnoccupiedDestinations(Position Position, int FromSquare) => KnightMoveMasks[FromSquare] & ~Position.Occupancy;
-
-
-        public static ulong GetBishopUnoccupiedDestinations(Position Position, int FromSquare)
+        public static ulong GetKnightDestinations(Position Position, int FromSquare, bool White)
         {
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            return KnightMoveMasks[FromSquare] & unOrEnemyOccupiedSquares;
+        }
+
+
+        public static ulong GetBishopDestinations(Position Position, int FromSquare, bool White)
+        {
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
             ulong occupancy = BishopMoveMasks[FromSquare] & Position.Occupancy;
-            return PrecalculatedMoves.GetBishopMovesMask(FromSquare, occupancy) & ~Position.Occupancy;
+            return PrecalculatedMoves.GetBishopMovesMask(FromSquare, occupancy) & unOrEnemyOccupiedSquares;
         }
 
 
-        public static ulong GetRookUnoccupiedDestinations(Position Position, int FromSquare) {
-            
-            ulong occupancy = RookMoveMasks[FromSquare] & Position.Occupancy;
-            return PrecalculatedMoves.GetRookMovesMask(FromSquare, occupancy) & ~Position.Occupancy;
-        }
-
-
-        public static ulong GetQueenUnoccupiedDestinations(Position Position, int FromSquare)
+        public static ulong GetRookDestinations(Position Position, int FromSquare, bool White)
         {
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            ulong occupancy = RookMoveMasks[FromSquare] & Position.Occupancy;
+            return PrecalculatedMoves.GetRookMovesMask(FromSquare, occupancy) & unOrEnemyOccupiedSquares;
+        }
+
+
+        public static ulong GetQueenDestinations(Position Position, int FromSquare, bool White)
+        {
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
             ulong bishopOccupancy = BishopMoveMasks[FromSquare] & Position.Occupancy;
             ulong rookOccupancy = RookMoveMasks[FromSquare] & Position.Occupancy;
-            return (PrecalculatedMoves.GetBishopMovesMask(FromSquare, bishopOccupancy) | PrecalculatedMoves.GetRookMovesMask(FromSquare, rookOccupancy)) & ~Position.Occupancy;
+            return (PrecalculatedMoves.GetBishopMovesMask(FromSquare, bishopOccupancy) | PrecalculatedMoves.GetRookMovesMask(FromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares;
         }
 
 

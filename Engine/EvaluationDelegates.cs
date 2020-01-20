@@ -5,10 +5,10 @@
         public Delegates.GetPositionCount GetPositionCount;
         public Delegates.IsPassedPawn IsPassedPawn;
         public Delegates.IsFreePawn IsFreePawn;
-        public Delegates.GetPieceUnoccupiedDestinations GetKnightUnoccupiedDestinations;
-        public Delegates.GetPieceUnoccupiedDestinations GetBishopUnoccupiedDestinations;
-        public Delegates.GetPieceUnoccupiedDestinations GetRookUnoccupiedDestinations;
-        public Delegates.GetPieceUnoccupiedDestinations GetQueenUnoccupiedDestinations;
+        public Delegates.GetPieceDestinations GetKnightDestinations;
+        public Delegates.GetPieceDestinations GetBishopDestinations;
+        public Delegates.GetPieceDestinations GetRookDestinations;
+        public Delegates.GetPieceDestinations GetQueenDestinations;
         public Delegates.Debug Debug;
         public Delegates.WriteMessageLine WriteMessageLine;
     }

@@ -745,7 +745,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong pieces = Position.WhiteKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetKnightUnoccupiedDestinations, _mgKnightMobility, _egKnightMobility);
+                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, true, _delegates.GetKnightDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
                 Bitwise.ClearBit(ref pieces, square);
@@ -753,7 +753,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetKnightUnoccupiedDestinations, _mgKnightMobility, _egKnightMobility);
+                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, false, _delegates.GetKnightDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
                 Bitwise.ClearBit(ref pieces, square);
@@ -762,7 +762,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetBishopUnoccupiedDestinations, _mgBishopMobility, _egBishopMobility);
+                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, true, _delegates.GetBishopDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
                 Bitwise.ClearBit(ref pieces, square);
@@ -770,7 +770,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetBishopUnoccupiedDestinations, _mgBishopMobility, _egBishopMobility);
+                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, false, _delegates.GetBishopDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
                 Bitwise.ClearBit(ref pieces, square);
@@ -779,7 +779,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetRookUnoccupiedDestinations, _mgRookMobility, _egRookMobility);
+                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, true, _delegates.GetRookDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
                 Bitwise.ClearBit(ref pieces, square);
@@ -787,7 +787,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetRookUnoccupiedDestinations, _mgRookMobility, _egRookMobility);
+                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, false, _delegates.GetRookDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
                 Bitwise.ClearBit(ref pieces, square);
@@ -796,7 +796,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetQueenUnoccupiedDestinations, _mgQueenMobility, _egQueenMobility);
+                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, true, _delegates.GetQueenDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
                 Bitwise.ClearBit(ref pieces, square);
@@ -804,7 +804,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, _delegates.GetQueenUnoccupiedDestinations, _mgQueenMobility, _egQueenMobility);
+                (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(Position, square, false, _delegates.GetQueenDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
                 Bitwise.ClearBit(ref pieces, square);
@@ -812,9 +812,9 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static (int MiddlegameMobility, int EndgameMobility) GetPieceMobilityScore(Position Position, int FromSquare, Delegates.GetPieceUnoccupiedDestinations GetPieceUnoccupiedDestinations, int[] MgPieceMobility, int[] EgPieceMobility)
+        private static (int MiddlegameMobility, int EndgameMobility) GetPieceMobilityScore(Position Position, int FromSquare, bool White, Delegates.GetPieceDestinations GetPieceUnoccupiedDestinations, int[] MgPieceMobility, int[] EgPieceMobility)
         {
-            ulong pieceDestinations = GetPieceUnoccupiedDestinations(Position, FromSquare);
+            ulong pieceDestinations = GetPieceUnoccupiedDestinations(Position, FromSquare, White);
             int moves = Bitwise.CountSetBits(pieceDestinations);
             int mgMoveIndex = Math.Min(moves, MgPieceMobility.Length - 1);
             int egMoveIndex = Math.Min(moves, EgPieceMobility.Length - 1);
