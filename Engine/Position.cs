@@ -59,7 +59,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int GetPiece(int Square)
         {
-            // TODO: Test whether redundant piece array improves the performance of the GetPiece method.
+            // Testing redundant piece array (in feature/redundant-piece-array branch) revealed zero strength improvement compared to this bitboard code.
             ulong squareMask = Board.SquareMasks[Square];
             if ((Occupancy & squareMask) == 0) return Piece.None;
             if ((OccupancyWhite & squareMask) > 0)
