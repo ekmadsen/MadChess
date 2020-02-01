@@ -16,8 +16,6 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class Cache
     {
-        // TODO: Determine why cache allocates 3 * sizeof(ulong) instead of the expected 2 * sizeof(ulong) considering the .NET runtime does not allocate an ObjectHeader or MethodTable for structs.
-        // See https://adamsitnik.com/Value-Types-vs-Reference-Types/.
         public const int CapacityPerMegabyte = 1024 * 1024 / (3 * sizeof(ulong)); // CachedPosition struct contains two ulongs.
         public int Positions;
         public byte Searches;

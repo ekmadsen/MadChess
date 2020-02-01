@@ -20,10 +20,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         private readonly Dictionary<string, int> _namesToIndices;
 
 
-        public Parameters()
-        {
-            _namesToIndices = new Dictionary<string, int>();
-        }
+        public Parameters() => _namesToIndices = new Dictionary<string, int>();
 
 
         public Parameter this[string Name] => this[_namesToIndices[Name]];

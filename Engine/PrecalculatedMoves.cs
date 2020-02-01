@@ -18,8 +18,6 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class PrecalculatedMoves
     {
-        private readonly ulong[] _unoccupiedBishopMoveMasks;
-        private readonly ulong[] _unoccupiedRookMoveMasks;
         private readonly ulong[] _bishopRelevantOccupancyMasks;
         private readonly ulong[] _bishopMagicMultipliers;
         private readonly int[] _bishopShifts;
@@ -28,16 +26,10 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly ulong[] _rookMagicMultipliers;
         private readonly int[] _rookShifts;
         private readonly ulong[][] _rookMoveMasks; // [Square][Index]
-        private readonly Delegates.CreateMoveDestinationsMask _createMoveDestinationsMask;
-        private readonly Delegates.WriteMessageLine _writeMessageLine;
 
 
-        public PrecalculatedMoves(ulong[] BishopMoveMasks, ulong[] RookMoveMasks, Delegates.CreateMoveDestinationsMask CreateMoveDestinationsMask, Delegates.WriteMessageLine WriteMessageLine)
+        public PrecalculatedMoves()
         {
-            _unoccupiedBishopMoveMasks = BishopMoveMasks;
-            _unoccupiedRookMoveMasks = RookMoveMasks;
-            _createMoveDestinationsMask = CreateMoveDestinationsMask;
-            _writeMessageLine = WriteMessageLine;
             _bishopRelevantOccupancyMasks = new ulong[64];
             _bishopMagicMultipliers = new ulong[64];
             _bishopShifts = new int[64];
@@ -47,8 +39,8 @@ namespace ErikTheCoder.MadChess.Engine
             _rookShifts = new int[64];
             _rookMoveMasks = new ulong[64][];
             // Calculate relevant occupancy masks.
-            for (int square = 0; square < 64; square++) _bishopRelevantOccupancyMasks[square] = _unoccupiedBishopMoveMasks[square] & GetRelevantOccupancy(square, false);
-            for (int square = 0; square < 64; square++) _rookRelevantOccupancyMasks[square] = _unoccupiedRookMoveMasks[square] & GetRelevantOccupancy(square, true);
+            for (int square = 0; square < 64; square++) _bishopRelevantOccupancyMasks[square] = Board.BishopMoveMasks[square] & GetRelevantOccupancy(square, false);
+            for (int square = 0; square < 64; square++) _rookRelevantOccupancyMasks[square] = Board.RookMoveMasks[square] & GetRelevantOccupancy(square, true);
 
             // Find magic multipliers if not already known.
             _bishopMagicMultipliers[Square.a8] = 0x7099C1ECF439F7FEul;
@@ -195,8 +187,8 @@ namespace ErikTheCoder.MadChess.Engine
             _rookMagicMultipliers[Square.g1] = 0x0003FFEF27EEBE74ul;
             _rookMagicMultipliers[Square.h1] = 0x7645FFFECBFEA79Eul;
 
-            FindMagicMultipliers(Piece.WhiteBishop, false);
-            FindMagicMultipliers(Piece.WhiteRook, false);
+            FindMagicMultipliers(Piece.WhiteBishop);
+            FindMagicMultipliers(Piece.WhiteRook);
         }
 
 
@@ -216,7 +208,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void FindMagicMultipliers(int Piece, bool DisplayStatus)
+        public void FindMagicMultipliers(int Piece, Delegates.WriteMessageLine WriteMessageLine = null)
         {
             Direction[] directions;
             ulong[] unoccupiedMoveMasks;
@@ -229,7 +221,7 @@ namespace ErikTheCoder.MadChess.Engine
                 case Engine.Piece.WhiteBishop:
                 case Engine.Piece.BlackBishop:
                     directions = new[] {Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest};
-                    unoccupiedMoveMasks = _unoccupiedBishopMoveMasks;
+                    unoccupiedMoveMasks = Board.BishopMoveMasks;
                     relevantOccupancyMasks = _bishopRelevantOccupancyMasks;
                     magicMultipliers = _bishopMagicMultipliers;
                     shifts = _bishopShifts;
@@ -238,7 +230,7 @@ namespace ErikTheCoder.MadChess.Engine
                 case Engine.Piece.WhiteRook:
                 case Engine.Piece.BlackRook:
                     directions = new[] {Direction.North, Direction.East, Direction.South, Direction.West};
-                    unoccupiedMoveMasks = _unoccupiedRookMoveMasks;
+                    unoccupiedMoveMasks = Board.RookMoveMasks;
                     relevantOccupancyMasks = _rookRelevantOccupancyMasks;
                     magicMultipliers = _rookMagicMultipliers;
                     shifts = _rookShifts;
@@ -267,7 +259,7 @@ namespace ErikTheCoder.MadChess.Engine
                         if (!occupancyToMovesMask.ContainsKey(occupancy))
                         {
                             // Have not yet generated moves for this occupancy mask.
-                            ulong movesMask = _createMoveDestinationsMask(square, occupancy, directions);
+                            ulong movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
                             occupancyToMovesMask.Add(occupancy, movesMask);
                             if (!uniqueMovesMasks.Contains(movesMask)) uniqueMovesMasks.Add(movesMask);
                         }
@@ -282,9 +274,8 @@ namespace ErikTheCoder.MadChess.Engine
                 ulong magicMultiplier = magicMultipliers[square];
                 if (magicMultiplier == 0) (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
                 else (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, magicMultiplier);
-                if (DisplayStatus) 
-                    _writeMessageLine($"{Board.SquareLocations[square].PadLeft(6)}  {Engine.Piece.GetName(Piece).PadLeft(6)}  {shift.ToString().PadLeft(5)}  " +
-                        $"{occupancyToMovesMask.Count.ToString().PadLeft(18)}  {uniqueMovesMasks.Count.ToString().PadLeft(12)}  {magicMultipliers[square].ToString("X16").PadLeft(16)}");
+                WriteMessageLine?.Invoke($"{Board.SquareLocations[square].PadLeft(6)}  {Engine.Piece.GetName(Piece).PadLeft(6)}  {shift.ToString().PadLeft(5)}  " +
+                                         $"{occupancyToMovesMask.Count.ToString().PadLeft(18)}  {uniqueMovesMasks.Count.ToString().PadLeft(12)}  {magicMultipliers[square].ToString("X16").PadLeft(16)}");
             }
         }
 
@@ -298,6 +289,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong occupancy;
             int file = Board.Files[Square];
             int rank = Board.WhiteRanks[Square];
+            // ReSharper disable ConvertSwitchStatementToSwitchExpression
             switch (file)
             {
                 case 0:
@@ -356,6 +348,7 @@ namespace ErikTheCoder.MadChess.Engine
                     // Occupancy of edge ranks does not affect pseudo-legal moves.
                     return occupancy & ~Board.RankMasks[0] & ~Board.RankMasks[7];
             }
+            // ReSharper restore ConvertSwitchStatementToSwitchExpression
         }
 
 

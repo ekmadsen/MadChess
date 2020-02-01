@@ -86,11 +86,22 @@ namespace ErikTheCoder.MadChess.Engine
             // Cannot use object initializer because it changes order of object construction (to PreCalculatedMoves first, Board second, which causes null reference in PrecalculatedMove.FindMagicMultipliers).
             // ReSharper disable once UseObjectOrCollectionInitializer
             Board = new Board(WriteMessageLine);
-            Board.PrecalculatedMoves = new PrecalculatedMoves(Board.BishopMoveMasks, Board.RookMoveMasks, Board.CreateMoveDestinationsMask, WriteMessageLine);
             _cache = new Cache(_cacheSizeMegabytes * Cache.CapacityPerMegabyte, Board.ValidateMove);
             _killerMoves = new KillerMoves(Search.MaxHorizon);
             _moveHistory = new MoveHistory();
-            _evaluation = new Evaluation(Board.GetPositionCount, Board.IsPassedPawn, Board.IsFreePawn, ()=> _debug, WriteMessageLine);
+            EvaluationDelegates evaluationDelegates = new EvaluationDelegates
+            {
+                GetPositionCount = Board.GetPositionCount,
+                IsPassedPawn = Board.IsPassedPawn,
+                IsFreePawn = Board.IsFreePawn,
+                GetKnightDestinations = Board.GetKnightDestinations,
+                GetBishopDestinations = Board.GetBishopDestinations,
+                GetRookDestinations = Board.GetRookDestinations,
+                GetQueenDestinations = Board.GetQueenDestinations,
+                Debug = () => _debug,
+                WriteMessageLine = WriteMessageLine
+            };
+            _evaluation = new Evaluation(evaluationDelegates);
             _search = new Search(_cache, _killerMoves, _moveHistory, _evaluation, () => _debug, WriteMessageLine);
             _defaultHalfAndFullMove = new[] { "0", "1" };
             Board.SetPosition(Board.StartPositionFen);
@@ -375,7 +386,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Display engine name and author.
             WriteMessageLine("id name MadChess 3.0");
             WriteMessageLine("id author Erik Madsen");
-            WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See http://www.madchess.net.");
+            WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
             WriteMessageLine("option name Debug type check default false");
             WriteMessageLine("option name Log type check default false");
             WriteMessageLine("option name Hash type spin default 128 min 0 max 1024");
@@ -616,8 +627,8 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine("======  ======  =====  ==================  ============  ================");
             // Find magic multipliers for bishop and rook moves.
             // No need to find magic multipliers for queen moves since the queen combines bishop and rook moves.
-            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteBishop, true);
-            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteRook, true);
+            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteBishop, WriteMessageLine);
+            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteRook, WriteMessageLine);
         }
 
 
@@ -747,10 +758,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void SwapOffScore(List<string> Tokens)
         {
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
-            int staticScore = _evaluation.GetStaticScore(Board.CurrentPosition);
-            _search.Reset(false);
-            _evaluation.Reset(false);
-            int swapOffScore = _search.GetSwapOffScore(Board, move, staticScore);
+            int swapOffScore = _search.GetSwapOffScore(Board, move);
             WriteMessageLine(swapOffScore.ToString());
         }
         
@@ -931,7 +939,7 @@ namespace ErikTheCoder.MadChess.Engine
             string pgnFilename = Tokens[1].Trim();
             int particleSwarmsCount = int.Parse(Tokens[2].Trim());
             int particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            int winPercentScale = int.Parse(Tokens[4].Trim()); // Use 601 for Gm2600EloGoodGames.pgn.
+            int winPercentScale = int.Parse(Tokens[4].Trim()); // Use 602 for Gm2600EloGoodGames.pgn.
             int iterations = int.Parse(Tokens[5].Trim());
             _commandStopwatch.Restart();
             ParticleSwarms particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, WriteMessageLine);
@@ -969,11 +977,22 @@ namespace ErikTheCoder.MadChess.Engine
                 int winPercentScale = _minWinPercentScale + index;
                 Particle particle = new Particle(pgnGames, parameters);
                 Board board = new Board(WriteMessageLine);
-                board.PrecalculatedMoves = new PrecalculatedMoves(board.BishopMoveMasks, board.RookMoveMasks, board.CreateMoveDestinationsMask, WriteMessageLine);
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(board.GetPositionCount, board.IsPassedPawn, board.IsFreePawn, () => false, WriteMessageLine);
+                EvaluationDelegates evaluationDelegates = new EvaluationDelegates
+                {
+                    GetPositionCount = board.GetPositionCount,
+                    IsPassedPawn = board.IsPassedPawn,
+                    IsFreePawn = board.IsFreePawn,
+                    GetKnightDestinations = Board.GetKnightDestinations,
+                    GetBishopDestinations = Board.GetBishopDestinations,
+                    GetRookDestinations = Board.GetRookDestinations,
+                    GetQueenDestinations = Board.GetQueenDestinations,
+                    Debug = () => false,
+                    WriteMessageLine = WriteMessageLine
+                };
+                Evaluation evaluation = new Evaluation(evaluationDelegates);
                 Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
                 tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
             }

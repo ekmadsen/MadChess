@@ -65,21 +65,13 @@ namespace ErikTheCoder.MadChess.Engine
                             int endPosition = line.IndexOf("\"", startPosition, StringComparison.CurrentCultureIgnoreCase) - 1;
                             int length = endPosition - startPosition + 1;
                             string gameResultText = line.Substring(startPosition, length);
-                            switch (gameResultText)
+                            result = gameResultText switch
                             {
-                                case "1-0":
-                                    result = GameResult.WhiteWon;
-                                    break;
-                                case "1/2-1/2":
-                                    result = GameResult.Draw;
-                                    break;
-                                case "0-1":
-                                    result = GameResult.BlackWon;
-                                    break;
-                                default:
-                                    result = GameResult.Unknown;
-                                    break;
-                            }
+                                "1-0" => GameResult.WhiteWon,
+                                "1/2-1/2" => GameResult.Draw,
+                                "0-1" => GameResult.BlackWon,
+                                _ => GameResult.Unknown
+                            };
                         }
                         else if (line.EndsWith("1-0") || line.EndsWith("1/2-1/2") || line.EndsWith("0-1") || line.EndsWith("*")) return new PgnGame(Board, GameNumber, result, stringBuilder.ToString()); // Found end of game.
                     }

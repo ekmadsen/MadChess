@@ -52,7 +52,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
-        private const int _historyPriorMovePer128 = 64;
+        private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
@@ -144,8 +144,8 @@ namespace ErikTheCoder.MadChess.Engine
             _singlePvAspirationWindows = new[] {100, 200, 500};
             _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
-            // To Horizon =              000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017
-            _futilityMargins = new[]    {050, 100, 175, 275, 400, 550};
+            // To Horizon =              000  001  002  003  004  005
+            _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
             // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
             _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005};
             // Create move and score arrays.
@@ -436,7 +436,7 @@ namespace ErikTheCoder.MadChess.Engine
                 case 0:
                     // Use multi PV aspiration windows.
                     aspirationWindows = _multiPvAspirationWindows;
-                    aspirationStartingIndex = _originalHorizon == 1 ? 0 : _lastAspirationWindowIndex;
+                    aspirationStartingIndex = _lastAspirationWindowIndex;
                     break;
                 default:
                     _scoreErrorAspirationWindows[0] = (_scoreError + 1) * 2;
@@ -543,7 +543,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private int GetDynamicScore(Board Board, int Depth, int Horizon, bool NullMove, int Alpha, int Beta)
+        private int GetDynamicScore(Board Board, int Depth, int Horizon, bool IsNullMoveAllowed, int Alpha, int Beta)
         {
             if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
             {
@@ -583,12 +583,21 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
-            int staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
-            if (NullMove && IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
+            int staticScore = Board.CurrentPosition.KingInCheck
+                ? -StaticScore.Max
+                : drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
+            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
+            {
+                // Position is futile.
+                // Position is not the result of best play by both players.
+                UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
+                return Beta;
+            }
+            if (IsNullMoveAllowed && Search.IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
-                if (NullMoveCausesBetaCutoff(Board, Depth, Horizon, Beta))
+                if (DoesNullMoveCauseBetaCutoff(Board, Depth, Horizon, Beta))
                 {
                     // Enemy is unable to capitalize on position even if player forfeits right to move.
                     // While forfeiting right to move is illegal, this indicates position is strong.
@@ -692,7 +701,7 @@ namespace ErikTheCoder.MadChess.Engine
                             if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                             {
                                 // Update history of prior quiet move that failed to produce cutoff.
-                                _moveHistory.UpdateValue(Board.CurrentPosition, priorMove, (-historyIncrement * _historyPriorMovePer128) / 128 );
+                                _moveHistory.UpdateValue(Board.CurrentPosition, priorMove, (-historyIncrement * _historyPriorMovePer128) / 128);
                             }
                             moveIndex--;
                         }
@@ -737,15 +746,16 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetSwapOffScore(Board Board, ulong Move, int StaticScore)
+        public int GetSwapOffScore(Board Board, ulong Move)
         {
             // TODO: Calculate swap off score without playing any moves.
-            ulong toSquareMask = Board.SquareMasks[Engine.Move.To(Move)];
+            int staticScore = _evaluation.GetStaticScore(Board.CurrentPosition);
             // Play and search move.
+            ulong toSquareMask = Board.SquareMasks[Engine.Move.To(Move)];
             Board.PlayMove(Move);
-            int score = -GetQuietScore(Board, 1, 1, toSquareMask, -Engine.StaticScore.Max, Engine.StaticScore.Max);
+            int score = -GetQuietScore(Board, 1, 1, toSquareMask, -StaticScore.Max, StaticScore.Max);
             Board.UndoMove();
-            return score - StaticScore;
+            return score - staticScore;
         }
 
 
@@ -773,7 +783,7 @@ namespace ErikTheCoder.MadChess.Engine
                 // King is in check.  Search all moves.
                 getNextMove = _getNextMove;
                 moveGenerationToSquareMask = Board.AllSquaresMask;
-                staticScore = 0; // Don't evaluate static score since moves when king is in check are not futile.
+                staticScore = -StaticScore.Max; // Don't evaluate static score since moves when king is in check are not futile.
             }
             else
             {
@@ -841,6 +851,17 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Beta)
+        {
+            if ((Depth == 0) || Position.KingInCheck || IsDrawnEndgame) return false; // Root, king in check, and drawn endgame positions are not futile.
+            int toHorizon = Horizon - Depth;
+            if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
+            // Determine if any move can lower score to beta.
+            int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
+            return StaticScore - futilityMargin > Beta;
+        }
+
+
         private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
         {
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
@@ -852,13 +873,12 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool NullMoveCausesBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
+        private bool DoesNullMoveCauseBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
         {
-            int horizon = Horizon - _nullMoveReduction;
             // Play and search null move.
             Board.PlayNullMove();
             // Do not play two null moves consecutively.  Search with zero alpha / beta window.
-            int score = -GetDynamicScore(Board, Depth + 1, horizon, false, -Beta, -Beta + 1);
+            int score = -GetDynamicScore(Board, Depth + 1, Horizon - _nullMoveReduction, false, -Beta, -Beta + 1);
             Board.UndoMove();
             return score >= Beta;
         }
@@ -883,6 +903,7 @@ namespace ErikTheCoder.MadChess.Engine
                     Position.CurrentMoveIndex++;
                     return nextMove;
                 }
+                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                 switch (Position.MoveGenerationStage)
                 {
                     case MoveGenerationStage.BestMove:
@@ -936,6 +957,7 @@ namespace ErikTheCoder.MadChess.Engine
                     Position.CurrentMoveIndex++;
                     return nextMove;
                 }
+                // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
                 switch (Position.MoveGenerationStage)
                 {
                     case MoveGenerationStage.BestMove:

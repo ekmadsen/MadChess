@@ -4,4 +4,3 @@ Performance Optimizations
 Avoid use of foreach since it allocates an enumerator.
 Technically, this is critical only when searching positions.
 However, to eliminate the need to reason about code (to determine if a function ever is called inside search loop), avoid all use of foreach.
-

@@ -20,7 +20,6 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class Board
     {
         public const string StartPositionFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        
         public static readonly int[] Files;
         public static readonly int[] WhiteRanks;
         public static readonly int[] BlackRanks;
@@ -44,18 +43,18 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong WhiteCastleKEmptySquaresMask;
         public static readonly ulong BlackCastleQEmptySquaresMask;
         public static readonly ulong BlackCastleKEmptySquaresMask;
-        public readonly ulong[] EnPassantAttackerMasks;
-        public readonly ulong[] WhitePawnMoveMasks;
-        public readonly ulong[] WhitePawnDoubleMoveMasks;
-        public readonly ulong[] WhitePawnAttackMasks;
-        public readonly ulong[] BlackPawnMoveMasks;
-        public readonly ulong[] BlackPawnDoubleMoveMasks;
-        public readonly ulong[] BlackPawnAttackMasks;
-        public readonly ulong[] KnightMoveMasks;
-        public readonly ulong[] BishopMoveMasks;
-        public readonly ulong[] RookMoveMasks;
-        public readonly ulong[] KingMoveMasks;
-        public PrecalculatedMoves PrecalculatedMoves;
+        public static readonly ulong[] EnPassantAttackerMasks;
+        public static readonly ulong[] WhitePawnMoveMasks;
+        public static readonly ulong[] WhitePawnDoubleMoveMasks;
+        public static readonly ulong[] WhitePawnAttackMasks;
+        public static readonly ulong[] BlackPawnMoveMasks;
+        public static readonly ulong[] BlackPawnDoubleMoveMasks;
+        public static readonly ulong[] BlackPawnAttackMasks;
+        public static readonly ulong[] KnightMoveMasks;
+        public static readonly ulong[] BishopMoveMasks;
+        public static readonly ulong[] RookMoveMasks;
+        public static readonly ulong[] KingMoveMasks;
+        public static readonly PrecalculatedMoves PrecalculatedMoves;
         public long Nodes;
         public long NodesInfoUpdate;
         public long NodesExamineTime;
@@ -65,13 +64,13 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly ulong _whiteCastleKAttackedSquareMask;
         private static readonly ulong _blackCastleQAttackedSquareMask;
         private static readonly ulong _blackCastleKAttackedSquareMask;
-        private readonly int[][] _neighborSquares;
+        private static readonly int[][] _neighborSquares;
+        private static readonly int[] _enPassantTargetSquares;
+        private static readonly int[] _eEnPassantVictimSquares;
         private readonly ulong[] _whitePassedPawnMasks;
         private readonly ulong[] _whiteFreePawnMasks;
         private readonly ulong[] _blackPassedPawnMasks;
         private readonly ulong[] _blackFreePawnMasks;
-        private readonly int[] _enPassantTargetSquares;
-        private readonly int[] _eEnPassantVictimSquares;
         private readonly ulong _piecesSquaresInitialKey;
         private readonly ulong[][] _pieceSquareKeys;
         private readonly ulong[] _sideToMoveKeys;
@@ -216,7 +215,6 @@ namespace ErikTheCoder.MadChess.Engine
                 "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
                 "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
             };
-            
             // Create square, file, rank, diagonal, and edge masks.
             SquareMasks = new ulong[64];
             _squareUnmasks = new ulong[64];
@@ -288,12 +286,6 @@ namespace ErikTheCoder.MadChess.Engine
             _blackCastleQAttackedSquareMask = Bitwise.CreateULongMask(Square.d8);
             BlackCastleKEmptySquaresMask = Bitwise.CreateULongMask(new[] { Square.f8, Square.g8 });
             _blackCastleKAttackedSquareMask = Bitwise.CreateULongMask(Square.f8);
-        }
-
-
-        public Board(Delegates.WriteMessageLine WriteMessageLine)
-        {
-            _writeMessageLine = WriteMessageLine;
 
             // Use a 12 x 12 grid of square indices to calculate square legality.
 
@@ -312,57 +304,35 @@ namespace ErikTheCoder.MadChess.Engine
             //  120, 121,   122, 123, 124, 125, 126, 127, 128, 129,   130, 131,
             //  132, 133,   134, 135, 136, 137, 138, 139, 140, 141,   142, 143 
 
-            // Create direction offsets for 12 x 12 grid.
             int[] directionOffsets1212 = CreateDirectionOffsets1212();
-            // Map 12 x 12 square indices to 8 x 8 square indices.
             int[] squareIndices1212To88 = MapSquareIndices1212To88();
-            // Create neighbor squares.
             _neighborSquares = CreateNeighborSquares(directionOffsets1212, squareIndices1212To88);
-            // Create move masks.
+            
+            // Create move masks and precalculated moves.
             WhitePawnMoveMasks = CreateWhitePawnMoveMasks();
             WhitePawnDoubleMoveMasks = CreateWhitePawnDoubleMoveMasks();
             WhitePawnAttackMasks = CreateWhitePawnAttackMasks();
             BlackPawnMoveMasks = CreateBlackPawnMoveMasks();
             BlackPawnDoubleMoveMasks = CreateBlackPawnDoubleMoveMasks();
             BlackPawnAttackMasks = CreateBlackPawnAttackMasks();
+            (_enPassantTargetSquares, _eEnPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
             KnightMoveMasks = CreateKnightMoveMasks();
             BishopMoveMasks = CreateBishopMoveMasks();
             RookMoveMasks = CreateRookMoveMasks();
             KingMoveMasks = CreateKingMoveMasks();
-            _enPassantTargetSquares = new int[64];
-            _eEnPassantVictimSquares = new int[64];
-            EnPassantAttackerMasks = new ulong[64];
-            for (int file = 0; file < 8; file++)
-            {
-                // White takes black pawn en passant
-                int toSquare = GetSquare(file, 4);
-                int targetSquare = _neighborSquares[toSquare][(int)Direction.North];
-                _eEnPassantVictimSquares[targetSquare] = _neighborSquares[targetSquare][(int)Direction.South];
-                int westAttackerSquare = _neighborSquares[targetSquare][(int)Direction.SouthWest];
-                int eastAttackerSquare = _neighborSquares[targetSquare][(int)Direction.SouthEast];
-                _enPassantTargetSquares[toSquare] = targetSquare;
-                ulong attackerMask = 0;
-                if (westAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(westAttackerSquare);
-                if (eastAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(eastAttackerSquare);
-                EnPassantAttackerMasks[targetSquare] = attackerMask;
-                // Black takes white pawn en passant
-                toSquare = GetSquare(file, 3);
-                targetSquare = _neighborSquares[toSquare][(int)Direction.South];
-                _eEnPassantVictimSquares[targetSquare] = _neighborSquares[targetSquare][(int)Direction.North];
-                westAttackerSquare = _neighborSquares[targetSquare][(int)Direction.NorthWest];
-                eastAttackerSquare = _neighborSquares[targetSquare][(int)Direction.NorthEast];
-                _enPassantTargetSquares[toSquare] = targetSquare;
-                attackerMask = 0;
-                if (westAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(westAttackerSquare);
-                if (eastAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(eastAttackerSquare);
-                EnPassantAttackerMasks[targetSquare] = attackerMask;
-            }
+            PrecalculatedMoves = new PrecalculatedMoves();
+        }
+
+
+        public Board(Delegates.WriteMessageLine WriteMessageLine)
+        {
+            _writeMessageLine = WriteMessageLine;
             // Create passed pawn and free pawn masks.
             _whitePassedPawnMasks = CreateWhitePassedPawnMasks();
             _whiteFreePawnMasks = CreateWhiteFreePawnMasks();
             _blackPassedPawnMasks = CreateBlackPassedPawnMasks();
             _blackFreePawnMasks = CreateBlackFreePawnMasks();
-            // Create positions.
+            // Create positions and precalculated moves.
             _positions = new Position[_maxPositions];
             for (int positionIndex = 0; positionIndex < _maxPositions; positionIndex++) _positions[positionIndex] = new Position(this);
             // Create Zobrist position keys.
@@ -450,7 +420,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateWhitePawnMoveMasks()
+        private static ulong[] CreateWhitePawnMoveMasks()
         {
             ulong[] moveMasks = new ulong[64];
             for (int square = 0; square < 64; square++)
@@ -469,7 +439,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateWhitePawnDoubleMoveMasks()
+        private static ulong[] CreateWhitePawnDoubleMoveMasks()
         {
             ulong[] moveMasks = new ulong[64];
             for (int square = 0; square < 64; square++)
@@ -486,7 +456,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateWhitePawnAttackMasks()
+        private static ulong[] CreateWhitePawnAttackMasks()
         {
             ulong[] moveMasks = new ulong[64];
             Direction[] directions = { Direction.NorthWest, Direction.NorthEast };
@@ -505,7 +475,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateBlackPawnMoveMasks()
+        private static ulong[] CreateBlackPawnMoveMasks()
         {
             ulong[] moveMasks = new ulong[64];
             for (int square = 0; square < 64; square++)
@@ -524,7 +494,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateBlackPawnDoubleMoveMasks()
+        private static ulong[] CreateBlackPawnDoubleMoveMasks()
         {
             ulong[] moveMasks = new ulong[64];
             for (int square = 0; square < 64; square++)
@@ -541,7 +511,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateBlackPawnAttackMasks()
+        private static ulong[] CreateBlackPawnAttackMasks()
         {
             ulong[] moveMasks = new ulong[64];
             Direction[] directions = { Direction.SouthWest, Direction.SouthEast };
@@ -560,7 +530,41 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateWhitePassedPawnMasks()
+        private static (int[] EnPassantTargetSquares, int[] EnPassantVictimSquares, ulong[] EnPassantAttackerMasks) CreateEnPassantAttackerMasks()
+        {
+            int[] enPassantTargetSquares = new int[64];
+            int[] enPassantVictimSquares = new int[64];
+            ulong[] enPassantAttackerMasks = new ulong[64];
+            for (int file = 0; file < 8; file++)
+            {
+                // White takes black pawn en passant
+                int toSquare = GetSquare(file, 4);
+                int targetSquare = _neighborSquares[toSquare][(int)Direction.North];
+                enPassantVictimSquares[targetSquare] = _neighborSquares[targetSquare][(int)Direction.South];
+                int westAttackerSquare = _neighborSquares[targetSquare][(int)Direction.SouthWest];
+                int eastAttackerSquare = _neighborSquares[targetSquare][(int)Direction.SouthEast];
+                enPassantTargetSquares[toSquare] = targetSquare;
+                ulong attackerMask = 0;
+                if (westAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(westAttackerSquare);
+                if (eastAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(eastAttackerSquare);
+                enPassantAttackerMasks[targetSquare] = attackerMask;
+                // Black takes white pawn en passant
+                toSquare = GetSquare(file, 3);
+                targetSquare = _neighborSquares[toSquare][(int)Direction.South];
+                enPassantVictimSquares[targetSquare] = _neighborSquares[targetSquare][(int)Direction.North];
+                westAttackerSquare = _neighborSquares[targetSquare][(int)Direction.NorthWest];
+                eastAttackerSquare = _neighborSquares[targetSquare][(int)Direction.NorthEast];
+                enPassantTargetSquares[toSquare] = targetSquare;
+                attackerMask = 0;
+                if (westAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(westAttackerSquare);
+                if (eastAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(eastAttackerSquare);
+                enPassantAttackerMasks[targetSquare] = attackerMask;
+            }
+            return (enPassantTargetSquares, enPassantVictimSquares, enPassantAttackerMasks);
+        }
+
+
+        private static ulong[] CreateWhitePassedPawnMasks()
         {
             ulong[] masks = new ulong[64];
             for (int square = 0; square < 64; square++)
@@ -588,7 +592,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateWhiteFreePawnMasks()
+        private static ulong[] CreateWhiteFreePawnMasks()
         {
             ulong[] masks = new ulong[64];
             for (int square = 0; square < 64; square++)
@@ -607,7 +611,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateBlackPassedPawnMasks()
+        private static ulong[] CreateBlackPassedPawnMasks()
         {
             ulong[] masks = new ulong[64];
             for (int square = 0; square < 64; square++)
@@ -635,7 +639,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateBlackFreePawnMasks()
+        private static ulong[] CreateBlackFreePawnMasks()
         {
             ulong[] masks = new ulong[64];
             for (int square = 0; square < 64; square++)
@@ -654,7 +658,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateKnightMoveMasks()
+        private static ulong[] CreateKnightMoveMasks()
         {
             ulong[] attackMasks = new ulong[64];
             Direction[] directions = { Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1 };
@@ -673,7 +677,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateBishopMoveMasks()
+        private static ulong[] CreateBishopMoveMasks()
         {
             ulong[] moveMasks = new ulong[64];
             Direction[] directions = { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
@@ -697,7 +701,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateRookMoveMasks()
+        private static ulong[] CreateRookMoveMasks()
         {
             ulong[] moveMasks = new ulong[64];
             Direction[] directions = { Direction.North, Direction.East, Direction.South, Direction.West };
@@ -721,7 +725,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private ulong[] CreateKingMoveMasks()
+        private static ulong[] CreateKingMoveMasks()
         {
             ulong[] attackMasks = new ulong[64];
             Direction[] directions = { Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest };
@@ -740,7 +744,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public ulong CreateMoveDestinationsMask(int Square, ulong Occupancy, Direction[] Directions)
+        public static ulong CreateMoveDestinationsMask(int Square, ulong Occupancy, Direction[] Directions)
         {
             ulong moveDestinations = 0;
             for (int directionIndex = 0; directionIndex < Directions.Length; directionIndex++)
@@ -795,6 +799,46 @@ namespace ErikTheCoder.MadChess.Engine
                 if (distance < shortestDistance) shortestDistance = distance;
             }
             return shortestDistance;
+        }
+
+
+        public static ulong GetKnightDestinations(Position Position, int FromSquare, bool White)
+        {
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            return KnightMoveMasks[FromSquare] & unOrEnemyOccupiedSquares;
+        }
+
+
+        public static ulong GetBishopDestinations(Position Position, int FromSquare, bool White)
+        {
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            ulong occupancy = BishopMoveMasks[FromSquare] & Position.Occupancy;
+            return PrecalculatedMoves.GetBishopMovesMask(FromSquare, occupancy) & unOrEnemyOccupiedSquares;
+        }
+
+
+        public static ulong GetRookDestinations(Position Position, int FromSquare, bool White)
+        {
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            ulong occupancy = RookMoveMasks[FromSquare] & Position.Occupancy;
+            return PrecalculatedMoves.GetRookMovesMask(FromSquare, occupancy) & unOrEnemyOccupiedSquares;
+        }
+
+
+        public static ulong GetQueenDestinations(Position Position, int FromSquare, bool White)
+        {
+            ulong unOrEnemyOccupiedSquares = White
+                ? ~Position.OccupancyWhite
+                : ~Position.OccupancyBlack;
+            ulong bishopOccupancy = BishopMoveMasks[FromSquare] & Position.Occupancy;
+            ulong rookOccupancy = RookMoveMasks[FromSquare] & Position.Occupancy;
+            return (PrecalculatedMoves.GetBishopMovesMask(FromSquare, bishopOccupancy) | PrecalculatedMoves.GetRookMovesMask(FromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares;
         }
 
 
@@ -965,32 +1009,22 @@ namespace ErikTheCoder.MadChess.Engine
             if (CurrentPosition.WhiteMove)
             {
                 // Black castled, now white move.
-                switch (toSquare)
+                attackedSquaresMask = toSquare switch
                 {
-                    case Square.c8:
-                        attackedSquaresMask = _blackCastleQAttackedSquareMask;
-                        break;
-                    case Square.g8:
-                        attackedSquaresMask = _blackCastleKAttackedSquareMask;
-                        break;
-                    default:
-                        throw new Exception($"Black king cannot castle to {SquareLocations[toSquare]}.");
-                }
+                    Square.c8 => _blackCastleQAttackedSquareMask,
+                    Square.g8 => _blackCastleKAttackedSquareMask,
+                    _ => throw new Exception($"Black king cannot castle to {SquareLocations[toSquare]}.")
+                };
             }
             else
             {
                 // White castled, now black move.
-                switch (toSquare)
+                attackedSquaresMask = toSquare switch
                 {
-                    case Square.c1:
-                        attackedSquaresMask = _whiteCastleQAttackedSquareMask;
-                        break;
-                    case Square.g1:
-                        attackedSquaresMask = _whiteCastleKAttackedSquareMask;
-                        break;
-                    default:
-                        throw new Exception($"White king cannot castle to {SquareLocations[toSquare]}.");
-                }
+                    Square.c1 => _whiteCastleQAttackedSquareMask,
+                    Square.g1 => _whiteCastleKAttackedSquareMask,
+                    _ => throw new Exception($"White king cannot castle to {SquareLocations[toSquare]}.")
+                };
             }
             while ((toSquare = Bitwise.FindFirstSetBit(attackedSquaresMask)) != Square.Illegal)
             {
