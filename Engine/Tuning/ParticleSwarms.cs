@@ -103,55 +103,55 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             {
                 // Piece Location
                 // Pawns
-                new Parameter(nameof(EvaluationConfig.MgPawnAdvancement), 0, 25),
-                new Parameter(nameof(EvaluationConfig.EgPawnAdvancement), 0, 25),
-                new Parameter(nameof(EvaluationConfig.MgPawnCentrality), 0, 25),
-                new Parameter(nameof(EvaluationConfig.EgPawnCentrality), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgPawnConstant), 0, 50),
-                // Knights
-                new Parameter(nameof(EvaluationConfig.MgKnightAdvancement), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgKnightAdvancement), -25, 25),
-                new Parameter(nameof(EvaluationConfig.MgKnightCentrality), 0, 25),
-                new Parameter(nameof(EvaluationConfig.EgKnightCentrality), -25, 25),
-                new Parameter(nameof(EvaluationConfig.MgKnightCorner), -25, 0),
-                new Parameter(nameof(EvaluationConfig.EgKnightCorner), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgKnightConstant), -100, 100),
-                // Bishops
-                new Parameter(nameof(EvaluationConfig.MgBishopAdvancement), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgBishopAdvancement), -25, 25),
-                new Parameter(nameof(EvaluationConfig.MgBishopCentrality), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgBishopCentrality), -25, 25),
-                new Parameter(nameof(EvaluationConfig.MgBishopCorner), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgBishopCorner), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgBishopConstant), -100, 100),
-                // Rooks
-                new Parameter(nameof(EvaluationConfig.MgRookAdvancement), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgRookAdvancement), -25, 25),
-                new Parameter(nameof(EvaluationConfig.MgRookCentrality), 0, 25),
-                new Parameter(nameof(EvaluationConfig.EgRookCentrality), -25, 25),
-                new Parameter(nameof(EvaluationConfig.MgRookCorner), -25, 0),
-                new Parameter(nameof(EvaluationConfig.EgRookCorner), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgRookConstant), -100, 100),
-                // Queens
-                new Parameter(nameof(EvaluationConfig.MgQueenAdvancement), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgQueenAdvancement), -25, 25),
-                new Parameter(nameof(EvaluationConfig.MgQueenCentrality), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgQueenCentrality), -25, 25),
-                new Parameter(nameof(EvaluationConfig.MgQueenCorner), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgQueenCorner), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgQueenConstant), -100, 100),
-                // King
-                new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -50, 0),
-                new Parameter(nameof(EvaluationConfig.EgKingAdvancement), 0, 50),
-                new Parameter(nameof(EvaluationConfig.MgKingCentrality), -50, 0),
-                new Parameter(nameof(EvaluationConfig.EgKingCentrality), 0, 50),
-                new Parameter(nameof(EvaluationConfig.MgKingCorner), 0, 50),
-                new Parameter(nameof(EvaluationConfig.EgKingCorner), -50, 0),
-                // Passed Pawns
-                new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePercent), 0, 200),
-                new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePercent), 200, 1000),
-                new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePercent), 400, 1000),
-                new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 25),
+                //new Parameter(nameof(EvaluationConfig.MgPawnAdvancement), 0, 25),
+                //new Parameter(nameof(EvaluationConfig.EgPawnAdvancement), 0, 25),
+                //new Parameter(nameof(EvaluationConfig.MgPawnCentrality), 0, 25),
+                //new Parameter(nameof(EvaluationConfig.EgPawnCentrality), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgPawnConstant), 0, 50),
+                //// Knights
+                //new Parameter(nameof(EvaluationConfig.MgKnightAdvancement), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgKnightAdvancement), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.MgKnightCentrality), 0, 25),
+                //new Parameter(nameof(EvaluationConfig.EgKnightCentrality), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.MgKnightCorner), -25, 0),
+                //new Parameter(nameof(EvaluationConfig.EgKnightCorner), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgKnightConstant), -100, 100),
+                //// Bishops
+                //new Parameter(nameof(EvaluationConfig.MgBishopAdvancement), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgBishopAdvancement), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.MgBishopCentrality), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgBishopCentrality), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.MgBishopCorner), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgBishopCorner), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgBishopConstant), -100, 100),
+                //// Rooks
+                //new Parameter(nameof(EvaluationConfig.MgRookAdvancement), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgRookAdvancement), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.MgRookCentrality), 0, 25),
+                //new Parameter(nameof(EvaluationConfig.EgRookCentrality), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.MgRookCorner), -25, 0),
+                //new Parameter(nameof(EvaluationConfig.EgRookCorner), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgRookConstant), -100, 100),
+                //// Queens
+                //new Parameter(nameof(EvaluationConfig.MgQueenAdvancement), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgQueenAdvancement), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.MgQueenCentrality), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgQueenCentrality), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.MgQueenCorner), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgQueenCorner), -25, 25),
+                //new Parameter(nameof(EvaluationConfig.EgQueenConstant), -100, 100),
+                //// King
+                //new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -50, 0),
+                //new Parameter(nameof(EvaluationConfig.EgKingAdvancement), 0, 50),
+                //new Parameter(nameof(EvaluationConfig.MgKingCentrality), -50, 0),
+                //new Parameter(nameof(EvaluationConfig.EgKingCentrality), 0, 50),
+                //new Parameter(nameof(EvaluationConfig.MgKingCorner), 0, 50),
+                //new Parameter(nameof(EvaluationConfig.EgKingCorner), -50, 0),
+                //// Passed Pawns
+                //new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePercent), 0, 200),
+                //new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePercent), 200, 1000),
+                //new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePercent), 400, 1000),
+                //new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 25),
                 // Piece Mobility
                 new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 100),
                 new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 100),
@@ -169,55 +169,55 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         {
             EvaluationConfig evaluationConfig = new EvaluationConfig();
             // Pawns
-            Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value = evaluationConfig.MgPawnAdvancement;
-            Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value = evaluationConfig.EgPawnAdvancement;
-            Parameters[nameof(EvaluationConfig.MgPawnCentrality)].Value = evaluationConfig.MgPawnCentrality;
-            Parameters[nameof(EvaluationConfig.EgPawnCentrality)].Value = evaluationConfig.EgPawnCentrality;
-            Parameters[nameof(EvaluationConfig.EgPawnConstant)].Value = evaluationConfig.EgPawnConstant;
-            // Knights
-            Parameters[nameof(EvaluationConfig.MgKnightAdvancement)].Value = evaluationConfig.MgKnightAdvancement;
-            Parameters[nameof(EvaluationConfig.EgKnightAdvancement)].Value = evaluationConfig.EgKnightAdvancement;
-            Parameters[nameof(EvaluationConfig.MgKnightCentrality)].Value = evaluationConfig.MgKnightCentrality;
-            Parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value = evaluationConfig.EgKnightCentrality;
-            Parameters[nameof(EvaluationConfig.MgKnightCorner)].Value = evaluationConfig.MgKnightCorner;
-            Parameters[nameof(EvaluationConfig.EgKnightCorner)].Value = evaluationConfig.EgKnightCorner;
-            Parameters[nameof(EvaluationConfig.EgKnightConstant)].Value = evaluationConfig.EgKnightConstant;
-            // Bishops
-            Parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value = evaluationConfig.MgBishopAdvancement;
-            Parameters[nameof(EvaluationConfig.EgBishopAdvancement)].Value = evaluationConfig.EgBishopAdvancement;
-            Parameters[nameof(EvaluationConfig.MgBishopCentrality)].Value = evaluationConfig.MgBishopCentrality;
-            Parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value = evaluationConfig.EgBishopCentrality;
-            Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value = evaluationConfig.MgBishopCorner;
-            Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value = evaluationConfig.EgBishopCorner;
-            Parameters[nameof(EvaluationConfig.EgBishopConstant)].Value = evaluationConfig.EgBishopConstant;
-            // Rooks
-            Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value = evaluationConfig.MgRookAdvancement;
-            Parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value = evaluationConfig.EgRookAdvancement;
-            Parameters[nameof(EvaluationConfig.MgRookCentrality)].Value = evaluationConfig.MgRookCentrality;
-            Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value = evaluationConfig.EgRookCentrality;
-            Parameters[nameof(EvaluationConfig.MgRookCorner)].Value = evaluationConfig.MgRookCorner;
-            Parameters[nameof(EvaluationConfig.EgRookCorner)].Value = evaluationConfig.EgRookCorner;
-            Parameters[nameof(EvaluationConfig.EgRookConstant)].Value = evaluationConfig.EgRookConstant;
-            // Queens
-            Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value = evaluationConfig.MgQueenAdvancement;
-            Parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value = evaluationConfig.EgQueenAdvancement;
-            Parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value = evaluationConfig.MgQueenCentrality;
-            Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value = evaluationConfig.EgQueenCentrality;
-            Parameters[nameof(EvaluationConfig.MgQueenCorner)].Value = evaluationConfig.MgQueenCorner;
-            Parameters[nameof(EvaluationConfig.EgQueenCorner)].Value = evaluationConfig.EgQueenCorner;
-            Parameters[nameof(EvaluationConfig.EgQueenConstant)].Value = evaluationConfig.EgQueenConstant;
-            // King
-            Parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value = evaluationConfig.MgKingAdvancement;
-            Parameters[nameof(EvaluationConfig.EgKingAdvancement)].Value = evaluationConfig.EgKingAdvancement;
-            Parameters[nameof(EvaluationConfig.MgKingCentrality)].Value = evaluationConfig.MgKingCentrality;
-            Parameters[nameof(EvaluationConfig.EgKingCentrality)].Value = evaluationConfig.EgKingCentrality;
-            Parameters[nameof(EvaluationConfig.MgKingCorner)].Value = evaluationConfig.MgKingCorner;
-            Parameters[nameof(EvaluationConfig.EgKingCorner)].Value = evaluationConfig.EgKingCorner;
-            // Passed Pawns
-            Parameters[nameof(EvaluationConfig.MgPassedPawnScalePercent)].Value = evaluationConfig.MgPassedPawnScalePercent;
-            Parameters[nameof(EvaluationConfig.EgPassedPawnScalePercent)].Value = evaluationConfig.EgPassedPawnScalePercent;
-            Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePercent)].Value = evaluationConfig.EgFreePassedPawnScalePercent;
-            Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value = evaluationConfig.EgKingEscortedPassedPawn;
+            //Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value = evaluationConfig.MgPawnAdvancement;
+            //Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value = evaluationConfig.EgPawnAdvancement;
+            //Parameters[nameof(EvaluationConfig.MgPawnCentrality)].Value = evaluationConfig.MgPawnCentrality;
+            //Parameters[nameof(EvaluationConfig.EgPawnCentrality)].Value = evaluationConfig.EgPawnCentrality;
+            //Parameters[nameof(EvaluationConfig.EgPawnConstant)].Value = evaluationConfig.EgPawnConstant;
+            //// Knights
+            //Parameters[nameof(EvaluationConfig.MgKnightAdvancement)].Value = evaluationConfig.MgKnightAdvancement;
+            //Parameters[nameof(EvaluationConfig.EgKnightAdvancement)].Value = evaluationConfig.EgKnightAdvancement;
+            //Parameters[nameof(EvaluationConfig.MgKnightCentrality)].Value = evaluationConfig.MgKnightCentrality;
+            //Parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value = evaluationConfig.EgKnightCentrality;
+            //Parameters[nameof(EvaluationConfig.MgKnightCorner)].Value = evaluationConfig.MgKnightCorner;
+            //Parameters[nameof(EvaluationConfig.EgKnightCorner)].Value = evaluationConfig.EgKnightCorner;
+            //Parameters[nameof(EvaluationConfig.EgKnightConstant)].Value = evaluationConfig.EgKnightConstant;
+            //// Bishops
+            //Parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value = evaluationConfig.MgBishopAdvancement;
+            //Parameters[nameof(EvaluationConfig.EgBishopAdvancement)].Value = evaluationConfig.EgBishopAdvancement;
+            //Parameters[nameof(EvaluationConfig.MgBishopCentrality)].Value = evaluationConfig.MgBishopCentrality;
+            //Parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value = evaluationConfig.EgBishopCentrality;
+            //Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value = evaluationConfig.MgBishopCorner;
+            //Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value = evaluationConfig.EgBishopCorner;
+            //Parameters[nameof(EvaluationConfig.EgBishopConstant)].Value = evaluationConfig.EgBishopConstant;
+            //// Rooks
+            //Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value = evaluationConfig.MgRookAdvancement;
+            //Parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value = evaluationConfig.EgRookAdvancement;
+            //Parameters[nameof(EvaluationConfig.MgRookCentrality)].Value = evaluationConfig.MgRookCentrality;
+            //Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value = evaluationConfig.EgRookCentrality;
+            //Parameters[nameof(EvaluationConfig.MgRookCorner)].Value = evaluationConfig.MgRookCorner;
+            //Parameters[nameof(EvaluationConfig.EgRookCorner)].Value = evaluationConfig.EgRookCorner;
+            //Parameters[nameof(EvaluationConfig.EgRookConstant)].Value = evaluationConfig.EgRookConstant;
+            //// Queens
+            //Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value = evaluationConfig.MgQueenAdvancement;
+            //Parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value = evaluationConfig.EgQueenAdvancement;
+            //Parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value = evaluationConfig.MgQueenCentrality;
+            //Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value = evaluationConfig.EgQueenCentrality;
+            //Parameters[nameof(EvaluationConfig.MgQueenCorner)].Value = evaluationConfig.MgQueenCorner;
+            //Parameters[nameof(EvaluationConfig.EgQueenCorner)].Value = evaluationConfig.EgQueenCorner;
+            //Parameters[nameof(EvaluationConfig.EgQueenConstant)].Value = evaluationConfig.EgQueenConstant;
+            //// King
+            //Parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value = evaluationConfig.MgKingAdvancement;
+            //Parameters[nameof(EvaluationConfig.EgKingAdvancement)].Value = evaluationConfig.EgKingAdvancement;
+            //Parameters[nameof(EvaluationConfig.MgKingCentrality)].Value = evaluationConfig.MgKingCentrality;
+            //Parameters[nameof(EvaluationConfig.EgKingCentrality)].Value = evaluationConfig.EgKingCentrality;
+            //Parameters[nameof(EvaluationConfig.MgKingCorner)].Value = evaluationConfig.MgKingCorner;
+            //Parameters[nameof(EvaluationConfig.EgKingCorner)].Value = evaluationConfig.EgKingCorner;
+            //// Passed Pawns
+            //Parameters[nameof(EvaluationConfig.MgPassedPawnScalePercent)].Value = evaluationConfig.MgPassedPawnScalePercent;
+            //Parameters[nameof(EvaluationConfig.EgPassedPawnScalePercent)].Value = evaluationConfig.EgPassedPawnScalePercent;
+            //Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePercent)].Value = evaluationConfig.EgFreePassedPawnScalePercent;
+            //Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value = evaluationConfig.EgKingEscortedPassedPawn;
             // Piece Mobility
             Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value = evaluationConfig.MgKnightMobilityScale;
             Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value = evaluationConfig.EgKnightMobilityScale;

@@ -26,7 +26,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgPawnAdvancement = 4;
         public int MgPawnCentrality = 2;
         public int EgPawnCentrality = -10;
-        public int EgPawnConstant = 33;
+        public int EgPawnConstant = 32;
         // Knight Location 
         public int MgKnightAdvancement = 4;
         public int EgKnightAdvancement = 22;
@@ -38,14 +38,14 @@ namespace ErikTheCoder.MadChess.Engine
         // Bishop Location
         public int MgBishopAdvancement = 5;
         public int EgBishopAdvancement = 6;
-        public int MgBishopCentrality = 5;
-        public int EgBishopCentrality = 4;
+        public int MgBishopCentrality = 6;
+        public int EgBishopCentrality = 3;
         public int MgBishopCorner = 4;
         public int EgBishopCorner = -11;
         public int EgBishopConstant = 64;
         // Rook Location
         public int MgRookAdvancement = 1;
-        public int EgRookAdvancement = 16;
+        public int EgRookAdvancement = 17;
         public int MgRookCentrality = 0;
         public int EgRookCentrality = 0;
         public int MgRookCorner = -17;
@@ -69,17 +69,17 @@ namespace ErikTheCoder.MadChess.Engine
         // Passed Pawns
         public int MgPassedPawnScalePercent = 88;
         public int EgPassedPawnScalePercent = 485;
-        public int EgFreePassedPawnScalePercent = 887;
+        public int EgFreePassedPawnScalePercent = 886;
         public int EgKingEscortedPassedPawn = 8;
         public int UnstoppablePassedPawn => QueenMaterial - (2 * Evaluation.PawnMaterial);  // Incentivize engine to promote pawn.
-        public int MgKnightMobilityScale = 16;
-        public int EgKnightMobilityScale = 67;
+        public int MgKnightMobilityScale = 17;
+        public int EgKnightMobilityScale = 80;
         public int MgBishopMobilityScale = 36;
         public int EgBishopMobilityScale = 221;
         public int MgRookMobilityScale = 71;
-        public int EgRookMobilityScale = 186;
+        public int EgRookMobilityScale = 181;
         public int MgQueenMobilityScale = 84;
-        public int EgQueenMobilityScale = 350;
+        public int EgQueenMobilityScale = 357;
         // ReSharper restore FieldCanBeMadeReadOnly.Global
         // ReSharper restore ConvertToConstant.Global
 

@@ -379,6 +379,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int GetStaticScore(Position Position)
         {
+            if (Position.KingInCheck) throw new Exception("Cannot evaluate static score when king is in check.");
             Stats.Evaluations++;
             _staticScore.Reset();
             if (!EvaluateSimpleEndgame(Position))

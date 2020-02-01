@@ -645,7 +645,6 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert(PromotedPiece(Move) != Piece.BlackKing);
             Debug.Assert(Killer(Move) >= 0);
             Debug.Assert(Killer(Move) <= 2);
-            Debug.Assert(History(Move) >= 0);
             Debug.Assert(From(Move) >= Square.a8);
             Debug.Assert(From(Move) <= Square.Illegal);
             Debug.Assert(To(Move) >= Square.a8);

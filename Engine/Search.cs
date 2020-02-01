@@ -583,7 +583,9 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta); // Search for a quiet position.
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
-            int staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
+            int staticScore = Board.CurrentPosition.KingInCheck
+                ? -StaticScore.Max
+                : drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
             if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
             {
                 // Position is futile.
@@ -744,15 +746,16 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetSwapOffScore(Board Board, ulong Move, int StaticScore)
+        public int GetSwapOffScore(Board Board, ulong Move)
         {
             // TODO: Calculate swap off score without playing any moves.
-            ulong toSquareMask = Board.SquareMasks[Engine.Move.To(Move)];
+            int staticScore = _evaluation.GetStaticScore(Board.CurrentPosition);
             // Play and search move.
+            ulong toSquareMask = Board.SquareMasks[Engine.Move.To(Move)];
             Board.PlayMove(Move);
-            int score = -GetQuietScore(Board, 1, 1, toSquareMask, -Engine.StaticScore.Max, Engine.StaticScore.Max);
+            int score = -GetQuietScore(Board, 1, 1, toSquareMask, -StaticScore.Max, StaticScore.Max);
             Board.UndoMove();
-            return score - StaticScore;
+            return score - staticScore;
         }
 
 
@@ -780,7 +783,7 @@ namespace ErikTheCoder.MadChess.Engine
                 // King is in check.  Search all moves.
                 getNextMove = _getNextMove;
                 moveGenerationToSquareMask = Board.AllSquaresMask;
-                staticScore = 0; // Don't evaluate static score since moves when king is in check are not futile.
+                staticScore = -StaticScore.Max; // Don't evaluate static score since moves when king is in check are not futile.
             }
             else
             {

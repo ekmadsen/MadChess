@@ -758,10 +758,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void SwapOffScore(List<string> Tokens)
         {
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
-            int staticScore = _evaluation.GetStaticScore(Board.CurrentPosition);
-            _search.Reset(false);
-            _evaluation.Reset(false);
-            int swapOffScore = _search.GetSwapOffScore(Board, move, staticScore);
+            int swapOffScore = _search.GetSwapOffScore(Board, move);
             WriteMessageLine(swapOffScore.ToString());
         }
         
