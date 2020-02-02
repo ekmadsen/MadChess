@@ -61,6 +61,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int[] _scoreErrorAspirationWindows;
         private int[] _futilityMargins;
         private int[] _lateMoveReductions;
+        private int[] _lateMovePruning;
         private ulong[] _rootMoves;
         private int[] _rootScores;
         private ulong[] _bestMoves;
@@ -146,6 +147,7 @@ namespace ErikTheCoder.MadChess.Engine
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005
             _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
+            _lateMovePruning =    new[] {999, 002, 006, 012, 020, 030};
             // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
             _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005};
             // Create move and score arrays.
@@ -202,6 +204,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _scoreErrorAspirationWindows = null;
                 _futilityMargins = null;
                 _lateMoveReductions = null;
+                _lateMovePruning = null;
                 _rootMoves = null;
                 _rootScores = null;
                 _bestMoves = null;
@@ -651,7 +654,7 @@ namespace ErikTheCoder.MadChess.Engine
                     else continue; // Skip illegal move.
                     Board.CurrentPosition.Moves[moveIndex] = move;
                 }
-                if (IsMoveFutile(Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
+                if (IsMoveFutile(Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 int searchHorizon = GetSearchHorizon(Board.CurrentPosition, Depth, Horizon, move, quietMoveNumber, drawnEndgame);
                 int moveBeta;
@@ -809,7 +812,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (move == Move.Null) break;
                 if (Board.IsMoveLegal(ref move)) legalMoveNumber++; // Move is legal.
                 else continue; // Skip illegal move.
-                if (IsMoveFutile(Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
+                if (IsMoveFutile(Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, 0, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 // Play and search move.
                 Board.PlayMove(move);
                 int score = -GetQuietScore(Board, Depth + 1, Horizon, ToSquareMask, -Beta, -Alpha);
@@ -978,7 +981,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsMoveFutile(Position Position, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
+        private bool IsMoveFutile(Position Position, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             if ((Depth == 0) || (LegalMoveNumber == 1)) return false; // Root moves and first moves are not futile.
             int toHorizon = Horizon - Depth;
@@ -998,6 +1001,8 @@ namespace ErikTheCoder.MadChess.Engine
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
+            int lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
+            if (QuietMoveNumber >= lateMoveNumber) return true; // Move is too late to be worth searching.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
