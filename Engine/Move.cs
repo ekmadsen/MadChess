@@ -18,7 +18,6 @@ namespace ErikTheCoder.MadChess.Engine
     public static class Move
     {
         public static readonly ulong Null;
-        private const int _historyPadding = 67_108_864; // History has 48 - 22 + 1 = 27 bits.  2 Pow 27 = 134_217_728.
         private static readonly int _bestShift;
         private static readonly ulong _bestMask;
         private static readonly ulong _bestUnmask;
@@ -257,14 +256,14 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int History(ulong Move) => (int) ((Move & _historyMask) >> _historyShift) - _historyPadding; // History score is a positive number.
+        public static int History(ulong Move) => (int) ((Move & _historyMask) >> _historyShift) - MoveHistory.MaxValue;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetHistory(ref ulong Move, int History)
         {
-            // Ensure history score is a positive number.
-            int history = History + _historyPadding;
+            // Ensure history is >= 0 before shifting into ulong.
+            int history = History + MoveHistory.MaxValue;
             // Clear
             Move &= _historyUnmask;
             // Set
