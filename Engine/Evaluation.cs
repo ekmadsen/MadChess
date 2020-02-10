@@ -39,6 +39,9 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly EvaluationConfig _defaultConfig;
         private readonly EvaluationDelegates _delegates;
         private readonly StaticScore _staticScore;
+        // Exchange Score
+        private readonly int[][] _attackingPieces;
+        private readonly int[] _attackingPieceIndices;
         // Piece Location
         private readonly int[] _mgPawnLocations;
         private readonly int[] _egPawnLocations;
@@ -75,6 +78,9 @@ namespace ErikTheCoder.MadChess.Engine
             _delegates = Delegates;
             _staticScore = new StaticScore(_middlegamePhase);
             // Create arrays for quick lookup of positional factors.
+            _attackingPieces = new int[17][];
+            for (int directionIndex = 0; directionIndex < 17; directionIndex++) _attackingPieces[directionIndex] = new int[8];
+            _attackingPieceIndices = new int[17];
             _mgPawnLocations = new int[64];
             _egPawnLocations = new int[64];
             _mgKnightLocations = new int[64];
@@ -238,29 +244,6 @@ namespace ErikTheCoder.MadChess.Engine
                 MgPieceMobility[moves] -= averageMgBonus;
                 EgPieceMobility[moves] -= averageEgBonus;
             }
-        }
-
-
-        public int GetMaterialScore(int Piece)
-        {
-            // Sequence cases in order of enum integer value to improve performance of switch statement.
-            return Piece switch
-            {
-                Engine.Piece.None => 0,
-                Engine.Piece.WhitePawn => PawnMaterial,
-                Engine.Piece.WhiteKnight => Config.KnightMaterial,
-                Engine.Piece.WhiteBishop => Config.BishopMaterial,
-                Engine.Piece.WhiteRook => Config.RookMaterial,
-                Engine.Piece.WhiteQueen => Config.QueenMaterial,
-                Engine.Piece.WhiteKing => 0,
-                Engine.Piece.BlackPawn => PawnMaterial,
-                Engine.Piece.BlackKnight => Config.KnightMaterial,
-                Engine.Piece.BlackBishop => Config.BishopMaterial,
-                Engine.Piece.BlackRook => Config.RookMaterial,
-                Engine.Piece.BlackQueen => Config.QueenMaterial,
-                Engine.Piece.BlackKing => 0,
-                _ => throw new ArgumentException($"{Piece} piece not supported.")
-            };
         }
 
 
@@ -557,6 +540,29 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        public int GetMaterialScore(int Piece)
+        {
+            // Sequence cases in order of enum integer value to improve performance of switch statement.
+            return Piece switch
+            {
+                Engine.Piece.None => 0,
+                Engine.Piece.WhitePawn => PawnMaterial,
+                Engine.Piece.WhiteKnight => Config.KnightMaterial,
+                Engine.Piece.WhiteBishop => Config.BishopMaterial,
+                Engine.Piece.WhiteRook => Config.RookMaterial,
+                Engine.Piece.WhiteQueen => Config.QueenMaterial,
+                Engine.Piece.WhiteKing => 0,
+                Engine.Piece.BlackPawn => PawnMaterial,
+                Engine.Piece.BlackKnight => Config.KnightMaterial,
+                Engine.Piece.BlackBishop => Config.BishopMaterial,
+                Engine.Piece.BlackRook => Config.RookMaterial,
+                Engine.Piece.BlackQueen => Config.QueenMaterial,
+                Engine.Piece.BlackKing => 0,
+                _ => throw new ArgumentException($"{Piece} piece not supported.")
+            };
+        }
+
+
         private void EvaluatePieceLocation(Position Position)
         {
             // Pawns
@@ -658,7 +664,9 @@ namespace ErikTheCoder.MadChess.Engine
             int kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
             int enemyKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
             int pawnSquare;
+            int toSquare;
             int rank;
+            ulong move;
             while ((pawnSquare = Bitwise.FindFirstSetBit(pawns)) != Square.Illegal)
             {
                 if (_delegates.IsPassedPawn(pawnSquare, true))
@@ -667,8 +675,24 @@ namespace ErikTheCoder.MadChess.Engine
                     _staticScore.WhiteEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (_delegates.IsFreePawn(pawnSquare, true))
                     {
-                        if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, true, true)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
-                        else _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
+                        // Determine if pawn can advance safely.
+                        move = Move.Null;
+                        Move.SetFrom(ref move, pawnSquare);
+                        toSquare = Bitwise.FindFirstSetBit(Board.WhitePawnMoveMasks[pawnSquare]);
+                        Move.SetTo(ref move, toSquare);
+                        if (Board.WhiteRanks[toSquare] == 7) Move.SetPromotedPiece(ref move, Piece.WhiteQueen);
+                        if (GetExchangeScore(Position, move) >= 0)
+                        {
+                            // Pawn can advance safely.
+                            if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, true, true)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                            else _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
+                        }
+                        else
+                        {
+                            // Pawn is passed.
+                            _staticScore.WhiteMgPassedPawns += _mgPassedPawns[rank];
+                            _staticScore.WhiteEgPassedPawns += _egPassedPawns[rank];
+                        }
                     }
                     else
                     {
@@ -691,8 +715,24 @@ namespace ErikTheCoder.MadChess.Engine
                     _staticScore.BlackEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (_delegates.IsFreePawn(pawnSquare, false))
                     {
-                        if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, false, true)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
-                        else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
+                        // Determine if pawn can advance safely.
+                        move = Move.Null;
+                        Move.SetFrom(ref move, pawnSquare);
+                        toSquare = Bitwise.FindFirstSetBit(Board.BlackPawnMoveMasks[pawnSquare]);
+                        Move.SetTo(ref move, toSquare);
+                        if (Board.BlackRanks[toSquare] == 7) Move.SetPromotedPiece(ref move, Piece.BlackQueen);
+                        if (GetExchangeScore(Position, move) >= 0)
+                        {
+                            // Pawn can advance safely.
+                            if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, false, true)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                            else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
+                        }
+                        else
+                        {
+                            // Pawn is passed.
+                            _staticScore.BlackMgPassedPawns += _mgPassedPawns[rank];
+                            _staticScore.BlackEgPassedPawns += _egPassedPawns[rank];
+                        }
                     }
                     else
                     {
@@ -820,6 +860,252 @@ namespace ErikTheCoder.MadChess.Engine
             int mgMoveIndex = Math.Min(moves, MgPieceMobility.Length - 1);
             int egMoveIndex = Math.Min(moves, EgPieceMobility.Length - 1);
             return (MgPieceMobility[mgMoveIndex], EgPieceMobility[egMoveIndex]);
+        }
+
+
+        public int GetExchangeScore(Position Position, ulong Move)
+        {
+            int fromSquare = Engine.Move.From(Move);
+            int toSquare = Engine.Move.To(Move);
+            int attackingPiece = Position.GetPiece(fromSquare);
+            int originalAttackingPiece = attackingPiece;
+            int pawn = Position.WhiteMove ? Piece.WhitePawn : Piece.BlackPawn;
+            bool enPassant = (attackingPiece == pawn) && (toSquare == Position.EnPassantSquare);
+            int removePieceSquare = enPassant
+                ? Board.EnPassantVictimSquares[toSquare]
+                : toSquare;
+            int victimPiece = Position.GetPiece(removePieceSquare);
+            int score = GetExchangeMaterialScore(victimPiece);
+            int distance;
+            if (victimPiece != Piece.None)
+            {
+                // Remove victim.
+                _delegates.RemovePiece(removePieceSquare);
+            }
+            // Move attacker.
+            _delegates.RemovePiece(fromSquare);
+            int promotedPiece = Engine.Move.PromotedPiece(Move);
+            if (promotedPiece == Piece.None) _delegates.AddPiece(attackingPiece, toSquare);
+            else
+            {
+                // Promote pawn and adjust score.
+                _delegates.AddPiece(promotedPiece, toSquare);
+                score = GetExchangeMaterialScore(promotedPiece) - GetExchangeMaterialScore(attackingPiece);
+                attackingPiece = promotedPiece;
+            }
+            // Reset attackers.
+            for (int directionIndex = 1; directionIndex < 17; directionIndex++)
+            {
+                for (distance = 1; distance < 8; distance++) _attackingPieces[directionIndex][distance] = Piece.None;
+                _attackingPieceIndices[directionIndex] = int.MaxValue; // A value greater than the max attack distance of 7 indicates no attackers in this direction.
+            }
+            // Get attacking kings.
+            Direction direction;
+            ulong attackers = Board.KingMoveMasks[toSquare] & Position.WhiteKing;
+            int otherSquare = Bitwise.FindFirstSetBit(attackers);
+            if (otherSquare != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                _attackingPieces[(int)direction][1] = Piece.WhiteKing;
+                _attackingPieceIndices[(int)direction] = 1;
+            }
+            attackers = Board.KingMoveMasks[toSquare] & Position.BlackKing;
+            otherSquare = Bitwise.FindFirstSetBit(attackers);
+            if (otherSquare != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                _attackingPieces[(int)direction][1] = Piece.BlackKing;
+                _attackingPieceIndices[(int)direction] = 1;
+            }
+            // Get attacking pawns.
+            // Attacked by white pawn masks = black pawn attack masks
+            attackers = Board.BlackPawnAttackMasks[toSquare] & Position.WhitePawns;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                _attackingPieces[(int)direction][1] = Piece.WhitePawn;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            // Attacked by black pawn masks = white pawn attack masks
+            attackers = Board.WhitePawnAttackMasks[toSquare] & Position.BlackPawns;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                _attackingPieces[(int)direction][1] = Piece.BlackPawn;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            // Get attacking knights.
+            attackers = Board.KnightMoveMasks[toSquare] & Position.WhiteKnights;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetKnightDirection(toSquare, otherSquare);
+                _attackingPieces[(int)direction][1] = Piece.WhiteKnight;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            attackers = Board.KnightMoveMasks[toSquare] & Position.BlackKnights;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetKnightDirection(toSquare, otherSquare);
+                _attackingPieces[(int)direction][1] = Piece.BlackKnight;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            // Get attacking bishops.
+            ulong occupancy = Board.BishopMoveMasks[toSquare] & (Position.WhitePawns | Position.BlackPawns | Position.WhiteKnights | Position.BlackKnights | Position.WhiteRooks | Position.BlackRooks | Position.WhiteKing | Position.BlackKing);
+            attackers = Board.PrecalculatedMoves.GetBishopMovesMask(toSquare, occupancy) & Position.WhiteBishops;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                distance = Board.SquareDistances[toSquare][otherSquare];
+                _attackingPieces[(int)direction][distance] = Piece.WhiteBishop;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            attackers = Board.PrecalculatedMoves.GetBishopMovesMask(toSquare, occupancy) & Position.BlackBishops;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                distance = Board.SquareDistances[toSquare][otherSquare];
+                _attackingPieces[(int)direction][distance] = Piece.BlackBishop;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            // Get attacking rooks.
+            occupancy = Board.RookMoveMasks[toSquare] & (Position.WhitePawns | Position.BlackPawns | Position.WhiteKnights | Position.BlackKnights | Position.WhiteBishops | Position.BlackBishops | Position.WhiteKing | Position.BlackKing);
+            attackers = Board.PrecalculatedMoves.GetRookMovesMask(toSquare, occupancy) & Position.WhiteRooks;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                distance = Board.SquareDistances[toSquare][otherSquare];
+                _attackingPieces[(int)direction][distance] = Piece.WhiteRook;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            attackers = Board.PrecalculatedMoves.GetRookMovesMask(toSquare, occupancy) & Position.BlackRooks;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                distance = Board.SquareDistances[toSquare][otherSquare];
+                _attackingPieces[(int)direction][distance] = Piece.BlackRook;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare); }
+            // Get attacking queens.
+            ulong bishopOccupancy = Board.BishopMoveMasks[toSquare] & (Position.WhitePawns | Position.BlackPawns | Position.WhiteKnights | Position.BlackKnights | Position.WhiteRooks | Position.BlackRooks | Position.WhiteKing | Position.BlackKing);
+            ulong bishopAttackers = Board.PrecalculatedMoves.GetBishopMovesMask(toSquare, bishopOccupancy) & (Position.WhiteBishops | Position.WhiteQueens);
+            ulong rookOccupancy = Board.RookMoveMasks[toSquare] & (Position.WhitePawns | Position.BlackPawns | Position.WhiteKnights | Position.BlackKnights | Position.WhiteBishops | Position.BlackBishops | Position.WhiteKing | Position.BlackKing);
+            ulong rookAttackers = Board.PrecalculatedMoves.GetRookMovesMask(toSquare, rookOccupancy) & (Position.WhiteRooks | Position.WhiteQueens);
+            attackers = (bishopAttackers | rookAttackers) & Position.WhiteQueens;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                distance = Board.SquareDistances[toSquare][otherSquare];
+                _attackingPieces[(int)direction][distance] = Piece.WhiteQueen;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            bishopAttackers = Board.PrecalculatedMoves.GetBishopMovesMask(toSquare, bishopOccupancy) & (Position.BlackBishops | Position.BlackQueens);
+            rookAttackers = Board.PrecalculatedMoves.GetRookMovesMask(toSquare, rookOccupancy) & (Position.BlackRooks | Position.BlackQueens);
+            attackers = (bishopAttackers | rookAttackers) & Position.BlackQueens;
+            while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
+            {
+                direction = Board.GetSlidingDirection(toSquare, otherSquare);
+                distance = Board.SquareDistances[toSquare][otherSquare];
+                _attackingPieces[(int)direction][distance] = Piece.BlackQueen;
+                _attackingPieceIndices[(int)direction] = 1;
+                Bitwise.ClearBit(ref attackers, otherSquare);
+            }
+            // Attacker now is potential victim.
+            score -= GetExchangeScore(attackingPiece, !Position.WhiteMove);
+            // Return attacker.
+            _delegates.RemovePiece(toSquare);
+            _delegates.AddPiece(originalAttackingPiece, fromSquare);
+            if (victimPiece != Piece.None)
+            {
+                // Return victim.
+                _delegates.AddPiece(victimPiece, removePieceSquare);
+            }
+            return score;
+        }
+
+
+        private int GetExchangeScore(int VictimPiece, bool WhiteMove)
+        {
+            // Get least valuable attacking piece.
+            int lvaMaterialValue = int.MaxValue;
+            int lvaDirectionIndex = 0;
+            int attackingPiece;
+            for (int directionIndex = 1; directionIndex < 17; directionIndex++)
+            {
+                attackingPiece = Piece.None;
+                while (_attackingPieceIndices[directionIndex] < 8)
+                {
+                    attackingPiece = _attackingPieces[directionIndex][_attackingPieceIndices[directionIndex]];
+                    if (attackingPiece != Piece.None) break;
+                    _attackingPieceIndices[directionIndex]++;
+                }
+                if (attackingPiece != Piece.None)
+                {
+                    bool whitePiece = Piece.IsWhite(attackingPiece);
+                    if (whitePiece == WhiteMove)
+                    {
+                        // Piece is of the correct color for the side to move.
+                        int attackingPieceValue = GetExchangeMaterialScore(attackingPiece);
+                        if (attackingPieceValue < lvaMaterialValue)
+                        {
+                            lvaMaterialValue = attackingPieceValue;
+                            lvaDirectionIndex = directionIndex;
+                        }
+                    }
+                }
+            }
+            if (lvaMaterialValue != int.MaxValue)
+            {
+                // Found an attacking piece.
+                int attackingPieceIndex = _attackingPieceIndices[lvaDirectionIndex];
+                attackingPiece = _attackingPieces[lvaDirectionIndex][attackingPieceIndex];
+                // Capture victim and update scores.
+                _attackingPieceIndices[lvaDirectionIndex]++;
+                int victimScore = GetExchangeMaterialScore(VictimPiece);
+                int score = victimScore - GetExchangeScore(attackingPiece, !WhiteMove);
+                if (score >= 0)
+                {
+                    // Capture wins material.
+                    return score;
+                }
+                // Capture loses material.
+                // Prevent worsening of position by making a bad capture.  Stand pat.
+                _attackingPieceIndices[lvaDirectionIndex]--;
+                return 0;
+            }
+            // Did not find an attacking piece.
+            return 0;
+        }
+             
+
+        private static int GetExchangeMaterialScore(int Piece)
+        {
+            // Consider knights and bishops equal.
+            // Sequence cases in order of enum integer value to improve performance of switch statement.
+            return Piece switch
+            {
+                Engine.Piece.None => 0,
+                Engine.Piece.WhitePawn => PawnMaterial,
+                Engine.Piece.WhiteKnight => 300,
+                Engine.Piece.WhiteBishop => 300,
+                Engine.Piece.WhiteRook => 500,
+                Engine.Piece.WhiteQueen => 900,
+                Engine.Piece.WhiteKing => 14_400, // 16 * Queen
+                Engine.Piece.BlackPawn => PawnMaterial,
+                Engine.Piece.BlackKnight => 300,
+                Engine.Piece.BlackBishop => 300,
+                Engine.Piece.BlackRook => 500,
+                Engine.Piece.BlackQueen => 900,
+                Engine.Piece.BlackKing => 14_400,
+                _ => throw new ArgumentException($"{Piece} piece not supported.")
+            };
         }
 
 

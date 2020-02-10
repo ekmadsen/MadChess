@@ -749,19 +749,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetSwapOffScore(Board Board, ulong Move)
-        {
-            // TODO: Calculate swap off score without playing any moves.
-            int staticScore = _evaluation.GetStaticScore(Board.CurrentPosition);
-            // Play and search move.
-            ulong toSquareMask = Board.SquareMasks[Engine.Move.To(Move)];
-            Board.PlayMove(Move);
-            int score = -GetQuietScore(Board, 1, 1, toSquareMask, -StaticScore.Max, StaticScore.Max);
-            Board.UndoMove();
-            return score - staticScore;
-        }
-
-
         public int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta)
         {
             if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
@@ -1004,8 +991,11 @@ namespace ErikTheCoder.MadChess.Engine
             int lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (QuietMoveNumber >= lateMoveNumber) return true; // Move is too late to be worth searching.
             // Determine if move can raise score to alpha.
-            int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
+            int potentialImprovement = capture
+                ? _evaluation.GetMaterialScore(captureVictim)
+                : _evaluation.GetExchangeScore(Position, Move);
+                int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
+            return StaticScore + potentialImprovement + futilityMargin < Alpha;
         }
 
 

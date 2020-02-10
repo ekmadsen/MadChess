@@ -67,6 +67,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 GetBishopDestinations = Board.GetBishopDestinations,
                 GetRookDestinations = Board.GetRookDestinations,
                 GetQueenDestinations = Board.GetQueenDestinations,
+                AddPiece = board.AddPiece,
+                RemovePiece = board.RemovePiece,
                 Debug = () => false,
                 WriteMessageLine = WriteMessageLine
             };
@@ -261,6 +263,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     GetBishopDestinations = Board.GetBishopDestinations,
                     GetRookDestinations = Board.GetRookDestinations,
                     GetQueenDestinations = Board.GetQueenDestinations,
+                    AddPiece = board.AddPiece,
+                    RemovePiece = board.RemovePiece,
                     Debug = () => false,
                     WriteMessageLine = _writeMessageLine
                 };

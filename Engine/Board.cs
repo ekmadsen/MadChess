@@ -44,6 +44,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong BlackCastleQEmptySquaresMask;
         public static readonly ulong BlackCastleKEmptySquaresMask;
         public static readonly ulong[] EnPassantAttackerMasks;
+        public static readonly int[] EnPassantVictimSquares;
         public static readonly ulong[] WhitePawnMoveMasks;
         public static readonly ulong[] WhitePawnDoubleMoveMasks;
         public static readonly ulong[] WhitePawnAttackMasks;
@@ -66,7 +67,6 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly ulong _blackCastleKAttackedSquareMask;
         private static readonly int[][] _neighborSquares;
         private static readonly int[] _enPassantTargetSquares;
-        private static readonly int[] _eEnPassantVictimSquares;
         private readonly ulong[] _whitePassedPawnMasks;
         private readonly ulong[] _whiteFreePawnMasks;
         private readonly ulong[] _blackPassedPawnMasks;
@@ -315,7 +315,7 @@ namespace ErikTheCoder.MadChess.Engine
             BlackPawnMoveMasks = CreateBlackPawnMoveMasks();
             BlackPawnDoubleMoveMasks = CreateBlackPawnDoubleMoveMasks();
             BlackPawnAttackMasks = CreateBlackPawnAttackMasks();
-            (_enPassantTargetSquares, _eEnPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
+            (_enPassantTargetSquares, EnPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
             KnightMoveMasks = CreateKnightMoveMasks();
             BishopMoveMasks = CreateBishopMoveMasks();
             RookMoveMasks = CreateRookMoveMasks();
@@ -753,7 +753,7 @@ namespace ErikTheCoder.MadChess.Engine
                 int otherSquare = Square;
                 while (true)
                 {
-                    otherSquare = _neighborSquares[otherSquare][(int) direction];
+                    otherSquare = _neighborSquares[otherSquare][(int)direction];
                     if (otherSquare == Engine.Square.Illegal) break;
                     Bitwise.SetBit(ref moveDestinations, otherSquare);
                     if (Bitwise.IsBitSet(Occupancy, otherSquare)) break; // Square is occupied.
@@ -787,6 +787,109 @@ namespace ErikTheCoder.MadChess.Engine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetBlackSquare(int Square) => 63 - Square;
+
+
+        // ReSharper disable once UnusedMember.Global
+        public static Direction GetDirection(int FromSquare, int ToSquare)
+        {
+            int fromRank = WhiteRanks[FromSquare];
+            int fromFile = Files[FromSquare];
+            int fromUpDiagonal = UpDiagonals[FromSquare];
+            int fromDownDiagonal = DownDiagonals[FromSquare];
+            int toRank = WhiteRanks[ToSquare];
+            int toFile = Files[ToSquare];
+            int toUpDiagonal = UpDiagonals[ToSquare];
+            int toDownDiagonal = DownDiagonals[ToSquare];
+            Direction direction = GetSlidingDirection(fromRank, fromFile, fromUpDiagonal, fromDownDiagonal, toRank, toFile, toUpDiagonal, toDownDiagonal);
+            return direction == Direction.Unknown
+                ? GetKnightDirection(FromSquare, ToSquare, fromRank, fromFile, toRank, toFile)
+                : direction;
+        }
+
+
+        public static Direction GetSlidingDirection(int FromSquare, int ToSquare)
+        {
+            int fromRank = WhiteRanks[FromSquare];
+            int fromFile = Files[FromSquare];
+            int fromUpDiagonal = UpDiagonals[FromSquare];
+            int fromDownDiagonal = DownDiagonals[FromSquare];
+            int toRank = WhiteRanks[ToSquare];
+            int toFile = Files[ToSquare];
+            int toUpDiagonal = UpDiagonals[ToSquare];
+            int toDownDiagonal = DownDiagonals[ToSquare];
+            return GetSlidingDirection(fromRank, fromFile, fromUpDiagonal, fromDownDiagonal, toRank, toFile, toUpDiagonal, toDownDiagonal);
+        }
+
+
+        public static Direction GetKnightDirection(int FromSquare, int ToSquare)
+        {
+            int fromRank = WhiteRanks[FromSquare];
+            int fromFile = Files[FromSquare];
+            int toRank = WhiteRanks[ToSquare];
+            int toFile = Files[ToSquare];
+            return GetKnightDirection(FromSquare, ToSquare, fromRank, fromFile, toRank, toFile);
+        }
+
+
+        private static Direction GetSlidingDirection(int FromRank, int FromFile, int FromUpDiagonal, int FromDownDiagonal,
+            int ToRank, int ToFile, int ToUpDiagonal, int ToDownDiagonal)
+        {
+            if (FromRank == ToRank)
+            {
+                // Slide along rank
+                return ToFile > FromFile ? Direction.East : Direction.West;
+            }
+            if (FromFile == ToFile)
+            {
+                // Slide along file
+                return ToRank > FromRank ? Direction.North : Direction.South;
+            }
+            if (FromUpDiagonal == ToUpDiagonal)
+            {
+                // Slide along up diagonal
+                return ToFile > FromFile ? Direction.NorthEast : Direction.SouthWest;
+            }
+            if (FromDownDiagonal == ToDownDiagonal)
+            {
+                // Slide along down diagonal
+                return ToFile > FromFile ? Direction.SouthEast : Direction.NorthWest;
+            }
+            return Direction.Unknown;
+        }
+        
+        
+        private static Direction GetKnightDirection(int FromSquare, int ToSquare, int FromRank, int FromFile, int ToRank, int ToFile)
+        {
+            int distance = SquareDistances[FromSquare][ToSquare];
+            if (distance == 2)
+            {
+                int rankDistance = ToRank - FromRank;
+                int fileDistance = ToFile - FromFile;
+                // ReSharper disable ConvertIfStatementToSwitchStatement
+                if (rankDistance == 2)
+                {
+                    if (fileDistance == -1) return Direction.North2West1;
+                    if (fileDistance == 01) return Direction.North2East1;
+                }
+                if (rankDistance == 1)
+                {
+                    if (fileDistance == -2) return Direction.West2North1;
+                    if (fileDistance == 02) return Direction.East2North1;
+                }
+                if (rankDistance == -1)
+                {
+                    if (fileDistance == -2) return Direction.West2South1;
+                    if (fileDistance == 02) return Direction.East2South1;
+                }
+                if (rankDistance == -2)
+                {
+                    if (fileDistance == -1) return Direction.South2West1;
+                    if (fileDistance == 01) return Direction.South2East1;
+                }
+                // ReSharper restore ConvertIfStatementToSwitchStatement
+            }
+            return Direction.Unknown;
+        }
 
 
         private static int GetShortestDistance(int Square, int[] OtherSquares)
@@ -856,7 +959,6 @@ namespace ErikTheCoder.MadChess.Engine
         public bool IsFreePawn(int Square, bool White)
         {
             Debug.Assert(CurrentPosition.GetPiece(Square) == (White ? Piece.WhitePawn : Piece.BlackPawn));
-            // TODO: Verify swap off score is positive.
             return White
                 ? (_whiteFreePawnMasks[Square] & CurrentPosition.Occupancy) == 0
                 : (_blackFreePawnMasks[Square] & CurrentPosition.Occupancy) == 0;
@@ -1048,7 +1150,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // White Move
                 pawns = CurrentPosition.WhitePawns;
-                pawnAttackMask = BlackPawnAttackMasks[Square]; // Attacked by white pawn masks = black pawn attack masks
+                pawnAttackMask = BlackPawnAttackMasks[Square]; // Attacked by white pawn masks = black pawn attack masks.
                 knights = CurrentPosition.WhiteKnights;
                 bishops = CurrentPosition.WhiteBishops;
                 rooks = CurrentPosition.WhiteRooks;
@@ -1059,7 +1161,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Black Move
                 pawns = CurrentPosition.BlackPawns;
-                pawnAttackMask = WhitePawnAttackMasks[Square];  // Attacked by black pawn masks = white pawn attack masks
+                pawnAttackMask = WhitePawnAttackMasks[Square];  // Attacked by black pawn masks = white pawn attack masks.
                 knights = CurrentPosition.BlackKnights;
                 bishops = CurrentPosition.BlackBishops;
                 rooks = CurrentPosition.BlackRooks;
@@ -1294,7 +1396,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void EnPassantCapture(int Piece, int FromSquare)
         {
             // Move pawn and remove captured pawn.
-            RemovePiece(_eEnPassantVictimSquares[CurrentPosition.EnPassantSquare]);
+            RemovePiece(EnPassantVictimSquares[CurrentPosition.EnPassantSquare]);
             RemovePiece(FromSquare);
             AddPiece(Piece, CurrentPosition.EnPassantSquare);
         }
@@ -1347,7 +1449,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void AddPiece(int Piece, int Square)
+        public void AddPiece(int Piece, int Square)
         {
             Debug.Assert(Piece != Engine.Piece.None);
             // Update piece, color, and both color bitboards.
@@ -1408,7 +1510,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private int RemovePiece(int Square)
+        public int RemovePiece(int Square)
         {
             ulong squareUnmask = _squareUnmasks[Square];
             int piece = CurrentPosition.GetPiece(Square);

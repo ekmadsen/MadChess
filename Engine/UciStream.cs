@@ -98,6 +98,8 @@ namespace ErikTheCoder.MadChess.Engine
                 GetBishopDestinations = Board.GetBishopDestinations,
                 GetRookDestinations = Board.GetRookDestinations,
                 GetQueenDestinations = Board.GetQueenDestinations,
+                AddPiece = Board.AddPiece,
+                RemovePiece = Board.RemovePiece,
                 Debug = () => _debug,
                 WriteMessageLine = WriteMessageLine
             };
@@ -306,8 +308,8 @@ namespace ErikTheCoder.MadChess.Engine
                 case "staticscore":
                     WriteMessageLine(_evaluation.ToString(Board.CurrentPosition));
                     break;
-                case "swapoffscore":
-                    SwapOffScore(Tokens);
+                case "exchangescore":
+                    ExchangeScore(Tokens);
                     break;
                 case "testpositions":
                     TestPositions(Tokens);
@@ -755,11 +757,13 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void SwapOffScore(List<string> Tokens)
+        private void ExchangeScore(List<string> Tokens)
         {
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
-            int swapOffScore = _search.GetSwapOffScore(Board, move);
-            WriteMessageLine(swapOffScore.ToString());
+            bool validMove = Board.ValidateMove(ref move);
+            if (!validMove || !Board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {Board.CurrentPosition.ToFen()}.");
+            int exchangeScore = _evaluation.GetExchangeScore(Board.CurrentPosition, move);
+            WriteMessageLine(exchangeScore.ToString());
         }
         
 
@@ -989,6 +993,8 @@ namespace ErikTheCoder.MadChess.Engine
                     GetBishopDestinations = Board.GetBishopDestinations,
                     GetRookDestinations = Board.GetRookDestinations,
                     GetQueenDestinations = Board.GetQueenDestinations,
+                    AddPiece = board.AddPiece,
+                    RemovePiece = board.RemovePiece,
                     Debug = () => false,
                     WriteMessageLine = WriteMessageLine
                 };
@@ -1043,7 +1049,7 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine();
             WriteMessageLine("dividemoves [depth]                   Count legal moves following each legal root move.  Count only leaf nodes.");
             WriteMessageLine();
-            WriteMessageLine("listmoves                             List moves in order of priority.  Display heuristics for each move.");
+            WriteMessageLine("listmoves                             List moves in order of priority.  Display history heuristics for each move.");
             WriteMessageLine();
             WriteMessageLine("shiftkillermoves [depth]              Shift killer moves deeper by given depth.");
             WriteMessageLine("                                      Useful after go command followed by a position command that includes moves.");
