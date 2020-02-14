@@ -45,6 +45,10 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong BlackCastleKEmptySquaresMask;
         public static readonly ulong[] EnPassantAttackerMasks;
         public static readonly int[] EnPassantVictimSquares;
+        public static readonly ulong[] WhitePassedPawnMasks;
+        public static readonly ulong[] WhiteFreePawnMasks;
+        public static readonly ulong[] BlackPassedPawnMasks;
+        public static readonly ulong[] BlackFreePawnMasks;
         public static readonly ulong[] WhitePawnMoveMasks;
         public static readonly ulong[] WhitePawnDoubleMoveMasks;
         public static readonly ulong[] WhitePawnAttackMasks;
@@ -67,10 +71,6 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly ulong _blackCastleKAttackedSquareMask;
         private static readonly int[][] _neighborSquares;
         private static readonly int[] _enPassantTargetSquares;
-        private readonly ulong[] _whitePassedPawnMasks;
-        private readonly ulong[] _whiteFreePawnMasks;
-        private readonly ulong[] _blackPassedPawnMasks;
-        private readonly ulong[] _blackFreePawnMasks;
         private readonly ulong _piecesSquaresInitialKey;
         private readonly ulong[][] _pieceSquareKeys;
         private readonly ulong[] _sideToMoveKeys;
@@ -315,23 +315,23 @@ namespace ErikTheCoder.MadChess.Engine
             BlackPawnMoveMasks = CreateBlackPawnMoveMasks();
             BlackPawnDoubleMoveMasks = CreateBlackPawnDoubleMoveMasks();
             BlackPawnAttackMasks = CreateBlackPawnAttackMasks();
-            (_enPassantTargetSquares, EnPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
             KnightMoveMasks = CreateKnightMoveMasks();
             BishopMoveMasks = CreateBishopMoveMasks();
             RookMoveMasks = CreateRookMoveMasks();
             KingMoveMasks = CreateKingMoveMasks();
             PrecalculatedMoves = new PrecalculatedMoves();
+            // Create en passant, passed pawn, and free pawn masks.
+            (_enPassantTargetSquares, EnPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
+            WhitePassedPawnMasks = CreateWhitePassedPawnMasks();
+            WhiteFreePawnMasks = CreateWhiteFreePawnMasks();
+            BlackPassedPawnMasks = CreateBlackPassedPawnMasks();
+            BlackFreePawnMasks = CreateBlackFreePawnMasks();
         }
 
 
         public Board(Delegates.WriteMessageLine WriteMessageLine)
         {
             _writeMessageLine = WriteMessageLine;
-            // Create passed pawn and free pawn masks.
-            _whitePassedPawnMasks = CreateWhitePassedPawnMasks();
-            _whiteFreePawnMasks = CreateWhiteFreePawnMasks();
-            _blackPassedPawnMasks = CreateBlackPassedPawnMasks();
-            _blackFreePawnMasks = CreateBlackFreePawnMasks();
             // Create positions and precalculated moves.
             _positions = new Position[_maxPositions];
             for (int positionIndex = 0; positionIndex < _maxPositions; positionIndex++) _positions[positionIndex] = new Position(this);
@@ -942,26 +942,6 @@ namespace ErikTheCoder.MadChess.Engine
             ulong bishopOccupancy = BishopMoveMasks[FromSquare] & Position.Occupancy;
             ulong rookOccupancy = RookMoveMasks[FromSquare] & Position.Occupancy;
             return (PrecalculatedMoves.GetBishopMovesMask(FromSquare, bishopOccupancy) | PrecalculatedMoves.GetRookMovesMask(FromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares;
-        }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsPassedPawn(int Square, bool White)
-        {
-            Debug.Assert(CurrentPosition.GetPiece(Square) == (White ? Piece.WhitePawn : Piece.BlackPawn));
-            return White
-                ? (_whitePassedPawnMasks[Square] & CurrentPosition.BlackPawns) == 0
-                : (_blackPassedPawnMasks[Square] & CurrentPosition.WhitePawns) == 0;
-        }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsFreePawn(int Square, bool White)
-        {
-            Debug.Assert(CurrentPosition.GetPiece(Square) == (White ? Piece.WhitePawn : Piece.BlackPawn));
-            return White
-                ? (_whiteFreePawnMasks[Square] & CurrentPosition.Occupancy) == 0
-                : (_blackFreePawnMasks[Square] & CurrentPosition.Occupancy) == 0;
         }
 
 

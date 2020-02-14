@@ -664,35 +664,18 @@ namespace ErikTheCoder.MadChess.Engine
             int kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
             int enemyKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
             int pawnSquare;
-            int toSquare;
             int rank;
-            ulong move;
             while ((pawnSquare = Bitwise.FindFirstSetBit(pawns)) != Square.Illegal)
             {
-                if (_delegates.IsPassedPawn(pawnSquare, true))
+                if (IsPassedPawn(Position, pawnSquare, true))
                 {
                     rank = Board.WhiteRanks[pawnSquare];
                     _staticScore.WhiteEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
-                    if (_delegates.IsFreePawn(pawnSquare, true))
+                    if (IsFreePawn(Position, pawnSquare, true))
                     {
-                        // Determine if pawn can advance safely.
-                        move = Move.Null;
-                        Move.SetFrom(ref move, pawnSquare);
-                        toSquare = Bitwise.FindFirstSetBit(Board.WhitePawnMoveMasks[pawnSquare]);
-                        Move.SetTo(ref move, toSquare);
-                        if (Board.WhiteRanks[toSquare] == 7) Move.SetPromotedPiece(ref move, Piece.WhiteQueen);
-                        if (GetExchangeScore(Position, move) >= 0)
-                        {
-                            // Pawn can advance safely.
-                            if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, true, true)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
-                            else _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
-                        }
-                        else
-                        {
-                            // Pawn is passed.
-                            _staticScore.WhiteMgPassedPawns += _mgPassedPawns[rank];
-                            _staticScore.WhiteEgPassedPawns += _egPassedPawns[rank];
-                        }
+                        // Pawn can advance safely.
+                        if (IsUnstoppablePawn(Position, pawnSquare, enemyKingSquare, true, true)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                        else _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
                     }
                     else
                     {
@@ -709,30 +692,15 @@ namespace ErikTheCoder.MadChess.Engine
             enemyKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
             while ((pawnSquare = Bitwise.FindFirstSetBit(pawns)) != Square.Illegal)
             {
-                if (_delegates.IsPassedPawn(pawnSquare, false))
+                if (IsPassedPawn(Position, pawnSquare, false))
                 {
                     rank = Board.BlackRanks[pawnSquare];
                     _staticScore.BlackEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
-                    if (_delegates.IsFreePawn(pawnSquare, false))
+                    if (IsFreePawn(Position, pawnSquare, false))
                     {
-                        // Determine if pawn can advance safely.
-                        move = Move.Null;
-                        Move.SetFrom(ref move, pawnSquare);
-                        toSquare = Bitwise.FindFirstSetBit(Board.BlackPawnMoveMasks[pawnSquare]);
-                        Move.SetTo(ref move, toSquare);
-                        if (Board.BlackRanks[toSquare] == 7) Move.SetPromotedPiece(ref move, Piece.BlackQueen);
-                        if (GetExchangeScore(Position, move) >= 0)
-                        {
-                            // Pawn can advance safely.
-                            if (IsPawnUnstoppable(Position, pawnSquare, enemyKingSquare, false, true)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
-                            else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
-                        }
-                        else
-                        {
-                            // Pawn is passed.
-                            _staticScore.BlackMgPassedPawns += _mgPassedPawns[rank];
-                            _staticScore.BlackEgPassedPawns += _egPassedPawns[rank];
-                        }
+                        // Pawn can advance safely.
+                        if (IsUnstoppablePawn(Position, pawnSquare, enemyKingSquare, false, true)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                        else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
                     }
                     else
                     {
@@ -746,7 +714,52 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static bool IsPawnUnstoppable(Position Position, int PawnSquare, int EnemyKingSquare, bool White, bool IsFree)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsPassedPawn(Position Position, int Square, bool White)
+        {
+            Debug.Assert(Position.GetPiece(Square) == (White ? Piece.WhitePawn : Piece.BlackPawn));
+            return White
+                ? (Board.WhitePassedPawnMasks[Square] & Position.BlackPawns) == 0
+                : (Board.BlackPassedPawnMasks[Square] & Position.WhitePawns) == 0;
+        }
+
+
+        private bool IsFreePawn(Position Position, int Square, bool White)
+        {
+            Debug.Assert(Position.GetPiece(Square) == (White ? Piece.WhitePawn : Piece.BlackPawn));
+            // Determine if pawn can advance.
+            bool canAdvance;
+            ulong pawnDestination;
+            int[] ranks;
+            int promotedPiece;
+            if (White)
+            {
+                // White Move
+                canAdvance = (Board.WhiteFreePawnMasks[Square] & Position.Occupancy) == 0;
+                pawnDestination = Board.WhitePawnMoveMasks[Square];
+                ranks = Board.WhiteRanks;
+                promotedPiece = Piece.WhiteQueen;
+            }
+            else
+            {
+                // Black Move
+                canAdvance = (Board.BlackFreePawnMasks[Square] & Position.Occupancy) == 0;
+                pawnDestination = Board.BlackPawnMoveMasks[Square];
+                ranks = Board.BlackRanks;
+                promotedPiece = Piece.BlackQueen;
+            }
+            if (!canAdvance) return false;
+            // Determine if pawn can advance safely (without being captured by guarded opponent piece).
+            int toSquare = Bitwise.FindFirstSetBit(pawnDestination);
+            ulong move = Move.Null;
+            Move.SetFrom(ref move, Square);
+            Move.SetTo(ref move, toSquare);
+            if (ranks[toSquare] == 7) Move.SetPromotedPiece(ref move, promotedPiece);
+            return GetExchangeScore(Position, move) >= 0;
+        }
+
+
+        private static bool IsUnstoppablePawn(Position Position, int PawnSquare, int EnemyKingSquare, bool White, bool IsFree)
         {
             if (!IsFree) return false;
             // Pawn is free to advance to promotion square.

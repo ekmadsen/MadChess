@@ -3,8 +3,6 @@
     public sealed class EvaluationDelegates
     {
         public Delegates.GetPositionCount GetPositionCount;
-        public Delegates.IsPassedPawn IsPassedPawn;
-        public Delegates.IsFreePawn IsFreePawn;
         public Delegates.GetPieceDestinations GetKnightDestinations;
         public Delegates.GetPieceDestinations GetBishopDestinations;
         public Delegates.GetPieceDestinations GetRookDestinations;

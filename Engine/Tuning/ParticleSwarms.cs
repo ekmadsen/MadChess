@@ -61,8 +61,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             EvaluationDelegates evaluationDelegates = new EvaluationDelegates
             {
                 GetPositionCount = board.GetPositionCount,
-                IsPassedPawn = board.IsPassedPawn,
-                IsFreePawn = board.IsFreePawn,
                 GetKnightDestinations = Board.GetKnightDestinations,
                 GetBishopDestinations = Board.GetBishopDestinations,
                 GetRookDestinations = Board.GetRookDestinations,
@@ -257,8 +255,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 EvaluationDelegates evaluationDelegates = new EvaluationDelegates
                 {
                     GetPositionCount = board.GetPositionCount,
-                    IsPassedPawn = board.IsPassedPawn,
-                    IsFreePawn = board.IsFreePawn,
                     GetKnightDestinations = Board.GetKnightDestinations,
                     GetBishopDestinations = Board.GetBishopDestinations,
                     GetRookDestinations = Board.GetRookDestinations,

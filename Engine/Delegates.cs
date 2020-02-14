@@ -17,8 +17,6 @@ namespace ErikTheCoder.MadChess.Engine
         public delegate bool Debug();
         public delegate (ulong Move, int MoveIndex) GetNextMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove);
         public delegate int GetPositionCount();
-        public delegate bool IsPassedPawn(int Square, bool White);
-        public delegate bool IsFreePawn(int Square, bool White);
         public delegate void WriteMessageLine(string Message);
         public delegate ulong GetPieceDestinations(Position Position, int FromSquare, bool White);
         public delegate void AddPiece(int Piece, int Square);
