@@ -36,6 +36,9 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly int _historyShift;
         private static readonly ulong _historyMask;
         private static readonly ulong _historyUnmask;
+        private static readonly int _deferredShift;
+        private static readonly ulong _deferredMask;
+        //private static readonly ulong _deferredUnmask;
         private static readonly int _playedShift;
         private static readonly ulong _playedMask;
         private static readonly ulong _playedUnmask;
@@ -72,18 +75,19 @@ namespace ErikTheCoder.MadChess.Engine
 
         // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
         // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-        // B|CapV   |CapA   |Promo  |Kil|History                                              |!|O|K|E|D|P|C|Q|From         |To           
+        // B|CapV   |CapA   |Promo  |Kil|History                                            |D|!|O|K|E|2|P|C|Q|From         |To           
 
         // B =     Best Move
         // CapV =  Capture Victim
         // CapA =  Capture Attacker (inverted)
         // Promo = Promoted Piece
-        // Kil  =  Killer Move
+        // Kil =   Killer Move
+        // D =     Deferred Losing Capture
         // ! =     Played
         // O =     Castling
         // K =     King Move
         // E =     En Passant Capture
-        // D =     Double Pawn Move
+        // 2 =     Double Pawn Move
         // P =     Pawn Move
         // C =     Check
         // Q =     Quiet (not capture, pawn promotion, castling, or check)
@@ -109,9 +113,12 @@ namespace ErikTheCoder.MadChess.Engine
             _killerShift = 49;
             _killerMask = Bitwise.CreateULongMask(49, 50);
             _killerUnmask = Bitwise.CreateULongUnmask(49, 50);
-            _historyShift = 22;
-            _historyMask = Bitwise.CreateULongMask(22, 48);
-            _historyUnmask = Bitwise.CreateULongUnmask(22, 48);
+            _historyShift = 23;
+            _historyMask = Bitwise.CreateULongMask(23, 48);
+            _historyUnmask = Bitwise.CreateULongUnmask(23, 48);
+            _deferredShift = 22;
+            _deferredMask = Bitwise.CreateULongMask(22);
+            //_deferredUnmask = Bitwise.CreateULongUnmask(22);
             _playedShift = 21;
             _playedMask = Bitwise.CreateULongMask(21);
             _playedUnmask = Bitwise.CreateULongUnmask(21);
@@ -272,6 +279,24 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert(Engine.Move.History(Move) == History);
             Debug.Assert(IsValid(Move));
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Deferred(ulong Move) => (Move & _deferredMask) >> _deferredShift > 0;
+
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static void SetDeferred(ref ulong Move, bool Deferred)
+        //{
+        //    ulong deferred = Deferred ? 1ul : 0;
+        //    // Clear
+        //    Move &= _deferredUnmask;
+        //    // Set
+        //    Move |= deferred << _deferredShift;
+        //    // Validate move.
+        //    Debug.Assert(Engine.Move.Deferred(Move) == Deferred);
+        //    Debug.Assert(IsValid(Move));
+        //}
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -15,7 +15,7 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class MoveHistory
     {
-        public const int MaxValue = 67_108_864; // History has 48 - 22 + 1 = 27 bits.  2 Pow 27 = 134_217_728.  Value may be positive or negative.
+        public const int MaxValue = 33_554_432; // History has 48 - 23 + 1 = 26 bits.  2 Pow 26 = 67_108_864.  Value may be positive or negative.
         private const int _agePer256 = 244;  // This improves integer division speed since x / 256 = x >> 8.
         private readonly int[][] _moveHistory;
 
@@ -43,7 +43,6 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UpdateValue(Position Position, ulong Move, int Increment)
         {
-            // Don't bother checking for overflow values as it's not likely to happen with 27 bits.
             int piece = Position.GetPiece(Engine.Move.From(Move));
             int toSquare = Engine.Move.To(Move);
             _moveHistory[piece][toSquare] += Increment;
