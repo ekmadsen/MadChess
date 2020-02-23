@@ -13,8 +13,7 @@ namespace ErikTheCoder.MadChess.Engine
     public enum MoveGenerationStage
     {
         BestMove,
-        WinningCaptures,
-        LosingCaptures,
+        Captures,
         NonCaptures,
         End
     }

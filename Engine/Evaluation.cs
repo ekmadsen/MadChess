@@ -876,16 +876,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public bool IsLosingCapture(Position Position, ulong Move)
-        {
-            int captureVictim = Engine.Move.CaptureVictim(Move);
-            if (captureVictim == Piece.None) return false;
-            // Don't bother calculating exchange score if move is a capture of a more valuable piece than the attacking piece.
-            bool captureMoreValuablePiece = GetExchangeMaterialScore(captureVictim) > GetExchangeMaterialScore(Engine.Move.CaptureAttacker(Move));
-            return !captureMoreValuablePiece && GetExchangeScore(Position, Move) < 0;
-        }
-
-
         public int GetExchangeScore(Position Position, ulong Move)
         {
             int fromSquare = Engine.Move.From(Move);
@@ -976,7 +966,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _attackingPieceIndices[(int)direction] = 1;
                 Bitwise.ClearBit(ref attackers, otherSquare);
             }
-            // Get x-ray attacking bishops (don't consider any bishops or queens as blockers, hence they're not included in the occupancy mask).
+            // Get attacking bishops.
             ulong occupancy = Board.BishopMoveMasks[toSquare] & (Position.WhitePawns | Position.BlackPawns | Position.WhiteKnights | Position.BlackKnights | Position.WhiteRooks | Position.BlackRooks | Position.WhiteKing | Position.BlackKing);
             attackers = Board.PrecalculatedMoves.GetBishopMovesMask(toSquare, occupancy) & Position.WhiteBishops;
             while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
@@ -996,7 +986,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _attackingPieceIndices[(int)direction] = 1;
                 Bitwise.ClearBit(ref attackers, otherSquare);
             }
-            // Get x-ray attacking rooks (don't consider any rooks or queens as blockers, hence they're not included in the occupancy mask).
+            // Get attacking rooks.
             occupancy = Board.RookMoveMasks[toSquare] & (Position.WhitePawns | Position.BlackPawns | Position.WhiteKnights | Position.BlackKnights | Position.WhiteBishops | Position.BlackBishops | Position.WhiteKing | Position.BlackKing);
             attackers = Board.PrecalculatedMoves.GetRookMovesMask(toSquare, occupancy) & Position.WhiteRooks;
             while ((otherSquare = Bitwise.FindFirstSetBit(attackers)) != Square.Illegal)
@@ -1015,7 +1005,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _attackingPieces[(int)direction][distance] = Piece.BlackRook;
                 _attackingPieceIndices[(int)direction] = 1;
                 Bitwise.ClearBit(ref attackers, otherSquare); }
-            // Get x-ray attacking queens (don't consider any bishops, rooks, or queens as blockers, hence they're not included in the occupancy mask).
+            // Get attacking queens.
             ulong bishopOccupancy = Board.BishopMoveMasks[toSquare] & (Position.WhitePawns | Position.BlackPawns | Position.WhiteKnights | Position.BlackKnights | Position.WhiteRooks | Position.BlackRooks | Position.WhiteKing | Position.BlackKing);
             ulong bishopAttackers = Board.PrecalculatedMoves.GetBishopMovesMask(toSquare, bishopOccupancy) & (Position.WhiteBishops | Position.WhiteQueens);
             ulong rookOccupancy = Board.RookMoveMasks[toSquare] & (Position.WhitePawns | Position.BlackPawns | Position.WhiteKnights | Position.BlackKnights | Position.WhiteBishops | Position.BlackBishops | Position.WhiteKing | Position.BlackKing);
@@ -1126,7 +1116,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Engine.Piece.BlackBishop => 300,
                 Engine.Piece.BlackRook => 500,
                 Engine.Piece.BlackQueen => 900,
-                Engine.Piece.BlackKing => 14_400, // 16 * Queen
+                Engine.Piece.BlackKing => 14_400,
                 _ => throw new ArgumentException($"{Piece} piece not supported.")
             };
         }

@@ -662,11 +662,9 @@ namespace ErikTheCoder.MadChess.Engine
             long moves = 0;
             while (true)
             {
-                (ulong move, int moveIndex) = _search.GetNextMove(Board.CurrentPosition, Depth, Horizon, Move.Null);
+                (ulong move, _) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
                 if (move == Move.Null) break;
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
-                Move.SetPlayed(ref move, true);
-                Board.CurrentPosition.Moves[moveIndex] = move;
                 if (toHorizon > 1)
                 {
                     Board.PlayMove(move);
@@ -697,8 +695,6 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 ulong move = Board.CurrentPosition.Moves[moveIndex];
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
-                Move.SetPlayed(ref move, true);
-                Board.CurrentPosition.Moves[moveIndex] = move;
                 Board.PlayMove(move);
                 rootMoves[moveIndex] = horizon == 1 ? 1 : CountMoves(1, horizon);
                 Board.UndoMove();

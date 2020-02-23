@@ -37,6 +37,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong[] RankMasks;
         public static readonly ulong[] UpDiagonalMasks;
         public static readonly ulong[] DownDiagonalMasks;
+        public static readonly ulong AllSquaresMask;
         public static readonly ulong EdgeSquareMask;
         public static readonly ulong WhiteCastleQEmptySquaresMask;
         public static readonly ulong WhiteCastleKEmptySquaresMask;
@@ -80,7 +81,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int _positionIndex;
 
 
-        private Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
+        public Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
 
 
         public Position CurrentPosition => _positions[_positionIndex];
@@ -274,6 +275,7 @@ namespace ErikTheCoder.MadChess.Engine
             DownDiagonalMasks[12] = Bitwise.CreateULongMask(new[] {05, 14, 23});
             DownDiagonalMasks[13] = Bitwise.CreateULongMask(new[] {06, 15});
             DownDiagonalMasks[14] = Bitwise.CreateULongMask(new[] {07});
+            AllSquaresMask = Bitwise.CreateULongMask(0, 63);
             EdgeSquareMask = FileMasks[0] | RankMasks[7] | FileMasks[7] | RankMasks[0];
             // Create castling masks.
             WhiteCastleQEmptySquaresMask = Bitwise.CreateULongMask(new[] {Square.b1, Square.c1, Square.d1});
