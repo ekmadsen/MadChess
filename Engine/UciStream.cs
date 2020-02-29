@@ -662,9 +662,11 @@ namespace ErikTheCoder.MadChess.Engine
             long moves = 0;
             while (true)
             {
-                (ulong move, _) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
+                (ulong move, int moveIndex) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Horizon, Move.Null);
                 if (move == Move.Null) break;
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
+                Move.SetPlayed(ref move, true);
+                Board.CurrentPosition.Moves[moveIndex] = move;
                 if (toHorizon > 1)
                 {
                     Board.PlayMove(move);
@@ -1055,7 +1057,7 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine();
             WriteMessageLine("staticscore                           Display evaluation details of current position.");
             WriteMessageLine();
-            WriteMessageLine("swapoffscore [move]                   Display static score if pieces are traded on the destination square of the given move.");
+            WriteMessageLine("exchangescore [move]                  Display static score if pieces are traded on the destination square of the given move.");
             WriteMessageLine("                                      Move must be specified in long algebraic notation.");
             WriteMessageLine();
             WriteMessageLine("testpositions [filename]              Calculate legal moves for positions in given file and compare to expected results.");

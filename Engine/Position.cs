@@ -16,7 +16,7 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class Position
     {
-        public const int MaxMoves = 128;
+        public const int MaxMoves = 192;
         public readonly ulong[] Moves;
         public ulong WhitePawns;
         public ulong WhiteKnights;
@@ -43,6 +43,8 @@ namespace ErikTheCoder.MadChess.Engine
         public int CurrentMoveIndex;
         public int MoveIndex;
         public MoveGenerationStage MoveGenerationStage;
+        public bool AnyDeferredMoves;
+        public bool SearchedDeferredMoves;
         public ulong PiecesSquaresKey;
         public ulong Key;
         public ulong PlayedMove;
@@ -136,6 +138,8 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
+            AnyDeferredMoves = false;
+            SearchedDeferredMoves = false;
         }
 
 
@@ -404,7 +408,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Bitwise.ClearBit(ref knights, fromSquare);
             }
         }
-        
+
         private void GenerateBishopMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong bishops;
@@ -455,7 +459,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Bitwise.ClearBit(ref bishops, fromSquare);
             }
         }
-        
+
 
         private void GenerateRookMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
@@ -507,7 +511,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Bitwise.ClearBit(ref rooks, fromSquare);
             }
         }
-        
+
 
         private void GenerateQueenMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
@@ -742,6 +746,8 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
+            AnyDeferredMoves = false;
+            SearchedDeferredMoves = false;
             PiecesSquaresKey = 0;
             Key = 0;
             PlayedMove = Move.Null;
