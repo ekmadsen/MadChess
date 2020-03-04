@@ -52,6 +52,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
+        private const int _losingCaptureReduction = 1;
         private const int _pvsMinToHorizon = 3;
         private const int _historyPriorMovePer128 = 256; // This improves integer division speed since x / 128 = x >> 7.
         private const int _quietSearchMaxFromHorizon = 3;
@@ -1032,7 +1033,9 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Do not reduce moves in drawn endgames, killer moves, pawn promotions, or castling.
             if (IsDrawnEndgame || (Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon;
-            if (Engine.Move.CaptureVictim(Move) != Piece.None) return Horizon; // Do not reduce capture.
+            bool capture = Engine.Move.CaptureVictim(Move) != Piece.None;
+            bool losingCapture = capture && Engine.Move.Deferred(Move);
+            if (capture && !losingCapture) return Horizon; // Do not reduce equal or winning capture.
             if (Engine.Move.IsPawnMove(Move))
             {
                 int rank = Position.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
@@ -1043,8 +1046,10 @@ namespace ErikTheCoder.MadChess.Engine
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce move with lone king on board.
-            // Reduce search horizon based on quiet move number.
-            int reduction = Engine.Move.IsQuiet(Move)
+            // Reduce search horizon based on losing capture and quiet move number.
+            int reduction = losingCapture
+                ? _losingCaptureReduction
+                : Engine.Move.IsQuiet(Move)
                     ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)]
                     : 0;
             return Horizon - reduction;
