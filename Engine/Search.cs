@@ -891,21 +891,8 @@ namespace ErikTheCoder.MadChess.Engine
                     ulong move = Position.Moves[Position.CurrentMoveIndex];
                     int moveIndex = Position.CurrentMoveIndex;
                     Position.CurrentMoveIndex++;
-                    if (Position.SearchedDeferredMoves && (moveIndex > 0) && (Move.CaptureVictim(move) == Piece.None) && (Move.CaptureVictim(Position.Moves[moveIndex - 1]) != Piece.None))
-                    {
-                        // Have already returned last deferred capture.  No more moves remain.
-                        return (Move.Null, Position.CurrentMoveIndex);
-                    }
                     bool generatedBestMove = (moveIndex > 0) && Move.Equals(move, BestMove);
                     if (Move.Played(move) || generatedBestMove) continue; // Don't play move twice.
-                    if (!Move.Deferred(move) && !Move.IsBest(move) && _evaluation.IsLosingCapture(Position, move))
-                    {
-                        // Move is a losing capture.  Defer playing move.
-                        Move.SetDeferred(ref move, true);
-                        Position.Moves[moveIndex] = move;
-                        Position.AnyDeferredMoves = true;
-                        continue;
-                    }
                     return (move, moveIndex);
                 }
                 // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
@@ -922,7 +909,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         Position.MoveGenerationStage++;
                         continue;
-                    case MoveGenerationStage.WinningAndEqualCaptures:
+                    case MoveGenerationStage.Captures:
                         firstMoveIndex = Position.MoveIndex;
                         Position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, ToSquareMask);
                         lastMoveIndex = Math.Max(firstMoveIndex, Position.MoveIndex - 1);
@@ -941,14 +928,6 @@ namespace ErikTheCoder.MadChess.Engine
                         {
                             PrioritizeMoves(Position, Position.Moves, firstMoveIndex, lastMoveIndex, BestMove, Depth);
                             SortMovesByPriority(Position.Moves, firstMoveIndex, lastMoveIndex);
-                        }
-                        Position.MoveGenerationStage++;
-                        continue;
-                    case MoveGenerationStage.LosingCaptures:
-                        if (Position.AnyDeferredMoves)
-                        {
-                            Position.CurrentMoveIndex = 0;
-                            Position.SearchedDeferredMoves = true;
                         }
                         Position.MoveGenerationStage++;
                         continue;
@@ -978,7 +957,7 @@ namespace ErikTheCoder.MadChess.Engine
                 switch (Position.MoveGenerationStage)
                 {
                     case MoveGenerationStage.BestMove:
-                    case MoveGenerationStage.WinningAndEqualCaptures: // Generates all captures.  Code above does not calculate exchange score to determine if captures are losing.
+                    case MoveGenerationStage.Captures:
                         Position.FindPotentiallyPinnedPieces();
                         int firstMoveIndex = Position.MoveIndex;
                         Position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, ToSquareMask);
@@ -1002,8 +981,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
             int captureVictim = Engine.Move.CaptureVictim(Move);
             bool capture = captureVictim != Piece.None;
-            bool inQuietSearch = toHorizon <= 0;
-            if (capture && !inQuietSearch) return false; // Capture in main search is not futile.
+            if (capture && (toHorizon > 0)) return false; // Capture in main search is not futile.
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return false; // Killer moves, pawn promotions, and castling are not futile.
             if (Engine.Move.IsPawnMove(Move))
             {
@@ -1019,8 +997,11 @@ namespace ErikTheCoder.MadChess.Engine
             int lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
+            int potentialImprovement = capture
+                ? _evaluation.GetMaterialScore(captureVictim)
+                : _evaluation.GetExchangeScore(Position, Move);
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
+            return StaticScore + potentialImprovement + futilityMargin < Alpha;
         }
 
 
@@ -1034,7 +1015,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Do not reduce moves in drawn endgames, killer moves, pawn promotions, or castling.
             if (IsDrawnEndgame || (Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon;
             bool capture = Engine.Move.CaptureVictim(Move) != Piece.None;
-            bool losingCapture = capture && Engine.Move.Deferred(Move);
+            bool losingCapture = capture && _evaluation.IsLosingCapture(Position, Move);
             if (capture && !losingCapture) return Horizon; // Do not reduce equal or winning capture.
             if (Engine.Move.IsPawnMove(Move))
             {

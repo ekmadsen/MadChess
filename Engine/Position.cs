@@ -44,8 +44,6 @@ namespace ErikTheCoder.MadChess.Engine
         public int CurrentMoveIndex;
         public int MoveIndex;
         public MoveGenerationStage MoveGenerationStage;
-        public bool AnyDeferredMoves;
-        public bool SearchedDeferredMoves;
         public ulong PiecesSquaresKey;
         public ulong Key;
         public ulong PlayedMove;
@@ -139,8 +137,6 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
-            AnyDeferredMoves = false;
-            SearchedDeferredMoves = false;
         }
 
 
@@ -747,8 +743,6 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
-            AnyDeferredMoves = false;
-            SearchedDeferredMoves = false;
             PiecesSquaresKey = 0;
             Key = 0;
             PlayedMove = Move.Null;
