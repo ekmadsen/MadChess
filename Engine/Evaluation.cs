@@ -1044,14 +1044,14 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public bool IsLosingCapture(Position Position, ulong Move)
-        {
-            int captureVictim = Engine.Move.CaptureVictim(Move);
-            if (captureVictim == Piece.None) return false;
-            // Don't bother calculating exchange score if move is a capture of a more valuable piece than the attacking piece.
-            bool captureMoreValuablePiece = GetExchangeMaterialScore(captureVictim) > GetExchangeMaterialScore(Engine.Move.CaptureAttacker(Move));
-            return !captureMoreValuablePiece && GetExchangeScore(Position, Move) < 0;
-        }
+        //public bool IsLosingCapture(Position Position, ulong Move)
+        //{
+        //    int captureVictim = Engine.Move.CaptureVictim(Move);
+        //    if (captureVictim == Piece.None) return false;
+        //    // Don't bother calculating exchange score if move is a capture of a more valuable piece than the attacking piece.
+        //    bool captureMoreValuablePiece = GetExchangeMaterialScore(captureVictim) > GetExchangeMaterialScore(Engine.Move.CaptureAttacker(Move));
+        //    return !captureMoreValuablePiece && GetExchangeScore(Position, Move) < 0;
+        //}
 
 
         private int GetExchangeScore(int VictimPiece, bool WhiteMove)
