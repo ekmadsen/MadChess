@@ -1149,27 +1149,16 @@ namespace ErikTheCoder.MadChess.Engine
                 king = CurrentPosition.BlackKing;
             }
             // Determine if square is attacked by pawns or knights.
-            if ((pawns & pawnAttackMask) > 0) return true;
-            if ((knights & KnightMoveMasks[Square]) > 0) return true;
+            if ((pawnAttackMask & pawns) > 0) return true;
+            if ((KnightMoveMasks[Square] & knights) > 0) return true;
             // Determine if square is attacked by diagonal sliding piece.
-            // Rather than examining every move of every enemy sliding piece, examine move of sliding piece on given Square.
             ulong bishopDestinations = PrecalculatedMoves.GetBishopMovesMask(Square, CurrentPosition.Occupancy);
-            int toSquare;
-            while ((toSquare = Bitwise.FindFirstSetBit(bishopDestinations)) != Engine.Square.Illegal)
-            {
-                if ((SquareMasks[toSquare] & (bishops | queens)) > 0) return true;
-                Bitwise.ClearBit(ref bishopDestinations, toSquare);
-            }
+            if ((bishopDestinations & (bishops | queens)) > 0) return true;
             // Determine if square is attacked by file / rank sliding pieces.
-            // Rather than examining every move of every enemy sliding piece, examine move of sliding piece on given Square.
             ulong rookDestinations = PrecalculatedMoves.GetRookMovesMask(Square, CurrentPosition.Occupancy);
-            while ((toSquare = Bitwise.FindFirstSetBit(rookDestinations)) != Engine.Square.Illegal)
-            {
-                if ((SquareMasks[toSquare] & (rooks | queens)) > 0) return true;
-                Bitwise.ClearBit(ref rookDestinations, toSquare);
-            }
+            if ((rookDestinations & (rooks | queens)) > 0) return true;
             // Determine if square is attacked by king.
-            return (king & KingMoveMasks[Square]) > 0;
+            return (KingMoveMasks[Square] & king) > 0;
         }
 
 

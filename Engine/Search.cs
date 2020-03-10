@@ -887,8 +887,8 @@ namespace ErikTheCoder.MadChess.Engine
                 int lastMoveIndex;
                 if (Position.CurrentMoveIndex < Position.MoveIndex)
                 {
-                    ulong move = Position.Moves[Position.CurrentMoveIndex];
                     int moveIndex = Position.CurrentMoveIndex;
+                    ulong move = Position.Moves[moveIndex];
                     Position.CurrentMoveIndex++;
                     bool generatedBestMove = (moveIndex > 0) && Move.Equals(move, BestMove);
                     if (Move.Played(move) || generatedBestMove) continue; // Don't play move twice.
@@ -946,8 +946,8 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 if (Position.CurrentMoveIndex < Position.MoveIndex)
                 {
-                    ulong move = Position.Moves[Position.CurrentMoveIndex];
                     int moveIndex = Position.CurrentMoveIndex;
+                    ulong move = Position.Moves[moveIndex];
                     Position.CurrentMoveIndex++;
                     if (Move.CaptureVictim(move) == Piece.None) continue;
                     return (move, moveIndex);
