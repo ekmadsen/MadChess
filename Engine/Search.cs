@@ -589,7 +589,7 @@ namespace ErikTheCoder.MadChess.Engine
             int staticScore = Board.CurrentPosition.KingInCheck
                 ? -StaticScore.Max
                 : drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
-            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
+            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Alpha, Beta))
             {
                 // Position is futile.
                 // Position is not the result of best play by both players.
@@ -841,11 +841,15 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Beta)
+        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             if ((Depth == 0) || Position.KingInCheck || IsDrawnEndgame) return false; // Root, king in check, and drawn endgame positions are not futile.
             int toHorizon = Horizon - Depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
+            if ((Math.Abs(Alpha) >= Engine.StaticScore.Checkmate) || (Math.Abs(Beta) >= Engine.StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
+            int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
+            int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
+            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Position with lone king on board is not futile.
             // Determine if any move can lower score to beta.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore - futilityMargin > Beta;
@@ -983,13 +987,13 @@ namespace ErikTheCoder.MadChess.Engine
                 if (rank >= 5) return false; // Pawn push is not futile.
             }
             if (Engine.Move.IsCheck(Move) || Position.KingInCheck) return false; // Checking moves and moves when king is in check are not futile.
-            if (IsDrawnEndgame || (Math.Abs(Alpha) >= Engine.StaticScore.Checkmate) || (Math.Abs(Beta) >= Engine.StaticScore.Checkmate)) return false; // Move in drawn endgame or under threat of checkmate is not futile.
+            if (IsDrawnEndgame || (Math.Abs(Alpha) >= Engine.StaticScore.Checkmate) || (Math.Abs(Beta) >= Engine.StaticScore.Checkmate)) return false; // Moves in drawn endgame or under threat of checkmate are not futile.
             // Count pawns and pieces (but don't include kings).
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
             int lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
-            if (QuietMoveNumber >= lateMoveNumber) return true; // Move is too late to be worth searching.
+            if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
@@ -1003,20 +1007,23 @@ namespace ErikTheCoder.MadChess.Engine
                 if ((MultiPv > 1) && (LegalMoveNumber <= MultiPv)) return Horizon; // Do not reduce root move under the MultiPV limit.
                 if (_scoreError > 0) return Horizon; // Do not reduce root move when engine playing strength is reduced.
             }
-            if (IsDrawnEndgame || (Engine.Move.CaptureVictim(Move) != Piece.None)) return Horizon; // Do not reduce search horizon of drawn endgames or captures.
-            if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon; // Do not reduce search horizon of killer moves, pawn promotions, or castling.
+            // Do not reduce moves in drawn endgames, killer moves, pawn promotions, or castling.
+            if (IsDrawnEndgame || (Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon;
+            bool capture = Engine.Move.CaptureVictim(Move) != Piece.None;
+            if (capture) return Horizon; // Do not reduce capture.
             if (Engine.Move.IsPawnMove(Move))
             {
                 int rank = Position.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
-                if (rank >= 5) return Horizon; // Do not reduce search horizon of pawn pushes.
+                if (rank >= 5) return Horizon; // Do not reduce pawn push.
             }
-            if (Engine.Move.IsCheck(Move) || Position.KingInCheck) return Horizon;  // Do not reduce search horizon of checking moves or when king is in check.
+            if (Engine.Move.IsCheck(Move) || Position.KingInCheck) return Horizon;  // Do not reduce checking moves or moves when king is in check.
             // Count pawns and pieces (but don't include kings).
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
-            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce search horizon of moves with lone king on board.
+            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce move with lone king on board.
             // Reduce search horizon based on quiet move number.
-            return Horizon - _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)];
+            int reduction = Engine.Move.IsQuiet(Move) ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)] : 0;
+            return Horizon - reduction;
         }
 
 

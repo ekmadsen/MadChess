@@ -749,6 +749,8 @@ namespace ErikTheCoder.MadChess.Engine
                 promotedPiece = Piece.BlackQueen;
             }
             if (!canAdvance) return false;
+            return true;
+
             // Determine if pawn can advance safely (without being captured by guarded opponent piece).
             int toSquare = Bitwise.FindFirstSetBit(pawnDestination);
             ulong move = Move.Null;
