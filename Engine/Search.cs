@@ -78,6 +78,8 @@ namespace ErikTheCoder.MadChess.Engine
         private Stopwatch _stopwatch;
         private Delegates.GetNextMove _getNextMove;
         private Delegates.GetNextMove _getNextCapture;
+        private Delegates.GetStaticScore _getStaticScore;
+        private Delegates.GetStaticScore _getExchangeMaterialScore;
         private int _originalHorizon;
         private int _selectiveHorizon;
         private ulong _rootMove;
@@ -137,6 +139,8 @@ namespace ErikTheCoder.MadChess.Engine
             _writeMessageLine = WriteMessageLine;
             _getNextMove = GetNextMove;
             _getNextCapture = GetNextCapture;
+            _getStaticScore = _evaluation.GetStaticScore;
+            _getExchangeMaterialScore = Evaluation.GetExchangeMaterialScore;
             Stats = new SearchStats();
             // Create synchronization and diagnostic objects.
             Signal = new AutoResetEvent(false);
@@ -220,6 +224,8 @@ namespace ErikTheCoder.MadChess.Engine
                 _stopwatch = null;
                 _getNextMove = null;
                 _getNextCapture = null;
+                _getStaticScore = null;
+                _getExchangeMaterialScore = null;
             }
             // Release unmanaged resources.
             Signal?.Dispose();
@@ -749,8 +755,23 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta)
+        // See https://github.com/jdart1/arasan-chess/blob/dadd74540584e3e87330ae17322eaaf0104f4b35/src/unit.cpp#L164.
+        public int GetExchangeScore(Board Board, ulong Move)
         {
+            Board.NodesExamineTime = long.MaxValue;
+            PvInfoUpdate = false;
+            Continue = true;
+            int scoreBeforeMove = _getExchangeMaterialScore(Board.CurrentPosition);
+            Board.PlayMove(Move);
+            int scoreAfterMove = -GetQuietScore(Board, 0, 0, Board.SquareMasks[Engine.Move.To(Move)], -StaticScore.Max, StaticScore.Max, _getExchangeMaterialScore);
+            Board.UndoMove();
+            return scoreAfterMove - scoreBeforeMove;
+        }
+
+
+        public int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta, Delegates.GetStaticScore GetStaticScore = null)
+        {
+            GetStaticScore ??= _getStaticScore;
             if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
             {
                 // Examine time.
@@ -787,7 +808,7 @@ namespace ErikTheCoder.MadChess.Engine
                         : Board.SquareMasks[lastMoveToSquare]; // Search only recaptures.
                 }
                 else moveGenerationToSquareMask = ToSquareMask;
-                staticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
+                staticScore = drawnEndgame ? 0 : GetStaticScore(Board.CurrentPosition);
                 if (staticScore >= Beta) return Beta; // Prevent worsening of position by making a bad capture.  Stand pat.
                 Alpha = Math.Max(staticScore, Alpha);
             }
@@ -802,7 +823,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (IsMoveFutile(Board.CurrentPosition, Depth, Horizon, move, legalMoveNumber, 0, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 // Play and search move.
                 Board.PlayMove(move);
-                int score = -GetQuietScore(Board, Depth + 1, Horizon, ToSquareMask, -Beta, -Alpha);
+                int score = -GetQuietScore(Board, Depth + 1, Horizon, ToSquareMask, -Beta, -Alpha, GetStaticScore);
                 Board.UndoMove();
                 if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if (score >= Beta) return Beta; // Position is not the result of best play by both players.

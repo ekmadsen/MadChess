@@ -96,8 +96,6 @@ namespace ErikTheCoder.MadChess.Engine
                 GetBishopDestinations = Board.GetBishopDestinations,
                 GetRookDestinations = Board.GetRookDestinations,
                 GetQueenDestinations = Board.GetQueenDestinations,
-                AddPiece = Board.AddPiece,
-                RemovePiece = Board.RemovePiece,
                 Debug = () => _debug,
                 WriteMessageLine = WriteMessageLine
             };
@@ -314,6 +312,9 @@ namespace ErikTheCoder.MadChess.Engine
                     break;
                 case "analyzepositions":
                     AnalyzePositions(Tokens);
+                    break;
+                case "analyzeexchangepositions":
+                    AnalyzeExchangePositions(Tokens);
                     break;
                 case "tune":
                     Tune(Tokens);
@@ -762,7 +763,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
             bool validMove = Board.ValidateMove(ref move);
             if (!validMove || !Board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {Board.CurrentPosition.ToFen()}.");
-            int exchangeScore = _evaluation.GetExchangeScore(Board.CurrentPosition, move);
+            int exchangeScore = _search.GetExchangeScore(Board, move);
             WriteMessageLine(exchangeScore.ToString());
         }
         
@@ -773,7 +774,6 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine("Number                                                                     Position  Depth     Expected        Moves  Correct    Pct");
             WriteMessageLine("======  ===========================================================================  =====  ===========  ===========  =======  =====");
             Board.Nodes = 0;
-            Board.NodesInfoUpdate = NodesInfoInterval;
             int positions = 0;
             int correctPositions = 0;
             _commandStopwatch.Restart();
@@ -821,7 +821,6 @@ namespace ErikTheCoder.MadChess.Engine
                 WriteMessageLine("Number                                                                     Position  Solution    Expected Moves   Move  Correct    Pct");
                 WriteMessageLine("======  ===========================================================================  ========  ================  =====  =======  =====");
                 Board.Nodes = 0L;
-                Board.NodesInfoUpdate = NodesInfoInterval;
                 _commandStopwatch.Restart();
                 while (!reader.EndOfStream)
                 {
@@ -938,6 +937,48 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        private void AnalyzeExchangePositions(IList<string> Tokens)
+        {
+            string file = Tokens[1].Trim();
+            int positions = 0;
+            int correctPositions = 0;
+            using (StreamReader reader = File.OpenText(file))
+            {
+                WriteMessageLine("Number                                                                     Position  Expected Score  Score  Correct  Pct");
+                WriteMessageLine("======  ===========================================================================  ==============  =====  =======  ===");
+                Board.Nodes = 0L;
+                _commandStopwatch.Restart();
+                while (!reader.EndOfStream)
+                {
+                    // Load position and correct score.
+                    string line = reader.ReadLine();
+                    if (line == null) continue;
+                    positions++;
+                    List<string> tokens = Engine.Tokens.Parse(line, ',', '"');
+                    string fen = tokens[0].Trim();
+                    string moveStandardAlgebraic = tokens[1].Trim();
+                    int expectedScore = int.Parse(tokens[2].Trim());
+                    // Setup position and determine exchange score.
+                    Board.SetPosition(fen, true);
+                    ulong move = Move.ParseStandardAlgebraic(Board, moveStandardAlgebraic);
+                    int score = _search.GetExchangeScore(Board, move);
+                    bool correct = score == expectedScore;
+                    if (correct) correctPositions++;
+                    double percent = 100d * correctPositions / positions;
+                    WriteMessageLine($"{positions.ToString().PadLeft(6)}  {fen.PadLeft(75)}  {expectedScore.ToString().PadLeft(14)}  {score.ToString().PadLeft(5)}  " +
+                        $"{correct.ToString().PadLeft(7)}  {percent.ToString("0.0").PadLeft(5)}");
+                }
+            }
+            _commandStopwatch.Stop();
+            // Update score.
+            WriteMessageLine();
+            WriteMessageLine($"Solved {correctPositions} of {positions} positions in {_commandStopwatch.Elapsed.TotalMilliseconds:000} milliseconds.");
+            // Update node count.
+            double nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
+            WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
+        }
+
+
         private void Tune(IList<string> Tokens)
         {
             string pgnFilename = Tokens[1].Trim();
@@ -991,8 +1032,6 @@ namespace ErikTheCoder.MadChess.Engine
                     GetBishopDestinations = Board.GetBishopDestinations,
                     GetRookDestinations = Board.GetRookDestinations,
                     GetQueenDestinations = Board.GetQueenDestinations,
-                    AddPiece = board.AddPiece,
-                    RemovePiece = board.RemovePiece,
                     Debug = () => false,
                     WriteMessageLine = WriteMessageLine
                 };
@@ -1065,6 +1104,9 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine();
             WriteMessageLine("analyzepositions [filename] [msec]    Search for best move for positions in given file and compare to expected results.");
             WriteMessageLine("                                      File must be in EPD format.  Search of each move is limited to given time in milliseconds.");
+            WriteMessageLine();
+            WriteMessageLine("analyzeexchangepositions [filename]   Determine material score after exchanging pieces on destination square of given move.");
+            WriteMessageLine("                                      Pawn = 100, Knight and Bishop = 300, Rook = 500, Queen = 900.");
             WriteMessageLine();
             WriteMessageLine("tune [pgn] [ps] [pps] [wps] [i]       Tune evaluation parameters using a particle swarm algorithm.");
             WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");
