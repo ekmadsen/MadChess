@@ -603,7 +603,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void GoAsync()
         {
             // Find best move and respond.
-            ulong bestMove = _search.FindBestMove(Board);
+            ulong bestMove = _search.FindBestMove(Board.CurrentPosition);
             WriteMessageLine($"bestmove {Move.ToLongAlgebraic(bestMove)}");
             // Signal search has stopped.
             _commandStopwatch.Stop();
@@ -763,7 +763,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
             bool validMove = Board.ValidateMove(ref move);
             if (!validMove || !Board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {Board.CurrentPosition.ToFen()}.");
-            int exchangeScore = _search.GetExchangeScore(Board, move);
+            int exchangeScore = _search.GetExchangeScore(Board.CurrentPosition, move);
             WriteMessageLine(exchangeScore.ToString());
         }
         
@@ -880,7 +880,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _search.PvInfoUpdate = false;
                     _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
                     _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
-                    ulong bestMove = _search.FindBestMove(Board);
+                    ulong bestMove = _search.FindBestMove(Board.CurrentPosition);
                     _search.Signal.Set();
                     // Determine if search found correct move.
                     bool correct;
@@ -961,7 +961,7 @@ namespace ErikTheCoder.MadChess.Engine
                     // Setup position and determine exchange score.
                     Board.SetPosition(fen, true);
                     ulong move = Move.ParseStandardAlgebraic(Board, moveStandardAlgebraic);
-                    int score = _search.GetExchangeScore(Board, move);
+                    int score = _search.GetExchangeScore(Board.CurrentPosition, move);
                     bool correct = score == expectedScore;
                     if (correct) correctPositions++;
                     double percent = 100d * correctPositions / positions;

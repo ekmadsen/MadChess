@@ -557,14 +557,14 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static int GetExchangeMaterialScore(Position Position)
+        public int GetExchangeMaterialScore(Position Position)
         {
-            int whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * 100 +
-                             Bitwise.CountSetBits(Position.WhiteKnights | Position.WhiteBishops) * 300 +
-                             Bitwise.CountSetBits(Position.WhiteRooks) * 500 + Bitwise.CountSetBits(Position.WhiteQueens) * 900;
-            int blackScore = Bitwise.CountSetBits(Position.BlackPawns) * 100 +
-                             Bitwise.CountSetBits(Position.BlackKnights | Position.BlackBishops) * 300 +
-                             Bitwise.CountSetBits(Position.BlackRooks) * 500 + Bitwise.CountSetBits(Position.BlackQueens) * 900;
+            int whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial +
+                             Bitwise.CountSetBits(Position.WhiteKnights) * Config.KnightExchangeMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.BishopExchangeMaterial +
+                             Bitwise.CountSetBits(Position.WhiteRooks) * Config.RookExchangeMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.QueenExchangeMaterial;
+            int blackScore = Bitwise.CountSetBits(Position.BlackPawns) * PawnMaterial +
+                             Bitwise.CountSetBits(Position.BlackKnights) * Config.KnightExchangeMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.BishopExchangeMaterial +
+                             Bitwise.CountSetBits(Position.BlackRooks) * Config.RookExchangeMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.QueenExchangeMaterial;
             return Position.WhiteMove
                 ? whiteScore - blackScore
                 : blackScore - whiteScore;
@@ -735,11 +735,11 @@ namespace ErikTheCoder.MadChess.Engine
         private static bool IsFreePawn(Position Position, int Square, bool White)
         {
             Debug.Assert(Position.GetPiece(Square) == (White ? Piece.WhitePawn : Piece.BlackPawn));
+            // Determine if pawn can advance.
             return White
                 ? (Board.WhiteFreePawnMasks[Square] & Position.Occupancy) == 0
                 : (Board.BlackFreePawnMasks[Square] & Position.Occupancy) == 0;
         }
-
 
         private static bool IsUnstoppablePawn(Position Position, int PawnSquare, int EnemyKingSquare, bool White, bool IsFree)
         {

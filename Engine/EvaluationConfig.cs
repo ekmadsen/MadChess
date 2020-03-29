@@ -17,9 +17,13 @@ namespace ErikTheCoder.MadChess.Engine
         // ReSharper disable RedundantDefaultMemberInitializer
         // Material and Simple Endgame
         public int KnightMaterial = 300;
+        public int KnightExchangeMaterial = 300;
         public int BishopMaterial = 330;
+        public int BishopExchangeMaterial = 300;
         public int RookMaterial = 500;
+        public int RookExchangeMaterial = 500;
         public int QueenMaterial = 975;
+        public int QueenExchangeMaterial = 900;
         public int SimpleEndgame => UnstoppablePassedPawn;  // Incentivize engine to promote pawn in king and pawn endgames.
         // Pawn Location
         public int MgPawnAdvancement = 2;

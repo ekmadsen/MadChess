@@ -81,7 +81,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int _positionIndex;
 
 
-        public Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
+        private Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
 
 
         public Position CurrentPosition => _positions[_positionIndex];
