@@ -53,7 +53,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
         private const int _historyPriorMovePer128 = 256; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _quietSearchMaxFromHorizon = 7;
+        private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
         private int[] _singlePvAspirationWindows;
@@ -758,6 +758,17 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        private (bool IsLosingCapture, int? ExchangeScore) IsLosingCapture(Position Position, ulong Move)
+        {
+            int captureVictim = Engine.Move.CaptureVictim(Move);
+            if (captureVictim == Piece.None) return (false, null);
+            // Don't bother calculating exchange score if move captures an equal or more valuable piece than the attacking piece.
+            if (_evaluation.GetExchangeMaterialScore(captureVictim) >= _evaluation.GetExchangeMaterialScore(Engine.Move.CaptureAttacker(Move))) return (false, null);
+            int exchangeScore = GetExchangeScore(Position, Move);
+            return (exchangeScore < 0, exchangeScore);
+        }
+
+
         public int GetExchangeScore(Position Position, ulong Move)
         {
             long nodesExamineTime = Position.Board.NodesExamineTime;
@@ -1026,8 +1037,16 @@ namespace ErikTheCoder.MadChess.Engine
             int lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
+            int? exchangeScore = null;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            if (capture && inQuietSearch)
+            {
+                bool isLosingCapture;
+                (isLosingCapture, exchangeScore) = IsLosingCapture(Position, Move);
+                if (isLosingCapture) return true;
+            }
             int potentialImprovement = inQuietSearch
-                ? GetExchangeScore(Position, Move)
+                ? exchangeScore ?? GetExchangeScore(Position, Move)
                 : _evaluation.GetMaterialScore(captureVictim);
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore + potentialImprovement + futilityMargin < Alpha;
