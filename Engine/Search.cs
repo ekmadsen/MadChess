@@ -53,7 +53,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
         private const int _historyPriorMovePer128 = 256; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _quietSearchMaxFromHorizon = 3;
+        private const int _quietSearchMaxFromHorizon = 7;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
         private int[] _singlePvAspirationWindows;
@@ -1046,7 +1046,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (isLosingCapture) return true;
             }
             int potentialImprovement = inQuietSearch
-                ? exchangeScore ?? GetExchangeScore(Position, Move)
+                ? exchangeScore ?? _evaluation.GetMaterialScore(captureVictim)
                 : _evaluation.GetMaterialScore(captureVictim);
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore + potentialImprovement + futilityMargin < Alpha;
