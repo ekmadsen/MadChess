@@ -76,8 +76,8 @@ namespace ErikTheCoder.MadChess.Engine
         private Delegates.Debug _debug;
         private Delegates.WriteMessageLine _writeMessageLine;
         private Stopwatch _stopwatch;
-        private Delegates.GetNextMove _getNextMove;
-        private Delegates.GetNextMove _getNextCapture;
+        private Delegates.GetNextLegalMove _getNextLegalMove;
+        private Delegates.GetNextLegalMove _getNextLegalCapture;
         private Delegates.GetStaticScore _getStaticScore;
         private Delegates.GetStaticScore _getExchangeMaterialScore;
         private int _originalHorizon;
@@ -137,8 +137,8 @@ namespace ErikTheCoder.MadChess.Engine
             _evaluation = Evaluation;
             _debug = Debug;
             _writeMessageLine = WriteMessageLine;
-            _getNextMove = GetNextMove;
-            _getNextCapture = GetNextCapture;
+            _getNextLegalMove = GetNextLegalMove;
+            _getNextLegalCapture = GetNextLegalCapture;
             _getStaticScore = _evaluation.GetStaticScore;
             _getExchangeMaterialScore = Evaluation.GetExchangeMaterialScore;
             Stats = new SearchStats();
@@ -222,8 +222,8 @@ namespace ErikTheCoder.MadChess.Engine
                 _debug = null;
                 _writeMessageLine = null;
                 _stopwatch = null;
-                _getNextMove = null;
-                _getNextCapture = null;
+                _getNextLegalMove = null;
+                _getNextLegalCapture = null;
                 _getStaticScore = null;
                 _getExchangeMaterialScore = null;
             }
@@ -656,10 +656,9 @@ namespace ErikTheCoder.MadChess.Engine
                 else
                 {
                     // Search moves at current position.
-                    (move, moveIndex) = GetNextMove(Position, Board.AllSquaresMask, Depth, bestMove);
+                    (move, moveIndex) = GetNextLegalMove(Position, Board.AllSquaresMask, Depth, bestMove);
                     if (move == Move.Null) break;
-                    if (Position.Board.IsMoveLegal(ref move)) legalMoveNumber++;
-                    else continue; // Skip illegal move.
+                    legalMoveNumber++;
                     Position.Moves[moveIndex] = move;
                 }
                 if (IsMoveFutile(Position, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
@@ -804,20 +803,20 @@ namespace ErikTheCoder.MadChess.Engine
             int fromHorizon = Depth - Horizon;
             _selectiveHorizon = Math.Max(Depth, _selectiveHorizon);
             bool drawnEndgame = Evaluation.IsDrawnEndgame(Position);
-            Delegates.GetNextMove getNextMove;
+            Delegates.GetNextLegalMove getNextLegalMove;
             int staticScore;
             ulong moveGenerationToSquareMask;
             if (Position.KingInCheck)
             {
                 // King is in check.  Search all moves.
-                getNextMove = _getNextMove;
+                getNextLegalMove = _getNextLegalMove;
                 moveGenerationToSquareMask = Board.AllSquaresMask;
                 staticScore = -StaticScore.Max; // Don't evaluate static score since moves when king is in check are not futile.
             }
             else
             {
                 // King is not in check.  Search only captures.
-                getNextMove = _getNextCapture;
+                getNextLegalMove = _getNextLegalCapture;
                 if (fromHorizon > _quietSearchMaxFromHorizon)
                 {
                     int lastMoveToSquare = Move.To(Position.PlayedMove);
@@ -834,10 +833,9 @@ namespace ErikTheCoder.MadChess.Engine
             Position.PrepareMoveGeneration();
             do
             {
-                (ulong move, _) = getNextMove(Position, moveGenerationToSquareMask, Depth, Move.Null); // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
+                (ulong move, _) = getNextLegalMove(Position, moveGenerationToSquareMask, Depth, Move.Null); // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
                 if (move == Move.Null) break;
-                if (Position.Board.IsMoveLegal(ref move)) legalMoveNumber++; // Move is legal.
-                else continue; // Skip illegal move.
+                legalMoveNumber++;
                 if (IsMoveFutile(Position, Depth, Horizon, move, legalMoveNumber, 0, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 // Play and search move.
                 Position.Board.PlayMove(move);
@@ -919,7 +917,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public (ulong Move, int MoveIndex) GetNextMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
+        public (ulong Move, int MoveIndex) GetNextLegalMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
         {
             while (true)
             {
@@ -930,8 +928,22 @@ namespace ErikTheCoder.MadChess.Engine
                     int moveIndex = Position.CurrentMoveIndex;
                     ulong move = Position.Moves[moveIndex];
                     Position.CurrentMoveIndex++;
+                    if (Position.SearchedDeferredMoves && (moveIndex > 0) && (Move.CaptureVictim(move) == Piece.None))
+                    {
+                        // Have already returned last deferred capture.  No more moves remain.
+                        return (Move.Null, moveIndex);
+                    }
                     bool generatedBestMove = (moveIndex > 0) && Move.Equals(move, BestMove);
                     if (Move.Played(move) || generatedBestMove) continue; // Don't play move twice.
+                    if (!Position.Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
+                    if (!Move.Deferred(move) && !Move.IsBest(move) && IsLosingCapture(Position, move).IsLosingCapture)
+                    {
+                        // Move is a losing capture.  Defer playing move.
+                        Move.SetDeferred(ref move, true);
+                        Position.Moves[moveIndex] = move;
+                        Position.AnyDeferredMoves = true;
+                        continue;
+                    }
                     return (move, moveIndex);
                 }
                 // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
@@ -948,7 +960,7 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         Position.MoveGenerationStage++;
                         continue;
-                    case MoveGenerationStage.Captures:
+                    case MoveGenerationStage.WinningAndEqualCaptures:
                         firstMoveIndex = Position.MoveIndex;
                         Position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, ToSquareMask);
                         lastMoveIndex = Math.Max(firstMoveIndex, Position.MoveIndex - 1);
@@ -970,6 +982,14 @@ namespace ErikTheCoder.MadChess.Engine
                         }
                         Position.MoveGenerationStage++;
                         continue;
+                    case MoveGenerationStage.LosingCaptures:
+                        if (Position.AnyDeferredMoves)
+                        {
+                            Position.CurrentMoveIndex = 0;
+                            Position.SearchedDeferredMoves = true;
+                        }
+                        Position.MoveGenerationStage++;
+                        continue;
                     case MoveGenerationStage.End:
                         return (Move.Null, Position.CurrentMoveIndex);
                 }
@@ -980,7 +1000,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         // Pass BestMove parameter even though it isn't referenced to satisfy GetNextMove delegate signature.
-        private static (ulong Move, int MoveIndex) GetNextCapture(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
+        private static (ulong Move, int MoveIndex) GetNextLegalCapture(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
         {
             while (true)
             {
@@ -989,14 +1009,15 @@ namespace ErikTheCoder.MadChess.Engine
                     int moveIndex = Position.CurrentMoveIndex;
                     ulong move = Position.Moves[moveIndex];
                     Position.CurrentMoveIndex++;
-                    if (Move.CaptureVictim(move) == Piece.None) continue;
+                    if (Move.CaptureVictim(move) == Piece.None) continue; // Skip non-captures (though they shouldn't be generated in the first place).
+                    if (!Position.Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                     return (move, moveIndex);
                 }
                 // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
                 switch (Position.MoveGenerationStage)
                 {
                     case MoveGenerationStage.BestMove:
-                    case MoveGenerationStage.Captures:
+                    case MoveGenerationStage.WinningAndEqualCaptures: // Generates all captures.  Code above does not calculate exchange score to determine if captures are losing.
                         Position.FindPotentiallyPinnedPieces();
                         int firstMoveIndex = Position.MoveIndex;
                         Position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, ToSquareMask);
@@ -1020,8 +1041,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
             int captureVictim = Engine.Move.CaptureVictim(Move);
             bool capture = captureVictim != Piece.None;
-            bool inQuietSearch = toHorizon <= 0;
-            if (capture && !inQuietSearch) return false; // Capture in main search is not futile.
+            if (capture && (toHorizon > 0)) return false; // Capture in main search is not futile.
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return false; // Killer moves, pawn promotions, and castling are not futile.
             if (Engine.Move.IsPawnMove(Move))
             {
@@ -1037,19 +1057,8 @@ namespace ErikTheCoder.MadChess.Engine
             int lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
-            int? exchangeScore = null;
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            if (capture && inQuietSearch)
-            {
-                bool isLosingCapture;
-                (isLosingCapture, exchangeScore) = IsLosingCapture(Position, Move);
-                if (isLosingCapture) return true;
-            }
-            int potentialImprovement = inQuietSearch
-                ? exchangeScore ?? _evaluation.GetMaterialScore(captureVictim)
-                : _evaluation.GetMaterialScore(captureVictim);
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore + potentialImprovement + futilityMargin < Alpha;
+            return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
         }
 
 
