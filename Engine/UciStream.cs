@@ -663,7 +663,7 @@ namespace ErikTheCoder.MadChess.Engine
             long moves = 0;
             while (true)
             {
-                (ulong move, int moveIndex) = _search.GetNextLegalMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
+                (ulong move, int moveIndex) = _search.GetNextLegalMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Horizon, Move.Null);
                 if (move == Move.Null) break;
                 Move.SetPlayed(ref move, true);
                 Board.CurrentPosition.Moves[moveIndex] = move;

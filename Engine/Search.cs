@@ -51,6 +51,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
+        private const int _losingCaptureReduction = 2;
         private const int _pvsMinToHorizon = 3;
         private const int _historyPriorMovePer128 = 256; // This improves integer division speed since x / 128 = x >> 7.
         private const int _quietSearchMaxFromHorizon = 3;
@@ -302,6 +303,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _stopwatch.Stop();
                 return Position.Moves[0];
             }
+            // TODO: Move losing captures to end of move list.
             // Copy legal moves to root moves and principal variations.
             Array.Copy(Position.Moves, _rootMoves, legalMoveIndex);
             for (int moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
@@ -656,10 +658,9 @@ namespace ErikTheCoder.MadChess.Engine
                 else
                 {
                     // Search moves at current position.
-                    (move, moveIndex) = GetNextLegalMove(Position, Board.AllSquaresMask, Depth, bestMove);
+                    (move, moveIndex) = GetNextLegalMove(Position, Board.AllSquaresMask, Depth, Horizon, bestMove);
                     if (move == Move.Null) break;
                     legalMoveNumber++;
-                    Position.Moves[moveIndex] = move;
                 }
                 if (IsMoveFutile(Position, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
@@ -833,7 +834,7 @@ namespace ErikTheCoder.MadChess.Engine
             Position.PrepareMoveGeneration();
             do
             {
-                (ulong move, _) = getNextLegalMove(Position, moveGenerationToSquareMask, Depth, Move.Null); // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
+                (ulong move, _) = getNextLegalMove(Position, moveGenerationToSquareMask, Depth, Horizon, Move.Null); // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
                 if (move == Move.Null) break;
                 legalMoveNumber++;
                 if (IsMoveFutile(Position, Depth, Horizon, move, legalMoveNumber, 0, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
@@ -917,7 +918,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public (ulong Move, int MoveIndex) GetNextLegalMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
+        public (ulong Move, int MoveIndex) GetNextLegalMove(Position Position, ulong ToSquareMask, int Depth, int Horizon, ulong BestMove)
         {
             while (true)
             {
@@ -936,7 +937,8 @@ namespace ErikTheCoder.MadChess.Engine
                     bool generatedBestMove = (moveIndex > 0) && Move.Equals(move, BestMove);
                     if (Move.Played(move) || generatedBestMove) continue; // Don't play move twice.
                     if (!Position.Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
-                    if (!Move.Deferred(move) && !Move.IsBest(move) && IsLosingCapture(Position, move).IsLosingCapture)
+                    int toHorizon = Horizon - Depth;
+                    if ((toHorizon > _losingCaptureReduction) && !Move.Deferred(move) && !Move.IsBest(move) && IsLosingCapture(Position, move).IsLosingCapture)
                     {
                         // Move is a losing capture.  Defer playing move.
                         Move.SetDeferred(ref move, true);
@@ -999,8 +1001,8 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // Pass BestMove parameter even though it isn't referenced to satisfy GetNextMove delegate signature.
-        private static (ulong Move, int MoveIndex) GetNextLegalCapture(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
+        // Pass Horizon and BestMove parameters even though they aren't referenced to satisfy GetNextMove delegate signature.
+        private static (ulong Move, int MoveIndex) GetNextLegalCapture(Position Position, ulong ToSquareMask, int Depth, int Horizon, ulong BestMove)
         {
             while (true)
             {
@@ -1072,7 +1074,8 @@ namespace ErikTheCoder.MadChess.Engine
             // Do not reduce moves in drawn endgames, killer moves, pawn promotions, or castling.
             if (IsDrawnEndgame || (Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon;
             bool capture = Engine.Move.CaptureVictim(Move) != Piece.None;
-            if (capture) return Horizon; // Do not reduce capture.
+            bool losingCapture = Engine.Move.Deferred(Move);
+            if (capture && !losingCapture) return Horizon; // Do not reduce winning or equal capture.
             if (Engine.Move.IsPawnMove(Move))
             {
                 int rank = Position.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
@@ -1083,8 +1086,10 @@ namespace ErikTheCoder.MadChess.Engine
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce move with lone king on board.
-            // Reduce search horizon based on quiet move number.
-            int reduction = Engine.Move.IsQuiet(Move) ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)] : 0;
+            // Reduce search horizon based on quiet move number and losing capture.
+            int reduction = Engine.Move.IsQuiet(Move)
+                ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)]
+                : losingCapture ? _losingCaptureReduction : 0;
             return Horizon - reduction;
         }
 
