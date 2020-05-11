@@ -68,6 +68,7 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly ulong _whiteCastleKAttackedSquareMask;
         private static readonly ulong _blackCastleQAttackedSquareMask;
         private static readonly ulong _blackCastleKAttackedSquareMask;
+        private static readonly int[] _enPassantVictimSquares;
         private static readonly int[][] _neighborSquares;
         private static readonly int[] _enPassantTargetSquares;
         private static readonly int[] _enPassantVictimSquares;
@@ -81,7 +82,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int _positionIndex;
 
 
-        public Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
+        private Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
 
 
         public Position CurrentPosition => _positions[_positionIndex];

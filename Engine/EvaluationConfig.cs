@@ -76,6 +76,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgFreePassedPawnScalePercent = 886;
         public int EgKingEscortedPassedPawn = 8;
         public int UnstoppablePassedPawn => QueenMaterial - (2 * Evaluation.PawnMaterial);  // Incentivize engine to promote pawn.
+        // Piece Mobility
         public int MgKnightMobilityScale = 17;
         public int EgKnightMobilityScale = 80;
         public int MgBishopMobilityScale = 36;
