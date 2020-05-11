@@ -274,8 +274,7 @@ namespace ErikTheCoder.MadChess.Engine
                 ulong magicMultiplier = magicMultipliers[square];
                 if (magicMultiplier == 0) (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
                 else (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, magicMultiplier);
-                WriteMessageLine?.Invoke($"{Board.SquareLocations[square].PadLeft(6)}  {Engine.Piece.GetName(Piece).PadLeft(6)}  {shift.ToString().PadLeft(5)}  " +
-                                         $"{occupancyToMovesMask.Count.ToString().PadLeft(18)}  {uniqueMovesMasks.Count.ToString().PadLeft(12)}  {magicMultipliers[square].ToString("X16").PadLeft(16)}");
+                WriteMessageLine?.Invoke($"{Board.SquareLocations[square],6}  {Engine.Piece.GetName(Piece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[square],16:X16}");
             }
         }
 

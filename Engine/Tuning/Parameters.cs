@@ -51,7 +51,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         protected override void InsertItem(int Index, Parameter Parameter)
         {
             base.InsertItem(Index, Parameter);
-            _namesToIndices[Parameter.Name] = Index;
+            _namesToIndices[Parameter?.Name ?? string.Empty] = Index;
         }
     }
 }

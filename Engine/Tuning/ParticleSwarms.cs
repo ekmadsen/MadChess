@@ -65,8 +65,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 GetBishopDestinations = Board.GetBishopDestinations,
                 GetRookDestinations = Board.GetRookDestinations,
                 GetQueenDestinations = Board.GetQueenDestinations,
-                AddPiece = board.AddPiece,
-                RemovePiece = board.RemovePiece,
                 Debug = () => false,
                 WriteMessageLine = WriteMessageLine
             };
@@ -259,8 +257,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     GetBishopDestinations = Board.GetBishopDestinations,
                     GetRookDestinations = Board.GetRookDestinations,
                     GetQueenDestinations = Board.GetQueenDestinations,
-                    AddPiece = board.AddPiece,
-                    RemovePiece = board.RemovePiece,
                     Debug = () => false,
                     WriteMessageLine = _writeMessageLine
                 };
@@ -319,27 +315,27 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             const int padding = 39;
             // Display iteration, best evaluation error, and best parameters.
             _writeMessageLine(null);
-            _writeMessageLine($"{"Iterations".PadRight(padding)} = {_iterations.ToString("000").PadLeft(6)}    ");
-            _writeMessageLine($"{"Original Evaluation Error".PadRight(padding)} = {_originalEvaluationError.ToString("0.000").PadLeft(10)}");
+            _writeMessageLine($"{"Iterations",-padding} = {_iterations,6:000}    ");
+            _writeMessageLine($"{"Original Evaluation Error",-padding} = {_originalEvaluationError,10:0.000}");
             Particle bestParticle = GetBestParticle();
-            _writeMessageLine($"{"Best Evaluation Error".PadRight(padding)} = {bestParticle.BestEvaluationError.ToString("0.000").PadLeft(10)}");
+            _writeMessageLine($"{"Best Evaluation Error",-padding} = {bestParticle.BestEvaluationError,10:0.000}");
             _writeMessageLine(null);
             for (int swarmIndex = 0; swarmIndex < Count; swarmIndex++)
             {
                 ParticleSwarm particleSwarm = this[swarmIndex];
                 Particle bestSwarmParticle = particleSwarm.GetBestParticle();
-                _writeMessageLine($"Particle Swarm {swarmIndex:00} Best Evaluation Error = {bestSwarmParticle.BestEvaluationError.ToString("0.000").PadLeft(10)}");
+                _writeMessageLine($"Particle Swarm {swarmIndex:00} Best Evaluation Error = {bestSwarmParticle.BestEvaluationError,10:0.000}");
                 for (int particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
                 {
                     Particle particle = particleSwarm.Particles[particleIndex];
-                    _writeMessageLine($"  Particle {particleIndex:00} Evaluation Error          = {particle.EvaluationError.ToString("0.000").PadLeft(10)}");
+                    _writeMessageLine($"  Particle {particleIndex:00} Evaluation Error          = {particle.EvaluationError,10:0.000}");
                 }
             }
             _writeMessageLine(null);
             for (int parameterIndex = 0; parameterIndex < bestParticle.BestParameters.Count; parameterIndex++)
             {
                 Parameter parameter = bestParticle.BestParameters[parameterIndex];
-                _writeMessageLine($"{parameter.Name.PadRight(padding)} = {parameter.Value.ToString().PadLeft(6)}");
+                _writeMessageLine($"{parameter.Name,-padding} = {parameter.Value,6}");
             }
         }
     }

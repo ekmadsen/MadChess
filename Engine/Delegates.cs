@@ -19,7 +19,6 @@ namespace ErikTheCoder.MadChess.Engine
         public delegate int GetPositionCount();
         public delegate void WriteMessageLine(string Message);
         public delegate ulong GetPieceDestinations(Position Position, int FromSquare, bool White);
-        public delegate void AddPiece(int Piece, int Square);
-        public delegate int RemovePiece(int Square);
+        public delegate int GetStaticScore(Position Position);
     }
 }

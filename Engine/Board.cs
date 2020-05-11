@@ -44,7 +44,6 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong BlackCastleQEmptySquaresMask;
         public static readonly ulong BlackCastleKEmptySquaresMask;
         public static readonly ulong[] EnPassantAttackerMasks;
-        public static readonly int[] EnPassantVictimSquares;
         public static readonly ulong[] WhitePassedPawnMasks;
         public static readonly ulong[] WhiteFreePawnMasks;
         public static readonly ulong[] BlackPassedPawnMasks;
@@ -71,6 +70,7 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly ulong _blackCastleKAttackedSquareMask;
         private static readonly int[][] _neighborSquares;
         private static readonly int[] _enPassantTargetSquares;
+        private static readonly int[] _enPassantVictimSquares;
         private readonly ulong _piecesSquaresInitialKey;
         private readonly ulong[][] _pieceSquareKeys;
         private readonly ulong[] _sideToMoveKeys;
@@ -321,7 +321,7 @@ namespace ErikTheCoder.MadChess.Engine
             KingMoveMasks = CreateKingMoveMasks();
             PrecalculatedMoves = new PrecalculatedMoves();
             // Create en passant, passed pawn, and free pawn masks.
-            (_enPassantTargetSquares, EnPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
+            (_enPassantTargetSquares, _enPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
             WhitePassedPawnMasks = CreateWhitePassedPawnMasks();
             WhiteFreePawnMasks = CreateWhiteFreePawnMasks();
             BlackPassedPawnMasks = CreateBlackPassedPawnMasks();
@@ -804,30 +804,6 @@ namespace ErikTheCoder.MadChess.Engine
             return direction == Direction.Unknown
                 ? GetKnightDirection(FromSquare, ToSquare, fromRank, fromFile, toRank, toFile)
                 : direction;
-        }
-
-
-        public static Direction GetSlidingDirection(int FromSquare, int ToSquare)
-        {
-            int fromRank = WhiteRanks[FromSquare];
-            int fromFile = Files[FromSquare];
-            int fromUpDiagonal = UpDiagonals[FromSquare];
-            int fromDownDiagonal = DownDiagonals[FromSquare];
-            int toRank = WhiteRanks[ToSquare];
-            int toFile = Files[ToSquare];
-            int toUpDiagonal = UpDiagonals[ToSquare];
-            int toDownDiagonal = DownDiagonals[ToSquare];
-            return GetSlidingDirection(fromRank, fromFile, fromUpDiagonal, fromDownDiagonal, toRank, toFile, toUpDiagonal, toDownDiagonal);
-        }
-
-
-        public static Direction GetKnightDirection(int FromSquare, int ToSquare)
-        {
-            int fromRank = WhiteRanks[FromSquare];
-            int fromFile = Files[FromSquare];
-            int toRank = WhiteRanks[ToSquare];
-            int toFile = Files[ToSquare];
-            return GetKnightDirection(FromSquare, ToSquare, fromRank, fromFile, toRank, toFile);
         }
 
 
@@ -1365,7 +1341,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void EnPassantCapture(int Piece, int FromSquare)
         {
             // Move pawn and remove captured pawn.
-            RemovePiece(EnPassantVictimSquares[CurrentPosition.EnPassantSquare]);
+            RemovePiece(_enPassantVictimSquares[CurrentPosition.EnPassantSquare]);
             RemovePiece(FromSquare);
             AddPiece(Piece, CurrentPosition.EnPassantSquare);
         }
@@ -1418,7 +1394,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void AddPiece(int Piece, int Square)
+        private void AddPiece(int Piece, int Square)
         {
             Debug.Assert(Piece != Engine.Piece.None);
             // Update piece, color, and both color bitboards.
@@ -1479,7 +1455,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int RemovePiece(int Square)
+        private int RemovePiece(int Square)
         {
             ulong squareUnmask = _squareUnmasks[Square];
             int piece = CurrentPosition.GetPiece(Square);
