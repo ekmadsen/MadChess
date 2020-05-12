@@ -26,4 +26,11 @@
 		<PackageReference Include="JetBrains.Annotations" Version="2020.1.0" />
 	</ItemGroup>
 
+
+	<ItemGroup>
+	  <None Update="MadChess.Engine.bmp">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>

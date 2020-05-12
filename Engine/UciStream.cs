@@ -603,7 +603,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void GoAsync()
         {
             // Find best move and respond.
-            ulong bestMove = _search.FindBestMove(Board.CurrentPosition);
+            ulong bestMove = _search.FindBestMove(Board);
             WriteMessageLine($"bestmove {Move.ToLongAlgebraic(bestMove)}");
             // Signal search has stopped.
             _commandStopwatch.Stop();
@@ -663,8 +663,9 @@ namespace ErikTheCoder.MadChess.Engine
             long moves = 0;
             while (true)
             {
-                (ulong move, int moveIndex) = _search.GetNextLegalMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Horizon, Move.Null);
+                (ulong move, int moveIndex) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
                 if (move == Move.Null) break;
+                if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 Move.SetPlayed(ref move, true);
                 Board.CurrentPosition.Moves[moveIndex] = move;
                 if (toHorizon > 1)
@@ -773,6 +774,7 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine("Number                                                                     Position  Depth     Expected        Moves  Correct    Pct");
             WriteMessageLine("======  ===========================================================================  =====  ===========  ===========  =======  =====");
             Board.Nodes = 0;
+            Board.NodesInfoUpdate = NodesInfoInterval;
             int positions = 0;
             int correctPositions = 0;
             _commandStopwatch.Restart();
@@ -819,6 +821,7 @@ namespace ErikTheCoder.MadChess.Engine
                 WriteMessageLine("Number                                                                     Position  Solution    Expected Moves   Move  Correct    Pct");
                 WriteMessageLine("======  ===========================================================================  ========  ================  =====  =======  =====");
                 Board.Nodes = 0L;
+                Board.NodesInfoUpdate = NodesInfoInterval;
                 _commandStopwatch.Restart();
                 while (!reader.EndOfStream)
                 {
@@ -878,7 +881,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _search.PvInfoUpdate = false;
                     _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
                     _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
-                    ulong bestMove = _search.FindBestMove(Board.CurrentPosition);
+                    ulong bestMove = _search.FindBestMove(Board);
                     _search.Signal.Set();
                     // Determine if search found correct move.
                     bool correct;

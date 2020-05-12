@@ -571,6 +571,29 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        public int GetExchangeMaterialScore(int Piece)
+        {
+            // Sequence cases in order of enum integer value to improve performance of switch statement.
+            return Piece switch
+            {
+                Engine.Piece.None => 0,
+                Engine.Piece.WhitePawn => PawnMaterial,
+                Engine.Piece.WhiteKnight => Config.KnightExchangeMaterial,
+                Engine.Piece.WhiteBishop => Config.BishopExchangeMaterial,
+                Engine.Piece.WhiteRook => Config.RookExchangeMaterial,
+                Engine.Piece.WhiteQueen => Config.QueenExchangeMaterial,
+                Engine.Piece.WhiteKing => 0,
+                Engine.Piece.BlackPawn => PawnMaterial,
+                Engine.Piece.BlackKnight => Config.KnightExchangeMaterial,
+                Engine.Piece.BlackBishop => Config.BishopExchangeMaterial,
+                Engine.Piece.BlackRook => Config.RookExchangeMaterial,
+                Engine.Piece.BlackQueen => Config.QueenExchangeMaterial,
+                Engine.Piece.BlackKing => 0,
+                _ => throw new ArgumentException($"{Piece} piece not supported.")
+            };
+        }
+
+
         private void EvaluatePieceLocation(Position Position)
         {
             // Pawns

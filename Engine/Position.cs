@@ -18,7 +18,6 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public const int MaxMoves = 128;
         // TODO: Change Position.Moves to reference an array shared across all positions (to improve memory locality).
-        public readonly Board Board;
         public readonly ulong[] Moves;
         public ulong WhitePawns;
         public ulong WhiteKnights;
@@ -45,16 +44,15 @@ namespace ErikTheCoder.MadChess.Engine
         public int CurrentMoveIndex;
         public int MoveIndex;
         public MoveGenerationStage MoveGenerationStage;
-        public bool AnyDeferredMoves;
-        public bool SearchedDeferredMoves;
         public ulong PiecesSquaresKey;
         public ulong Key;
         public ulong PlayedMove;
+        private readonly Board _board;
 
 
         public Position(Board Board)
         {
-            this.Board = Board;
+            _board = Board;
             Moves = new ulong[MaxMoves];
             Reset();
         }
@@ -139,8 +137,6 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
-            AnyDeferredMoves = false;
-            SearchedDeferredMoves = false;
         }
 
 
@@ -747,8 +743,6 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentMoveIndex = 0;
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
-            AnyDeferredMoves = false;
-            SearchedDeferredMoves = false;
             PiecesSquaresKey = 0;
             Key = 0;
             PlayedMove = Move.Null;
@@ -844,7 +838,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Display FEN, key, position count, and check.
             stringBuilder.AppendLine($"FEN:             {ToFen()}");
             stringBuilder.AppendLine($"Key:             {Key:X16}");
-            stringBuilder.AppendLine($"Position Count:  {Board.GetPositionCount()}");
+            stringBuilder.AppendLine($"Position Count:  {_board.GetPositionCount()}");
             stringBuilder.AppendLine($"King in Check:   {(KingInCheck ? "Yes" : "No")}");
             return stringBuilder.ToString();
         }
