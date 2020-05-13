@@ -373,6 +373,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         // TODO: Test whether weights are needed on distance to enemy king & distance to corner to improve play.
+        // TODO: Incentivize engine to eliminate opponent's last pawn in KQkp endgame (to trigger simple endgame scoring that pushes opposing king to a corner).
         private bool EvaluateSimpleEndgame(Position Position)
         {
             int whitePawns = Bitwise.CountSetBits(Position.WhitePawns);
