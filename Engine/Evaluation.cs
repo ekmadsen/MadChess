@@ -29,6 +29,7 @@ namespace ErikTheCoder.MadChess.Engine
         public bool UnderstandsMobility;
         private const double _passedPawnPower = 2d;
         private const double _pieceMobilityPower = 0.5d;
+        private const int _kingInCornerFactor = 2;
         // Select phase constants such that starting material = 256.
         // This improves integer division speed since x / 256 = x >> 8.
         private const int _middlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + 2 * _queenPhase;
@@ -372,8 +373,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // TODO: Test whether weights are needed on distance to enemy king & distance to corner to improve play.
-        // TODO: Incentivize engine to eliminate opponent's last pawn in KQkp endgame (to trigger simple endgame scoring that pushes opposing king to a corner).
         private bool EvaluateSimpleEndgame(Position Position)
         {
             int whitePawns = Bitwise.CountSetBits(Position.WhitePawns);
@@ -409,11 +408,11 @@ namespace ErikTheCoder.MadChess.Engine
                             int distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[whiteKingSquare]
                                 : Board.DistanceToNearestDarkCorner[whiteKingSquare];
-                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - (distanceToCorrectColorCorner * _kingInCornerFactor) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                         case 0 when (blackMinorPieces == 0) && (blackMajorPieces >= 1):
                             // King versus major pieces
-                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[whiteKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - (Board.DistanceToNearestCorner[whiteKingSquare] * _kingInCornerFactor) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
                     break;
@@ -434,11 +433,11 @@ namespace ErikTheCoder.MadChess.Engine
                             int distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[blackKingSquare]
                                 : Board.DistanceToNearestDarkCorner[blackKingSquare];
-                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - (distanceToCorrectColorCorner * _kingInCornerFactor) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                         case 0 when (whiteMinorPieces == 0) && (whiteMajorPieces >= 1):
                             // King versus major pieces
-                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[blackKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - (Board.DistanceToNearestCorner[blackKingSquare] * _kingInCornerFactor) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
                     break;
@@ -569,29 +568,6 @@ namespace ErikTheCoder.MadChess.Engine
             return Position.WhiteMove
                 ? whiteScore - blackScore
                 : blackScore - whiteScore;
-        }
-
-
-        public int GetExchangeMaterialScore(int Piece)
-        {
-            // Sequence cases in order of enum integer value to improve performance of switch statement.
-            return Piece switch
-            {
-                Engine.Piece.None => 0,
-                Engine.Piece.WhitePawn => PawnMaterial,
-                Engine.Piece.WhiteKnight => Config.KnightExchangeMaterial,
-                Engine.Piece.WhiteBishop => Config.BishopExchangeMaterial,
-                Engine.Piece.WhiteRook => Config.RookExchangeMaterial,
-                Engine.Piece.WhiteQueen => Config.QueenExchangeMaterial,
-                Engine.Piece.WhiteKing => 0,
-                Engine.Piece.BlackPawn => PawnMaterial,
-                Engine.Piece.BlackKnight => Config.KnightExchangeMaterial,
-                Engine.Piece.BlackBishop => Config.BishopExchangeMaterial,
-                Engine.Piece.BlackRook => Config.RookExchangeMaterial,
-                Engine.Piece.BlackQueen => Config.QueenExchangeMaterial,
-                Engine.Piece.BlackKing => 0,
-                _ => throw new ArgumentException($"{Piece} piece not supported.")
-            };
         }
 
 

@@ -51,7 +51,6 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
-        private const int _losingCaptureReduction = 2;
         private const int _pvsMinToHorizon = 3;
         private const int _historyPriorMovePer128 = 256; // This improves integer division speed since x / 128 = x >> 7.
         private const int _quietSearchMaxFromHorizon = 3;
@@ -596,7 +595,7 @@ namespace ErikTheCoder.MadChess.Engine
             int staticScore = Board.CurrentPosition.KingInCheck
                 ? -StaticScore.Max
                 : drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
-            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Alpha, Beta))
+            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
             {
                 // Position is futile.
                 // Position is not the result of best play by both players.
@@ -756,17 +755,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private (bool IsLosingCapture, int? ExchangeScore) IsLosingCapture(Board Board, ulong Move)
-        {
-            int captureVictim = Engine.Move.CaptureVictim(Move);
-            if (captureVictim == Piece.None) return (false, null);
-            // Don't bother calculating exchange score if move captures an equal or more valuable piece than the attacking piece.
-            if (_evaluation.GetExchangeMaterialScore(captureVictim) >= _evaluation.GetExchangeMaterialScore(Engine.Move.CaptureAttacker(Move))) return (false, null);
-            int exchangeScore = GetExchangeScore(Board, Move);
-            return (exchangeScore < 0, exchangeScore);
-        }
-
-
         public int GetExchangeScore(Board Board, ulong Move)
         {
             int scoreBeforeMove = _getExchangeMaterialScore(Board.CurrentPosition);
@@ -827,7 +815,6 @@ namespace ErikTheCoder.MadChess.Engine
                 Board.PlayMove(move);
                 int score = -GetQuietScore(Board, Depth + 1, Horizon, ToSquareMask, -Beta, -Alpha, GetStaticScore, ConsiderFutility);
                 Board.UndoMove();
-                if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if (score >= Beta) return Beta; // Position is not the result of best play by both players.
                 Alpha = Math.Max(score, Alpha);
             } while (true);
@@ -864,12 +851,12 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
+        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Beta)
         {
-            if ((Depth == 0) || Position.KingInCheck || IsDrawnEndgame) return false; // Root, king in check, and drawn endgame positions are not futile.
             int toHorizon = Horizon - Depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
-            if ((Math.Abs(Alpha) >= Engine.StaticScore.Checkmate) || (Math.Abs(Beta) >= Engine.StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
+            if (IsDrawnEndgame || (Depth == 0) || Position.KingInCheck) return false; // Position in drawn endgame, at root, and when king is in check is not futile.
+            // Count pawns and pieces (but don't include kings).
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Position with lone king on board is not futile.
@@ -997,19 +984,19 @@ namespace ErikTheCoder.MadChess.Engine
 
         private bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha)
         {
-            if ((Depth == 0) || (LegalMoveNumber == 1)) return false; // Root move and first move are not futile.
             int toHorizon = Horizon - Depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
+            if ((Depth == 0) || (LegalMoveNumber == 1)) return false; // Root move and first move is not futile.
+            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame, checking move, and move when king is in check is not futile.
             int captureVictim = Engine.Move.CaptureVictim(Move);
             bool capture = captureVictim != Piece.None;
             if (capture && (toHorizon > 0)) return false; // Capture in main search is not futile.
-            if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return false; // Killer move, pawn promotion, and castling are not futile.
+            if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return false; // Killer move, pawn promotion, and castling is not futile.
             if (Engine.Move.IsPawnMove(Move))
             {
                 int rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
                 if (rank >= 5) return false; // Pawn push is not futile.
             }
-            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame, checking move, and move when king is in check are not futile.
             // Count pawns and pieces (but don't include kings).
             int whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyBlack) - 1;
@@ -1026,28 +1013,28 @@ namespace ErikTheCoder.MadChess.Engine
         {
             if (Depth == 0)
             {
-                if ((MultiPv > 1) && (LegalMoveNumber <= MultiPv)) return Horizon; // Do not reduce root move under the MultiPV limit.
-                if (_scoreError > 0) return Horizon; // Do not reduce root move when engine playing strength is reduced.
+                // Do not reduce root move under the MultiPV limit or when engine playing strength is reduced.
+                if ((MultiPv > 1) && (LegalMoveNumber <= MultiPv)) return Horizon;
+                if (_scoreError > 0) return Horizon;
             }
             bool capture = Engine.Move.CaptureVictim(Move) != Piece.None;
             int toHorizon = Horizon - Depth;
             if (capture & (toHorizon >= _futilityMargins.Length)) return Horizon; // Do not reduce capture far from search horizon.
+            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, and move when king is in check.
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon; // Do not reduce killer move, pawn promotion, or castling.
             if (Engine.Move.IsPawnMove(Move))
             {
                 int rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
                 if (rank >= 5) return Horizon; // Do not reduce pawn push.
             }
-            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, and move when king is in check.
             // Count pawns and pieces (but don't include kings).
             int whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce move with lone king on board.
-            // Reduce search horizon based on losing capture and quiet move number.
-            (bool losingCapture, _) = IsLosingCapture(Board, Move);
-            int reduction = losingCapture
-                ? _losingCaptureReduction
-                : Engine.Move.IsQuiet(Move) ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)] : 0;
+            // Reduce search horizon based on quiet move number.
+            int reduction = Engine.Move.IsQuiet(Move)
+                ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)]
+                : 0;
             return Horizon - reduction;
         }
 

@@ -24,7 +24,10 @@ namespace ErikTheCoder.MadChess.Engine
         public int RookExchangeMaterial = 500;
         public int QueenMaterial = 975;
         public int QueenExchangeMaterial = 900;
-        public int SimpleEndgame => UnstoppablePassedPawn;  // Incentivize engine to promote pawn in king and pawn endgames.
+        // Incentivize engine to promote pawn in king and pawn endgames.
+        // Also incentivize engine to eliminate opponent's last pawn in KQkp endgame (to trigger simple endgame scoring that pushes opposing king to a corner).
+        // Want to ensure simple endgame score > (queen material + position + mobility - opponent pawn material - opponent pawn position).
+        public int SimpleEndgame => 2 * UnstoppablePassedPawn;
         // Pawn Location
         public int MgPawnAdvancement = 2;
         public int EgPawnAdvancement = 4;
