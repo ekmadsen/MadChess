@@ -19,11 +19,20 @@ namespace ErikTheCoder.MadChess.Engine
         // Game Phase
         // Select phase constants such that starting material = 256.
         // This improves integer division speed since x / 256 = x >> 8.
-        public const int KnightPhase = 10; //   4 * 10 =  40
-        public const int BishopPhase = 10; // + 4 * 10 =  80
-        public const int RookPhase = 22; //   + 4 * 22 = 168
-        public const int QueenPhase = 44; //  + 2 * 44 = 256
+
+
+        // TODO: Replace phase weights with those commented out below, then re-tune evaluation parameters.
+        //public const int KnightPhase = 10; //   4 * 10 =  40
+        //public const int BishopPhase = 10; // + 4 * 10 =  80
+        //public const int RookPhase = 22; //   + 4 * 22 = 168
+        //public const int QueenPhase = 44; //  + 2 * 44 = 256
+        public const int KnightPhase = 14; //   4 * 14 =  56
+        public const int BishopPhase = 14; // + 4 * 14 = 112
+        public const int RookPhase = 20; //   + 4 * 20 = 192
+        public const int QueenPhase = 32; //  + 2 * 32 = 256
         public const int MiddlegamePhase = 4 * (KnightPhase + BishopPhase + RookPhase) + 2 * QueenPhase;
+        
+        
         // Material and Simple Endgame
         public const int KnightExchangeMaterial = 300;
         public const int BishopExchangeMaterial = 300;

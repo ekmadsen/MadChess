@@ -595,7 +595,7 @@ namespace ErikTheCoder.MadChess.Engine
             int staticScore = Board.CurrentPosition.KingInCheck
                 ? -StaticScore.Max
                 : drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
-            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Beta))
+            if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, staticScore, drawnEndgame, Alpha, Beta))
             {
                 // Position is futile.
                 // Position is not the result of best play by both players.
@@ -660,7 +660,7 @@ namespace ErikTheCoder.MadChess.Engine
                     else continue; // Skip illegal move.
                     Board.CurrentPosition.Moves[moveIndex] = move;
                 }
-                if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha)) continue; // Move is futile.  Skip move.
+                if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 int searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, drawnEndgame);
                 int moveBeta;
@@ -810,7 +810,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (move == Move.Null) break;
                 if (Board.IsMoveLegal(ref move)) legalMoveNumber++; // Move is legal.
                 else continue; // Skip illegal move.
-                if (ConsiderFutility && IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, 0, staticScore, drawnEndgame, Alpha)) continue; // Move is futile.  Skip move.
+                if (ConsiderFutility && IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, 0, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 // Play and search move.
                 Board.PlayMove(move);
                 int score = -GetQuietScore(Board, Depth + 1, Horizon, ToSquareMask, -Beta, -Alpha, GetStaticScore, ConsiderFutility);
@@ -851,11 +851,12 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Beta)
+        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             int toHorizon = Horizon - Depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
-            if (IsDrawnEndgame || (Depth == 0) || Position.KingInCheck) return false; // Position in drawn endgame, at root, and when king is in check is not futile.
+            if (IsDrawnEndgame || (Depth == 0) || Position.KingInCheck) return false; // Position in drawn endgame, at root, or when king is in check is not futile.
+            if ((Math.Abs(Alpha) >= Engine.StaticScore.Checkmate) || (Math.Abs(Beta) >= Engine.StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
             // Count pawns and pieces (but don't include kings).
             int whitePawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyWhite) - 1;
             int blackPawnsAndPieces = Bitwise.CountSetBits(Position.OccupancyBlack) - 1;
@@ -982,16 +983,17 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha)
+        private bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             int toHorizon = Horizon - Depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
-            if ((Depth == 0) || (LegalMoveNumber == 1)) return false; // Root move and first move is not futile.
-            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame, checking move, and move when king is in check is not futile.
+            if ((Depth == 0) || (LegalMoveNumber == 1)) return false; // Root move or first move is not futile.
+            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame, checking move, or move when king is in check is not futile.
+            if ((Math.Abs(Alpha) >= Engine.StaticScore.Checkmate) || (Math.Abs(Beta) >= Engine.StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
             int captureVictim = Engine.Move.CaptureVictim(Move);
             bool capture = captureVictim != Piece.None;
             if (capture && (toHorizon > 0)) return false; // Capture in main search is not futile.
-            if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return false; // Killer move, pawn promotion, and castling is not futile.
+            if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return false; // Killer move, pawn promotion, or castling is not futile.
             if (Engine.Move.IsPawnMove(Move))
             {
                 int rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
@@ -1003,6 +1005,7 @@ namespace ErikTheCoder.MadChess.Engine
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
             int lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
+            // TODO: Test pruning losing captures in quiet search combined with a deeper _quietSearchMaxFromHorizon.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
@@ -1020,7 +1023,7 @@ namespace ErikTheCoder.MadChess.Engine
             bool capture = Engine.Move.CaptureVictim(Move) != Piece.None;
             int toHorizon = Horizon - Depth;
             if (capture & (toHorizon >= _futilityMargins.Length)) return Horizon; // Do not reduce capture far from search horizon.
-            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, and move when king is in check.
+            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, or move when king is in check.
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon; // Do not reduce killer move, pawn promotion, or castling.
             if (Engine.Move.IsPawnMove(Move))
             {
