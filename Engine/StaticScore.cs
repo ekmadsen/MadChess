@@ -45,9 +45,6 @@ namespace ErikTheCoder.MadChess.Engine
         public int BlackEgPieceMobility;
         
 
-        private readonly int _middlegamePhase;
-
-
         private int MiddlegameWhite => WhiteSimpleEndgame + WhiteMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility;
 
 
@@ -58,12 +55,6 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         private int EndgameBlack => BlackSimpleEndgame + BlackMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns + BlackEgPieceMobility;
-
-
-        public StaticScore(int MiddlegamePhase)
-        {
-            _middlegamePhase = MiddlegamePhase;
-        }
 
 
         public int TotalScore(int Phase) => GetTaperedScore(MiddlegameWhite - MiddlegameBlack, EndgameWhite - EndgameBlack, Phase);
@@ -113,17 +104,17 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
             AppendLine(stringBuilder, "Total", MiddlegameWhite, MiddlegameBlack, EndgameWhite, EndgameBlack, Phase);
             stringBuilder.AppendLine();
-            int middlegamePercent = (100 * Phase) / _middlegamePhase;
-            stringBuilder.AppendLine($"Middlegame  = {Phase} of {_middlegamePhase} ({middlegamePercent}%)");
+            int middlegamePercent = (100 * Phase) / EvaluationConfig.MiddlegamePhase;
+            stringBuilder.AppendLine($"Middlegame  = {Phase} of {EvaluationConfig.MiddlegamePhase} ({middlegamePercent}%)");
             return stringBuilder.ToString();
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (_middlegamePhase - Phase))) / _middlegamePhase;
+        private static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (EvaluationConfig.MiddlegamePhase - Phase))) / EvaluationConfig.MiddlegamePhase;
 
 
-        private void AppendLine(StringBuilder StringBuilder, string EvaluationTerm, int WhiteMg, int BlackMg, int WhiteEg, int BlackEg, int Phase)
+        private static void AppendLine(StringBuilder StringBuilder, string EvaluationTerm, int WhiteMg, int BlackMg, int WhiteEg, int BlackEg, int Phase)
         {
             string evaluationTerm = EvaluationTerm.PadRight(27);
             string mgWhite = (WhiteMg / 100d).ToString("0.00").PadLeft(7);

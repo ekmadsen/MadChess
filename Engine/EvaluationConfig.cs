@@ -15,15 +15,24 @@ namespace ErikTheCoder.MadChess.Engine
         // ReSharper disable ConvertToConstant.Global
         // ReSharper disable FieldCanBeMadeReadOnly.Global
         // ReSharper disable RedundantDefaultMemberInitializer
+
+        // Game Phase
+        // Select phase constants such that starting material = 256.
+        // This improves integer division speed since x / 256 = x >> 8.
+        public const int KnightPhase = 10; //   4 * 10 =  40
+        public const int BishopPhase = 10; // + 4 * 10 =  80
+        public const int RookPhase = 22; //   + 4 * 22 = 168
+        public const int QueenPhase = 44; //  + 2 * 44 = 256
+        public const int MiddlegamePhase = 4 * (KnightPhase + BishopPhase + RookPhase) + 2 * QueenPhase;
         // Material and Simple Endgame
+        public const int KnightExchangeMaterial = 300;
+        public const int BishopExchangeMaterial = 300;
+        public const int RookExchangeMaterial = 500;
+        public const int QueenExchangeMaterial = 900;
         public int KnightMaterial = 300;
-        public int KnightExchangeMaterial = 300;
         public int BishopMaterial = 330;
-        public int BishopExchangeMaterial = 300;
         public int RookMaterial = 500;
-        public int RookExchangeMaterial = 500;
         public int QueenMaterial = 975;
-        public int QueenExchangeMaterial = 900;
         // Incentivize engine to promote pawn in king and pawn endgames.
         // Also incentivize engine to eliminate opponent's last pawn in KQkp endgame (to trigger simple endgame scoring that pushes opposing king to a corner).
         // Want to ensure simple endgame score > (queen material + position + mobility - opponent pawn material - opponent pawn position).
@@ -79,6 +88,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgFreePassedPawnScalePercent = 886;
         public int EgKingEscortedPassedPawn = 8;
         public int UnstoppablePassedPawn => QueenMaterial - (2 * Evaluation.PawnMaterial);  // Incentivize engine to promote pawn.
+        // Piece Mobility
         public int MgKnightMobilityScale = 17;
         public int EgKnightMobilityScale = 80;
         public int MgBishopMobilityScale = 36;

@@ -29,14 +29,6 @@ namespace ErikTheCoder.MadChess.Engine
         public bool UnderstandsMobility;
         private const double _passedPawnPower = 2d;
         private const double _pieceMobilityPower = 0.5d;
-        private const int _kingInCornerFactor = 2;
-        // Select phase constants such that starting material = 256.
-        // This improves integer division speed since x / 256 = x >> 8.
-        private const int _middlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + 2 * _queenPhase;
-        private const int _knightPhase = 14; //   4 * 14 =  56
-        private const int _bishopPhase = 14; // + 4 * 14 = 112
-        private const int _rookPhase = 20; //   + 4 * 20 = 192
-        private const int _queenPhase = 32; //  + 2 * 32 = 256
         private readonly EvaluationConfig _defaultConfig;
         private readonly EvaluationDelegates _delegates;
         private readonly StaticScore _staticScore;
@@ -74,7 +66,7 @@ namespace ErikTheCoder.MadChess.Engine
             Config = new EvaluationConfig();
             _defaultConfig = new EvaluationConfig();
             _delegates = Delegates;
-            _staticScore = new StaticScore(_middlegamePhase);
+            _staticScore = new StaticScore();
             // Create arrays for quick lookup of positional factors.
             _mgPawnLocations = new int[64];
             _egPawnLocations = new int[64];
@@ -408,11 +400,11 @@ namespace ErikTheCoder.MadChess.Engine
                             int distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[whiteKingSquare]
                                 : Board.DistanceToNearestDarkCorner[whiteKingSquare];
-                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - (distanceToCorrectColorCorner * _kingInCornerFactor) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                         case 0 when (blackMinorPieces == 0) && (blackMajorPieces >= 1):
                             // King versus major pieces
-                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - (Board.DistanceToNearestCorner[whiteKingSquare] * _kingInCornerFactor) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[whiteKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
                     break;
@@ -433,11 +425,11 @@ namespace ErikTheCoder.MadChess.Engine
                             int distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[blackKingSquare]
                                 : Board.DistanceToNearestDarkCorner[blackKingSquare];
-                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - (distanceToCorrectColorCorner * _kingInCornerFactor) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                         case 0 when (whiteMinorPieces == 0) && (whiteMajorPieces >= 1):
                             // King versus major pieces
-                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - (Board.DistanceToNearestCorner[blackKingSquare] * _kingInCornerFactor) - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[blackKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
                     break;
@@ -557,14 +549,14 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetExchangeMaterialScore(Position Position)
+        public static int GetExchangeMaterialScore(Position Position)
         {
             int whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial +
-                             Bitwise.CountSetBits(Position.WhiteKnights) * Config.KnightExchangeMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.BishopExchangeMaterial +
-                             Bitwise.CountSetBits(Position.WhiteRooks) * Config.RookExchangeMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.QueenExchangeMaterial;
+                             Bitwise.CountSetBits(Position.WhiteKnights) * EvaluationConfig.KnightExchangeMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * EvaluationConfig.BishopExchangeMaterial +
+                             Bitwise.CountSetBits(Position.WhiteRooks) * EvaluationConfig.RookExchangeMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * EvaluationConfig.QueenExchangeMaterial;
             int blackScore = Bitwise.CountSetBits(Position.BlackPawns) * PawnMaterial +
-                             Bitwise.CountSetBits(Position.BlackKnights) * Config.KnightExchangeMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.BishopExchangeMaterial +
-                             Bitwise.CountSetBits(Position.BlackRooks) * Config.RookExchangeMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.QueenExchangeMaterial;
+                             Bitwise.CountSetBits(Position.BlackKnights) * EvaluationConfig.KnightExchangeMaterial + Bitwise.CountSetBits(Position.BlackBishops) * EvaluationConfig.BishopExchangeMaterial +
+                             Bitwise.CountSetBits(Position.BlackRooks) * EvaluationConfig.RookExchangeMaterial + Bitwise.CountSetBits(Position.BlackQueens) * EvaluationConfig.QueenExchangeMaterial;
             return Position.WhiteMove
                 ? whiteScore - blackScore
                 : blackScore - whiteScore;
@@ -878,11 +870,11 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int DetermineGamePhase(Position Position)
         {
-            int phase = _knightPhase * Bitwise.CountSetBits(Position.WhiteKnights | Position.BlackKnights) +
-                        _bishopPhase * Bitwise.CountSetBits(Position.WhiteBishops | Position.BlackBishops) +
-                        _rookPhase * Bitwise.CountSetBits(Position.WhiteRooks | Position.BlackRooks) +
-                        _queenPhase * Bitwise.CountSetBits(Position.WhiteQueens | Position.BlackQueens);
-            return Math.Min(phase, _middlegamePhase);
+            int phase = EvaluationConfig.KnightPhase * Bitwise.CountSetBits(Position.WhiteKnights | Position.BlackKnights) +
+                        EvaluationConfig.BishopPhase * Bitwise.CountSetBits(Position.WhiteBishops | Position.BlackBishops) +
+                        EvaluationConfig.RookPhase * Bitwise.CountSetBits(Position.WhiteRooks | Position.BlackRooks) +
+                        EvaluationConfig.QueenPhase * Bitwise.CountSetBits(Position.WhiteQueens | Position.BlackQueens);
+            return Math.Min(phase, EvaluationConfig.MiddlegamePhase);
         }
 
 

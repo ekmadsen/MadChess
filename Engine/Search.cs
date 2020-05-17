@@ -140,7 +140,7 @@ namespace ErikTheCoder.MadChess.Engine
             _getNextMove = GetNextMove;
             _getNextCapture = GetNextCapture;
             _getStaticScore = _evaluation.GetStaticScore;
-            _getExchangeMaterialScore = _evaluation.GetExchangeMaterialScore;
+            _getExchangeMaterialScore = Evaluation.GetExchangeMaterialScore;
             Stats = new SearchStats();
             // Create synchronization and diagnostic objects.
             Signal = new AutoResetEvent(false);
