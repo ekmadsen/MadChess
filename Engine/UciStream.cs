@@ -984,7 +984,7 @@ namespace ErikTheCoder.MadChess.Engine
             string pgnFilename = Tokens[1].Trim();
             int particleSwarmsCount = int.Parse(Tokens[2].Trim());
             int particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            int winPercentScale = int.Parse(Tokens[4].Trim()); // Use 602 for Gm2600EloGoodGames.pgn.
+            int winPercentScale = int.Parse(Tokens[4].Trim()); // Use 589 for Gm2600EloGoodGames.pgn.
             int iterations = int.Parse(Tokens[5].Trim());
             _commandStopwatch.Restart();
             ParticleSwarms particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, WriteMessageLine);
