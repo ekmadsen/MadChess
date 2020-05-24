@@ -770,6 +770,14 @@ namespace ErikTheCoder.MadChess.Engine
 
         private int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta, Delegates.GetStaticScore GetStaticScore, bool ConsiderFutility)
         {
+            if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
+            {
+                // Examine time.
+                ExamineTime(Board.Nodes);
+                long intervals = Board.Nodes / UciStream.NodesTimeInterval;
+                Board.NodesExamineTime = UciStream.NodesTimeInterval * (intervals + 1);
+            }
+            if (!Continue && (_bestMoves[0] != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
             (bool terminalDraw, _) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
             if ((Depth > 0) && terminalDraw) return 0; // Terminal node (games ends on this move)
             // Search for a quiet position where no captures are possible.
@@ -815,6 +823,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Board.PlayMove(move);
                 int score = -GetQuietScore(Board, Depth + 1, Horizon, ToSquareMask, -Beta, -Alpha, GetStaticScore, ConsiderFutility);
                 Board.UndoMove();
+                if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if (score >= Beta) return Beta; // Position is not the result of best play by both players.
                 Alpha = Math.Max(score, Alpha);
             } while (true);
@@ -1005,10 +1014,10 @@ namespace ErikTheCoder.MadChess.Engine
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
             int lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
-            // TODO: Test pruning losing captures in quiet search combined with a deeper _quietSearchMaxFromHorizon.
             // Determine if move can raise score to alpha.
             int futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
+            int potentialImprovement = GetExchangeScore(Board, Move);
+            return StaticScore + potentialImprovement + futilityMargin < Alpha;
         }
 
 
@@ -1021,8 +1030,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (_scoreError > 0) return Horizon;
             }
             bool capture = Engine.Move.CaptureVictim(Move) != Piece.None;
-            int toHorizon = Horizon - Depth;
-            if (capture & (toHorizon >= _futilityMargins.Length)) return Horizon; // Do not reduce capture far from search horizon.
+            if (capture) return Horizon; // Do not reduce capture.
             if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, or move when king is in check.
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon; // Do not reduce killer move, pawn promotion, or castling.
             if (Engine.Move.IsPawnMove(Move))
@@ -1035,9 +1043,7 @@ namespace ErikTheCoder.MadChess.Engine
             int blackPawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce move with lone king on board.
             // Reduce search horizon based on quiet move number.
-            int reduction = Engine.Move.IsQuiet(Move)
-                ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)]
-                : 0;
+            int reduction = Engine.Move.IsQuiet(Move) ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)] : 0;
             return Horizon - reduction;
         }
 
