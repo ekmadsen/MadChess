@@ -40,21 +40,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
 
 
-        public void RandomizeParticles(Particle BestParticle)
-        {
-            for (int index = 1; index < Particles.Count; index++)
-            {
-                Particle particle = Particles[index];
-                if (!ReferenceEquals(particle, BestParticle)) 
-                {
-                    // Recreate particle at random location.
-                    particle = new Particle(particle.PgnGames, particle.Parameters.DuplicateWithRandomValues());
-                    Particles[index] = particle;
-                }
-            }
-        }
-        
-
         public void Iterate(Board Board, Search Search, Evaluation Evaluation)
         {
             Particle bestParticle = GetBestParticle();

@@ -12,7 +12,7 @@
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<RootNamespace>ErikTheCoder.MadChess.Engine</RootNamespace>
 		<LangVersion>latest</LangVersion>
-		<TargetFramework>netcoreapp3.0</TargetFramework>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Exe</OutputType>
 		<PublishTrimmed>true</PublishTrimmed>
