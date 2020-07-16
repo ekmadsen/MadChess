@@ -114,7 +114,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgBishopCentrality), 0, 25),
                 //new Parameter(nameof(EvaluationConfig.MgBishopCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgBishopCorner), -50, 0),
-                new Parameter(nameof(EvaluationConfig.EgBishopConstant), -200, 200),
+                new Parameter(nameof(EvaluationConfig.EgBishopConstant), -100, 200),
                 // Rooks
                 //new Parameter(nameof(EvaluationConfig.MgRookAdvancement), -25, 25),
                 new Parameter(nameof(EvaluationConfig.EgRookAdvancement), 0, 50),
@@ -122,7 +122,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgRookCentrality), -25, 25),
                 //new Parameter(nameof(EvaluationConfig.MgRookCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgRookCorner), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgRookConstant), -200, 200),
+                new Parameter(nameof(EvaluationConfig.EgRookConstant), -100, 300),
                 // Queens
                 //new Parameter(nameof(EvaluationConfig.MgQueenAdvancement), -25, 25),
                 new Parameter(nameof(EvaluationConfig.EgQueenAdvancement), 0, 50),
@@ -130,7 +130,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.EgQueenCentrality), -25, 25),
                 //new Parameter(nameof(EvaluationConfig.MgQueenCorner), -25, 0),
                 new Parameter(nameof(EvaluationConfig.EgQueenCorner), -25, 25),
-                new Parameter(nameof(EvaluationConfig.EgQueenConstant), -300, 300),
+                new Parameter(nameof(EvaluationConfig.EgQueenConstant), -200, 400),
                 // King
                 //new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -50, 0),
                 //new Parameter(nameof(EvaluationConfig.EgKingAdvancement), 0, 50),
