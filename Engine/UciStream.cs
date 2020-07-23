@@ -92,8 +92,6 @@ namespace ErikTheCoder.MadChess.Engine
             EvaluationDelegates evaluationDelegates = new EvaluationDelegates
             {
                 GetPositionCount = Board.GetPositionCount,
-                IsPassedPawn = Board.IsPassedPawn,
-                IsFreePawn = Board.IsFreePawn,
                 GetKnightDestinations = Board.GetKnightDestinations,
                 GetBishopDestinations = Board.GetBishopDestinations,
                 GetRookDestinations = Board.GetRookDestinations,
@@ -306,14 +304,17 @@ namespace ErikTheCoder.MadChess.Engine
                 case "staticscore":
                     WriteMessageLine(_evaluation.ToString(Board.CurrentPosition));
                     break;
-                case "swapoffscore":
-                    SwapOffScore(Tokens);
+                case "exchangescore":
+                    ExchangeScore(Tokens);
                     break;
                 case "testpositions":
                     TestPositions(Tokens);
                     break;
                 case "analyzepositions":
                     AnalyzePositions(Tokens);
+                    break;
+                case "analyzeexchangepositions":
+                    AnalyzeExchangePositions(Tokens);
                     break;
                 case "tune":
                     Tune(Tokens);
@@ -662,9 +663,11 @@ namespace ErikTheCoder.MadChess.Engine
             long moves = 0;
             while (true)
             {
-                (ulong move, _) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
+                (ulong move, int moveIndex) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
                 if (move == Move.Null) break;
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
+                Move.SetPlayed(ref move, true);
+                Board.CurrentPosition.Moves[moveIndex] = move;
                 if (toHorizon > 1)
                 {
                     Board.PlayMove(move);
@@ -709,7 +712,7 @@ namespace ErikTheCoder.MadChess.Engine
                 ulong move = Board.CurrentPosition.Moves[moveIndex];
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 legalMoves++;
-                WriteMessageLine($"{Move.ToLongAlgebraic(move).PadRight(9)}  {rootMoves[moveIndex].ToString().PadLeft(7)}");
+                WriteMessageLine($"{Move.ToLongAlgebraic(move),9}  {rootMoves[moveIndex],7}");
             }
             WriteMessageLine();
             WriteMessageLine(legalMoves + " legal root moves");
@@ -755,13 +758,15 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void SwapOffScore(List<string> Tokens)
+        private void ExchangeScore(List<string> Tokens)
         {
             ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
-            int swapOffScore = _search.GetSwapOffScore(Board, move);
-            WriteMessageLine(swapOffScore.ToString());
+            bool validMove = Board.ValidateMove(ref move);
+            if (!validMove || !Board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {Board.CurrentPosition.ToFen()}.");
+            int exchangeScore = _search.GetExchangeScore(Board, move);
+            WriteMessageLine(exchangeScore.ToString());
         }
-        
+
 
         private void TestPositions(List<string> Tokens)
         {
@@ -794,8 +799,7 @@ namespace ErikTheCoder.MadChess.Engine
                     bool correct = moves == expectedMoves;
                     if (correct) correctPositions++;
                     double percent = 100d * correctPositions / positions;
-                    WriteMessageLine($"{positions.ToString().PadLeft(6)}  {fen.PadLeft(75)}  {horizon.ToString("0").PadLeft(5)}  {expectedMoves.ToString("n0").PadLeft(11)}  " +
-                        $"{moves.ToString("n0").PadLeft(11)}  {correct.ToString().PadLeft(7)}  {percent.ToString("0.0").PadLeft(5)}");
+                    WriteMessageLine($"{positions,6}  {fen,75}  {horizon,5:0}  {expectedMoves,11:n0}  {moves,11:n0}  {correct,7}  {percent,5:0.0}");
                 }
             }
             _commandStopwatch.Stop();
@@ -821,7 +825,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _commandStopwatch.Restart();
                 while (!reader.EndOfStream)
                 {
-                    // Load position, horizon, and correct move count.
+                    // Load position and solution.
                     string line = reader.ReadLine();
                     if (line == null) continue;
                     positions++;
@@ -914,8 +918,7 @@ namespace ErikTheCoder.MadChess.Engine
                     if (correct) correctPositions++;
                     double percent = 100d * correctPositions / positions;
                     string solution = positionSolution == PositionSolution.BestMoves ? "Best" : "Avoid";
-                    WriteMessageLine($"{positions.ToString().PadLeft(6)}  {fen.PadLeft(75)}  {solution.PadLeft(8)}  {string.Join(" ", expectedMovesLongAlgebraic).PadLeft(16)}  " +
-                        $"{Move.ToLongAlgebraic(bestMove).PadLeft(5)}  {correct.ToString().PadLeft(7)}  {percent.ToString("0.0").PadLeft(5)}");
+                    WriteMessageLine($"{positions,6}  {fen,75}  {solution,8}  {string.Join(" ", expectedMovesLongAlgebraic),16}  {Move.ToLongAlgebraic(bestMove),5}  {correct,7}  {percent,5:0.0}");
                 }
             }
             _commandStopwatch.Stop();
@@ -934,12 +937,54 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        private void AnalyzeExchangePositions(IList<string> Tokens)
+        {
+            string file = Tokens[1].Trim();
+            int positions = 0;
+            int correctPositions = 0;
+            using (StreamReader reader = File.OpenText(file))
+            {
+                WriteMessageLine("Number                                                                     Position   Move  Expected Score  Score  Correct    Pct");
+                WriteMessageLine("======  ===========================================================================  =====  ==============  =====  =======  =====");
+                Board.Nodes = 0L;
+                _commandStopwatch.Restart();
+                while (!reader.EndOfStream)
+                {
+                    // Load position and correct score.
+                    string line = reader.ReadLine();
+                    if (line == null) continue;
+                    positions++;
+                    List<string> tokens = Engine.Tokens.Parse(line, ',', '"');
+                    string fen = tokens[0].Trim();
+                    string moveStandardAlgebraic = tokens[1].Trim();
+                    int expectedScore = int.Parse(tokens[2].Trim());
+                    // Setup position and reset search.
+                    Board.SetPosition(fen, true);
+                    _search.Reset(true);
+                    ulong move = Move.ParseStandardAlgebraic(Board, moveStandardAlgebraic);
+                    int score = _search.GetExchangeScore(Board, move);
+                    bool correct = score == expectedScore;
+                    if (correct) correctPositions++;
+                    double percent = 100d * correctPositions / positions;
+                    WriteMessageLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),5}  {expectedScore,14}  {score,5}  {correct,7}  {percent,5:0.0}");
+                }
+            }
+            _commandStopwatch.Stop();
+            // Update score.
+            WriteMessageLine();
+            WriteMessageLine($"Solved {correctPositions} of {positions} positions in {_commandStopwatch.Elapsed.TotalMilliseconds:000} milliseconds.");
+            // Update node count.
+            double nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
+            WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
+        }
+
+
         private void Tune(IList<string> Tokens)
         {
             string pgnFilename = Tokens[1].Trim();
             int particleSwarmsCount = int.Parse(Tokens[2].Trim());
             int particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            int winPercentScale = int.Parse(Tokens[4].Trim()); // Use 602 for Gm2600EloGoodGames.pgn.
+            int winPercentScale = int.Parse(Tokens[4].Trim()); // Use 569 for Gm2600EloGoodGames.pgn.
             int iterations = int.Parse(Tokens[5].Trim());
             _commandStopwatch.Restart();
             ParticleSwarms particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, WriteMessageLine);
@@ -983,8 +1028,6 @@ namespace ErikTheCoder.MadChess.Engine
                 EvaluationDelegates evaluationDelegates = new EvaluationDelegates
                 {
                     GetPositionCount = board.GetPositionCount,
-                    IsPassedPawn = board.IsPassedPawn,
-                    IsFreePawn = board.IsFreePawn,
                     GetKnightDestinations = Board.GetKnightDestinations,
                     GetBishopDestinations = Board.GetBishopDestinations,
                     GetRookDestinations = Board.GetRookDestinations,
@@ -1043,7 +1086,7 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine();
             WriteMessageLine("dividemoves [depth]                   Count legal moves following each legal root move.  Count only leaf nodes.");
             WriteMessageLine();
-            WriteMessageLine("listmoves                             List moves in order of priority.  Display heuristics for each move.");
+            WriteMessageLine("listmoves                             List moves in order of priority.  Display history heuristics for each move.");
             WriteMessageLine();
             WriteMessageLine("shiftkillermoves [depth]              Shift killer moves deeper by given depth.");
             WriteMessageLine("                                      Useful after go command followed by a position command that includes moves.");
@@ -1053,7 +1096,7 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine();
             WriteMessageLine("staticscore                           Display evaluation details of current position.");
             WriteMessageLine();
-            WriteMessageLine("swapoffscore [move]                   Display static score if pieces are traded on the destination square of the given move.");
+            WriteMessageLine("exchangescore [move]                  Display static score if pieces are traded on the destination square of the given move.");
             WriteMessageLine("                                      Move must be specified in long algebraic notation.");
             WriteMessageLine();
             WriteMessageLine("testpositions [filename]              Calculate legal moves for positions in given file and compare to expected results.");
@@ -1061,6 +1104,9 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine();
             WriteMessageLine("analyzepositions [filename] [msec]    Search for best move for positions in given file and compare to expected results.");
             WriteMessageLine("                                      File must be in EPD format.  Search of each move is limited to given time in milliseconds.");
+            WriteMessageLine();
+            WriteMessageLine("analyzeexchangepositions [filename]   Determine material score after exchanging pieces on destination square of given move.");
+            WriteMessageLine("                                      Pawn = 100, Knight and Bishop = 300, Rook = 500, Queen = 900.");
             WriteMessageLine();
             WriteMessageLine("tune [pgn] [ps] [pps] [wps] [i]       Tune evaluation parameters using a particle swarm algorithm.");
             WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");

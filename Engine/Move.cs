@@ -1,4 +1,4 @@
-﻿// +------------------------------------------------------------------------------+
+// +------------------------------------------------------------------------------+
 // |                                                                              |
 // |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
@@ -72,18 +72,18 @@ namespace ErikTheCoder.MadChess.Engine
 
         // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
         // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-        // B|CapV   |CapA   |Promo  |Kil|History                                              |!|O|K|E|D|P|C|Q|From         |To           
+        // B|CapV   |CapA   |Promo  |Kil|History                                              |!|O|K|E|2|P|C|Q|From         |To           
 
         // B =     Best Move
         // CapV =  Capture Victim
         // CapA =  Capture Attacker (inverted)
         // Promo = Promoted Piece
-        // Kil  =  Killer Move
+        // Kil =   Killer Move
         // ! =     Played
         // O =     Castling
         // K =     King Move
         // E =     En Passant Capture
-        // D =     Double Pawn Move
+        // 2 =     Double Pawn Move
         // P =     Pawn Move
         // C =     Check
         // Q =     Quiet (not capture, pawn promotion, castling, or check)
@@ -190,7 +190,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _captureVictimUnmask;
             // Set
-            Move |= (ulong) CaptureVictim << _captureVictimShift;
+            Move |= (ulong)CaptureVictim << _captureVictimShift;
             // Validate move.
             Debug.Assert(Engine.Move.CaptureVictim(Move) == CaptureVictim);
             Debug.Assert(IsValid(Move));
@@ -201,7 +201,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static int CaptureAttacker(ulong Move)
         {
             // Value is inverted.
-            int storedPiece = (int) ((Move & _captureAttackerMask) >> _captureAttackerShift);
+            int storedPiece = (int)((Move & _captureAttackerMask) >> _captureAttackerShift);
             return 12 - storedPiece;
         }
 
@@ -210,7 +210,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static void SetCaptureAttacker(ref ulong Move, int CaptureAttacker)
         {
             // Invert piece value so P x Q captures are given a higher priority than Q x Q.
-            ulong storedPiece = (ulong) (12 - CaptureAttacker);
+            ulong storedPiece = (ulong)(12 - CaptureAttacker);
             // Clear
             Move &= _captureAttackerUnmask;
             // Set
@@ -222,7 +222,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PromotedPiece(ulong Move) => (int) ((Move & _promotedPieceMask) >> _promotedPieceShift);
+        public static int PromotedPiece(ulong Move) => (int)((Move & _promotedPieceMask) >> _promotedPieceShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -231,7 +231,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _promotedPieceUnmask;
             // Set.
-            Move |= (ulong) PromotedPiece << _promotedPieceShift;
+            Move |= (ulong)PromotedPiece << _promotedPieceShift;
             // Validate move.
             Debug.Assert(Engine.Move.PromotedPiece(Move) == PromotedPiece);
             Debug.Assert(IsValid(Move));
@@ -239,7 +239,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Killer(ulong Move) => (int) ((Move & _killerMask) >> _killerShift);
+        public static int Killer(ulong Move) => (int)((Move & _killerMask) >> _killerShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -248,7 +248,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _killerUnmask;
             // Set
-            Move |= (ulong) Killer << _killerShift;
+            Move |= (ulong)Killer << _killerShift;
             // Validate move.
             Debug.Assert(Engine.Move.Killer(Move) == Killer);
             Debug.Assert(IsValid(Move));
@@ -256,7 +256,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int History(ulong Move) => (int) ((Move & _historyMask) >> _historyShift) - MoveHistory.MaxValue;
+        public static int History(ulong Move) => (int)((Move & _historyMask) >> _historyShift) - MoveHistory.MaxValue;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -267,7 +267,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _historyUnmask;
             // Set
-            Move |= (ulong) history << _historyShift;
+            Move |= (ulong)history << _historyShift;
             // Validate move.
             Debug.Assert(Engine.Move.History(Move) == History);
             Debug.Assert(IsValid(Move));
@@ -419,7 +419,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int From(ulong Move) => (int) ((Move & _fromMask) >> _fromShift);
+        public static int From(ulong Move) => (int)((Move & _fromMask) >> _fromShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -428,7 +428,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _fromUnmask;
             // Set
-            Move |= (ulong) From << _fromShift;
+            Move |= (ulong)From << _fromShift;
             // Validate move.
             Debug.Assert(Engine.Move.From(Move) == From);
             Debug.Assert(IsValid(Move));
@@ -436,7 +436,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int To(ulong Move) => (int) (Move & _toMask);
+        public static int To(ulong Move) => (int)(Move & _toMask);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -445,7 +445,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _toUnmask;
             // Set
-            Move |= (uint) To;
+            Move |= (uint)To;
             // Validate move.
             Debug.Assert(Engine.Move.To(Move) == To);
             Debug.Assert(IsValid(Move));

@@ -43,7 +43,6 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UpdateValue(Position Position, ulong Move, int Increment)
         {
-            // Don't bother checking for overflow values as it's not likely to happen with 27 bits.
             int piece = Position.GetPiece(Engine.Move.From(Move));
             int toSquare = Engine.Move.To(Move);
             _moveHistory[piece][toSquare] += Increment;

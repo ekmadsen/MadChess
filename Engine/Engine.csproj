@@ -12,7 +12,7 @@
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<RootNamespace>ErikTheCoder.MadChess.Engine</RootNamespace>
 		<LangVersion>latest</LangVersion>
-		<TargetFramework>netcoreapp3.0</TargetFramework>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Exe</OutputType>
 		<PublishTrimmed>true</PublishTrimmed>
@@ -23,7 +23,14 @@
 
 
 	<ItemGroup>
-		<PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
+		<PackageReference Include="JetBrains.Annotations" Version="2020.1.0" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <None Update="MadChess.Engine.bmp">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 </Project>

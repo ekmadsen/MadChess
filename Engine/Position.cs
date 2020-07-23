@@ -17,6 +17,7 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class Position
     {
         public const int MaxMoves = 128;
+        // TODO: Change Position.Moves to reference an array shared across all positions (to improve memory locality).
         public readonly ulong[] Moves;
         public ulong WhitePawns;
         public ulong WhiteKnights;
@@ -404,7 +405,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Bitwise.ClearBit(ref knights, fromSquare);
             }
         }
-        
+
         private void GenerateBishopMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong bishops;
@@ -455,7 +456,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Bitwise.ClearBit(ref bishops, fromSquare);
             }
         }
-        
+
 
         private void GenerateRookMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
@@ -507,7 +508,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Bitwise.ClearBit(ref rooks, fromSquare);
             }
         }
-        
+
 
         private void GenerateQueenMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
