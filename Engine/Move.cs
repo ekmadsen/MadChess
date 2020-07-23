@@ -1,4 +1,4 @@
-﻿// +------------------------------------------------------------------------------+
+// +------------------------------------------------------------------------------+
 // |                                                                              |
 // |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
