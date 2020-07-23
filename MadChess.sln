@@ -21,6 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ratings", "Ratings", "{CAA7
 	ProjectSection(SolutionItems) = preProject
 		ComputerGamesBullet.txt = ComputerGamesBullet.txt
 		ComputerGamesBulletMatchups.txt = ComputerGamesBulletMatchups.txt
+		EvalError.log = EvalError.log
 	EndProjectSection
 EndProject
 Global
