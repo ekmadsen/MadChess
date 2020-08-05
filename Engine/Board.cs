@@ -12,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 
 namespace ErikTheCoder.MadChess.Engine
@@ -43,6 +42,10 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong WhiteCastleKEmptySquaresMask;
         public static readonly ulong BlackCastleQEmptySquaresMask;
         public static readonly ulong BlackCastleKEmptySquaresMask;
+        public static readonly ulong[] KnightMoveMasks;
+        public static readonly ulong[] BishopMoveMasks;
+        public static readonly ulong[] RookMoveMasks;
+        public static readonly ulong[] KingMoveMasks;
         public static readonly ulong[] EnPassantAttackerMasks;
         public static readonly ulong[] WhitePassedPawnMasks;
         public static readonly ulong[] WhiteFreePawnMasks;
@@ -54,10 +57,8 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong[] BlackPawnMoveMasks;
         public static readonly ulong[] BlackPawnDoubleMoveMasks;
         public static readonly ulong[] BlackPawnAttackMasks;
-        public static readonly ulong[] KnightMoveMasks;
-        public static readonly ulong[] BishopMoveMasks;
-        public static readonly ulong[] RookMoveMasks;
-        public static readonly ulong[] KingMoveMasks;
+        public static readonly ulong[] InnerRingMasks;
+        public static readonly ulong[] OuterRingMasks;
         public static readonly PrecalculatedMoves PrecalculatedMoves;
         public long Nodes;
         public long NodesInfoUpdate;
@@ -93,7 +94,8 @@ namespace ErikTheCoder.MadChess.Engine
         static Board()
         {
             // The chessboard is represented as an array of 64 squares, shown here as an 8 x 8 grid of square indices.
-            // A1 = square index 56.  A8 = square index 00.  H8 = square index 07.  H1 = square index 63.
+            // Note this code uses zero-based indices, while chess literature uses one-based indices.
+            // A1 in chess literature = square index 56.  A8 = square index 00.  H8 = square index 07.  H1 = square index 63.
 
             //    A  B  C  D  E  F  G  H
             // 7  00 01 02 03 04 05 06 07  7
@@ -326,6 +328,8 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteFreePawnMasks = CreateWhiteFreePawnMasks();
             BlackPassedPawnMasks = CreateBlackPassedPawnMasks();
             BlackFreePawnMasks = CreateBlackFreePawnMasks();
+            // Create ring masks.
+            (InnerRingMasks, OuterRingMasks) = CreateRingMasks();
         }
 
 
@@ -655,6 +659,48 @@ namespace ErikTheCoder.MadChess.Engine
                 masks[square] = mask;
             }
             return masks;
+        }
+
+
+        private static (ulong[] InnerRingMasks, ulong[] OuterRingMasks) CreateRingMasks()
+        {
+            ulong[] innerRingMasks = new ulong[64];
+            ulong[] outerRingMasks = new ulong[64];
+            Direction[] innerRingDirections = { Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest };
+            Direction[] outerRingDirections = {Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1};
+            for (int square = 0; square < 64; square++)
+            {
+                // Create inner ring mask.
+                Direction direction;
+                ulong mask = 0;
+                for (int directionIndex = 0; directionIndex < innerRingDirections.Length; directionIndex++)
+                {
+                    direction = innerRingDirections[directionIndex];
+                    int otherSquare = _neighborSquares[square][(int) direction];
+                    if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
+                }
+                innerRingMasks[square] = mask;
+                // Create outer ring mask from the inner ring directions (distance = 2) plus the outer ring directions (knight moves).
+                mask = 0;
+                for (int directionIndex = 0; directionIndex < innerRingDirections.Length; directionIndex++)
+                {
+                    direction = innerRingDirections[directionIndex];
+                    int otherSquare = _neighborSquares[square][(int) direction];
+                    if (otherSquare != Square.Illegal)
+                    {
+                        otherSquare = _neighborSquares[otherSquare][(int) direction];
+                        if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
+                    }
+                }
+                for (int directionIndex = 0; directionIndex < outerRingDirections.Length; directionIndex++)
+                {
+                    direction = outerRingDirections[directionIndex];
+                    int otherSquare = _neighborSquares[square][(int)direction];
+                    if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
+                }
+                outerRingMasks[square] = mask;
+            }
+            return (innerRingMasks, outerRingMasks);
         }
 
 
@@ -1562,22 +1608,6 @@ namespace ErikTheCoder.MadChess.Engine
                 Nodes = 0;
                 NodesInfoUpdate = UciStream.NodesInfoInterval;
             }
-        }
-
-
-        public static string ToString(ulong Occupancy)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (int rank = 7; rank >= 0; rank--)
-            {
-                for (int file = 0; file < 8; file++)
-                {
-                    int square = GetSquare(file, rank);
-                    stringBuilder.Append(Bitwise.IsBitSet(Occupancy, square) ? " 1 " : " . ");
-                }
-                stringBuilder.AppendLine();
-            }
-            return stringBuilder.ToString();
         }
 
 

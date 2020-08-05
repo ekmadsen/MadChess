@@ -32,6 +32,8 @@ namespace ErikTheCoder.MadChess.Engine
         public int WhiteUnstoppablePassedPawns;
         public int WhiteMgPieceMobility;
         public int WhiteEgPieceMobility;
+        public int WhiteMgKingSafety;
+        public int WhiteEgKingSafety;
         public int BlackSimpleEndgame;
         public int BlackMaterial;
         public int BlackMgPieceLocation;
@@ -43,18 +45,22 @@ namespace ErikTheCoder.MadChess.Engine
         public int BlackUnstoppablePassedPawns;
         public int BlackMgPieceMobility;
         public int BlackEgPieceMobility;
-        
-
-        private int MiddlegameWhite => WhiteSimpleEndgame + WhiteMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility;
-
-
-        private int MiddlegameBlack => BlackSimpleEndgame + BlackMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns + BlackMgPieceMobility;
+        public int BlackMgKingSafety;
+        public int BlackEgKingSafety;
 
 
-        private int EndgameWhite => WhiteSimpleEndgame + WhiteMaterial + WhiteEgPieceLocation + WhiteEgPassedPawns + WhiteEgFreePassedPawns + WhiteEgKingEscortedPassedPawns + WhiteUnstoppablePassedPawns + WhiteEgPieceMobility;
+        private int MiddlegameWhite => WhiteSimpleEndgame + WhiteMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility + WhiteMgKingSafety;
 
 
-        private int EndgameBlack => BlackSimpleEndgame + BlackMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns + BlackEgPieceMobility;
+        private int MiddlegameBlack => BlackSimpleEndgame + BlackMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns + BlackMgPieceMobility + BlackMgKingSafety;
+
+
+        private int EndgameWhite => WhiteSimpleEndgame + WhiteMaterial + WhiteEgPieceLocation + WhiteEgPassedPawns + WhiteEgFreePassedPawns + WhiteEgKingEscortedPassedPawns + WhiteUnstoppablePassedPawns +
+                                    WhiteEgPieceMobility + WhiteEgKingSafety;
+
+
+        private int EndgameBlack => BlackSimpleEndgame + BlackMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns +
+                                    BlackEgPieceMobility + BlackEgKingSafety;
 
 
         public int TotalScore(int Phase) => GetTaperedScore(MiddlegameWhite - MiddlegameBlack, EndgameWhite - EndgameBlack, Phase);
@@ -73,6 +79,8 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteUnstoppablePassedPawns = 0;
             WhiteMgPieceMobility = 0;
             WhiteEgPieceMobility = 0;
+            WhiteMgKingSafety = 0;
+            WhiteEgKingSafety = 0;
             BlackSimpleEndgame = 0;
             BlackMaterial = 0;
             BlackMgPieceLocation = 0;
@@ -84,6 +92,8 @@ namespace ErikTheCoder.MadChess.Engine
             BlackUnstoppablePassedPawns = 0;
             BlackMgPieceMobility = 0;
             BlackEgPieceMobility = 0;
+            BlackMgKingSafety = 0;
+            BlackEgKingSafety = 0;
         }
 
 
@@ -101,6 +111,7 @@ namespace ErikTheCoder.MadChess.Engine
             AppendLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, WhiteEgKingEscortedPassedPawns, BlackEgKingEscortedPassedPawns, Phase);
             AppendLine(stringBuilder, "Unstoppable Passed Pawns", WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, Phase);
             AppendLine(stringBuilder, "Piece Mobility", WhiteMgPieceMobility, BlackMgPieceMobility, WhiteEgPieceMobility, BlackEgPieceMobility, Phase);
+            AppendLine(stringBuilder, "King Safety", WhiteMgKingSafety, BlackMgKingSafety, WhiteEgKingSafety, BlackEgKingSafety, Phase);
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
             AppendLine(stringBuilder, "Total", MiddlegameWhite, MiddlegameBlack, EndgameWhite, EndgameBlack, Phase);
             stringBuilder.AppendLine();

@@ -45,14 +45,14 @@ namespace ErikTheCoder.MadChess.Engine
         public bool Continue;
         private const double _millisecondsReserved = 100d;
         private const int _minMovesRemaining = 8;
-        private const int _piecesMovesPer128 = 160; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _materialAdvantageMovesPer1024 = 25; // This improves integer division speed since x / 1024 = x >> 10.
-        private const int _moveTimeHardLimitPer128 = 512; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
+        private const int _piecesMovesPer128 = 160;
+        private const int _materialAdvantageMovesPer1024 = 25;
+        private const int _moveTimeHardLimitPer128 = 512;
+        private const int _haveTimeNextHorizonPer128 = 70;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _pvsMinToHorizon = 3;
-        private const int _historyPriorMovePer128 = 256; // This improves integer division speed since x / 128 = x >> 7.
+        private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
@@ -93,6 +93,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public bool LimitStrength
         {
+            get => _limitStrength;
             set
             {
                 _limitStrength = value;
@@ -107,6 +108,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int Elo
         {
+            get => _elo;
             set
             {
                 if ((value >= MinElo) && (value <= MaxElo))
@@ -266,7 +268,11 @@ namespace ErikTheCoder.MadChess.Engine
             power = 2;
             constant = 5;
             BlunderPercent = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant);
-            if (_debug()) _writeMessageLine($"info string NPS = {NodesPerSecond} MoveError = {MoveError} BlunderError = {BlunderError} BlunderPercent = {BlunderPercent}.");
+            if (_debug())
+            {
+                _writeMessageLine($"info string LimitStrength = {LimitStrength}, ELO = {Elo}.");
+                _writeMessageLine($"info string NPS = {NodesPerSecond}, MoveError = {MoveError}, BlunderError = {BlunderError}, BlunderPercent = {BlunderPercent}.");
+            }
         }
 
 

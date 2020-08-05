@@ -61,8 +61,8 @@ namespace ErikTheCoder.MadChess.Engine
                         if (line.StartsWith(resultTag))
                         {
                             // Determine game result.
-                            int startPosition = line.IndexOf("\"", resultTag.Length, StringComparison.CurrentCultureIgnoreCase) + 1;
-                            int endPosition = line.IndexOf("\"", startPosition, StringComparison.CurrentCultureIgnoreCase) - 1;
+                            int startPosition = line.IndexOf("\"", resultTag.Length, StringComparison.OrdinalIgnoreCase) + 1;
+                            int endPosition = line.IndexOf("\"", startPosition, StringComparison.OrdinalIgnoreCase) - 1;
                             int length = endPosition - startPosition + 1;
                             string gameResultText = line.Substring(startPosition, length);
                             result = gameResultText switch

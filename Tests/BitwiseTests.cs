@@ -23,9 +23,31 @@ namespace ErikTheCoder.MadChess.Tests
             UciStream uciStream = new UciStream();
             uint mask = Bitwise.CreateUIntMask(7, 11);
             uciStream.WriteMessageLine(Bitwise.ToString(mask));
-            uciStream.WriteMessageLine();
-            uciStream.WriteMessageLine(Board.ToString(mask));
             Assert.That(Bitwise.ToString(mask), Is.EqualTo("00000000_00000000_00001111_10000000"));
+        }
+
+
+        [Test]
+        public void TestKingRingMasks()
+        {
+            // TODO: Assert in king ring mask tests.
+            // King on e8.
+            UciStream uciStream = new UciStream();
+            string square = "e8";
+            ulong mask = Board.InnerRingMasks[Board.GetSquare(square)];
+            uciStream.WriteMessageLine($"King on {square} inner ring mask = ");
+            uciStream.WriteMessageLine(Position.ToString(mask));
+            mask = Board.OuterRingMasks[Board.GetSquare(square)];
+            uciStream.WriteMessageLine($"King on {square} outer ring mask = ");
+            uciStream.WriteMessageLine(Position.ToString(mask));
+            // King on c3.
+            square = "c3";
+            mask = Board.InnerRingMasks[Board.GetSquare(square)];
+            uciStream.WriteMessageLine($"King on {square} inner ring mask = ");
+            uciStream.WriteMessageLine(Position.ToString(mask));
+            mask = Board.OuterRingMasks[Board.GetSquare(square)];
+            uciStream.WriteMessageLine($"King on {square} outer ring mask = ");
+            uciStream.WriteMessageLine(Position.ToString(mask));
         }
     }
 }

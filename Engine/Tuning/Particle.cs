@@ -120,11 +120,13 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.MgKingCorner = Parameters[nameof(EvaluationConfig.MgKingCorner)].Value;
             Evaluation.Config.EgKingCorner = Parameters[nameof(EvaluationConfig.EgKingCorner)].Value;
             // Passed Pawns
-            Evaluation.Config.MgPassedPawnScalePercent = Parameters[nameof(EvaluationConfig.MgPassedPawnScalePercent)].Value;
-            Evaluation.Config.EgPassedPawnScalePercent = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePercent)].Value;
-            Evaluation.Config.EgFreePassedPawnScalePercent = Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePercent)].Value;
+            Evaluation.Config.PassedPawnPowerPer16 = Parameters[nameof(EvaluationConfig.PassedPawnPowerPer16)].Value;
+            Evaluation.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.MgPassedPawnScalePer128)].Value;
+            Evaluation.Config.EgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePer128)].Value;
+            Evaluation.Config.EgFreePassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePer128)].Value;
             Evaluation.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value;
             // Piece Mobility
+            Evaluation.Config.PieceMobilityPowerPer16 = Parameters[nameof(EvaluationConfig.PieceMobilityPowerPer16)].Value;
             Evaluation.Config.MgKnightMobilityScale = Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value;
             Evaluation.Config.EgKnightMobilityScale = Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value;
             Evaluation.Config.MgBishopMobilityScale = Parameters[nameof(EvaluationConfig.MgBishopMobilityScale)].Value;
@@ -133,7 +135,17 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.EgRookMobilityScale = Parameters[nameof(EvaluationConfig.EgRookMobilityScale)].Value;
             Evaluation.Config.MgQueenMobilityScale = Parameters[nameof(EvaluationConfig.MgQueenMobilityScale)].Value;
             Evaluation.Config.EgQueenMobilityScale = Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value;
-            Evaluation.Configure();
+            Evaluation.CalculatePositionalFactors();
+            // King Safety
+            Evaluation.Config.KingSafetyPowerPer16 = Parameters[nameof(EvaluationConfig.KingSafetyPowerPer16)].Value;
+            Evaluation.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value;
+            Evaluation.Config.KingSafetyMinorAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackOuterRingPer8)].Value;
+            Evaluation.Config.KingSafetyMinorAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackInnerRingPer8)].Value;
+            Evaluation.Config.KingSafetyRookAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyRookAttackOuterRingPer8)].Value;
+            Evaluation.Config.KingSafetyRookAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyRookAttackInnerRingPer8)].Value;
+            Evaluation.Config.KingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackOuterRingPer8)].Value;
+            Evaluation.Config.KingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackInnerRingPer8)].Value;
+            Evaluation.Config.KingSafetyScalePer128 = Parameters[nameof(EvaluationConfig.KingSafetyScalePer128)].Value;
         }
         
 
@@ -200,6 +212,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
         
 
-        private static double GetWinPercent(int Score, int WinPercentScale) => 1d / (1d + Math.Pow(10d, -1d * Score / WinPercentScale)); // Use a sigmoid function to map score to winning percent.  See WinPercent.xlsx.
+        private static double GetWinPercent(int Score, int WinPercentScale) => 1d / (1d + Math.Pow(10d, -1d * Score / WinPercentScale)); // Use a sigmoid function to map score to winning percent.
     }
 }

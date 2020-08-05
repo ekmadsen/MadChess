@@ -256,7 +256,7 @@ namespace ErikTheCoder.MadChess.Engine
                     WriteMessageLine("readyok");
                     break;
                 case "debug":
-                    _debug = Tokens[1].Equals("on", StringComparison.CurrentCultureIgnoreCase);
+                    _debug = Tokens[1].Equals("on", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "setoption":
                     SetOption(Tokens);
@@ -417,10 +417,10 @@ namespace ErikTheCoder.MadChess.Engine
             switch (optionName.ToLowerInvariant())
             {
                 case "debug":
-                    _debug = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    _debug = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "log":
-                    Log = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    Log = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "hash":
                     int cacheSizeMegabytes = int.Parse(optionValue);
@@ -434,7 +434,7 @@ namespace ErikTheCoder.MadChess.Engine
                     break;
                 case "uci_analysemode":
                 case "analyze":
-                    bool analysisMode = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    bool analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     if (analysisMode)
                     {
                         _search.TruncatePrincipalVariation = false;
@@ -447,13 +447,16 @@ namespace ErikTheCoder.MadChess.Engine
                     }
                     break;
                 case "piecelocation":
-                    _evaluation.UnderstandsPieceLocation = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    _evaluation.UnderstandsPieceLocation = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "passedpawns":
-                    _evaluation.UnderstandsPassedPawns = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    _evaluation.UnderstandsPassedPawns = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "mobility":
-                    _evaluation.UnderstandsMobility = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    _evaluation.UnderstandsMobility = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    break;
+                case "kingsafety":
+                    _evaluation.UnderstandsKingSafety = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "multipv":
                     _search.MultiPv = int.Parse(optionValue);
@@ -473,7 +476,7 @@ namespace ErikTheCoder.MadChess.Engine
                     break;
                 case "uci_limitstrength":
                 case "limitstrength":
-                    _search.LimitStrength = optionValue.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+                    _search.LimitStrength = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "uci_elo":
                 case "elo":
