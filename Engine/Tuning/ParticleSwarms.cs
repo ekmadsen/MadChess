@@ -57,17 +57,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Cache cache = new Cache(1, board.ValidateMove);
             KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
             MoveHistory moveHistory = new MoveHistory();
-            EvaluationDelegates evaluationDelegates = new EvaluationDelegates
-            {
-                GetPositionCount = board.GetPositionCount,
-                GetKnightDestinations = Board.GetKnightDestinations,
-                GetBishopDestinations = Board.GetBishopDestinations,
-                GetRookDestinations = Board.GetRookDestinations,
-                GetQueenDestinations = Board.GetQueenDestinations,
-                Debug = () => false,
-                WriteMessageLine = WriteMessageLine
-            };
-            Evaluation evaluation = new Evaluation(evaluationDelegates);
+            Evaluation evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
             Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
@@ -267,17 +257,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                EvaluationDelegates evaluationDelegates = new EvaluationDelegates
-                {
-                    GetPositionCount = board.GetPositionCount,
-                    GetKnightDestinations = Board.GetKnightDestinations,
-                    GetBishopDestinations = Board.GetBishopDestinations,
-                    GetRookDestinations = Board.GetRookDestinations,
-                    GetQueenDestinations = Board.GetQueenDestinations,
-                    Debug = () => false,
-                    WriteMessageLine = _writeMessageLine
-                };
-                Evaluation evaluation = new Evaluation(evaluationDelegates);
+                Evaluation evaluation = new Evaluation(board.GetPositionCount, () => false, _writeMessageLine);
                 evaluations[index] = evaluation;
                 searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
             }

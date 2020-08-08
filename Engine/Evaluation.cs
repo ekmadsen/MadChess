@@ -29,7 +29,9 @@ namespace ErikTheCoder.MadChess.Engine
         public bool UnderstandsMobility;
         public bool UnderstandsKingSafety;
         private readonly EvaluationConfig _defaultConfig;
-        private readonly EvaluationDelegates _delegates;
+        private readonly Delegates.GetPositionCount _getPositionCount;
+        private readonly Delegates.Debug _debug;
+        private readonly Delegates.WriteMessageLine _writeMessageLine;
         private readonly StaticScore _staticScore;
         // Piece Location
         private readonly int[] _mgPawnLocations;
@@ -62,9 +64,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         
-        public Evaluation(EvaluationDelegates Delegates)
+        public Evaluation(Delegates.GetPositionCount GetPositionCount, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
         {
-            _delegates = Delegates;
+            _getPositionCount = GetPositionCount;
+            _debug = Debug;
+            _writeMessageLine = WriteMessageLine;
             _staticScore = new StaticScore();
             Stats = new EvaluationStats();
             // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureStrength method overwriting defaults.
@@ -230,22 +234,22 @@ namespace ErikTheCoder.MadChess.Engine
                 //Understands7thRank = false;
                 //UnderstandsTrades = false;
             }
-            if (_delegates.Debug())
+            if (_debug())
             {
-                _delegates.WriteMessageLine($"info string PawnMaterialScore = {PawnMaterial}");
-                _delegates.WriteMessageLine($"info string KnightMaterialScore = {Config.KnightMaterial}");
-                _delegates.WriteMessageLine($"info string BishopMaterialScore = {Config.BishopMaterial}");
-                _delegates.WriteMessageLine($"info string RookMaterialScore = {Config.RookMaterial}");
-                _delegates.WriteMessageLine($"info string QueenMaterialScore = {Config.QueenMaterial}");
-                _delegates.WriteMessageLine($"info string UnderstandsPieceLocation = {UnderstandsPieceLocation}");
-                _delegates.WriteMessageLine($"info string UnderstandsPassedPawns = {UnderstandsPassedPawns}");
-                _delegates.WriteMessageLine($"info string UnderstandsMobility = {UnderstandsMobility}");
-                _delegates.WriteMessageLine($"info string UnderstandsKingSafety = {UnderstandsKingSafety}");
-                //_delegates.WriteMessageLine($"info string UnderstandsThreats = {UnderstandsThreats}");
-                //_delegates.WriteMessageLine($"info string UnderstandsBishopPair = {UnderstandsBishopPair}");
-                //_delegates.WriteMessageLine($"info string UnderstandsOutposts = {UnderstandsOutposts}");
-                //_delegates.WriteMessageLine($"info string Understands7thRank = {Understands7thRank}");
-                //_delegates.WriteMessageLine($"info string UnderstandsTrades = {UnderstandsTrades}");
+                _writeMessageLine($"info string PawnMaterialScore = {PawnMaterial}");
+                _writeMessageLine($"info string KnightMaterialScore = {Config.KnightMaterial}");
+                _writeMessageLine($"info string BishopMaterialScore = {Config.BishopMaterial}");
+                _writeMessageLine($"info string RookMaterialScore = {Config.RookMaterial}");
+                _writeMessageLine($"info string QueenMaterialScore = {Config.QueenMaterial}");
+                _writeMessageLine($"info string UnderstandsPieceLocation = {UnderstandsPieceLocation}");
+                _writeMessageLine($"info string UnderstandsPassedPawns = {UnderstandsPassedPawns}");
+                _writeMessageLine($"info string UnderstandsMobility = {UnderstandsMobility}");
+                _writeMessageLine($"info string UnderstandsKingSafety = {UnderstandsKingSafety}");
+                //_writeMessageLine($"info string UnderstandsThreats = {UnderstandsThreats}");
+                //_writeMessageLine($"info string UnderstandsBishopPair = {UnderstandsBishopPair}");
+                //_writeMessageLine($"info string UnderstandsOutposts = {UnderstandsOutposts}");
+                //_writeMessageLine($"info string Understands7thRank = {Understands7thRank}");
+                //_writeMessageLine($"info string UnderstandsTrades = {UnderstandsTrades}");
             }
         }
 
@@ -253,7 +257,7 @@ namespace ErikTheCoder.MadChess.Engine
         public (bool TerminalDraw, int PositionCount) IsTerminalDraw(Position Position)
         {
             // Only return true if position is drawn and no sequence of moves can make game winnable.
-            int positionCount = _delegates.GetPositionCount();
+            int positionCount = _getPositionCount();
             if (positionCount >= DrawMoves) return (true, positionCount); // Draw by repetition of position
             if (Position.HalfMoveNumber >= 99) return (true, positionCount); // Draw by fifty moves without a capture or pawn move
             // Determine if insufficient material remains for checkmate.
@@ -816,7 +820,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong pieces = Position.WhiteKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = _delegates.GetKnightDestinations(Position, square, true);
+                pieceDestinations = Board.GetKnightDestinations(Position, square, true);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -829,7 +833,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = _delegates.GetKnightDestinations(Position, square, false);
+                pieceDestinations = Board.GetKnightDestinations(Position, square, false);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -842,7 +846,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = _delegates.GetBishopDestinations(Position, square, true);
+                pieceDestinations = Board.GetBishopDestinations(Position, square, true);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -855,7 +859,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = _delegates.GetBishopDestinations(Position, square, false);
+                pieceDestinations = Board.GetBishopDestinations(Position, square, false);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -868,7 +872,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = _delegates.GetRookDestinations(Position, square, true);
+                pieceDestinations = Board.GetRookDestinations(Position, square, true);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -881,7 +885,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = _delegates.GetRookDestinations(Position, square, false);
+                pieceDestinations = Board.GetRookDestinations(Position, square, false);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -894,7 +898,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = _delegates.GetQueenDestinations(Position, square, true);
+                pieceDestinations = Board.GetQueenDestinations(Position, square, true);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -907,7 +911,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = _delegates.GetQueenDestinations(Position, square, false);
+                pieceDestinations = Board.GetQueenDestinations(Position, square, false);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -916,19 +920,27 @@ namespace ErikTheCoder.MadChess.Engine
                 whiteEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
-            // Evaluate white king near open file.
+            // Evaluate white king near semi-open file.
             int kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
-            int file = Board.Files[kingSquare];
-            ulong leftFileMask = file > 0 ? Board.FileMasks[file - 1] : Board.AllSquaresMask;
-            ulong rightFileMask = file < 7 ? Board.FileMasks[file + 1] : Board.AllSquaresMask;
-            int semiOpenFiles = ((Position.WhitePawns & leftFileMask) == 0 ? 1 : 0) + ((Position.WhitePawns & rightFileMask) == 0 ? 1 : 0);
+            int kingFile = Board.Files[kingSquare];
+            ulong leftFileMask = kingFile > 0 ? Board.FileMasks[kingFile - 1] : 0;
+            ulong kingFileMask = Board.FileMasks[kingFile];
+            ulong rightFileMask = kingFile < 7 ? Board.FileMasks[kingFile + 1] : 0;
+            int leftFileSemiOpen = (leftFileMask > 0) && ((Position.WhitePawns & leftFileMask) == 0) ? 1 : 0;
+            int kingFileSemiOpen = (Position.WhitePawns & kingFileMask) == 0 ? 1 : 0;
+            int rightFileSemiOpen = (rightFileMask > 0) && ((Position.WhitePawns & rightFileMask) == 0) ? 1 : 0;
+            int semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
             whiteMgKingSafetyIndexPer8 += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
-            // Evaluate black king near open file.
+            // Evaluate black king near semi-open file.
             kingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
-            file = Board.Files[kingSquare];
-            rightFileMask = file > 0 ? Board.FileMasks[file - 1] : Board.AllSquaresMask;
-            leftFileMask = file < 7 ? Board.FileMasks[file + 1] : Board.AllSquaresMask;
-            semiOpenFiles = ((Position.BlackPawns & leftFileMask) == 0 ? 1 : 0) + ((Position.BlackPawns & rightFileMask) == 0 ? 1 : 0);
+            kingFile = Board.Files[kingSquare];
+            rightFileMask = kingFile > 0 ? Board.FileMasks[kingFile - 1] : 0;
+            kingFileMask = Board.FileMasks[kingFile];
+            leftFileMask = kingFile < 7 ? Board.FileMasks[kingFile + 1] : 0;
+            leftFileSemiOpen = (leftFileMask > 0) && ((Position.BlackPawns & leftFileMask) == 0) ? 1 : 0;
+            kingFileSemiOpen = (Position.BlackPawns & kingFileMask) == 0 ? 1 : 0;
+            rightFileSemiOpen = (rightFileMask > 0) && ((Position.BlackPawns & rightFileMask) == 0) ? 1 : 0;
+            semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
             blackMgKingSafetyIndexPer8 += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
             // Lookup king safety score in array.
             int maxIndex = _kingSafety.Length - 1;
