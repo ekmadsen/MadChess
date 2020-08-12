@@ -17,10 +17,10 @@ using System.Threading;
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    // TODO: Replace all divisions by multiples of 2 (to enable faster bit-shift operations).
     public sealed class Search : IDisposable
     {
         public const int MaxHorizon = 64;
+        public const int MaxQuietDepth = 32;
         public const int MinElo = 400;
         public const int MaxElo = 2200;
         public SearchStats Stats;
@@ -333,6 +333,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _originalHorizon++;
                 _selectiveHorizon = 0;
                 // Clear principal variations and age move history.
+                // TODO: Eliminate use of enumerator (because it allocates memory).
                 using (Dictionary<string, ulong[]>.Enumerator pvEnumerator = _principalVariations.GetEnumerator())
                 {
                     while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
@@ -887,8 +888,8 @@ namespace ErikTheCoder.MadChess.Engine
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
             int minorAndMajorPieces = Position.WhiteMove
-                ? Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens)
-                : Bitwise.CountSetBits(Position.BlackKnights) + Bitwise.CountSetBits(Position.BlackBishops) + Bitwise.CountSetBits(Position.BlackRooks) + Bitwise.CountSetBits(Position.BlackQueens);
+                ? Bitwise.CountSetBits(Position.WhiteKnights | Position.WhiteBishops | Position.WhiteRooks | Position.WhiteQueens)
+                : Bitwise.CountSetBits(Position.BlackKnights | Position.BlackBishops | Position.BlackRooks | Position.BlackQueens);
             return minorAndMajorPieces > 0;
         }
 
@@ -1195,9 +1196,9 @@ namespace ErikTheCoder.MadChess.Engine
             if (_debug())
             {
                 // Update stats.
-                double nullMoveCutoffPercent = 100d * Stats.NullMoveCutoffs / Stats.NullMoves;
+                double nullMoveCutoffPercent = (100d * Stats.NullMoveCutoffs) / Stats.NullMoves;
                 double betaCutoffMoveNumber = (double)Stats.BetaCutoffMoveNumber / Stats.BetaCutoffs;
-                double betaCutoffFirstMovePercent = 100d * Stats.BetaCutoffFirstMove / Stats.BetaCutoffs;
+                double betaCutoffFirstMovePercent = (100d * Stats.BetaCutoffFirstMove) / Stats.BetaCutoffs;
                 _writeMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
                 _writeMessageLine($"info string Evals = {_evaluation.Stats.Evaluations}");
             }

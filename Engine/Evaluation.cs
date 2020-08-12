@@ -779,13 +779,13 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // White Pawn
                 promotionSquare = Board.GetSquare(file, 7);
-                enemyPieces = Bitwise.CountSetBits(Position.BlackKnights) + Bitwise.CountSetBits(Position.BlackBishops) + Bitwise.CountSetBits(Position.BlackRooks) + Bitwise.CountSetBits(Position.BlackQueens);
+                enemyPieces = Bitwise.CountSetBits(Position.BlackKnights | Position.BlackBishops | Position.BlackRooks | Position.BlackQueens);
             }
             else
             {
                 // Black pawn
                 promotionSquare = Board.GetSquare(file, 0);
-                enemyPieces = Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens);
+                enemyPieces = Bitwise.CountSetBits(Position.WhiteKnights | Position.WhiteBishops | Position.WhiteRooks | Position.WhiteQueens);
             }
             if (enemyPieces == 0)
             {
