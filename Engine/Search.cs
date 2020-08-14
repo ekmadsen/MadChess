@@ -51,7 +51,6 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _haveTimeNextHorizonPer128 = 70;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
-        private const int _pvsMinToHorizon = 3;
         private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
@@ -148,8 +147,8 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            _singlePvAspirationWindows = new[] {100, 200, 500};
-            _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
+            _singlePvAspirationWindows = new[] {50, 100, 200, 500 };
+            _multiPvAspirationWindows = new[] { 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000 };
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005
             _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
@@ -433,10 +432,13 @@ namespace ErikTheCoder.MadChess.Engine
         private int GetScoreWithinAspirationWindow(Board Board, int PrincipalVariations)
         {
             int bestScore = _bestScores[0];
-            if ((_originalHorizon == 1) || (Math.Abs(bestScore) >= StaticScore.Checkmate))
+            if (_originalHorizon == 1)
             {
                 // Reset move scores.
                 for (int moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootScores[moveIndex] = -StaticScore.Max;
+            }
+            if ((_originalHorizon == 1) || (Math.Abs(bestScore) >= StaticScore.Checkmate))
+            {
                 // Search moves with infinite aspiration window.
                 return GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
             }
@@ -625,7 +627,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Get best move.
             bestMove = _cache.GetBestMove(cachedPosition);
-            if ((bestMove == Move.Null) && (toHorizon > _estimateBestMoveReduction) && ((Beta - Alpha) > 1))
+            if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon > _estimateBestMoveReduction))
             {
                 // Cached position in a principal variation does not specify a best move.
                 // Estimate best move by searching at reduced depth.
@@ -671,7 +673,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 int searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, drawnEndgame);
                 int moveBeta;
-                if ((legalMoveNumber == 1) || (toHorizon < _pvsMinToHorizon)) moveBeta = Beta; // Search with full alpha / beta window.
+                if (legalMoveNumber == 1) moveBeta = Beta; // Search with full alpha / beta window.
                 else moveBeta = bestScore + 1; // Search with zero alpha / beta window.
                 // Play and search move.
                 Move.SetPlayed(ref move, true);
