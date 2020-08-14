@@ -147,8 +147,8 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            _singlePvAspirationWindows = new[] {50, 100, 200, 500 };
-            _multiPvAspirationWindows = new[] { 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000 };
+            _singlePvAspirationWindows = new[] {50, 100, 200, 500};
+            _multiPvAspirationWindows =  new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005
             _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
@@ -432,13 +432,10 @@ namespace ErikTheCoder.MadChess.Engine
         private int GetScoreWithinAspirationWindow(Board Board, int PrincipalVariations)
         {
             int bestScore = _bestScores[0];
-            if (_originalHorizon == 1)
+            if ((_originalHorizon == 1) || (Math.Abs(bestScore) >= StaticScore.Checkmate))
             {
                 // Reset move scores.
                 for (int moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootScores[moveIndex] = -StaticScore.Max;
-            }
-            if ((_originalHorizon == 1) || (Math.Abs(bestScore) >= StaticScore.Checkmate))
-            {
                 // Search moves with infinite aspiration window.
                 return GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
             }
