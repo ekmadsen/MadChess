@@ -57,17 +57,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Cache cache = new Cache(1, board.ValidateMove);
             KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
             MoveHistory moveHistory = new MoveHistory();
-            EvaluationDelegates evaluationDelegates = new EvaluationDelegates
-            {
-                GetPositionCount = board.GetPositionCount,
-                GetKnightDestinations = Board.GetKnightDestinations,
-                GetBishopDestinations = Board.GetBishopDestinations,
-                GetRookDestinations = Board.GetRookDestinations,
-                GetQueenDestinations = Board.GetQueenDestinations,
-                Debug = () => false,
-                WriteMessageLine = WriteMessageLine
-            };
-            Evaluation evaluation = new Evaluation(evaluationDelegates);
+            Evaluation evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
             Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
@@ -139,19 +129,31 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new Parameter(nameof(EvaluationConfig.MgKingCorner), 0, 50),
                 new Parameter(nameof(EvaluationConfig.EgKingCorner), -50, 0),
                 // Passed Pawns
-                new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePercent), 0, 200),
-                new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePercent), 200, 600),
-                new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePercent), 400, 1000),
-                new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 25),
+                new Parameter(nameof(EvaluationConfig.PassedPawnPowerPer16), 0, 64),
+                new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePer128), 0, 256),
+                new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePer128), 256, 768),
+                new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePer128), 512, 1280),
+                new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 32),
                 // Piece Mobility
-                new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 100),
-                new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 200),
-                new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 100),
-                new Parameter(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 400),
-                new Parameter(nameof(EvaluationConfig.MgRookMobilityScale), 0, 200),
-                new Parameter(nameof(EvaluationConfig.EgRookMobilityScale), 0, 300),
-                new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 200),
-                new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 500)
+                new Parameter(nameof(EvaluationConfig.PieceMobilityPowerPer16), 0, 64),
+                new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 128),
+                new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 256),
+                new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 128),
+                new Parameter(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 512),
+                new Parameter(nameof(EvaluationConfig.MgRookMobilityScale), 0, 256),
+                new Parameter(nameof(EvaluationConfig.EgRookMobilityScale), 0, 384),
+                new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 256),
+                new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 640),
+                // King Safety
+                new Parameter(nameof(EvaluationConfig.KingSafetyPowerPer16), 0, 64),
+                new Parameter(nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
+                new Parameter(nameof(EvaluationConfig.KingSafetyMinorAttackOuterRingPer8), 0, 64),
+                new Parameter(nameof(EvaluationConfig.KingSafetyMinorAttackInnerRingPer8), 0, 64),
+                new Parameter(nameof(EvaluationConfig.KingSafetyRookAttackOuterRingPer8), 0, 64),
+                new Parameter(nameof(EvaluationConfig.KingSafetyRookAttackInnerRingPer8), 0, 64),
+                new Parameter(nameof(EvaluationConfig.KingSafetyQueenAttackOuterRingPer8), 0, 64),
+                new Parameter(nameof(EvaluationConfig.KingSafetyQueenAttackInnerRingPer8), 0, 64),
+                new Parameter(nameof(EvaluationConfig.KingSafetyScalePer128), 0, 128)
             };
         }
 
@@ -205,11 +207,13 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Parameters[nameof(EvaluationConfig.MgKingCorner)].Value = evaluationConfig.MgKingCorner;
             Parameters[nameof(EvaluationConfig.EgKingCorner)].Value = evaluationConfig.EgKingCorner;
             // Passed Pawns
-            Parameters[nameof(EvaluationConfig.MgPassedPawnScalePercent)].Value = evaluationConfig.MgPassedPawnScalePercent;
-            Parameters[nameof(EvaluationConfig.EgPassedPawnScalePercent)].Value = evaluationConfig.EgPassedPawnScalePercent;
-            Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePercent)].Value = evaluationConfig.EgFreePassedPawnScalePercent;
+            Parameters[nameof(EvaluationConfig.PassedPawnPowerPer16)].Value = evaluationConfig.PassedPawnPowerPer16;
+            Parameters[nameof(EvaluationConfig.MgPassedPawnScalePer128)].Value = evaluationConfig.MgPassedPawnScalePer128;
+            Parameters[nameof(EvaluationConfig.EgPassedPawnScalePer128)].Value = evaluationConfig.EgPassedPawnScalePer128;
+            Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePer128)].Value = evaluationConfig.EgFreePassedPawnScalePer128;
             Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value = evaluationConfig.EgKingEscortedPassedPawn;
             // Piece Mobility
+            Parameters[nameof(EvaluationConfig.PieceMobilityPowerPer16)].Value = evaluationConfig.PieceMobilityPowerPer16;
             Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value = evaluationConfig.MgKnightMobilityScale;
             Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value = evaluationConfig.EgKnightMobilityScale;
             Parameters[nameof(EvaluationConfig.MgBishopMobilityScale)].Value = evaluationConfig.MgBishopMobilityScale;
@@ -218,6 +222,16 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Parameters[nameof(EvaluationConfig.EgRookMobilityScale)].Value = evaluationConfig.EgRookMobilityScale;
             Parameters[nameof(EvaluationConfig.MgQueenMobilityScale)].Value = evaluationConfig.MgQueenMobilityScale;
             Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value = evaluationConfig.EgQueenMobilityScale;
+            // King Safety
+            Parameters[nameof(EvaluationConfig.KingSafetyPowerPer16)].Value = evaluationConfig.KingSafetyPowerPer16;
+            Parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value = evaluationConfig.MgKingSafetySemiOpenFilePer8;
+            Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackOuterRingPer8)].Value = evaluationConfig.KingSafetyMinorAttackOuterRingPer8;
+            Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackInnerRingPer8)].Value = evaluationConfig.KingSafetyMinorAttackInnerRingPer8;
+            Parameters[nameof(EvaluationConfig.KingSafetyRookAttackOuterRingPer8)].Value = evaluationConfig.KingSafetyRookAttackOuterRingPer8;
+            Parameters[nameof(EvaluationConfig.KingSafetyRookAttackInnerRingPer8)].Value = evaluationConfig.KingSafetyRookAttackInnerRingPer8;
+            Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackOuterRingPer8)].Value = evaluationConfig.KingSafetyQueenAttackOuterRingPer8;
+            Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackInnerRingPer8)].Value = evaluationConfig.KingSafetyQueenAttackInnerRingPer8;
+            Parameters[nameof(EvaluationConfig.KingSafetyScalePer128)].Value = evaluationConfig.KingSafetyScalePer128;
         }
 
 
@@ -243,17 +257,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 Cache cache = new Cache(1, board.ValidateMove);
                 KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
                 MoveHistory moveHistory = new MoveHistory();
-                EvaluationDelegates evaluationDelegates = new EvaluationDelegates
-                {
-                    GetPositionCount = board.GetPositionCount,
-                    GetKnightDestinations = Board.GetKnightDestinations,
-                    GetBishopDestinations = Board.GetBishopDestinations,
-                    GetRookDestinations = Board.GetRookDestinations,
-                    GetQueenDestinations = Board.GetQueenDestinations,
-                    Debug = () => false,
-                    WriteMessageLine = _writeMessageLine
-                };
-                Evaluation evaluation = new Evaluation(evaluationDelegates);
+                Evaluation evaluation = new Evaluation(board.GetPositionCount, () => false, _writeMessageLine);
                 evaluations[index] = evaluation;
                 searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
             }

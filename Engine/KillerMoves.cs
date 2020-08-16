@@ -22,7 +22,6 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _killerMoves = new KillerMove[MaxDepth + 1][];
             for (int depth = 0; depth <= MaxDepth; depth++) _killerMoves[depth] = new[] {new KillerMove(Piece.None, Square.Illegal), new KillerMove(Piece.None, Square.Illegal)};
-            Reset();
         }
 
 
@@ -69,9 +68,9 @@ namespace ErikTheCoder.MadChess.Engine
 
         public void Reset()
         {
-            for (int index = 0; index < _killerMoves.Length; index++)
+            for (int depth = 0; depth < _killerMoves.Length; depth++)
             {
-                KillerMove[] killerMoves = _killerMoves[index];
+                KillerMove[] killerMoves = _killerMoves[depth];
                 killerMoves[0].Piece = Piece.None;
                 killerMoves[0].ToSquare = Square.Illegal;
                 killerMoves[1].Piece = Piece.None;

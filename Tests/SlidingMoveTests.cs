@@ -36,7 +36,7 @@ namespace ErikTheCoder.MadChess.Tests
             Bitwise.SetBit(ref expectedUnoccupiedMovesMask, Square.a3);
             ulong relevantMoveDestinations = unoccupiedMovesMask & PrecalculatedMoves.GetRelevantOccupancy(Square.e7, false);
             uciStream.WriteMessageLine("Relevant move destinations = ");
-            uciStream.WriteMessageLine(Board.ToString(relevantMoveDestinations));
+            uciStream.WriteMessageLine(Position.ToString(relevantMoveDestinations));
             uciStream.WriteMessageLine();
             ulong expectedRelevantMoveDestinations = 0;
             Bitwise.SetBit(ref expectedRelevantMoveDestinations, Square.d6);
@@ -45,14 +45,14 @@ namespace ErikTheCoder.MadChess.Tests
             Bitwise.SetBit(ref expectedRelevantMoveDestinations, Square.g5);
             Bitwise.SetBit(ref expectedRelevantMoveDestinations, Square.b4);
             uciStream.WriteMessageLine("Expected relevant move destinations = ");
-            uciStream.WriteMessageLine(Board.ToString(relevantMoveDestinations));
+            uciStream.WriteMessageLine(Position.ToString(relevantMoveDestinations));
             uciStream.WriteMessageLine();
             Assert.That(relevantMoveDestinations, Is.EqualTo(expectedRelevantMoveDestinations));
 
             Direction[] bishopDirections = { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
             ulong bishopDestinations = Board.CreateMoveDestinationsMask(Square.e7, board.CurrentPosition.Occupancy, bishopDirections);
             uciStream.WriteMessageLine("Bishop destinations = ");
-            uciStream.WriteMessageLine(Board.ToString(bishopDestinations));
+            uciStream.WriteMessageLine(Position.ToString(bishopDestinations));
             uciStream.WriteMessageLine();
             ulong expectedBishopDestinations = 0;
             Bitwise.SetBit(ref expectedBishopDestinations, Square.d8);
@@ -65,13 +65,13 @@ namespace ErikTheCoder.MadChess.Tests
             Bitwise.SetBit(ref expectedBishopDestinations, Square.h4);
             Bitwise.SetBit(ref expectedBishopDestinations, Square.a3);
             uciStream.WriteMessageLine("Expected bishop destinations = ");
-            uciStream.WriteMessageLine(Board.ToString(expectedBishopDestinations));
+            uciStream.WriteMessageLine(Position.ToString(expectedBishopDestinations));
             uciStream.WriteMessageLine();
             Assert.That(bishopDestinations, Is.EqualTo(expectedBishopDestinations));
 
             ulong precalculatedBishopDestinations = Board.PrecalculatedMoves.GetBishopMovesMask(Square.e7, board.CurrentPosition.Occupancy);
             uciStream.WriteMessageLine("Precalculated bishop destinations = ");
-            uciStream.WriteMessageLine(Board.ToString(precalculatedBishopDestinations));
+            uciStream.WriteMessageLine(Position.ToString(precalculatedBishopDestinations));
             uciStream.WriteMessageLine();
             Assert.That(precalculatedBishopDestinations, Is.EqualTo(expectedBishopDestinations));
         }

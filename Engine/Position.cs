@@ -383,9 +383,9 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 ulong knightDestinations = MoveGeneration switch
                 {
-                    MoveGeneration.AllMoves => (Board.KnightMoveMasks[fromSquare] & unOrEnemyOccupiedSquares & ToSquareMask),
-                    MoveGeneration.OnlyCaptures => (Board.KnightMoveMasks[fromSquare] & enemyOccupiedSquares & ToSquareMask),
-                    MoveGeneration.OnlyNonCaptures => (Board.KnightMoveMasks[fromSquare] & ~Occupancy & ToSquareMask),
+                    MoveGeneration.AllMoves => Board.KnightMoveMasks[fromSquare] & unOrEnemyOccupiedSquares & ToSquareMask,
+                    MoveGeneration.OnlyCaptures => Board.KnightMoveMasks[fromSquare] & enemyOccupiedSquares & ToSquareMask,
+                    MoveGeneration.OnlyNonCaptures => Board.KnightMoveMasks[fromSquare] & ~Occupancy & ToSquareMask,
                     _ => throw new Exception($"{MoveGeneration} move generation not supported.")
                 };
                 int toSquare;
@@ -434,9 +434,9 @@ namespace ErikTheCoder.MadChess.Engine
                 ulong occupancy = Board.BishopMoveMasks[fromSquare] & Occupancy;
                 ulong bishopDestinations = MoveGeneration switch
                 {
-                    MoveGeneration.AllMoves => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & ToSquareMask),
-                    MoveGeneration.OnlyCaptures => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & ToSquareMask),
-                    MoveGeneration.OnlyNonCaptures => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & ~Occupancy & ToSquareMask),
+                    MoveGeneration.AllMoves => Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & ToSquareMask,
+                    MoveGeneration.OnlyCaptures => Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & ToSquareMask,
+                    MoveGeneration.OnlyNonCaptures => Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & ~Occupancy & ToSquareMask,
                     _ => throw new Exception($"{MoveGeneration} move generation not supported.")
                 };
                 int toSquare;
@@ -486,9 +486,9 @@ namespace ErikTheCoder.MadChess.Engine
                 ulong occupancy = Board.RookMoveMasks[fromSquare] & Occupancy;
                 ulong rookDestinations = MoveGeneration switch
                 {
-                    MoveGeneration.AllMoves => (Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & ToSquareMask),
-                    MoveGeneration.OnlyCaptures => (Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & ToSquareMask),
-                    MoveGeneration.OnlyNonCaptures => (Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & ~Occupancy & ToSquareMask),
+                    MoveGeneration.AllMoves => Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & ToSquareMask,
+                    MoveGeneration.OnlyCaptures => Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & ToSquareMask,
+                    MoveGeneration.OnlyNonCaptures => Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & ~Occupancy & ToSquareMask,
                     _ => throw new Exception($"{MoveGeneration} move generation not supported.")
                 };
                 int toSquare;
@@ -539,9 +539,9 @@ namespace ErikTheCoder.MadChess.Engine
                 ulong rookOccupancy = Board.RookMoveMasks[fromSquare] & Occupancy;
                 ulong queenDestinations = MoveGeneration switch
                 {
-                    MoveGeneration.AllMoves => ((Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares & ToSquareMask),
-                    MoveGeneration.OnlyCaptures => ((Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & enemyOccupiedSquares & ToSquareMask),
-                    MoveGeneration.OnlyNonCaptures => ((Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & ~Occupancy & ToSquareMask),
+                    MoveGeneration.AllMoves => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares & ToSquareMask,
+                    MoveGeneration.OnlyCaptures => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & enemyOccupiedSquares & ToSquareMask,
+                    MoveGeneration.OnlyNonCaptures => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & ~Occupancy & ToSquareMask,
                     _ => throw new Exception($"{MoveGeneration} move generation not supported.")
                 };
                 int toSquare;
@@ -602,9 +602,9 @@ namespace ErikTheCoder.MadChess.Engine
             if (fromSquare == Square.Illegal) return;
             ulong kingDestinations = MoveGeneration switch
             {
-                MoveGeneration.AllMoves => (Board.KingMoveMasks[fromSquare] & unOrEnemyOccupiedSquares & ToSquareMask),
-                MoveGeneration.OnlyCaptures => (Board.KingMoveMasks[fromSquare] & enemyOccupiedSquares & ToSquareMask),
-                MoveGeneration.OnlyNonCaptures => (Board.KingMoveMasks[fromSquare] & ~Occupancy & ToSquareMask),
+                MoveGeneration.AllMoves => Board.KingMoveMasks[fromSquare] & unOrEnemyOccupiedSquares & ToSquareMask,
+                MoveGeneration.OnlyCaptures => Board.KingMoveMasks[fromSquare] & enemyOccupiedSquares & ToSquareMask,
+                MoveGeneration.OnlyNonCaptures => Board.KingMoveMasks[fromSquare] & ~Occupancy & ToSquareMask,
                 _ => throw new Exception($"{MoveGeneration} move generation not supported.")
             };
             int toSquare;
@@ -799,6 +799,22 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.Append(HalfMoveNumber);
             stringBuilder.Append(" ");
             stringBuilder.Append(FullMoveNumber);
+            return stringBuilder.ToString();
+        }
+
+
+        public static string ToString(ulong Occupancy)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int rank = 7; rank >= 0; rank--)
+            {
+                for (int file = 0; file < 8; file++)
+                {
+                    int square = Board.GetSquare(file, rank);
+                    stringBuilder.Append(Bitwise.IsBitSet(Occupancy, square) ? " 1 " : " . ");
+                }
+                stringBuilder.AppendLine();
+            }
             return stringBuilder.ToString();
         }
 

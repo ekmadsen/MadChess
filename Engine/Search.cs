@@ -17,10 +17,10 @@ using System.Threading;
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    // TODO: Replace all divisions by multiples of 2 (to enable faster bit-shift operations).
     public sealed class Search : IDisposable
     {
         public const int MaxHorizon = 64;
+        public const int MaxQuietDepth = 32;
         public const int MinElo = 400;
         public const int MaxElo = 2200;
         public SearchStats Stats;
@@ -45,14 +45,13 @@ namespace ErikTheCoder.MadChess.Engine
         public bool Continue;
         private const double _millisecondsReserved = 100d;
         private const int _minMovesRemaining = 8;
-        private const int _piecesMovesPer128 = 160; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _materialAdvantageMovesPer1024 = 25; // This improves integer division speed since x / 1024 = x >> 10.
-        private const int _moveTimeHardLimitPer128 = 512; // This improves integer division speed since x / 128 = x >> 7.
-        private const int _haveTimeNextHorizonPer128 = 70; // This improves integer division speed since x / 128 = x >> 7.
+        private const int _piecesMovesPer128 = 160;
+        private const int _materialAdvantageMovesPer1024 = 25;
+        private const int _moveTimeHardLimitPer128 = 512;
+        private const int _haveTimeNextHorizonPer128 = 70;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
-        private const int _pvsMinToHorizon = 3;
-        private const int _historyPriorMovePer128 = 256; // This improves integer division speed since x / 128 = x >> 7.
+        private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
@@ -93,6 +92,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public bool LimitStrength
         {
+            get => _limitStrength;
             set
             {
                 _limitStrength = value;
@@ -107,6 +107,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int Elo
         {
+            get => _elo;
             set
             {
                 if ((value >= MinElo) && (value <= MaxElo))
@@ -146,8 +147,8 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            _singlePvAspirationWindows = new[] {100, 200, 500};
-            _multiPvAspirationWindows = new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
+            _singlePvAspirationWindows = new[] {200, 600};
+            _multiPvAspirationWindows =  new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005
             _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
@@ -266,7 +267,11 @@ namespace ErikTheCoder.MadChess.Engine
             power = 2;
             constant = 5;
             BlunderPercent = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant);
-            if (_debug()) _writeMessageLine($"info string NPS = {NodesPerSecond} MoveError = {MoveError} BlunderError = {BlunderError} BlunderPercent = {BlunderPercent}.");
+            if (_debug())
+            {
+                _writeMessageLine($"info string LimitStrength = {LimitStrength}, ELO = {Elo}.");
+                _writeMessageLine($"info string NPS = {NodesPerSecond}, MoveError = {MoveError}, BlunderError = {BlunderError}, BlunderPercent = {BlunderPercent}.");
+            }
         }
 
 
@@ -327,6 +332,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _originalHorizon++;
                 _selectiveHorizon = 0;
                 // Clear principal variations and age move history.
+                // TODO: Eliminate use of enumerator (because it allocates memory).
                 using (Dictionary<string, ulong[]>.Enumerator pvEnumerator = _principalVariations.GetEnumerator())
                 {
                     while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
@@ -434,6 +440,7 @@ namespace ErikTheCoder.MadChess.Engine
                 return GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
             }
             int[] aspirationWindows;
+            // TODO: Fix aspiration window code.  The aspirationStartingIndex variable never is used.
             int aspirationStartingIndex;
             switch (_scoreError)
             {
@@ -618,7 +625,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Get best move.
             bestMove = _cache.GetBestMove(cachedPosition);
-            if ((bestMove == Move.Null) && (toHorizon > _estimateBestMoveReduction) && ((Beta - Alpha) > 1))
+            if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon > _estimateBestMoveReduction))
             {
                 // Cached position in a principal variation does not specify a best move.
                 // Estimate best move by searching at reduced depth.
@@ -664,7 +671,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 int searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, drawnEndgame);
                 int moveBeta;
-                if ((legalMoveNumber == 1) || (toHorizon < _pvsMinToHorizon)) moveBeta = Beta; // Search with full alpha / beta window.
+                if (legalMoveNumber == 1) moveBeta = Beta; // Search with full alpha / beta window.
                 else moveBeta = bestScore + 1; // Search with zero alpha / beta window.
                 // Play and search move.
                 Move.SetPlayed(ref move, true);
@@ -881,8 +888,8 @@ namespace ErikTheCoder.MadChess.Engine
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
             int minorAndMajorPieces = Position.WhiteMove
-                ? Bitwise.CountSetBits(Position.WhiteKnights) + Bitwise.CountSetBits(Position.WhiteBishops) + Bitwise.CountSetBits(Position.WhiteRooks) + Bitwise.CountSetBits(Position.WhiteQueens)
-                : Bitwise.CountSetBits(Position.BlackKnights) + Bitwise.CountSetBits(Position.BlackBishops) + Bitwise.CountSetBits(Position.BlackRooks) + Bitwise.CountSetBits(Position.BlackQueens);
+                ? Bitwise.CountSetBits(Position.WhiteKnights | Position.WhiteBishops | Position.WhiteRooks | Position.WhiteQueens)
+                : Bitwise.CountSetBits(Position.BlackKnights | Position.BlackBishops | Position.BlackRooks | Position.BlackQueens);
             return minorAndMajorPieces > 0;
         }
 
@@ -1189,9 +1196,9 @@ namespace ErikTheCoder.MadChess.Engine
             if (_debug())
             {
                 // Update stats.
-                double nullMoveCutoffPercent = 100d * Stats.NullMoveCutoffs / Stats.NullMoves;
+                double nullMoveCutoffPercent = (100d * Stats.NullMoveCutoffs) / Stats.NullMoves;
                 double betaCutoffMoveNumber = (double)Stats.BetaCutoffMoveNumber / Stats.BetaCutoffs;
-                double betaCutoffFirstMovePercent = 100d * Stats.BetaCutoffFirstMove / Stats.BetaCutoffs;
+                double betaCutoffFirstMovePercent = (100d * Stats.BetaCutoffFirstMove) / Stats.BetaCutoffs;
                 _writeMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
                 _writeMessageLine($"info string Evals = {_evaluation.Stats.Evaluations}");
             }
