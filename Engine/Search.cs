@@ -147,7 +147,7 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            _singlePvAspirationWindows = new[] {50, 100, 200, 500};
+            _singlePvAspirationWindows = new[] {200, 600};
             _multiPvAspirationWindows =  new[] {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000};
             _scoreErrorAspirationWindows = new int[1];
             // To Horizon =              000  001  002  003  004  005
@@ -440,6 +440,7 @@ namespace ErikTheCoder.MadChess.Engine
                 return GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
             }
             int[] aspirationWindows;
+            // TODO: Fix aspiration window code.  The aspirationStartingIndex variable never is used.
             int aspirationStartingIndex;
             switch (_scoreError)
             {
