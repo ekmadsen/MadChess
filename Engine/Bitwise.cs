@@ -1,6 +1,6 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -10,8 +10,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq; // Use LINQ only for Debug.Asserts.
-using System.Runtime.CompilerServices;
+using System.Linq;
+using System.Runtime.CompilerServices; // Use LINQ only for Debug.Asserts.
 using System.Text;
 using System.Runtime.Intrinsics.X86;
 

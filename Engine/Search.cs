@@ -1,6 +1,6 @@
 // +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
@@ -559,6 +560,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetDynamicScore(Board Board, int Depth, int Horizon, bool IsNullMoveAllowed, int Alpha, int Beta)
         {
             if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
@@ -575,6 +577,7 @@ namespace ErikTheCoder.MadChess.Engine
             int toHorizon = Horizon - Depth;
             int historyIncrement = toHorizon * toHorizon;
             CachedPosition cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
+            Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
             ulong bestMove;
             if ((cachedPosition.Key != 0) && (Depth > 0) && (positionCount < 2))
             {
@@ -770,11 +773,12 @@ namespace ErikTheCoder.MadChess.Engine
             Board.UndoMove();
             return scoreAfterMove - scoreBeforeMove;
         }
-
+        
 
         public int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta) => GetQuietScore(Board, Depth, Horizon, ToSquareMask, Alpha, Beta, _getStaticScore, true);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta, Delegates.GetStaticScore GetStaticScore, bool ConsiderFutility)
         {
             if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
@@ -867,6 +871,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             int toHorizon = Horizon - Depth;
@@ -883,6 +888,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
         {
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
@@ -894,6 +900,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool DoesNullMoveCauseBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
         {
             // Play and search null move.
@@ -905,6 +912,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public (ulong Move, int MoveIndex) GetNextMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
         {
             while (true)
@@ -966,6 +974,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         // Pass BestMove parameter even though it isn't referenced to satisfy GetNextMove delegate signature.
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static (ulong Move, int MoveIndex) GetNextCapture(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
         {
             while (true)
@@ -999,6 +1008,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             int toHorizon = Horizon - Depth;
@@ -1027,6 +1037,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetSearchHorizon(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, bool IsDrawnEndgame)
         {
             if (Depth == 0)
@@ -1054,6 +1065,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetCachedScore(ulong PositionData, int Depth, int Horizon, int Alpha, int Beta)
         {
             int score = CachedPositionData.Score(PositionData);
@@ -1095,6 +1107,7 @@ namespace ErikTheCoder.MadChess.Engine
         public void PrioritizeMoves(Position Position, ulong[] Moves, int LastMoveIndex, ulong BestMove, int Depth) => PrioritizeMoves(Position, Moves, 0, LastMoveIndex, BestMove, Depth);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PrioritizeMoves(Position Position, ulong[] Moves, int FirstMoveIndex, int LastMoveIndex, ulong BestMove, int Depth)
         {
             for (int moveIndex = FirstMoveIndex; moveIndex <= LastMoveIndex; moveIndex++)
@@ -1111,18 +1124,23 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SortMovesByPriority(ulong[] Moves, int LastMoveIndex) => Array.Sort(Moves, 0, LastMoveIndex + 1, _movePriorityComparer);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SortMovesByPriority(ulong[] Moves, int FirstMoveIndex, int LastMoveIndex) => Array.Sort(Moves, FirstMoveIndex, LastMoveIndex - FirstMoveIndex + 1, _movePriorityComparer);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SortMovesByPriority(ulong[] Moves, int[] Scores, int LastMoveIndex) => Array.Sort(Moves, Scores, 0, LastMoveIndex + 1, _movePriorityComparer);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SortMovesByScore(ulong[] Moves, int[] Scores, int LastMoveIndex) => Array.Sort(Scores, Moves, 0, LastMoveIndex + 1, _moveScoreComparer);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void UpdateBestMoveCache(Position CurrentPosition, int Depth, int Horizon, ulong BestMove, int Score, int Alpha, int Beta)
         {
             if (Math.Abs(Score) == StaticScore.Interrupted) return;
