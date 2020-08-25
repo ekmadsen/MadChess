@@ -1,6 +1,6 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -9,6 +9,7 @@
 
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 
@@ -60,27 +61,26 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int GetPiece(int Square)
         {
-            // Testing redundant piece array (in feature/redundant-piece-array branch) revealed zero strength improvement compared to this bitboard code.
             ulong squareMask = Board.SquareMasks[Square];
             if ((Occupancy & squareMask) == 0) return Piece.None;
             if ((OccupancyWhite & squareMask) > 0)
             {
                 // Locate white piece.
-                if (Bitwise.FindFirstSetBit(WhitePawns & squareMask) != Engine.Square.Illegal) return Piece.WhitePawn;
-                if (Bitwise.FindFirstSetBit(WhiteKnights & squareMask) != Engine.Square.Illegal) return Piece.WhiteKnight;
-                if (Bitwise.FindFirstSetBit(WhiteBishops & squareMask) != Engine.Square.Illegal) return Piece.WhiteBishop;
-                if (Bitwise.FindFirstSetBit(WhiteRooks & squareMask) != Engine.Square.Illegal) return Piece.WhiteRook;
-                if (Bitwise.FindFirstSetBit(WhiteQueens & squareMask) != Engine.Square.Illegal) return Piece.WhiteQueen;
-                if (Bitwise.FindFirstSetBit(WhiteKing & squareMask) != Engine.Square.Illegal) return Piece.WhiteKing;
+                if ((WhitePawns & squareMask) > 0) return Piece.WhitePawn;
+                if ((WhiteKnights & squareMask) > 0) return Piece.WhiteKnight;
+                if ((WhiteBishops & squareMask) > 0) return Piece.WhiteBishop;
+                if ((WhiteRooks & squareMask) > 0) return Piece.WhiteRook;
+                if ((WhiteQueens & squareMask) > 0) return Piece.WhiteQueen;
+                if ((WhiteKing & squareMask) > 0) return Piece.WhiteKing;
                 throw new Exception($"White piece not found at {Board.SquareLocations[Square]}.");
             }
             // Locate black piece.
-            if (Bitwise.FindFirstSetBit(BlackPawns & squareMask) != Engine.Square.Illegal) return Piece.BlackPawn;
-            if (Bitwise.FindFirstSetBit(BlackKnights & squareMask) != Engine.Square.Illegal) return Piece.BlackKnight;
-            if (Bitwise.FindFirstSetBit(BlackBishops & squareMask) != Engine.Square.Illegal) return Piece.BlackBishop;
-            if (Bitwise.FindFirstSetBit(BlackRooks & squareMask) != Engine.Square.Illegal) return Piece.BlackRook;
-            if (Bitwise.FindFirstSetBit(BlackQueens & squareMask) != Engine.Square.Illegal) return Piece.BlackQueen;
-            if (Bitwise.FindFirstSetBit(BlackKing & squareMask) != Engine.Square.Illegal) return Piece.BlackKing;
+            if ((BlackPawns & squareMask) > 0) return Piece.BlackPawn;
+            if ((BlackKnights & squareMask) > 0) return Piece.BlackKnight;
+            if ((BlackBishops & squareMask) > 0) return Piece.BlackBishop;
+            if ((BlackRooks & squareMask) > 0) return Piece.BlackRook;
+            if ((BlackQueens & squareMask) > 0) return Piece.BlackQueen;
+            if ((BlackKing & squareMask) > 0) return Piece.BlackKing;
             throw new Exception($"Black piece not found at {Square}.");
         }
 
@@ -140,6 +140,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GeneratePawnMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong pawns;
@@ -356,6 +357,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         // TODO: Refactor move generation into sliders and non-sliders using a delegate to get move masks.
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GenerateKnightMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong knights;
@@ -406,6 +408,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GenerateBishopMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong bishops;
@@ -458,6 +461,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GenerateRookMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong rooks;
@@ -510,6 +514,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GenerateQueenMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong queens;
@@ -563,6 +568,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GenerateKingMoves(MoveGeneration MoveGeneration, ulong FromSquareMask, ulong ToSquareMask)
         {
             ulong king;
@@ -626,7 +632,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 if (castleQueenside && ((Occupancy & castleQueensideMask) == 0))
                 {
-                    // Castle queenside
+                    // Castle Queenside
                     if (WhiteMove)
                     {
                         // White Move
@@ -653,7 +659,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
                 if (castleKingside && ((Occupancy & castleKingsideMask) == 0))
                 {
-                    // Castle kingside
+                    // Castle Kingside
                     if (WhiteMove)
                     {
                         // White Move
@@ -682,6 +688,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void FindPotentiallyPinnedPieces()
         {
             int kingSquare;
@@ -856,6 +863,7 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine($"Key:             {Key:X16}");
             stringBuilder.AppendLine($"Position Count:  {_board.GetPositionCount()}");
             stringBuilder.AppendLine($"King in Check:   {(KingInCheck ? "Yes" : "No")}");
+            stringBuilder.AppendLine($"Played Move:     {Move.ToString(PlayedMove)}");
             return stringBuilder.ToString();
         }
     }

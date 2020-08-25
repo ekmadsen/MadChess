@@ -1,6 +1,6 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -36,10 +36,10 @@ namespace ErikTheCoder.MadChess.Engine
         // 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
         //                                                         K|Q|k|q
 
-        // K = White castle kingside
-        // Q = White castle queenside
-        // k = Black castle kingside
-        // q = Black castle queenside
+        // K = White Castle Kingside
+        // Q = White Castle Queenside
+        // k = Black Castle Kingside
+        // q = Black Castle Queenside
 
 
         static Castling()
@@ -74,7 +74,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear.
             Castling &= _whiteKingsideUnmask;
             // Set.
-            Castling |= whiteKingSide << _whiteKingsideShift;
+            Castling |= (whiteKingSide << _whiteKingsideShift) & _whiteKingsideMask;
             // Validate move.
             Debug.Assert(Engine.Castling.WhiteKingside(Castling) == WhiteKingside);
         }
@@ -91,7 +91,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear.
             Castling &= _whiteQueensideUnmask;
             // Set.
-            Castling |= whiteQueenside << _whiteQueensideShift;
+            Castling |= (whiteQueenside << _whiteQueensideShift) & _whiteQueensideMask;
             // Validate move.
             Debug.Assert(Engine.Castling.WhiteQueenside(Castling) == WhiteQueenside);
         }
@@ -108,7 +108,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear.
             Castling &= _blackKingsideUnmask;
             // Set.
-            Castling |= blackKingSide << _blackKingsideShift;
+            Castling |= (blackKingSide << _blackKingsideShift) & _blackKingsideMask;
             // Validate move.
             Debug.Assert(Engine.Castling.BlackKingside(Castling) == BlackKingside);
         }
@@ -125,7 +125,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear.
             Castling &= _blackQueensideUnmask;
             // Set.
-            Castling |= blackQueenside;
+            Castling |= blackQueenside & _blackQueensideMask;
             // Validate move.
             Debug.Assert(Engine.Castling.BlackQueenside(Castling) == BlackQueenside);
         }

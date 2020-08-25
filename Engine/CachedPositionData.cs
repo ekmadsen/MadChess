@@ -1,6 +1,6 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -87,10 +87,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Data &= _toHorizonUnmask;
             // Set.
-            Data |= (ulong)ToHorizon << _toHorizonShift;
+            Data |= ((ulong)ToHorizon << _toHorizonShift) & _toHorizonMask;
             // Validate cached position.
-            Debug.Assert(Engine.CachedPositionData.ToHorizon(Data) == ToHorizon);
-            Debug.Assert(IsValid(Data));
+            Debug.Assert(CachedPositionData.ToHorizon(Data) == ToHorizon);
         }
 
 
@@ -104,10 +103,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Data &= _bestMoveFromUnmask;
             // Set.
-            Data |= (ulong)BestMoveFrom << _bestMoveFromShift;
+            Data |= ((ulong)BestMoveFrom << _bestMoveFromShift) & _bestMoveFromMask;
             // Validate cached position.
-            Debug.Assert(Engine.CachedPositionData.BestMoveFrom(Data) == BestMoveFrom);
-            Debug.Assert(IsValid(Data));
+            Debug.Assert(CachedPositionData.BestMoveFrom(Data) == BestMoveFrom);
         }
 
 
@@ -121,10 +119,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Data &= _bestMoveToUnmask;
             // Set.
-            Data |= (ulong)BestMoveTo << _bestMoveToShift;
+            Data |= ((ulong)BestMoveTo << _bestMoveToShift) & _bestMoveToMask;
             // Validate cached position.
-            Debug.Assert(Engine.CachedPositionData.BestMoveTo(Data) == BestMoveTo);
-            Debug.Assert(IsValid(Data));
+            Debug.Assert(CachedPositionData.BestMoveTo(Data) == BestMoveTo);
         }
 
 
@@ -138,10 +135,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Data &= _bestMovePromotedPieceUnmask;
             // Set.
-            Data |= (ulong)BestMovePromotedPiece << _bestMovePromotedPieceShift;
+            Data |= ((ulong)BestMovePromotedPiece << _bestMovePromotedPieceShift) & _bestMovePromotedPieceMask;
             // Validate cached position.
-            Debug.Assert(Engine.CachedPositionData.BestMovePromotedPiece(Data) == BestMovePromotedPiece);
-            Debug.Assert(IsValid(Data));
+            Debug.Assert(CachedPositionData.BestMovePromotedPiece(Data) == BestMovePromotedPiece);
         }
 
 
@@ -157,10 +153,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Data &= _scoreUnmask;
             // Set.
-            Data |= (ulong)score << _scoreShift;
+            Data |= ((ulong)score << _scoreShift) & _scoreMask;
             // Validate cached position.
-            Debug.Assert(Engine.CachedPositionData.Score(Data) == Score);
-            Debug.Assert(IsValid(Data));
+            Debug.Assert(CachedPositionData.Score(Data) == Score);
         }
 
 
@@ -175,10 +170,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Data &= _scorePrecisionUnmask;
             // Set.
-            Data |= scorePrecision << _scorePrecisionShift;
+            Data |= (scorePrecision << _scorePrecisionShift) & _scorePrecisionMask;
             // Validate cached position.
-            Debug.Assert(Engine.CachedPositionData.ScorePrecision(Data) == ScorePrecision);
-            Debug.Assert(IsValid(Data));
+            Debug.Assert(CachedPositionData.ScorePrecision(Data) == ScorePrecision);
         }
 
 
@@ -192,27 +186,25 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Data &= _lastAccessedUnmask;
             // Set.
-            Data |= LastAccessed;
+            Data |= LastAccessed & _lastAccessedMask;
             // Validate cached position.
-            Debug.Assert(Engine.CachedPositionData.LastAccessed(Data) == LastAccessed);
-            Debug.Assert(IsValid(Data));
+            Debug.Assert(CachedPositionData.LastAccessed(Data) == LastAccessed);
         }
 
 
         public static void Clear(ref ulong Data)
         {
-            // Set score first so padding is applied, ensuring a positive number is stored. 
-            SetScore(ref Data, StaticScore.NotCached);
             SetToHorizon(ref Data, 0);
             SetBestMoveFrom(ref Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
             SetBestMoveTo(ref Data, Square.Illegal);
             SetBestMovePromotedPiece(ref Data, Piece.None);
+            SetScore(ref Data, StaticScore.NotCached);
             SetScorePrecision(ref Data, Engine.ScorePrecision.Unknown);
             SetLastAccessed(ref Data, 0);
         }
 
 
-        private static bool IsValid(ulong Data)
+        public static bool IsValid(ulong Data)
         {
             Debug.Assert(ToHorizon(Data) <= Search.MaxHorizon);
             Debug.Assert(BestMoveFrom(Data) <= Square.Illegal);

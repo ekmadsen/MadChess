@@ -1,6 +1,6 @@
 // +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -143,12 +143,12 @@ namespace ErikTheCoder.MadChess.Engine
             _toUnmask = Bitwise.CreateULongUnmask(0, 6);
             // Set null move.
             Null = 0;
-            SetHistory(ref Null, 0); // Set history first to avoid debug assertion failing.
             SetIsBest(ref Null, false);
             SetCaptureVictim(ref Null, Piece.None);
             SetCaptureAttacker(ref Null, Piece.None);
             SetPromotedPiece(ref Null, Piece.None);
             SetKiller(ref Null, 0);
+            SetHistory(ref Null, 0);
             SetPlayed(ref Null, false);
             SetIsCastling(ref Null, false);
             SetIsKingMove(ref Null, false);
@@ -173,10 +173,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _bestUnmask;
             // Set
-            Move |= isBest << _bestShift;
+            Move |= (isBest << _bestShift) & _bestMask;
             // Validate move.
             Debug.Assert(Engine.Move.IsBest(Move) == IsBest);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -190,10 +189,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _captureVictimUnmask;
             // Set
-            Move |= (ulong)CaptureVictim << _captureVictimShift;
+            Move |= ((ulong)CaptureVictim << _captureVictimShift) & _captureVictimMask;
             // Validate move.
             Debug.Assert(Engine.Move.CaptureVictim(Move) == CaptureVictim);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -214,10 +212,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _captureAttackerUnmask;
             // Set
-            Move |= storedPiece << _captureAttackerShift;
+            Move |= (storedPiece << _captureAttackerShift) & _captureAttackerMask;
             // Validate move.
             Debug.Assert(Engine.Move.CaptureAttacker(Move) == CaptureAttacker);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -231,10 +228,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _promotedPieceUnmask;
             // Set.
-            Move |= (ulong)PromotedPiece << _promotedPieceShift;
+            Move |= ((ulong)PromotedPiece << _promotedPieceShift) & _promotedPieceMask;
             // Validate move.
             Debug.Assert(Engine.Move.PromotedPiece(Move) == PromotedPiece);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -248,10 +244,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _killerUnmask;
             // Set
-            Move |= (ulong)Killer << _killerShift;
+            Move |= ((ulong)Killer << _killerShift) & _killerMask;
             // Validate move.
             Debug.Assert(Engine.Move.Killer(Move) == Killer);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -267,10 +262,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _historyUnmask;
             // Set
-            Move |= (ulong)history << _historyShift;
+            Move |= ((ulong)history << _historyShift) & _historyMask;
             // Validate move.
             Debug.Assert(Engine.Move.History(Move) == History);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -285,10 +279,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _playedUnmask;
             // Set
-            Move |= played << _playedShift;
+            Move |= (played << _playedShift) & _playedMask;
             // Validate move.
             Debug.Assert(Engine.Move.Played(Move) == Played);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -303,10 +296,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _castlingUnmask;
             // Set
-            Move |= isCastling << _castlingShift;
+            Move |= (isCastling << _castlingShift) & _castlingMask;
             // Validate move.
             Debug.Assert(Engine.Move.IsCastling(Move) == IsCastling);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -321,10 +313,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _kingMoveUnmask;
             // Set
-            Move |= isKingMove << _kingMoveShift;
+            Move |= (isKingMove << _kingMoveShift) & _kingMoveMask;
             // Validate move.
             Debug.Assert(Engine.Move.IsKingMove(Move) == IsKingMove);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -339,10 +330,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _enPassantUnmask;
             // Set
-            Move |= isEnPassantCapture << _enPassantShift;
+            Move |= (isEnPassantCapture << _enPassantShift) & _enPassantMask;
             // Validate move.
             Debug.Assert(Engine.Move.IsEnPassantCapture(Move) == IsEnPassantCapture);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -357,10 +347,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _pawnMoveUnmask;
             // Set
-            Move |= isPawnMove << _pawnMoveShift;
+            Move |= (isPawnMove << _pawnMoveShift) & _pawnMoveMask;
             // Validate move.
             Debug.Assert(Engine.Move.IsPawnMove(Move) == IsPawnMove);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -375,10 +364,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _checkUnmask;
             // Set
-            Move |= isCheck << _checkShift;
+            Move |= (isCheck << _checkShift) & _checkMask;
             // Validate move.
             Debug.Assert(Engine.Move.IsCheck(Move) == IsCheck);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -393,10 +381,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _doublePawnMoveUnmask;
             // Set
-            Move |= isDoublePawnMove << _doublePawnMoveShift;
+            Move |= (isDoublePawnMove << _doublePawnMoveShift) & _doublePawnMoveMask;
             // Validate move.
             Debug.Assert(Engine.Move.IsDoublePawnMove(Move) == IsDoublePawnMove);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -411,10 +398,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _quietUnmask;
             // Set
-            Move |= isQuiet << _quietShift;
+            Move |= (isQuiet << _quietShift) & _quietMask;
             // Validate move.
             Debug.Assert(Engine.Move.IsQuiet(Move) == IsQuiet);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -428,10 +414,9 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _fromUnmask;
             // Set
-            Move |= (ulong)From << _fromShift;
+            Move |= ((ulong)From << _fromShift) & _fromMask;
             // Validate move.
             Debug.Assert(Engine.Move.From(Move) == From);
-            Debug.Assert(IsValid(Move));
         }
 
 
@@ -445,13 +430,13 @@ namespace ErikTheCoder.MadChess.Engine
             // Clear
             Move &= _toUnmask;
             // Set
-            Move |= (uint)To;
+            Move |= (ulong)To & _toMask;
             // Validate move.
             Debug.Assert(Engine.Move.To(Move) == To);
-            Debug.Assert(IsValid(Move));
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Equals(ulong Move1, ulong Move2)
         {
             if (From(Move1) == From(Move2))
@@ -628,7 +613,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private static bool IsValid(ulong Move)
+        public static bool IsValid(ulong Move)
         {
             Debug.Assert(CaptureVictim(Move) >= Piece.None);
             Debug.Assert(CaptureVictim(Move) < Piece.BlackKing);
@@ -664,8 +649,9 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static string ToString(ulong Move)
         {
-            return $"{ToLongAlgebraic(Move)} (B = {IsBest(Move)}, CapV = {Piece.GetChar(CaptureVictim(Move))}, CapA = {Piece.GetChar(CaptureAttacker(Move))}, Promo = {Piece.GetChar(PromotedPiece(Move))}, O = {IsCastling(Move)}, " +
-                   $"K = {IsKingMove(Move)}, E = {IsEnPassantCapture(Move)}, D = {IsDoublePawnMove(Move)}, P = {IsPawnMove(Move)}, C = {IsCheck(Move)}, Q = {IsQuiet(Move)}";
+            return $"{ToLongAlgebraic(Move)} (B = {IsBest(Move)}, CapV = {Piece.GetChar(CaptureVictim(Move))}, CapA = {Piece.GetChar(CaptureAttacker(Move))}, Promo = {Piece.GetChar(PromotedPiece(Move))}, Kil = {Killer(Move)}, " +
+                   $"! = {Played(Move)},  O = {IsCastling(Move)}, K = {IsKingMove(Move)}, E = {IsEnPassantCapture(Move)}, 2 = {IsDoublePawnMove(Move)}, P = {IsPawnMove(Move)}, C = {IsCheck(Move)}, Q = {IsQuiet(Move)} " +
+                $"From = {From(Move)}, To = {To(Move)}";
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2019.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 
 namespace ErikTheCoder.MadChess.Engine
@@ -809,7 +810,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetSquare(int File, int Rank)
         {
             Debug.Assert(File >= 0 && File < 8);
@@ -831,87 +831,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetBlackSquare(int Square) => 63 - Square;
-
-
-        // ReSharper disable once UnusedMember.Global
-        public static Direction GetDirection(int FromSquare, int ToSquare)
-        {
-            int fromRank = WhiteRanks[FromSquare];
-            int fromFile = Files[FromSquare];
-            int fromUpDiagonal = UpDiagonals[FromSquare];
-            int fromDownDiagonal = DownDiagonals[FromSquare];
-            int toRank = WhiteRanks[ToSquare];
-            int toFile = Files[ToSquare];
-            int toUpDiagonal = UpDiagonals[ToSquare];
-            int toDownDiagonal = DownDiagonals[ToSquare];
-            Direction direction = GetSlidingDirection(fromRank, fromFile, fromUpDiagonal, fromDownDiagonal, toRank, toFile, toUpDiagonal, toDownDiagonal);
-            return direction == Direction.Unknown
-                ? GetKnightDirection(FromSquare, ToSquare, fromRank, fromFile, toRank, toFile)
-                : direction;
-        }
-
-
-        private static Direction GetSlidingDirection(int FromRank, int FromFile, int FromUpDiagonal, int FromDownDiagonal,
-            int ToRank, int ToFile, int ToUpDiagonal, int ToDownDiagonal)
-        {
-            if (FromRank == ToRank)
-            {
-                // Slide along rank
-                return ToFile > FromFile ? Direction.East : Direction.West;
-            }
-            if (FromFile == ToFile)
-            {
-                // Slide along file
-                return ToRank > FromRank ? Direction.North : Direction.South;
-            }
-            if (FromUpDiagonal == ToUpDiagonal)
-            {
-                // Slide along up diagonal
-                return ToFile > FromFile ? Direction.NorthEast : Direction.SouthWest;
-            }
-            if (FromDownDiagonal == ToDownDiagonal)
-            {
-                // Slide along down diagonal
-                return ToFile > FromFile ? Direction.SouthEast : Direction.NorthWest;
-            }
-            return Direction.Unknown;
-        }
-        
-        
-        private static Direction GetKnightDirection(int FromSquare, int ToSquare, int FromRank, int FromFile, int ToRank, int ToFile)
-        {
-            int distance = SquareDistances[FromSquare][ToSquare];
-            if (distance == 2)
-            {
-                int rankDistance = ToRank - FromRank;
-                int fileDistance = ToFile - FromFile;
-                // ReSharper disable ConvertIfStatementToSwitchStatement
-                if (rankDistance == 2)
-                {
-                    if (fileDistance == -1) return Direction.North2West1;
-                    if (fileDistance == 01) return Direction.North2East1;
-                }
-                if (rankDistance == 1)
-                {
-                    if (fileDistance == -2) return Direction.West2North1;
-                    if (fileDistance == 02) return Direction.East2North1;
-                }
-                if (rankDistance == -1)
-                {
-                    if (fileDistance == -2) return Direction.West2South1;
-                    if (fileDistance == 02) return Direction.East2South1;
-                }
-                if (rankDistance == -2)
-                {
-                    if (fileDistance == -1) return Direction.South2West1;
-                    if (fileDistance == 01) return Direction.South2East1;
-                }
-                // ReSharper restore ConvertIfStatementToSwitchStatement
-            }
-            return Direction.Unknown;
-        }
 
 
         private static int GetShortestDistance(int Square, int[] OtherSquares)
@@ -1014,6 +934,9 @@ namespace ErikTheCoder.MadChess.Engine
 
         public bool ValidateMove(ref ulong Move)
         {
+            // Don't trust move that wasn't generated by engine (from cache, game notation, input by user, etc).
+            // Validate main aspects of the move.  Don't test for every impossibility.
+            // Goal is to avoid engine crashes, not ensure a perfectly legal search tree.
             int fromSquare = Engine.Move.From(Move);
             int toSquare = Engine.Move.To(Move);
             int attacker = CurrentPosition.GetPiece(fromSquare);
@@ -1022,6 +945,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (CurrentPosition.WhiteMove != attackerWhite) return false; // Piece is wrong color.
             int victim = CurrentPosition.GetPiece(toSquare);
             if ((victim != Piece.None) && (attackerWhite == Piece.IsWhite(victim))) return false; // Piece cannot attack its own color.
+            if ((victim == Piece.WhiteKing) || (victim == Piece.BlackKing)) return false;  // Piece cannot attack king.
             int promotedPiece = Engine.Move.PromotedPiece(Move);
             if ((promotedPiece != Piece.None) && (CurrentPosition.WhiteMove != Piece.IsWhite(promotedPiece))) return false; // Promoted piece is wrong color.
             int pawn;
@@ -1041,9 +965,51 @@ namespace ErikTheCoder.MadChess.Engine
                 king = Piece.BlackKing;
                 enPassantVictim = Piece.WhitePawn;
             }
+            if ((promotedPiece != Piece.None) && (attacker != pawn)) return false; // Only pawns can promote.
+            if ((promotedPiece == pawn) || (promotedPiece == king)) return false; // Cannot promote pawn to pawn or king.
+            bool castling = (attacker == king) && (SquareDistances[fromSquare][toSquare] == 2);
+            if (castling)
+            {
+                // ReSharper disable ConvertIfStatementToSwitchStatement
+                if (CurrentPosition.WhiteMove)
+                {
+                    // White Castling
+                    if ((toSquare != Square.c1) && (toSquare != Square.g1)) return false; // Castle destination square invalid.
+                    if (toSquare == Square.c1)
+                    {
+                        // Castle Queenside
+                        if (!Castling.WhiteQueenside(CurrentPosition.Castling)) return false; // Castle not possible.
+                        if ((CurrentPosition.Occupancy & WhiteCastleQEmptySquaresMask) > 0) return false; // Castle squares occupied.
+                    }
+                    else
+                    {
+                        // Castle Kingside
+                        if (!Castling.WhiteKingside(CurrentPosition.Castling)) return false; // Castle not possible.
+                        if ((CurrentPosition.Occupancy & WhiteCastleKEmptySquaresMask) > 0) return false; // Castle squares occupied.
+                    }
+                }
+                else
+                {
+                    // Black Castling
+                    if ((toSquare != Square.c8) && (toSquare != Square.g8)) return false; // Castle destination square invalid.
+                    if (toSquare == Square.c8)
+                    {
+                        // Castle Queenside
+                        if (!Castling.BlackQueenside(CurrentPosition.Castling)) return false; // Castle not possible.
+                        if ((CurrentPosition.Occupancy & BlackCastleQEmptySquaresMask) > 0) return false; // Castle squares occupied.
+                    }
+                    else
+                    {
+                        // Castle Kingside
+                        if (!Castling.BlackKingside(CurrentPosition.Castling)) return false; // Castle not possible.
+                        if ((CurrentPosition.Occupancy & BlackCastleKEmptySquaresMask) > 0) return false; // Castle squares occupied.
+                    }
+                }
+                // ReSharper restore ConvertIfStatementToSwitchStatement
+            }
+            // Set move properties.
             bool capture = victim != Piece.None;
             if (capture) Engine.Move.SetCaptureAttacker(ref Move, attacker);
-            bool castling = (attacker == king) && (SquareDistances[fromSquare][toSquare] == 2);
             Engine.Move.SetIsCastling(ref Move, castling);
             Engine.Move.SetIsKingMove(ref Move, attacker == king);
             bool enPassantCapture = (attacker == pawn) && (toSquare == CurrentPosition.EnPassantSquare);
@@ -1186,6 +1152,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public void PlayMove(ulong Move)
         {
+            Debug.Assert(Engine.Move.IsValid(Move));
             Debug.Assert(AssertMoveIntegrity(Move));
             CurrentPosition.PlayedMove = Move;
             // Advance position index.
@@ -1209,13 +1176,12 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Move piece and remove capture victim (none if destination square is unoccupied).
+                // Remove capture victim (none if destination square is unoccupied) and move piece.
                 captureVictim = RemovePiece(toSquare);
                 Debug.Assert(AssertKingIsNotCaptured(captureVictim, Move));
                 RemovePiece(fromSquare);
                 int promotedPiece = Engine.Move.PromotedPiece(Move);
                 AddPiece(promotedPiece == Piece.None ? piece : promotedPiece, toSquare);
-                if (Engine.Move.IsDoublePawnMove(Move)) CurrentPosition.EnPassantSquare = _enPassantTargetSquares[toSquare];
             }
             if (Castling.IsPossible(CurrentPosition.Castling))
             {
@@ -1261,7 +1227,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Update en passant capture square, move counts, side to move, position key, and nodes.
             CurrentPosition.EnPassantSquare = Engine.Move.IsDoublePawnMove(Move) ? _enPassantTargetSquares[toSquare] : Square.Illegal;
-            if (captureVictim != Piece.None || Engine.Move.IsPawnMove(Move)) CurrentPosition.HalfMoveNumber = 0;
+            if ((captureVictim != Piece.None) || Engine.Move.IsPawnMove(Move)) CurrentPosition.HalfMoveNumber = 0;
             else CurrentPosition.HalfMoveNumber++;
             if (!CurrentPosition.WhiteMove) CurrentPosition.FullMoveNumber++;
             CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
@@ -1343,14 +1309,14 @@ namespace ErikTheCoder.MadChess.Engine
                 switch (ToSquare)
                 {
                     case Square.c1:
-                        // White castle queenside
+                        // White Castle Queenside
                         RemovePiece(Square.e1);
                         AddPiece(Engine.Piece.WhiteKing, Square.c1);
                         RemovePiece(Square.a1);
                         AddPiece(Engine.Piece.WhiteRook, Square.d1);
                         break;
                     case Square.g1:
-                        // White castle kingside
+                        // White Castle Kingside
                         RemovePiece(Square.e1);
                         AddPiece(Engine.Piece.WhiteKing, Square.g1);
                         RemovePiece(Square.h1);
@@ -1363,14 +1329,14 @@ namespace ErikTheCoder.MadChess.Engine
                 switch (ToSquare)
                 {
                     case Square.c8:
-                        // Black castle queenside
+                        // Black Castle Queenside
                         RemovePiece(Square.e8);
                         AddPiece(Engine.Piece.BlackKing, Square.c8);
                         RemovePiece(Square.a8);
                         AddPiece(Engine.Piece.BlackRook, Square.d8);
                         break;
                     case Square.g8:
-                        // Black castle kingside
+                        // Black Castle Kingside
                         RemovePiece(Square.e8);
                         AddPiece(Engine.Piece.BlackKing, Square.g8);
                         RemovePiece(Square.h8);
@@ -1611,6 +1577,16 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public override string ToString() => CurrentPosition.ToString();
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int index = 0; index <= _positionIndex; index++)
+            {
+                stringBuilder.AppendLine($"Position index = {index}.");
+                stringBuilder.AppendLine(_positions[index].ToString());
+                stringBuilder.AppendLine();
+            }
+            return stringBuilder.ToString();
+        }
     }
 }
