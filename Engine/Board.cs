@@ -1046,15 +1046,6 @@ namespace ErikTheCoder.MadChess.Engine
             int kingSquare = CurrentPosition.WhiteMove
                 ? Bitwise.FindFirstSetBit(CurrentPosition.BlackKing)
                 : Bitwise.FindFirstSetBit(CurrentPosition.WhiteKing);
-
-
-            //if (SafeRandom.NextInt(0, 100) == 0) kingSquare = Square.Illegal;
-            if (kingSquare == Square.Illegal)
-            {
-                throw new Exception($"Determine if moving piece exposes king to check.  King square is illegal.{Environment.NewLine}{ToString()}{Environment.NewLine}Move = {Engine.Move.ToString(Move)}.");
-            }
-
-
             if (IsSquareAttacked(kingSquare))
             {
                 UndoMove();
@@ -1072,14 +1063,6 @@ namespace ErikTheCoder.MadChess.Engine
             kingSquare = CurrentPosition.WhiteMove
                 ? Bitwise.FindFirstSetBit(CurrentPosition.BlackKing)
                 : Bitwise.FindFirstSetBit(CurrentPosition.WhiteKing);
-
-
-            if (kingSquare == Square.Illegal)
-            {
-                throw new Exception($"Determine if move checks enemy king.  King square is illegal.{Environment.NewLine}{ToString()}{Environment.NewLine}Move = {Engine.Move.ToString(Move)}.");
-            }
-
-
             bool check = IsSquareAttacked(kingSquare);
             UndoMove();
             Engine.Move.SetIsCheck(ref Move, check);
