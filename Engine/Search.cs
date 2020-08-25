@@ -362,6 +362,8 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        // TODO: Test engine performance using tournament time control (20 moves / 1 min repeating) in addition to Fischer time control (2 min + 1 sec / game).
+        // TODO: Use more time for first move out of book.
         private void GetMoveTime(Position Position)
         {
             // Determine if move time, horizon limit, or infinite move time is specified.
@@ -430,6 +432,8 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        // TODO: Add move time when root fails low and game is not lost.  Handle root fail low separate from fail-low at other depths.
+        // TODO: Test multi-pv and score error.
         private int GetScoreWithinAspirationWindow(Board Board, int PrincipalVariations)
         {
             var bestScore = _bestScores[0];
