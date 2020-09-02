@@ -16,7 +16,7 @@ namespace ErikTheCoder.MadChess.Engine
         public delegate bool ValidateMove(ref ulong Move);
         public delegate bool Debug();
         public delegate (ulong Move, int MoveIndex) GetNextMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove);
-        public delegate int GetPositionCount();
+        public delegate bool IsRepeatPosition(int Repeats);
         public delegate void WriteMessageLine(string Message);
         public delegate int GetStaticScore(Position Position);
     }

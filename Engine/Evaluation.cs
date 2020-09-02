@@ -29,7 +29,7 @@ namespace ErikTheCoder.MadChess.Engine
         public bool UnderstandsMobility;
         public bool UnderstandsKingSafety;
         private readonly EvaluationConfig _defaultConfig;
-        private readonly Delegates.GetPositionCount _getPositionCount;
+        private readonly Delegates.IsRepeatPosition _isRepeatPosition;
         private readonly Delegates.Debug _debug;
         private readonly Delegates.WriteMessageLine _writeMessageLine;
         private readonly StaticScore _staticScore;
@@ -64,9 +64,9 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         
-        public Evaluation(Delegates.GetPositionCount GetPositionCount, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
+        public Evaluation(Delegates.IsRepeatPosition IsRepeatPosition, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
         {
-            _getPositionCount = GetPositionCount;
+            _isRepeatPosition = IsRepeatPosition;
             _debug = Debug;
             _writeMessageLine = WriteMessageLine;
             _staticScore = new StaticScore();
@@ -254,12 +254,11 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public (bool TerminalDraw, int PositionCount) IsTerminalDraw(Position Position)
+        public (bool TerminalDraw, bool RepeatPosition) IsTerminalDraw(Position Position)
         {
             // Only return true if position is drawn and no sequence of moves can make game winnable.
-            var positionCount = _getPositionCount();
-            if (positionCount >= DrawMoves) return (true, positionCount); // Draw by repetition of position
-            if (Position.HalfMoveNumber >= 99) return (true, positionCount); // Draw by fifty moves without a capture or pawn move
+            if (_isRepeatPosition(DrawMoves)) return (true, true); // Draw by repetition of position
+            if (Position.HalfMoveNumber >= 99) return (true, false); // Draw by fifty moves without a capture or pawn move
             // Determine if insufficient material remains for checkmate.
             if (Bitwise.CountSetBits(Position.WhitePawns | Position.BlackPawns) == 0)
             {
@@ -270,11 +269,11 @@ namespace ErikTheCoder.MadChess.Engine
                     if ((Bitwise.CountSetBits(Position.WhiteKnights | Position.WhiteBishops) <= 1) && (Bitwise.CountSetBits(Position.BlackKnights | Position.BlackBishops) <= 1))
                     {
                         // Each side has one or zero minor pieces.  Draw by insufficient material.
-                        return (true, positionCount); 
+                        return (true, false);
                     }
                 }
             }
-            return (false, positionCount);
+            return (false, false);
         }
 
 

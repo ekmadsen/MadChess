@@ -8,6 +8,7 @@
 // +------------------------------------------------------------------------------+
 
 
+using System;
 using System.Runtime.CompilerServices;
 
 
@@ -15,7 +16,7 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class MoveHistory
     {
-        public const int MaxValue = 67_108_864; // History has 48 - 22 + 1 = 27 bits.  2 Pow 27 = 134_217_728.  Value may be positive or negative.
+        public const int MaxValue = 67_108_863; // History has 48 - 22 + 1 = 27 bits.  2 Pow 27 = 134_217_728.  Value may be positive or negative.
         private const int _agePer256 = 244;
         private readonly int[][] _moveHistory;
 
@@ -45,7 +46,8 @@ namespace ErikTheCoder.MadChess.Engine
         {
             var piece = Position.GetPiece(Engine.Move.From(Move));
             var toSquare = Engine.Move.To(Move);
-            _moveHistory[piece][toSquare] += Increment;
+            var value = _moveHistory[piece][toSquare] + Increment;
+            _moveHistory[piece][toSquare] = Math.Max(Math.Min(value, MaxValue), -MaxValue);
         }
 
 

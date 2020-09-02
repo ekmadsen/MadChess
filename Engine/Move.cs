@@ -73,6 +73,7 @@ namespace ErikTheCoder.MadChess.Engine
         // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
         // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
         // B|CapV   |CapA   |Promo  |Kil|History                                              |!|O|K|E|2|P|C|Q|From         |To           
+        //                               1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 
         // B =     Best Move
         // CapV =  Capture Victim
@@ -437,15 +438,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Equals(ulong Move1, ulong Move2)
-        {
-            if (From(Move1) == From(Move2))
-            {
-                if (To(Move1) == To(Move2)) return PromotedPiece(Move1) == PromotedPiece(Move2);
-                return false;
-            }
-            return false;
-        }
+        public static bool Equals(ulong Move1, ulong Move2) => (From(Move1) == From(Move2)) && (To(Move1) == To(Move2)) && (PromotedPiece(Move1) == PromotedPiece(Move2));
 
 
         public static ulong ParseLongAlgebraic(string LongAlgebraic, bool WhiteMove)

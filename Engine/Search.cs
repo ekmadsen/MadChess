@@ -575,7 +575,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Board.NodesExamineTime = UciStream.NodesTimeInterval * (intervals + 1);
             }
             if (!Continue && (_bestMoves[0] != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
-            var (terminalDraw, positionCount) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
+            var (terminalDraw, repeatPosition) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
             if ((Depth > 0) && terminalDraw) return 0; // Terminal node (games ends on this move)
             // Get cached position.
             var toHorizon = Horizon - Depth;
@@ -583,7 +583,7 @@ namespace ErikTheCoder.MadChess.Engine
             var cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
             Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
             ulong bestMove;
-            if ((cachedPosition.Key != 0) && (Depth > 0) && (positionCount < 2))
+            if ((cachedPosition != _cache.NullPosition) && (Depth > 0) && !repeatPosition)
             {
                 // Not a root or repeat position.
                 // Determine if score is cached.

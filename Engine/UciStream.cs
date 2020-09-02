@@ -89,7 +89,7 @@ namespace ErikTheCoder.MadChess.Engine
             _cache = new Cache(_cacheSizeMegabytes * Cache.CapacityPerMegabyte, Board.ValidateMove);
             _killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
             _moveHistory = new MoveHistory();
-            _evaluation = new Evaluation(Board.GetPositionCount, () => _debug, WriteMessageLine);
+            _evaluation = new Evaluation(Board.IsRepeatPosition, () => _debug, WriteMessageLine);
             _search = new Search(_cache, _killerMoves, _moveHistory, _evaluation, () => _debug, WriteMessageLine);
             _defaultHalfAndFullMove = new[] { "0", "1" };
             Board.SetPosition(Board.StartPositionFen);

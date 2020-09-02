@@ -8,6 +8,9 @@
 // +------------------------------------------------------------------------------+
 
 
+using System;
+
+
 namespace ErikTheCoder.MadChess.Engine
 {
     public struct CachedPosition
@@ -21,5 +24,23 @@ namespace ErikTheCoder.MadChess.Engine
             this.Key = Key;
             this.Data = Data;
         }
+
+
+        public static bool operator ==(CachedPosition Position1, CachedPosition Position2) => Position1.Key == Position2.Key;
+
+
+        public static bool operator !=(CachedPosition Position1, CachedPosition Position2) => Position1.Key != Position2.Key;
+
+
+        // ReSharper disable once MemberCanBePrivate.Global
+        public bool Equals(CachedPosition OtherPosition) => Key == OtherPosition.Key;
+
+
+        public override bool Equals(object OtherPosition) => OtherPosition is CachedPosition otherPosition && Equals(otherPosition);
+
+
+        // ReSharper disable NonReadonlyMemberInGetHashCode
+        public override int GetHashCode() => HashCode.Combine(Key, Data);
+        // ReSharper restore NonReadonlyMemberInGetHashCode
     }
 }
