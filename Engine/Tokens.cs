@@ -17,13 +17,13 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public static List<string> Parse(string Command, char Separator, char Tokenizer)
         {
-            List<string> tokens = new List<string>();
-            int startIndex = 0;
-            bool inToken = false;
-            for (int index = 0; index < Command.Length; index++)
+            var tokens = new List<string>();
+            var startIndex = 0;
+            var inToken = false;
+            for (var index = 0; index < Command.Length; index++)
             {
                 string token;
-                char character = Command[index];
+                var character = Command[index];
                 if (index == Command.Length - 1)
                 {
                     // Add last token.

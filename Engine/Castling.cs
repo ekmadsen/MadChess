@@ -70,7 +70,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetWhiteKingside(ref uint Castling, bool WhiteKingside)
         {
-            uint whiteKingSide = WhiteKingside ? 1u : 0;
+            var whiteKingSide = WhiteKingside ? 1u : 0;
             // Clear.
             Castling &= _whiteKingsideUnmask;
             // Set.
@@ -87,7 +87,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetWhiteQueenside(ref uint Castling, bool WhiteQueenside)
         {
-            uint whiteQueenside = WhiteQueenside ? 1u : 0;
+            var whiteQueenside = WhiteQueenside ? 1u : 0;
             // Clear.
             Castling &= _whiteQueensideUnmask;
             // Set.
@@ -104,7 +104,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetBlackKingside(ref uint Castling, bool BlackKingside)
         {
-            uint blackKingSide = BlackKingside ? 1u : 0;
+            var blackKingSide = BlackKingside ? 1u : 0;
             // Clear.
             Castling &= _blackKingsideUnmask;
             // Set.
@@ -121,7 +121,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetBlackQueenside(ref uint Castling, bool BlackQueenside)
         {
-            uint blackQueenside = BlackQueenside ? 1u : 0;
+            var blackQueenside = BlackQueenside ? 1u : 0;
             // Clear.
             Castling &= _blackQueensideUnmask;
             // Set.
@@ -133,8 +133,8 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static string ToString(uint Castling)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            bool anyCastlingRights = false;
+            var stringBuilder = new StringBuilder();
+            var anyCastlingRights = false;
             if (WhiteKingside(Castling))
             {
                 stringBuilder.Append("K");

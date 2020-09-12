@@ -21,7 +21,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Improve garbage collector performance at the cost of memory usage.
             // Engine should not allocate much memory when searching a position anyhow, since it references pre-allocated objects.
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
-            using (UciStream uciStream = new UciStream())
+            using (var uciStream = new UciStream())
             {
                 try
                 {

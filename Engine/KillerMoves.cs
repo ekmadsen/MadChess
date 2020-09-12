@@ -21,7 +21,7 @@ namespace ErikTheCoder.MadChess.Engine
         public KillerMoves(int MaxDepth)
         {
             _killerMoves = new KillerMove[MaxDepth + 1][];
-            for (int depth = 0; depth <= MaxDepth; depth++) _killerMoves[depth] = new[] {new KillerMove(Piece.None, Square.Illegal), new KillerMove(Piece.None, Square.Illegal)};
+            for (var depth = 0; depth <= MaxDepth; depth++) _killerMoves[depth] = new[] {new KillerMove(Piece.None, Square.Illegal), new KillerMove(Piece.None, Square.Illegal)};
         }
 
 
@@ -47,8 +47,8 @@ namespace ErikTheCoder.MadChess.Engine
         public void Shift(int Depth)
         {
             // Shift killer moves closer to root position.
-            int lastDepth = _killerMoves.Length - Depth - 1;
-            for (int depth = 0; depth <= lastDepth; depth++)
+            var lastDepth = _killerMoves.Length - Depth - 1;
+            for (var depth = 0; depth <= lastDepth; depth++)
             {
                 _killerMoves[depth][0].Piece = _killerMoves[depth + Depth][0].Piece;
                 _killerMoves[depth][0].ToSquare = _killerMoves[depth + Depth][0].ToSquare;
@@ -56,7 +56,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _killerMoves[depth][1].ToSquare = _killerMoves[depth + Depth][1].ToSquare;
             }
             // Reset killer moves far from root position.
-            for (int depth = lastDepth + 1; depth < _killerMoves.Length; depth++)
+            for (var depth = lastDepth + 1; depth < _killerMoves.Length; depth++)
             {
                 _killerMoves[depth][0].Piece = Piece.None;
                 _killerMoves[depth][0].ToSquare = Square.Illegal;
@@ -68,9 +68,9 @@ namespace ErikTheCoder.MadChess.Engine
 
         public void Reset()
         {
-            for (int depth = 0; depth < _killerMoves.Length; depth++)
+            for (var depth = 0; depth < _killerMoves.Length; depth++)
             {
-                KillerMove[] killerMoves = _killerMoves[depth];
+                var killerMoves = _killerMoves[depth];
                 killerMoves[0].Piece = Piece.None;
                 killerMoves[0].ToSquare = Square.Illegal;
                 killerMoves[1].Piece = Piece.None;

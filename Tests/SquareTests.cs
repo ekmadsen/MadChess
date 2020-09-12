@@ -20,14 +20,14 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestA1()
         {
-            int square = Board.GetSquare("a1");
+            var square = Board.GetSquare("a1");
             Assert.That(square, Is.EqualTo(56));
         }
 
         [Test]
         public void TestA8()
         {
-            int square = Board.GetSquare("a8");
+            var square = Board.GetSquare("a8");
             Assert.That(square, Is.EqualTo(0));
         }
 
@@ -35,7 +35,7 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestC5()
         {
-            int square = Board.GetSquare("c5");
+            var square = Board.GetSquare("c5");
             Assert.That(square, Is.EqualTo(26));
         }
 
@@ -43,7 +43,7 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestF3()
         {
-            int square = Board.GetSquare("f3");
+            var square = Board.GetSquare("f3");
             Assert.That(square, Is.EqualTo(45));
         }
 
@@ -51,7 +51,7 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestH1()
         {
-            int square = Board.GetSquare("h1");
+            var square = Board.GetSquare("h1");
             Assert.That(square, Is.EqualTo(63));
         }
 
@@ -59,7 +59,7 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestH8()
         {
-            int square = Board.GetSquare("h8");
+            var square = Board.GetSquare("h8");
             Assert.That(square, Is.EqualTo(7));
         }
     }

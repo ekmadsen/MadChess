@@ -108,13 +108,13 @@ namespace ErikTheCoder.MadChess.Engine
         public void CalculatePositionalFactors()
         {
             // Calculate piece location values.
-            for (int square = 0; square < 64; square++)
+            for (var square = 0; square < 64; square++)
             {
-                int rank = Board.WhiteRanks[square];
-                int file = Board.Files[square];
-                int squareCentrality = 3 - Board.DistanceToCentralSquares[square];
-                int fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
-                int nearCorner = 3 - Board.DistanceToNearestCorner[square];
+                var rank = Board.WhiteRanks[square];
+                var file = Board.Files[square];
+                var squareCentrality = 3 - Board.DistanceToCentralSquares[square];
+                var fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
+                var nearCorner = 3 - Board.DistanceToNearestCorner[square];
                 _mgPawnLocations[square] = rank * Config.MgPawnAdvancement + squareCentrality * Config.MgPawnCentrality;
                 _egPawnLocations[square] = rank * Config.EgPawnAdvancement + squareCentrality * Config.EgPawnCentrality + Config.EgPawnConstant;
                 _mgKnightLocations[square] = rank * Config.MgKnightAdvancement + squareCentrality * Config.MgKnightCentrality + nearCorner * Config.MgKnightCorner;
@@ -129,11 +129,11 @@ namespace ErikTheCoder.MadChess.Engine
                 _egKingLocations[square] = rank * Config.EgKingAdvancement + squareCentrality * Config.EgKingCentrality + nearCorner * Config.EgKingCorner;
             }
             // Calculate passed pawn values.
-            double passedPawnPower = Config.PassedPawnPowerPer16 / 16d;
-            double mgScale = Config.MgPassedPawnScalePer128 / 128d;
-            double egScale = Config.EgPassedPawnScalePer128 / 128d;
-            double egFreeScale = Config.EgFreePassedPawnScalePer128 / 128d;
-            for (int rank = 1; rank < 7; rank++)
+            var passedPawnPower = Config.PassedPawnPowerPer16 / 16d;
+            var mgScale = Config.MgPassedPawnScalePer128 / 128d;
+            var egScale = Config.EgPassedPawnScalePer128 / 128d;
+            var egFreeScale = Config.EgFreePassedPawnScalePer128 / 128d;
+            for (var rank = 1; rank < 7; rank++)
             {
                 _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
                 _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
@@ -145,10 +145,10 @@ namespace ErikTheCoder.MadChess.Engine
             CalculatePieceMobility(_mgRookMobility, _egRookMobility, Config.MgRookMobilityScale, Config.EgRookMobilityScale);
             CalculatePieceMobility(_mgQueenMobility, _egQueenMobility, Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
             // Calculate king safety values.
-            double kingSafetyPower = Config.KingSafetyPowerPer16 / 16d;
-            for (int index = 0; index < _kingSafety.Length; index++)
+            var kingSafetyPower = Config.KingSafetyPowerPer16 / 16d;
+            for (var index = 0; index < _kingSafety.Length; index++)
             {
-                double scale = -Config.KingSafetyScalePer128 / 128d;
+                var scale = -Config.KingSafetyScalePer128 / 128d;
                 _kingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
             }
         }
@@ -157,19 +157,19 @@ namespace ErikTheCoder.MadChess.Engine
         private void CalculatePieceMobility(int[] MgPieceMobility, int[] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
         {
             Debug.Assert(MgPieceMobility.Length == EgPieceMobility.Length);
-            int maxMoves = MgPieceMobility.Length - 1;
-            double pieceMobilityPower = Config.PieceMobilityPowerPer16 / 16d;
-            for (int moves = 0; moves <= maxMoves; moves++)
+            var maxMoves = MgPieceMobility.Length - 1;
+            var pieceMobilityPower = Config.PieceMobilityPowerPer16 / 16d;
+            for (var moves = 0; moves <= maxMoves; moves++)
             {
-                double percentMaxMoves = (double)moves / maxMoves;
+                var percentMaxMoves = (double)moves / maxMoves;
                 MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, pieceMobilityPower, -MgMobilityScale / 2);
                 EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, pieceMobilityPower, -EgMobilityScale / 2);
             }
             // Adjust constant so piece mobility bonus for average number of moves is zero.
-            int averageMoves = maxMoves / 2;
-            int averageMgBonus = MgPieceMobility[averageMoves];
-            int averageEgBonus = EgPieceMobility[averageMoves];
-            for (int moves = 0; moves <= maxMoves; moves++)
+            var averageMoves = maxMoves / 2;
+            var averageMgBonus = MgPieceMobility[averageMoves];
+            var averageEgBonus = EgPieceMobility[averageMoves];
+            for (var moves = 0; moves <= maxMoves; moves++)
             {
                 MgPieceMobility[moves] -= averageMgBonus;
                 EgPieceMobility[moves] -= averageEgBonus;
@@ -257,7 +257,7 @@ namespace ErikTheCoder.MadChess.Engine
         public (bool TerminalDraw, int PositionCount) IsTerminalDraw(Position Position)
         {
             // Only return true if position is drawn and no sequence of moves can make game winnable.
-            int positionCount = _getPositionCount();
+            var positionCount = _getPositionCount();
             if (positionCount >= DrawMoves) return (true, positionCount); // Draw by repetition of position
             if (Position.HalfMoveNumber >= 99) return (true, positionCount); // Draw by fifty moves without a capture or pawn move
             // Determine if insufficient material remains for checkmate.
@@ -322,12 +322,12 @@ namespace ErikTheCoder.MadChess.Engine
                 side2Rooks = Bitwise.CountSetBits(Position.WhiteRooks);
                 side2Queens = Bitwise.CountSetBits(Position.WhiteQueens);
             }
-            int side1MinorPieces = side1Knights + side1Bishops;
-            int side1MajorPieces = side1Rooks + side1Queens;
-            int side2MinorPieces = side2Knights + side2Bishops;
-            int side2MajorPieces = side2Rooks + side2Queens;
-            bool side1QueenOr2Rooks = ((side1Queens == 1) && (side1MajorPieces == 1) && (side1MinorPieces == 0)) || ((side1Rooks == 2) && (side1MajorPieces == 2) && (side1MinorPieces == 0));
-            bool side2QueenOr2Rooks = ((side2Queens == 1) && (side2MajorPieces == 1) && (side2MinorPieces == 0)) || ((side2Rooks == 2) && (side2MajorPieces == 2) && (side2MinorPieces == 0));
+            var side1MinorPieces = side1Knights + side1Bishops;
+            var side1MajorPieces = side1Rooks + side1Queens;
+            var side2MinorPieces = side2Knights + side2Bishops;
+            var side2MajorPieces = side2Rooks + side2Queens;
+            var side1QueenOr2Rooks = ((side1Queens == 1) && (side1MajorPieces == 1) && (side1MinorPieces == 0)) || ((side1Rooks == 2) && (side1MajorPieces == 2) && (side1MinorPieces == 0));
+            var side2QueenOr2Rooks = ((side2Queens == 1) && (side2MajorPieces == 1) && (side2MinorPieces == 0)) || ((side2Rooks == 2) && (side2MajorPieces == 2) && (side2MinorPieces == 0));
             if (side1QueenOr2Rooks && side2QueenOr2Rooks) return true; // Both sides have queen or two rooks.
             if (side1QueenOr2Rooks)
             {
@@ -395,30 +395,30 @@ namespace ErikTheCoder.MadChess.Engine
                     _staticScore.BlackEgKingSafety = 0;
                 }
             }
-            int phase = DetermineGamePhase(Position);
+            var phase = DetermineGamePhase(Position);
             return Position.WhiteMove ? _staticScore.TotalScore(phase) : -_staticScore.TotalScore(phase);
         }
 
 
         private bool EvaluateSimpleEndgame(Position Position)
         {
-            int whitePawns = Bitwise.CountSetBits(Position.WhitePawns);
-            int whiteKnights = Bitwise.CountSetBits(Position.WhiteKnights);
-            int whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
-            int whiteMinorPieces = whiteKnights + whiteBishops;
-            int whiteMajorPieces = Bitwise.CountSetBits(Position.WhiteRooks | Position.WhiteQueens);
-            int whitePawnsAndPieces = whitePawns + whiteMinorPieces + whiteMajorPieces;
-            int blackPawns = Bitwise.CountSetBits(Position.BlackPawns);
-            int blackKnights = Bitwise.CountSetBits(Position.BlackKnights);
-            int blackBishops = Bitwise.CountSetBits(Position.BlackBishops);
-            int blackMinorPieces = blackKnights + blackBishops;
-            int blackMajorPieces = Bitwise.CountSetBits(Position.BlackRooks | Position.BlackQueens);
-            int blackPawnsAndPieces = blackPawns + blackMinorPieces + blackMajorPieces;
+            var whitePawns = Bitwise.CountSetBits(Position.WhitePawns);
+            var whiteKnights = Bitwise.CountSetBits(Position.WhiteKnights);
+            var whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
+            var whiteMinorPieces = whiteKnights + whiteBishops;
+            var whiteMajorPieces = Bitwise.CountSetBits(Position.WhiteRooks | Position.WhiteQueens);
+            var whitePawnsAndPieces = whitePawns + whiteMinorPieces + whiteMajorPieces;
+            var blackPawns = Bitwise.CountSetBits(Position.BlackPawns);
+            var blackKnights = Bitwise.CountSetBits(Position.BlackKnights);
+            var blackBishops = Bitwise.CountSetBits(Position.BlackBishops);
+            var blackMinorPieces = blackKnights + blackBishops;
+            var blackMajorPieces = Bitwise.CountSetBits(Position.BlackRooks | Position.BlackQueens);
+            var blackPawnsAndPieces = blackPawns + blackMinorPieces + blackMajorPieces;
             if ((whitePawnsAndPieces > 0) && (blackPawnsAndPieces > 0)) return false; // Position is not a simple endgame.
-            bool loneWhitePawn = (whitePawns == 1) && (whitePawnsAndPieces == 1) && (blackPawnsAndPieces == 0);
-            bool loneBlackPawn = (blackPawns == 1) && (blackPawnsAndPieces == 1) && (whitePawnsAndPieces == 0);
-            int whiteKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
-            int blackKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+            var loneWhitePawn = (whitePawns == 1) && (whitePawnsAndPieces == 1) && (blackPawnsAndPieces == 0);
+            var loneBlackPawn = (blackPawns == 1) && (blackPawnsAndPieces == 1) && (whitePawnsAndPieces == 0);
+            var whiteKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+            var blackKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (whitePawnsAndPieces)
             {
@@ -431,8 +431,8 @@ namespace ErikTheCoder.MadChess.Engine
                     {
                         case 0 when (blackKnights == 1) && (blackBishops == 1) && (blackMajorPieces == 0):
                             // King versus knight and bishop
-                            bool lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.BlackBishops)];
-                            int distanceToCorrectColorCorner = lightSquareBishop
+                            var lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.BlackBishops)];
+                            var distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[whiteKingSquare]
                                 : Board.DistanceToNearestDarkCorner[whiteKingSquare];
                             _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
@@ -456,8 +456,8 @@ namespace ErikTheCoder.MadChess.Engine
                     {
                         case 0 when (whiteKnights == 1) && (whiteBishops == 1) && (whiteMajorPieces == 0):
                             // King versus knight and bishop
-                            bool lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.WhiteBishops)];
-                            int distanceToCorrectColorCorner = lightSquareBishop
+                            var lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.WhiteBishops)];
+                            var distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[blackKingSquare]
                                 : Board.DistanceToNearestDarkCorner[blackKingSquare];
                             _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
@@ -486,26 +486,26 @@ namespace ErikTheCoder.MadChess.Engine
             if (LoneWhitePawn)
             {
                 // White winning
-                int winningKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+                var winningKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
                 winningKingRank = Board.WhiteRanks[winningKingSquare];
                 winningKingFile = Board.Files[winningKingSquare];
-                int defendingKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+                var defendingKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
                 defendingKingRank = Board.WhiteRanks[defendingKingSquare];
                 defendingKingFile = Board.Files[defendingKingSquare];
-                int pawnSquare = Bitwise.FindFirstSetBit(Position.WhitePawns);
+                var pawnSquare = Bitwise.FindFirstSetBit(Position.WhitePawns);
                 pawnRank = Board.WhiteRanks[pawnSquare];
                 pawnFile = Board.Files[pawnSquare];
             }
             else
             {
                 // Black winning
-                int winningKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+                var winningKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
                 winningKingRank = Board.BlackRanks[winningKingSquare];
                 winningKingFile = Board.Files[winningKingSquare];
-                int defendingKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+                var defendingKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
                 defendingKingRank = Board.BlackRanks[defendingKingSquare];
                 defendingKingFile = Board.Files[defendingKingSquare];
-                int pawnSquare = Bitwise.FindFirstSetBit(Position.BlackPawns);
+                var pawnSquare = Bitwise.FindFirstSetBit(Position.BlackPawns);
                 pawnRank = Board.BlackRanks[pawnSquare];
                 pawnFile = Board.Files[pawnSquare];
             }
@@ -522,9 +522,9 @@ namespace ErikTheCoder.MadChess.Engine
             else
             {
                 // Pawn is not on rook file.
-                int kingPawnRankDifference = winningKingRank - pawnRank;
-                int kingPawnAbsoluteFileDifference = Math.Abs(winningKingFile - pawnFile);
-                bool winningKingOnKeySquare = pawnRank switch
+                var kingPawnRankDifference = winningKingRank - pawnRank;
+                var kingPawnAbsoluteFileDifference = Math.Abs(winningKingFile - pawnFile);
+                var winningKingOnKeySquare = pawnRank switch
                 {
                     1 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
                     2 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
@@ -586,10 +586,10 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static int GetExchangeMaterialScore(Position Position)
         {
-            int whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial +
+            var whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial +
                              Bitwise.CountSetBits(Position.WhiteKnights) * EvaluationConfig.KnightExchangeMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * EvaluationConfig.BishopExchangeMaterial +
                              Bitwise.CountSetBits(Position.WhiteRooks) * EvaluationConfig.RookExchangeMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * EvaluationConfig.QueenExchangeMaterial;
-            int blackScore = Bitwise.CountSetBits(Position.BlackPawns) * PawnMaterial +
+            var blackScore = Bitwise.CountSetBits(Position.BlackPawns) * PawnMaterial +
                              Bitwise.CountSetBits(Position.BlackKnights) * EvaluationConfig.KnightExchangeMaterial + Bitwise.CountSetBits(Position.BlackBishops) * EvaluationConfig.BishopExchangeMaterial +
                              Bitwise.CountSetBits(Position.BlackRooks) * EvaluationConfig.RookExchangeMaterial + Bitwise.CountSetBits(Position.BlackQueens) * EvaluationConfig.QueenExchangeMaterial;
             return Position.WhiteMove
@@ -603,7 +603,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Pawns
             int square;
             int blackSquare;
-            ulong pieces = Position.WhitePawns;
+            var pieces = Position.WhitePawns;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
                 _staticScore.WhiteMgPieceLocation += _mgPawnLocations[square];
@@ -695,9 +695,9 @@ namespace ErikTheCoder.MadChess.Engine
         private void EvaluatePawns(Position Position)
         {
             // White pawns
-            ulong pawns = Position.WhitePawns;
-            int kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
-            int enemyKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+            var pawns = Position.WhitePawns;
+            var kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+            var enemyKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
             int pawnSquare;
             int rank;
             while ((pawnSquare = Bitwise.FindFirstSetBit(pawns)) != Square.Illegal)
@@ -774,7 +774,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             if (!IsFree) return false;
             // Pawn is free to advance to promotion square.
-            int file = Board.Files[PawnSquare];
+            var file = Board.Files[PawnSquare];
             int promotionSquare;
             int enemyPieces;
             if (White)
@@ -792,8 +792,8 @@ namespace ErikTheCoder.MadChess.Engine
             if (enemyPieces == 0)
             {
                 // Enemy has no minor or major pieces.
-                int pawnDistanceToPromotionSquare = Board.SquareDistances[PawnSquare][promotionSquare];
-                int kingDistanceToPromotionSquare = Board.SquareDistances[EnemyKingSquare][promotionSquare];
+                var pawnDistanceToPromotionSquare = Board.SquareDistances[PawnSquare][promotionSquare];
+                var kingDistanceToPromotionSquare = Board.SquareDistances[EnemyKingSquare][promotionSquare];
                 if (White != Position.WhiteMove) kingDistanceToPromotionSquare--; // Enemy king can move one square closer to pawn.
                 return kingDistanceToPromotionSquare > pawnDistanceToPromotionSquare; // Enemy king cannot stop pawn from promoting.
             }
@@ -803,23 +803,23 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void EvaluatePieceMobilityKingSafety(Position Position)
         {
-            int whiteKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
-            ulong whiteKingInnerRing = Board.InnerRingMasks[whiteKingSquare];
-            ulong whiteKingOuterRing = Board.OuterRingMasks[whiteKingSquare];
-            int blackKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
-            ulong blackKingInnerRing = Board.InnerRingMasks[blackKingSquare];
-            ulong blackKingOuterRing = Board.OuterRingMasks[blackKingSquare];
+            var whiteKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+            var whiteKingInnerRing = Board.InnerRingMasks[whiteKingSquare];
+            var whiteKingOuterRing = Board.OuterRingMasks[whiteKingSquare];
+            var blackKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
+            var blackKingInnerRing = Board.InnerRingMasks[blackKingSquare];
+            var blackKingOuterRing = Board.OuterRingMasks[blackKingSquare];
             int square;
             ulong pieceDestinations;
             int mgPieceMobilityScore;
             int egPieceMobilityScore;
             int kingSafetyIndexIncrementPer8;
-            int whiteMgKingSafetyIndexPer8 = 0;
-            int whiteEgKingSafetyIndexPer8 = 0;
-            int blackMgKingSafetyIndexPer8 = 0;
-            int blackEgKingSafetyIndexPer8 = 0;
+            var whiteMgKingSafetyIndexPer8 = 0;
+            var whiteEgKingSafetyIndexPer8 = 0;
+            var blackMgKingSafetyIndexPer8 = 0;
+            var blackEgKingSafetyIndexPer8 = 0;
             // White Knights
-            ulong pieces = Position.WhiteKnights;
+            var pieces = Position.WhiteKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
                 pieceDestinations = Board.GetKnightDestinations(Position, square, true);
@@ -923,15 +923,15 @@ namespace ErikTheCoder.MadChess.Engine
                 Bitwise.ClearBit(ref pieces, square);
             }
             // Evaluate white king near semi-open file.
-            int kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
-            int kingFile = Board.Files[kingSquare];
-            ulong leftFileMask = kingFile > 0 ? Board.FileMasks[kingFile - 1] : 0;
-            ulong kingFileMask = Board.FileMasks[kingFile];
-            ulong rightFileMask = kingFile < 7 ? Board.FileMasks[kingFile + 1] : 0;
-            int leftFileSemiOpen = (leftFileMask > 0) && ((Position.WhitePawns & leftFileMask) == 0) ? 1 : 0;
-            int kingFileSemiOpen = (Position.WhitePawns & kingFileMask) == 0 ? 1 : 0;
-            int rightFileSemiOpen = (rightFileMask > 0) && ((Position.WhitePawns & rightFileMask) == 0) ? 1 : 0;
-            int semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
+            var kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
+            var kingFile = Board.Files[kingSquare];
+            var leftFileMask = kingFile > 0 ? Board.FileMasks[kingFile - 1] : 0;
+            var kingFileMask = Board.FileMasks[kingFile];
+            var rightFileMask = kingFile < 7 ? Board.FileMasks[kingFile + 1] : 0;
+            var leftFileSemiOpen = (leftFileMask > 0) && ((Position.WhitePawns & leftFileMask) == 0) ? 1 : 0;
+            var kingFileSemiOpen = (Position.WhitePawns & kingFileMask) == 0 ? 1 : 0;
+            var rightFileSemiOpen = (rightFileMask > 0) && ((Position.WhitePawns & rightFileMask) == 0) ? 1 : 0;
+            var semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
             whiteMgKingSafetyIndexPer8 += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
             // Evaluate black king near semi-open file.
             kingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
@@ -945,7 +945,7 @@ namespace ErikTheCoder.MadChess.Engine
             semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
             blackMgKingSafetyIndexPer8 += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
             // Lookup king safety score in array.
-            int maxIndex = _kingSafety.Length - 1;
+            var maxIndex = _kingSafety.Length - 1;
             _staticScore.WhiteMgKingSafety = _kingSafety[Math.Min(whiteMgKingSafetyIndexPer8 / 8, maxIndex)];
             _staticScore.WhiteEgKingSafety = _kingSafety[Math.Min(whiteEgKingSafetyIndexPer8 / 8, maxIndex)];
             _staticScore.BlackMgKingSafety = _kingSafety[Math.Min(blackMgKingSafetyIndexPer8 / 8, maxIndex)];
@@ -956,9 +956,9 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static (int MiddlegameMobility, int EndgameMobility) GetPieceMobilityScore(ulong PieceDestinations, int[] MgPieceMobility, int[] EgPieceMobility)
         {
-            int moves = Bitwise.CountSetBits(PieceDestinations);
-            int mgMoveIndex = Math.Min(moves, MgPieceMobility.Length - 1);
-            int egMoveIndex = Math.Min(moves, EgPieceMobility.Length - 1);
+            var moves = Bitwise.CountSetBits(PieceDestinations);
+            var mgMoveIndex = Math.Min(moves, MgPieceMobility.Length - 1);
+            var egMoveIndex = Math.Min(moves, EgPieceMobility.Length - 1);
             return (MgPieceMobility[mgMoveIndex], EgPieceMobility[egMoveIndex]);
         }
 
@@ -966,8 +966,8 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetKingSafetyIndexIncrement(ulong PieceDestinations, ulong KingOuterRing, ulong KingInnerRing, int OuterRingAttackWeight, int InnerRingAttackWeight)
         {
-            int attackedOuterRingSquares = Bitwise.CountSetBits(PieceDestinations & KingOuterRing);
-            int attackedInnerRingSquares = Bitwise.CountSetBits(PieceDestinations & KingInnerRing);
+            var attackedOuterRingSquares = Bitwise.CountSetBits(PieceDestinations & KingOuterRing);
+            var attackedInnerRingSquares = Bitwise.CountSetBits(PieceDestinations & KingInnerRing);
             return (attackedOuterRingSquares * OuterRingAttackWeight) + (attackedInnerRingSquares * InnerRingAttackWeight);
         }
 
@@ -979,11 +979,11 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMateDistance(int Score)
         {
-            int mateDistance = (Score > 0)
+            var mateDistance = (Score > 0)
                 ? StaticScore.Checkmate + StaticScore.LongestCheckmate - Score
                 : -StaticScore.Checkmate - StaticScore.LongestCheckmate - Score;
             // Convert plies to full moves.
-            int quotient = Math.DivRem(mateDistance, 2, out int remainder);
+            var quotient = Math.DivRem(mateDistance, 2, out var remainder);
             return quotient + remainder;
         }
 
@@ -991,7 +991,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int DetermineGamePhase(Position Position)
         {
-            int phase = EvaluationConfig.KnightPhase * Bitwise.CountSetBits(Position.WhiteKnights | Position.BlackKnights) +
+            var phase = EvaluationConfig.KnightPhase * Bitwise.CountSetBits(Position.WhiteKnights | Position.BlackKnights) +
                         EvaluationConfig.BishopPhase * Bitwise.CountSetBits(Position.WhiteBishops | Position.BlackBishops) +
                         EvaluationConfig.RookPhase * Bitwise.CountSetBits(Position.WhiteRooks | Position.BlackRooks) +
                         EvaluationConfig.QueenPhase * Bitwise.CountSetBits(Position.WhiteQueens | Position.BlackQueens);
@@ -1005,7 +1005,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public string ShowParameters()
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             // Material
             stringBuilder.AppendLine("Material");
             stringBuilder.AppendLine("===========");
@@ -1117,11 +1117,11 @@ namespace ErikTheCoder.MadChess.Engine
 
         private static void ShowParameterSquares(int[] Parameters, StringBuilder StringBuilder)
         {
-            for (int rank = 7; rank >= 0; rank--)
+            for (var rank = 7; rank >= 0; rank--)
             {
-                for (int file = 0; file < 8; file++)
+                for (var file = 0; file < 8; file++)
                 {
-                    int square = Board.GetSquare(file, rank);
+                    var square = Board.GetSquare(file, rank);
                     StringBuilder.Append(Parameters[square].ToString("+000;-000").PadRight(6));
                 }
                 StringBuilder.AppendLine();
@@ -1131,7 +1131,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private static void ShowParameterArray(int[] Parameters, StringBuilder StringBuilder)
         {
-            for (int index = 0; index < Parameters.Length; index++) StringBuilder.Append(Parameters[index].ToString("+000;-000").PadRight(5));
+            for (var index = 0; index < Parameters.Length; index++) StringBuilder.Append(Parameters[index].ToString("+000;-000").PadRight(5));
             StringBuilder.AppendLine();
         }
 
@@ -1145,7 +1145,7 @@ namespace ErikTheCoder.MadChess.Engine
         public string ToString(Position Position)
         {
             GetStaticScore(Position);
-            int phase = DetermineGamePhase(Position);
+            var phase = DetermineGamePhase(Position);
             return _staticScore.ToString(phase);
         }
     }

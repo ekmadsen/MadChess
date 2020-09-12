@@ -44,13 +44,13 @@ namespace ErikTheCoder.MadChess.Engine
         {
             if (_notation == null) return;
             // Remove tags, comments, and variations from notation.
-            StringBuilder stringBuilder = new StringBuilder();
-            using (StringReader stringReader = new StringReader(_notation))
+            var stringBuilder = new StringBuilder();
+            using (var stringReader = new StringReader(_notation))
             {
                 // Remove tags.
                 do
                 {
-                    string line = stringReader.ReadLine();
+                    var line = stringReader.ReadLine();
                     if (line == null) break;
                     if (line.StartsWith("[") && line.EndsWith("]")) continue; // Skip tag.
                     break; // End of tag section.
@@ -58,7 +58,7 @@ namespace ErikTheCoder.MadChess.Engine
                 // Remove comments and variations.
                 do
                 {
-                    int charsRead = stringReader.Read(_buffer, 0, 1);
+                    var charsRead = stringReader.Read(_buffer, 0, 1);
                     if (charsRead == 0) break;
                     switch (_buffer[0])
                     {
@@ -86,14 +86,14 @@ namespace ErikTheCoder.MadChess.Engine
                 _cleanNotation = stringBuilder.ToString().Trim();
             }
             // Read moves from notation.
-            string[] moves = _cleanNotation.Split(". ".ToCharArray());
+            var moves = _cleanNotation.Split(". ".ToCharArray());
             _standardAlgebraicMoves = new List<string>(moves.Length);
-            for (int moveIndex = 0; moveIndex < moves.Length; moveIndex++)
+            for (var moveIndex = 0; moveIndex < moves.Length; moveIndex++)
             {
-                string move = moves[moveIndex];
-                string cleanMove = move.Trim();
+                var move = moves[moveIndex];
+                var cleanMove = move.Trim();
                 if (string.IsNullOrEmpty(cleanMove)) continue;
-                char firstCharacter = cleanMove[0];
+                var firstCharacter = cleanMove[0];
                 if (char.IsNumber(firstCharacter)) continue; // Skip move number or result.
                 if (firstCharacter == '*') continue; // Skip unknown result.
                 // Add move to list.
@@ -107,9 +107,9 @@ namespace ErikTheCoder.MadChess.Engine
             _longAlgebraicMoves = new List<string>(_standardAlgebraicMoves.Count);
             Moves = new List<ulong>(_standardAlgebraicMoves.Count);
             Board.SetPosition(Board.StartPositionFen);
-            for (int moveIndex = 0; moveIndex < _standardAlgebraicMoves.Count; moveIndex++)
+            for (var moveIndex = 0; moveIndex < _standardAlgebraicMoves.Count; moveIndex++)
             {
-                string standardAlgebraicMove = _standardAlgebraicMoves[moveIndex];
+                var standardAlgebraicMove = _standardAlgebraicMoves[moveIndex];
                 ulong move;
                 try 
                 {
@@ -119,7 +119,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     throw new Exception($"Error updating {standardAlgebraicMove} move in game {Number}.{Environment.NewLine}{Board.CurrentPosition}", exception);
                 }
-                string longAlgebraicMove = Move.ToLongAlgebraic(move);
+                var longAlgebraicMove = Move.ToLongAlgebraic(move);
                 // Determine if move is legal.
                 if (!Board.IsMoveLegal(ref move)) throw new Exception($"Move {longAlgebraicMove} is illegal in position {Board.CurrentPosition.ToFen()}."); // Move is illegal.
                 _longAlgebraicMoves.Add(longAlgebraicMove);
@@ -134,10 +134,10 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void ReadToSectionEnd(TextReader StringReader, char OpeningChar, char ClosingChar)
         {
-            int sections = 1;
+            var sections = 1;
             do
             {
-                int charsRead = StringReader.Read(_buffer, 0, 1);
+                var charsRead = StringReader.Read(_buffer, 0, 1);
                 if (charsRead == 0) break;
                 if (_buffer[0] == OpeningChar) sections++;
                 else if (_buffer[0] == ClosingChar)
@@ -151,7 +151,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public override string ToString()
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("Number");
             stringBuilder.AppendLine("======");
             stringBuilder.AppendLine(Number.ToString());

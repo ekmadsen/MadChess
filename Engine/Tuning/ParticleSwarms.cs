@@ -28,37 +28,37 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             _writeMessageLine = WriteMessageLine;
             // Load games.
             WriteMessageLine("Loading games.");
-            Stopwatch stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
             stopwatch.Start();
-            Board board = new Board(WriteMessageLine);
-            PgnGames pgnGames = new PgnGames();
+            var board = new Board(WriteMessageLine);
+            var pgnGames = new PgnGames();
             pgnGames.Load(board, PgnFilename);
             stopwatch.Stop();
             // Count positions.
             long positions = 0;
-            for (int gameIndex = 0; gameIndex < pgnGames.Count; gameIndex++)
+            for (var gameIndex = 0; gameIndex < pgnGames.Count; gameIndex++)
             {
-                PgnGame pgnGame = pgnGames[gameIndex];
+                var pgnGame = pgnGames[gameIndex];
                 positions += pgnGame.Moves.Count;
             }
-            int positionsPerSecond = (int)(positions / stopwatch.Elapsed.TotalSeconds);
+            var positionsPerSecond = (int)(positions / stopwatch.Elapsed.TotalSeconds);
             WriteMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
             stopwatch.Restart();
             WriteMessageLine("Creating data structures.");
             // Create parameters and particle swarms.
-            Parameters parameters = CreateParameters();
-            for (int index = 0; index < ParticleSwarms; index++)
+            var parameters = CreateParameters();
+            for (var index = 0; index < ParticleSwarms; index++)
             {
                 Add(new ParticleSwarm(pgnGames, parameters, ParticlesPerSwarm, WinPercentScale));
             }
             // Set parameter values of first particle in first swarm to known best.
-            Particle firstParticleInFirstSwarm = this[0].Particles[0];
+            var firstParticleInFirstSwarm = this[0].Particles[0];
             SetDefaultParameters(firstParticleInFirstSwarm.Parameters);
-            Cache cache = new Cache(1, board.ValidateMove);
-            KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
-            MoveHistory moveHistory = new MoveHistory();
-            Evaluation evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
-            Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
+            var cache = new Cache(1, board.ValidateMove);
+            var killerMoves = new KillerMoves(Search.MaxHorizon);
+            var moveHistory = new MoveHistory();
+            var evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
+            var search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
             stopwatch.Stop();
@@ -68,10 +68,10 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         private Particle GetBestParticle()
         {
-            Particle bestParticle = this[0].GetBestParticle();
-            for (int index = 1; index < Count; index++)
+            var bestParticle = this[0].GetBestParticle();
+            for (var index = 1; index < Count; index++)
             {
-                Particle particle = this[index].GetBestParticle();
+                var particle = this[index].GetBestParticle();
                 if (particle.BestEvaluationError < bestParticle.BestEvaluationError) bestParticle = particle;
             }
             return bestParticle;
@@ -160,7 +160,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         private static void SetDefaultParameters(Parameters Parameters)
         {
-            EvaluationConfig evaluationConfig = new EvaluationConfig();
+            var evaluationConfig = new EvaluationConfig();
             // Pawns
             Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value = evaluationConfig.MgPawnAdvancement;
             Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value = evaluationConfig.EgPawnAdvancement;
@@ -238,46 +238,46 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         public void Optimize(int Iterations)
         {
             // Determine size of parameter space.
-            double parameterSpace = 1d;
-            Particle firstParticleInFirstSwarm = this[0].Particles[0];
-            for (int index = 0; index < firstParticleInFirstSwarm.Parameters.Count; index++)
+            var parameterSpace = 1d;
+            var firstParticleInFirstSwarm = this[0].Particles[0];
+            for (var index = 0; index < firstParticleInFirstSwarm.Parameters.Count; index++)
             {
-                Parameter parameter = firstParticleInFirstSwarm.Parameters[index];
+                var parameter = firstParticleInFirstSwarm.Parameters[index];
                 parameterSpace *= parameter.MaxValue - parameter.MinValue + 1;
             }
             _writeMessageLine($"Optimizing {firstParticleInFirstSwarm.Parameters.Count} parameters in a space of {parameterSpace:e2} discrete parameter combinations.");
             // Create game objects for each particle swarm.
-            Board[] boards = new Board[Count];
-            Search[] searches = new Search[Count];
-            Evaluation[] evaluations = new Evaluation[Count];
-            for (int index = 0; index < Count; index++)
+            var boards = new Board[Count];
+            var searches = new Search[Count];
+            var evaluations = new Evaluation[Count];
+            for (var index = 0; index < Count; index++)
             {
-                Board board = new Board(_writeMessageLine);
+                var board = new Board(_writeMessageLine);
                 boards[index] = board;
-                Cache cache = new Cache(1, board.ValidateMove);
-                KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon);
-                MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(board.GetPositionCount, () => false, _writeMessageLine);
+                var cache = new Cache(1, board.ValidateMove);
+                var killerMoves = new KillerMoves(Search.MaxHorizon);
+                var moveHistory = new MoveHistory();
+                var evaluation = new Evaluation(board.GetPositionCount, () => false, _writeMessageLine);
                 evaluations[index] = evaluation;
                 searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
             }
-            Task[] tasks = new Task[Count];
-            double bestEvaluationError = double.MaxValue;
-            for (int iteration = 1; iteration <= Iterations; iteration++)
+            var tasks = new Task[Count];
+            var bestEvaluationError = double.MaxValue;
+            for (var iteration = 1; iteration <= Iterations; iteration++)
             {
                 // Run iteration tasks on threadpool.
                 _iterations = iteration;
-                for (int index = 0; index < Count; index++)
+                for (var index = 0; index < Count; index++)
                 {
-                    ParticleSwarm particleSwarm = this[index];
-                    Board board = boards[index];
-                    Search search = searches[index];
-                    Evaluation evaluation = evaluations[index];
+                    var particleSwarm = this[index];
+                    var board = boards[index];
+                    var search = searches[index];
+                    var evaluation = evaluations[index];
                     tasks[index] = Task.Run(() => particleSwarm.Iterate(board, search, evaluation));
                 }
                 // Wait for all particle swarms to complete an iteration.
                 Task.WaitAll(tasks);
-                Particle bestParticle = GetBestParticle();
+                var bestParticle = GetBestParticle();
                 if (bestParticle.EvaluationError < bestEvaluationError) bestEvaluationError = bestParticle.BestEvaluationError;
                 UpdateVelocity();
                 UpdateStatus();
@@ -287,10 +287,10 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         private void UpdateVelocity()
         {
-            Particle bestParticle = GetBestParticle();
-            for (int index = 0; index < Count; index++)
+            var bestParticle = GetBestParticle();
+            for (var index = 0; index < Count; index++)
             {
-                ParticleSwarm particleSwarm = this[index];
+                var particleSwarm = this[index];
                 particleSwarm.UpdateVelocity(bestParticle);
             }
         }
@@ -303,24 +303,24 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             _writeMessageLine(null);
             _writeMessageLine($"{"Iterations",-padding} = {_iterations,6:000}    ");
             _writeMessageLine($"{"Original Evaluation Error",-padding} = {_originalEvaluationError,10:0.000}");
-            Particle bestParticle = GetBestParticle();
+            var bestParticle = GetBestParticle();
             _writeMessageLine($"{"Best Evaluation Error",-padding} = {bestParticle.BestEvaluationError,10:0.000}");
             _writeMessageLine(null);
-            for (int swarmIndex = 0; swarmIndex < Count; swarmIndex++)
+            for (var swarmIndex = 0; swarmIndex < Count; swarmIndex++)
             {
-                ParticleSwarm particleSwarm = this[swarmIndex];
-                Particle bestSwarmParticle = particleSwarm.GetBestParticle();
+                var particleSwarm = this[swarmIndex];
+                var bestSwarmParticle = particleSwarm.GetBestParticle();
                 _writeMessageLine($"Particle Swarm {swarmIndex:00} Best Evaluation Error = {bestSwarmParticle.BestEvaluationError,10:0.000}");
-                for (int particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
+                for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
                 {
-                    Particle particle = particleSwarm.Particles[particleIndex];
+                    var particle = particleSwarm.Particles[particleIndex];
                     _writeMessageLine($"  Particle {particleIndex:00} Evaluation Error          = {particle.EvaluationError,10:0.000}");
                 }
             }
             _writeMessageLine(null);
-            for (int parameterIndex = 0; parameterIndex < bestParticle.BestParameters.Count; parameterIndex++)
+            for (var parameterIndex = 0; parameterIndex < bestParticle.BestParameters.Count; parameterIndex++)
             {
-                Parameter parameter = bestParticle.BestParameters[parameterIndex];
+                var parameter = bestParticle.BestParameters[parameterIndex];
                 _writeMessageLine($"{parameter.Name,-padding} = {parameter.Value,6}");
             }
         }

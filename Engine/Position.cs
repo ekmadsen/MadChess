@@ -61,7 +61,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int GetPiece(int Square)
         {
-            ulong squareMask = Board.SquareMasks[Square];
+            var squareMask = Board.SquareMasks[Square];
             if ((Occupancy & squareMask) == 0) return Piece.None;
             if ((OccupancyWhite & squareMask) > 0)
             {
@@ -148,7 +148,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong[] pawnDoubleMoveMasks;
             ulong[] pawnAttackMasks;
             ulong enemyOccupiedSquares;
-            ulong unoccupiedSquares = ~Occupancy;
+            var unoccupiedSquares = ~Occupancy;
             int[] ranks;
             int attacker;
             int queen;
@@ -192,7 +192,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong move;
             if ((EnPassantSquare != Square.Illegal) && ((Board.SquareMasks[EnPassantSquare] & ToSquareMask) > 0) && (MoveGeneration != MoveGeneration.OnlyNonCaptures))
             {
-                ulong enPassantAttackers = Board.EnPassantAttackerMasks[EnPassantSquare] & pawns;
+                var enPassantAttackers = Board.EnPassantAttackerMasks[EnPassantSquare] & pawns;
                 while ((fromSquare = Bitwise.FindFirstSetBit(enPassantAttackers)) != Square.Illegal)
                 {
                     // Capture pawn en passant.
@@ -220,7 +220,7 @@ namespace ErikTheCoder.MadChess.Engine
                     pawnDestinations = pawnMoveMasks[fromSquare] & unoccupiedSquares & ToSquareMask;
                     while ((toSquare = Bitwise.FindFirstSetBit(pawnDestinations)) != Square.Illegal)
                     {
-                        bool doubleMove = Board.SquareDistances[fromSquare][toSquare] == 2;
+                        var doubleMove = Board.SquareDistances[fromSquare][toSquare] == 2;
                         if (doubleMove && ((Occupancy & pawnDoubleMoveMasks[fromSquare]) > 0))
                         {
                             // Double move is blocked.
@@ -288,7 +288,7 @@ namespace ErikTheCoder.MadChess.Engine
                     while ((toSquare = Bitwise.FindFirstSetBit(pawnDestinations)) != Square.Illegal)
                     {
                         toSquareRank = ranks[toSquare];
-                        int victim = GetPiece(toSquare);
+                        var victim = GetPiece(toSquare);
                         if (toSquareRank < 7)
                         {
                             move = Move.Null;
@@ -383,7 +383,7 @@ namespace ErikTheCoder.MadChess.Engine
             int fromSquare;
             while ((fromSquare = Bitwise.FindFirstSetBit(knights)) != Square.Illegal)
             {
-                ulong knightDestinations = MoveGeneration switch
+                var knightDestinations = MoveGeneration switch
                 {
                     MoveGeneration.AllMoves => Board.KnightMoveMasks[fromSquare] & unOrEnemyOccupiedSquares & ToSquareMask,
                     MoveGeneration.OnlyCaptures => Board.KnightMoveMasks[fromSquare] & enemyOccupiedSquares & ToSquareMask,
@@ -393,8 +393,8 @@ namespace ErikTheCoder.MadChess.Engine
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(knightDestinations)) != Square.Illegal)
                 {
-                    int victim = GetPiece(toSquare);
-                    ulong move = Move.Null;
+                    var victim = GetPiece(toSquare);
+                    var move = Move.Null;
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
@@ -434,8 +434,8 @@ namespace ErikTheCoder.MadChess.Engine
             int fromSquare;
             while ((fromSquare = Bitwise.FindFirstSetBit(bishops)) != Square.Illegal)
             {
-                ulong occupancy = Board.BishopMoveMasks[fromSquare] & Occupancy;
-                ulong bishopDestinations = MoveGeneration switch
+                var occupancy = Board.BishopMoveMasks[fromSquare] & Occupancy;
+                var bishopDestinations = MoveGeneration switch
                 {
                     MoveGeneration.AllMoves => Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & ToSquareMask,
                     MoveGeneration.OnlyCaptures => Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & ToSquareMask,
@@ -445,8 +445,8 @@ namespace ErikTheCoder.MadChess.Engine
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(bishopDestinations)) != Square.Illegal)
                 {
-                    int victim = GetPiece(toSquare);
-                    ulong move = Move.Null;
+                    var victim = GetPiece(toSquare);
+                    var move = Move.Null;
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
@@ -487,8 +487,8 @@ namespace ErikTheCoder.MadChess.Engine
             int fromSquare;
             while ((fromSquare = Bitwise.FindFirstSetBit(rooks)) != Square.Illegal)
             {
-                ulong occupancy = Board.RookMoveMasks[fromSquare] & Occupancy;
-                ulong rookDestinations = MoveGeneration switch
+                var occupancy = Board.RookMoveMasks[fromSquare] & Occupancy;
+                var rookDestinations = MoveGeneration switch
                 {
                     MoveGeneration.AllMoves => Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & ToSquareMask,
                     MoveGeneration.OnlyCaptures => Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & ToSquareMask,
@@ -498,8 +498,8 @@ namespace ErikTheCoder.MadChess.Engine
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(rookDestinations)) != Square.Illegal)
                 {
-                    int victim = GetPiece(toSquare);
-                    ulong move = Move.Null;
+                    var victim = GetPiece(toSquare);
+                    var move = Move.Null;
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
@@ -540,9 +540,9 @@ namespace ErikTheCoder.MadChess.Engine
             int fromSquare;
             while ((fromSquare = Bitwise.FindFirstSetBit(queens)) != Square.Illegal)
             {
-                ulong bishopOccupancy = Board.BishopMoveMasks[fromSquare] & Occupancy;
-                ulong rookOccupancy = Board.RookMoveMasks[fromSquare] & Occupancy;
-                ulong queenDestinations = MoveGeneration switch
+                var bishopOccupancy = Board.BishopMoveMasks[fromSquare] & Occupancy;
+                var rookOccupancy = Board.RookMoveMasks[fromSquare] & Occupancy;
+                var queenDestinations = MoveGeneration switch
                 {
                     MoveGeneration.AllMoves => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares & ToSquareMask,
                     MoveGeneration.OnlyCaptures => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & enemyOccupiedSquares & ToSquareMask,
@@ -552,8 +552,8 @@ namespace ErikTheCoder.MadChess.Engine
                 int toSquare;
                 while ((toSquare = Bitwise.FindFirstSetBit(queenDestinations)) != Square.Illegal)
                 {
-                    int victim = GetPiece(toSquare);
-                    ulong move = Move.Null;
+                    var victim = GetPiece(toSquare);
+                    var move = Move.Null;
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
@@ -604,9 +604,9 @@ namespace ErikTheCoder.MadChess.Engine
                 castleKingsideMask = Board.BlackCastleKEmptySquaresMask;
             }
             ulong move;
-            int fromSquare = Bitwise.FindFirstSetBit(king);
+            var fromSquare = Bitwise.FindFirstSetBit(king);
             if (fromSquare == Square.Illegal) return;
-            ulong kingDestinations = MoveGeneration switch
+            var kingDestinations = MoveGeneration switch
             {
                 MoveGeneration.AllMoves => Board.KingMoveMasks[fromSquare] & unOrEnemyOccupiedSquares & ToSquareMask,
                 MoveGeneration.OnlyCaptures => Board.KingMoveMasks[fromSquare] & enemyOccupiedSquares & ToSquareMask,
@@ -616,7 +616,7 @@ namespace ErikTheCoder.MadChess.Engine
             int toSquare;
             while ((toSquare = Bitwise.FindFirstSetBit(kingDestinations)) != Square.Illegal)
             {
-                int victim = GetPiece(toSquare);
+                var victim = GetPiece(toSquare);
                 move = Move.Null;
                 Move.SetFrom(ref move, fromSquare);
                 Move.SetTo(ref move, toSquare);
@@ -712,13 +712,13 @@ namespace ErikTheCoder.MadChess.Engine
                 enemyRooksQueens = WhiteRooks | WhiteQueens;
             }
             PotentiallyPinnedPieces = 0;
-            ulong fileAttackers = Board.FileMasks[Board.Files[kingSquare]] & enemyRooksQueens;
+            var fileAttackers = Board.FileMasks[Board.Files[kingSquare]] & enemyRooksQueens;
             if (fileAttackers > 0) PotentiallyPinnedPieces |= Board.FileMasks[Board.Files[kingSquare]] & pieces;
-            ulong rankAttackers = Board.RankMasks[Board.WhiteRanks[kingSquare]] & enemyRooksQueens;
+            var rankAttackers = Board.RankMasks[Board.WhiteRanks[kingSquare]] & enemyRooksQueens;
             if (rankAttackers > 0) PotentiallyPinnedPieces |= Board.RankMasks[Board.WhiteRanks[kingSquare]] & pieces;
-            ulong upDiagonalAttackers = Board.UpDiagonalMasks[Board.UpDiagonals[kingSquare]] & enemyBishopsQueens;
+            var upDiagonalAttackers = Board.UpDiagonalMasks[Board.UpDiagonals[kingSquare]] & enemyBishopsQueens;
             if (upDiagonalAttackers > 0) PotentiallyPinnedPieces |= Board.UpDiagonalMasks[Board.UpDiagonals[kingSquare]] & pieces;
-            ulong downDiagonalAttackers = Board.DownDiagonalMasks[Board.DownDiagonals[kingSquare]] & enemyBishopsQueens;
+            var downDiagonalAttackers = Board.DownDiagonalMasks[Board.DownDiagonals[kingSquare]] & enemyBishopsQueens;
             if (downDiagonalAttackers > 0) PotentiallyPinnedPieces |= Board.DownDiagonalMasks[Board.DownDiagonals[kingSquare]] & pieces;
         }
 
@@ -758,11 +758,11 @@ namespace ErikTheCoder.MadChess.Engine
 
         public string ToFen()
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             // Position
-            int x = 0;
-            int unoccupiedSquares = 0;
-            for (int square = 0; square < 64; square++)
+            var x = 0;
+            var unoccupiedSquares = 0;
+            for (var square = 0; square < 64; square++)
             {
                 x++;
                 if (x == 9)
@@ -770,7 +770,7 @@ namespace ErikTheCoder.MadChess.Engine
                     stringBuilder.Append("/");
                     x = 1;
                 }
-                int piece = GetPiece(square);
+                var piece = GetPiece(square);
                 if (piece == Piece.None)
                 {
                     // Unoccupied square
@@ -812,12 +812,12 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static string ToString(ulong Occupancy)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (int rank = 7; rank >= 0; rank--)
+            var stringBuilder = new StringBuilder();
+            for (var rank = 7; rank >= 0; rank--)
             {
-                for (int file = 0; file < 8; file++)
+                for (var file = 0; file < 8; file++)
                 {
-                    int square = Board.GetSquare(file, rank);
+                    var square = Board.GetSquare(file, rank);
                     stringBuilder.Append(Bitwise.IsBitSet(Occupancy, square) ? " 1 " : " . ");
                 }
                 stringBuilder.AppendLine();
@@ -829,18 +829,18 @@ namespace ErikTheCoder.MadChess.Engine
         public override string ToString()
         {
             // Iterate over the piece array to construct an  8 x 8 text display of the chessboard.
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("  ----+---+---+---+---+---+---+---+");
-            int square = 0;
-            for (int y = 8; y > 0; y--)
+            var square = 0;
+            for (var y = 8; y > 0; y--)
             {
                 // Add rank.
                 stringBuilder.Append(y);
                 stringBuilder.Append(" ");
-                for (int x = 1; x <= 8; x++)
+                for (var x = 1; x <= 8; x++)
                 {
                     stringBuilder.Append("| ");
-                    int piece = GetPiece(square);
+                    var piece = GetPiece(square);
                     if (piece == Piece.None) stringBuilder.Append(" ");
                     else stringBuilder.Append(Piece.GetChar(piece));
                     stringBuilder.Append(" ");
@@ -850,10 +850,10 @@ namespace ErikTheCoder.MadChess.Engine
                 stringBuilder.AppendLine("  ----+---+---+---+---+---+---+---+");
             }
             stringBuilder.Append("  ");
-            for (int x = 1; x <= 8; x++)
+            for (var x = 1; x <= 8; x++)
             {
                 // Add file.
-                char chrFile = (char)(x + 96);
+                var chrFile = (char)(x + 96);
                 stringBuilder.Append($"  {chrFile} ");
             }
             stringBuilder.AppendLine();

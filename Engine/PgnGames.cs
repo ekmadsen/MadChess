@@ -20,9 +20,9 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public void Load(Board Board, string Filename)
         {
-            using (StreamReader pgnReader = File.OpenText(Filename))
+            using (var pgnReader = File.OpenText(Filename))
             {
-                int gameNumber = 1;
+                var gameNumber = 1;
                 PgnGame pgnGame;
                 do
                 {
@@ -42,14 +42,14 @@ namespace ErikTheCoder.MadChess.Engine
             const string fenTag = "[FEN ";
             while (!PgnReader.EndOfStream)
             {
-                string line = PgnReader.ReadLine();
+                var line = PgnReader.ReadLine();
                 if (line == null) continue;
                 line = line.Trim();
                 if (line.StartsWith(eventTag))
                 {
                     // Found start of game.
-                    GameResult result = GameResult.Unknown;
-                    StringBuilder stringBuilder = new StringBuilder();
+                    var result = GameResult.Unknown;
+                    var stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine(line);
                     while (!PgnReader.EndOfStream)
                     {
@@ -61,10 +61,10 @@ namespace ErikTheCoder.MadChess.Engine
                         if (line.StartsWith(resultTag))
                         {
                             // Determine game result.
-                            int startPosition = line.IndexOf("\"", resultTag.Length, StringComparison.OrdinalIgnoreCase) + 1;
-                            int endPosition = line.IndexOf("\"", startPosition, StringComparison.OrdinalIgnoreCase) - 1;
-                            int length = endPosition - startPosition + 1;
-                            string gameResultText = line.Substring(startPosition, length);
+                            var startPosition = line.IndexOf("\"", resultTag.Length, StringComparison.OrdinalIgnoreCase) + 1;
+                            var endPosition = line.IndexOf("\"", startPosition, StringComparison.OrdinalIgnoreCase) - 1;
+                            var length = endPosition - startPosition + 1;
+                            var gameResultText = line.Substring(startPosition, length);
                             result = gameResultText switch
                             {
                                 "1-0" => GameResult.WhiteWon,

@@ -149,7 +149,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static void SetScore(ref ulong Data, int Score)
         {
             // Ensure cached score is a positive number.
-            int score = Score + _scorePadding;
+            var score = Score + _scorePadding;
             // Clear
             Data &= _scoreUnmask;
             // Set.
@@ -166,7 +166,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetScorePrecision(ref ulong Data, ScorePrecision ScorePrecision)
         {
-            ulong scorePrecision = (ulong)ScorePrecision;
+            var scorePrecision = (ulong)ScorePrecision;
             // Clear
             Data &= _scorePrecisionUnmask;
             // Set.
