@@ -306,8 +306,8 @@ namespace ErikTheCoder.MadChess.Engine
             //  120, 121,   122, 123, 124, 125, 126, 127, 128, 129,   130, 131,
             //  132, 133,   134, 135, 136, 137, 138, 139, 140, 141,   142, 143 
 
-            int[] directionOffsets1212 = CreateDirectionOffsets1212();
-            int[] squareIndices1212To88 = MapSquareIndices1212To88();
+            var directionOffsets1212 = CreateDirectionOffsets1212();
+            var squareIndices1212To88 = MapSquareIndices1212To88();
             _neighborSquares = CreateNeighborSquares(directionOffsets1212, squareIndices1212To88);
             
             // Create move masks and precalculated moves.
@@ -363,7 +363,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private static int[] CreateDirectionOffsets1212()
         {
-            int[] directionOffsets1212 = new int[17];
+            var directionOffsets1212 = new int[17];
             directionOffsets1212[(int)Direction.North] = -12;
             directionOffsets1212[(int)Direction.NorthEast] = -11;
             directionOffsets1212[(int)Direction.East] = 1;

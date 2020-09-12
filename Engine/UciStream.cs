@@ -1018,7 +1018,7 @@ namespace ErikTheCoder.MadChess.Engine
                 var cache = new Cache(1, board.ValidateMove);
                 var killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
                 var moveHistory = new MoveHistory();
-                var evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
+                var evaluation = new Evaluation(board.IsRepeatPosition, () => false, WriteMessageLine);
                 var search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
                 tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
             }
