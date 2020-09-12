@@ -41,10 +41,10 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         private void InitializeRandomVelocities()
         {
-            for (int index = 0; index < Parameters.Count; index++)
+            for (var index = 0; index < Parameters.Count; index++)
             {
-                Parameter parameter = Parameters[index];
-                double maxVelocity = _maxInitialVelocityPercent * (parameter.MaxValue - parameter.MinValue);
+                var parameter = Parameters[index];
+                var maxVelocity = _maxInitialVelocityPercent * (parameter.MaxValue - parameter.MinValue);
                 // Allow positive or negative velocity.
                 _velocities[index] = (SafeRandom.NextDouble() * maxVelocity * 2) - maxVelocity;
             }
@@ -54,9 +54,9 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         public void Move()
         {
             // Move particle in parameter space.
-            for (int index = 0; index < Parameters.Count; index++)
+            for (var index = 0; index < Parameters.Count; index++)
             {
-                Parameter parameter = Parameters[index];
+                var parameter = Parameters[index];
                 parameter.Value += (int) _velocities[index];
                 if (parameter.Value < parameter.MinValue)
                 {
@@ -154,26 +154,26 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         {
             // Sum the square of evaluation error over all games.
             double evaluationError = 0;
-            for (int gameIndex = 0; gameIndex < PgnGames.Count; gameIndex++)
+            for (var gameIndex = 0; gameIndex < PgnGames.Count; gameIndex++)
             {
-                PgnGame game = PgnGames[gameIndex];
+                var game = PgnGames[gameIndex];
                 if (game.Result == GameResult.Unknown) continue; // Skip games with unknown results.
                 Board.SetPosition(Board.StartPositionFen, true);
-                for (int moveIndex = 0; moveIndex < game.Moves.Count; moveIndex++)
+                for (var moveIndex = 0; moveIndex < game.Moves.Count; moveIndex++)
                 {
-                    ulong move = game.Moves[moveIndex];
+                    var move = game.Moves[moveIndex];
                     // Play move.
                     Board.PlayMove(move);
                     // Get quiet score.
                     Board.NodesExamineTime = long.MaxValue;
                     Search.PvInfoUpdate = false;
                     Search.Continue = true;
-                    int quietScore = Search.GetQuietScore(Board, 1, 1, Board.AllSquaresMask, -StaticScore.Max, StaticScore.Max);
+                    var quietScore = Search.GetQuietScore(Board, 1, 1, Board.AllSquaresMask, -StaticScore.Max, StaticScore.Max);
                     // Convert quiet score to win percent.
-                    double winPercent = GetWinPercent(quietScore, WinPercentScale);
+                    var winPercent = GetWinPercent(quietScore, WinPercentScale);
                     // Compare win percent to game result.
                     // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
-                    double result = game.Result switch
+                    var result = game.Result switch
                     {
                         GameResult.WhiteWon => (Board.CurrentPosition.WhiteMove ? 1d : 0),
                         GameResult.Draw => 0.5d,
@@ -194,18 +194,18 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         public void UpdateVelocity(Particle BestSwarmParticle, Particle GloballyBestParticle)
         {
-            for (int index = 0; index < Parameters.Count; index++)
+            for (var index = 0; index < Parameters.Count; index++)
             {
-                Parameter parameter = Parameters[index];
-                Parameter bestParameter = BestParameters[index];
-                Parameter bestSwarmParameter = BestSwarmParticle.BestParameters[index];
-                Parameter globallyBestParameter = GloballyBestParticle.BestParameters[index];
-                double velocity = _inertia * _velocities[index];
-                double particleMagnitude = SafeRandom.NextDouble() * _influence;
+                var parameter = Parameters[index];
+                var bestParameter = BestParameters[index];
+                var bestSwarmParameter = BestSwarmParticle.BestParameters[index];
+                var globallyBestParameter = GloballyBestParticle.BestParameters[index];
+                var velocity = _inertia * _velocities[index];
+                var particleMagnitude = SafeRandom.NextDouble() * _influence;
                 velocity += particleMagnitude * (bestParameter.Value - parameter.Value);
-                double swarmMagnitude = SafeRandom.NextDouble() * ParticleSwarm.Influence;
+                var swarmMagnitude = SafeRandom.NextDouble() * ParticleSwarm.Influence;
                 velocity += swarmMagnitude * (bestSwarmParameter.Value - parameter.Value);
-                double allSwarmsMagnitude = SafeRandom.NextDouble() * ParticleSwarms.Influence;
+                var allSwarmsMagnitude = SafeRandom.NextDouble() * ParticleSwarms.Influence;
                 velocity += allSwarmsMagnitude * (globallyBestParameter.Value - parameter.Value);
                 _velocities[index] = velocity;
             }

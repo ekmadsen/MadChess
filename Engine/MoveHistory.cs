@@ -23,10 +23,10 @@ namespace ErikTheCoder.MadChess.Engine
         public MoveHistory()
         {
             _moveHistory = new int[Piece.BlackKing + 1][];
-            for (int piece = Piece.None; piece <= Piece.BlackKing; piece++)
+            for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
             {
                 _moveHistory[piece] = new int[64];
-                for (int toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = 0;
+                for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = 0;
             }
         }
 
@@ -34,8 +34,8 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetValue(Position Position, ulong Move)
         {
-            int piece = Position.GetPiece(Engine.Move.From(Move));
-            int toSquare = Engine.Move.To(Move);
+            var piece = Position.GetPiece(Engine.Move.From(Move));
+            var toSquare = Engine.Move.To(Move);
             return _moveHistory[piece][toSquare];
         }
 
@@ -43,8 +43,8 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UpdateValue(Position Position, ulong Move, int Increment)
         {
-            int piece = Position.GetPiece(Engine.Move.From(Move));
-            int toSquare = Engine.Move.To(Move);
+            var piece = Position.GetPiece(Engine.Move.From(Move));
+            var toSquare = Engine.Move.To(Move);
             _moveHistory[piece][toSquare] += Increment;
         }
 
@@ -65,18 +65,18 @@ namespace ErikTheCoder.MadChess.Engine
                 minPiece = Piece.BlackPawn;
                 maxPiece = Piece.BlackKing;
             }
-            for (int piece = minPiece; piece <= maxPiece; piece++)
+            for (var piece = minPiece; piece <= maxPiece; piece++)
             {
-                for (int toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = (_agePer256 * _moveHistory[piece][toSquare]) / 256;
+                for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = (_agePer256 * _moveHistory[piece][toSquare]) / 256;
             }
         }
 
 
         public void Reset()
         {
-            for (int piece = Piece.None; piece <= Piece.BlackKing; piece++)
+            for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
             {
-                for (int toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = 0;
+                for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = 0;
             }
         }
     }

@@ -58,8 +58,8 @@ namespace ErikTheCoder.MadChess.Engine
                     {
                         // Create or append to log file.
                         // Include GUID in log filename to avoid multiple engine instances interleaving lines in a single log file.
-                        string file = $"MadChess-{Guid.NewGuid()}.log";
-                        FileStream fileStream = File.Open(file, FileMode.Append, FileAccess.Write, FileShare.Read);
+                        var file = $"MadChess-{Guid.NewGuid()}.log";
+                        var fileStream = File.Open(file, FileMode.Append, FileAccess.Write, FileShare.Read);
                         _logWriter = new StreamWriter(fileStream) {AutoFlush = true};
                     }
                 }
@@ -173,8 +173,8 @@ namespace ErikTheCoder.MadChess.Engine
         public void HandleException(Exception Exception)
         {
             Log = true;
-            StringBuilder stringBuilder = new StringBuilder();
-            Exception exception = Exception;
+            var stringBuilder = new StringBuilder();
+            var exception = Exception;
             do
             {
                 // Display message and write to log.
@@ -216,7 +216,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             if (Command == null) return;
             // Parse command into tokens.
-            List<string> tokens = Tokens.Parse(Command, ' ', '"');
+            var tokens = Tokens.Parse(Command, ' ', '"');
             // Do not convert to lowercase because this invalidates FEN strings (where case differentiates white and black pieces).
             if (tokens.Count == 0) return;
             // Determine whether to dispatch command on main thread or async thread.
@@ -235,7 +235,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void DispatchOnMainThread(List<string> Tokens)
         {
-            bool writeMessageLine = true;
+            var writeMessageLine = true;
             switch (Tokens[0].ToLowerInvariant())
             {
                 // Standard commands
@@ -402,8 +402,8 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void SetOption(List<string> Tokens)
         {
-            string optionName = Tokens[2];
-            string optionValue = Tokens.Count > 4 ? Tokens[4] : string.Empty;
+            var optionName = Tokens[2];
+            var optionValue = Tokens.Count > 4 ? Tokens[4] : string.Empty;
             switch (optionName.ToLowerInvariant())
             {
                 case "debug":
@@ -413,7 +413,7 @@ namespace ErikTheCoder.MadChess.Engine
                     Log = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "hash":
-                    int cacheSizeMegabytes = int.Parse(optionValue);
+                    var cacheSizeMegabytes = int.Parse(optionValue);
                     _cache.Capacity = cacheSizeMegabytes * Cache.CapacityPerMegabyte;
                     break;
                 case "clearhash":
@@ -424,7 +424,7 @@ namespace ErikTheCoder.MadChess.Engine
                     break;
                 case "uci_analysemode":
                 case "analyze":
-                    bool analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    var analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     if (analysisMode)
                     {
                         _search.TruncatePrincipalVariation = false;
@@ -494,9 +494,9 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // ParseLongAlgebraic FEN.
             // Determine if position specifies moves.
-            bool specifiesMoves = false;
-            int moveIndex = Tokens.Count;
-            for (int index = 2; index < Tokens.Count; index++)
+            var specifiesMoves = false;
+            var moveIndex = Tokens.Count;
+            for (var index = 2; index < Tokens.Count; index++)
             {
                 if (Tokens[index].ToLowerInvariant() == "moves")
                 {
@@ -524,15 +524,15 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Must convert tokens to array to prevent joining class name (System.Collections.Generic.List) instead of string value.
             // This is because the IEnumerable<T> overload does not accept a StartIndex and Count so those parameters are interpreted as params object[].
-            string fen = Tokens[1] == "startpos"
+            var fen = Tokens[1] == "startpos"
                 ? Board.StartPositionFen
                 : string.Join(" ",Tokens.ToArray(), 2, Tokens.Count - 2);
             // Setup position and play moves if specified.
             Board.SetPosition(fen);
             while (moveIndex < Tokens.Count)
             {
-                ulong move = Move.ParseLongAlgebraic(Tokens[moveIndex], Board.CurrentPosition.WhiteMove);
-                bool validMove = Board.ValidateMove(ref move);
+                var move = Move.ParseLongAlgebraic(Tokens[moveIndex], Board.CurrentPosition.WhiteMove);
+                var validMove = Board.ValidateMove(ref move);
                 if (!validMove || !Board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {Board.CurrentPosition.ToFen()}.");
                 Board.PlayMove(move);
                 moveIndex++;
@@ -547,9 +547,9 @@ namespace ErikTheCoder.MadChess.Engine
             _search.Reset(false);
             _evaluation.Reset(false);
             _killerMoves.Shift(2);
-            for (int tokenIndex = 1; tokenIndex < Tokens.Count; tokenIndex++)
+            for (var tokenIndex = 1; tokenIndex < Tokens.Count; tokenIndex++)
             {
-                string token = Tokens[tokenIndex];
+                var token = Tokens[tokenIndex];
                 // ReSharper disable once SwitchStatementMissingSomeCases
                 switch (token.ToLowerInvariant())
                 {
@@ -596,7 +596,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void GoAsync()
         {
             // Find best move and respond.
-            ulong bestMove = _search.FindBestMove(Board);
+            var bestMove = _search.FindBestMove(Board);
             WriteMessageLine($"bestmove {Move.ToLongAlgebraic(bestMove)}");
             // Signal search has stopped.
             _commandStopwatch.Stop();
@@ -628,12 +628,12 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void CountMoves(List<string> Tokens)
         {
-            int horizon = int.Parse(Tokens[1].Trim());
+            var horizon = int.Parse(Tokens[1].Trim());
             if (horizon <= 0) throw new ArgumentException();
             Board.Nodes = 0;
             Board.NodesInfoUpdate = NodesInfoInterval;
             _commandStopwatch.Restart();
-            long moves = CountMoves(0, horizon);
+            var moves = CountMoves(0, horizon);
             _commandStopwatch.Stop();
             WriteMessageLine($"Counted {moves:n0} moves in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds.");
         }
@@ -645,18 +645,18 @@ namespace ErikTheCoder.MadChess.Engine
             if (Board.Nodes >= Board.NodesInfoUpdate)
             {
                 // Update move count.
-                double nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
+                var nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
                 WriteMessageLine($"Counted {Board.NodesInfoUpdate:n0} nodes ({nodesPerSecond:n0} nodes per second).");
-                int intervals = (int) (Board.Nodes / NodesInfoInterval);
+                var intervals = (int) (Board.Nodes / NodesInfoInterval);
                 Board.NodesInfoUpdate = NodesInfoInterval * (intervals + 1);
             }
-            int toHorizon = Horizon - Depth;
+            var toHorizon = Horizon - Depth;
             // Count moves using staged moved generation (as is done when searching moves).
             Board.CurrentPosition.PrepareMoveGeneration();
             long moves = 0;
             while (true)
             {
-                (ulong move, int moveIndex) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
+                var (move, moveIndex) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
                 if (move == Move.Null) break;
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 Move.SetPlayed(ref move, true);
@@ -679,17 +679,17 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void DivideMoves(List<string> Tokens)
         {
-            int horizon = int.Parse(Tokens[1].Trim());
+            var horizon = int.Parse(Tokens[1].Trim());
             if (horizon < 1) throw new ArgumentException();
             Board.Nodes = 0;
             Board.NodesInfoUpdate = NodesInfoInterval;
             _commandStopwatch.Restart();
             Board.CurrentPosition.GenerateMoves();
             // Count moves for each root move.
-            long[] rootMoves = new long[Board.CurrentPosition.MoveIndex];
-            for (int moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
+            var rootMoves = new long[Board.CurrentPosition.MoveIndex];
+            for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
             {
-                ulong move = Board.CurrentPosition.Moves[moveIndex];
+                var move = Board.CurrentPosition.Moves[moveIndex];
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 Board.PlayMove(move);
                 rootMoves[moveIndex] = horizon == 1 ? 1 : CountMoves(1, horizon);
@@ -697,12 +697,12 @@ namespace ErikTheCoder.MadChess.Engine
             }
             _commandStopwatch.Stop();
             // Display move count for each root move.
-            int legalMoves = 0;
+            var legalMoves = 0;
             WriteMessageLine("Root Move    Moves");
             WriteMessageLine("=========  =======");
-            for (int moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
+            for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
             {
-                ulong move = Board.CurrentPosition.Moves[moveIndex];
+                var move = Board.CurrentPosition.Moves[moveIndex];
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 legalMoves++;
                 WriteMessageLine($"{Move.ToLongAlgebraic(move),9}  {rootMoves[moveIndex],7}");
@@ -716,20 +716,20 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _commandStopwatch.Restart();
             // Get cached position.
-            CachedPosition cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
-            ulong bestMove = _cache.GetBestMove(cachedPosition);
+            var cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
+            var bestMove = _cache.GetBestMove(cachedPosition);
             // Generate and sort moves.
             Board.CurrentPosition.GenerateMoves();
-            int lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
+            var lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
             _search.PrioritizeMoves(Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
             Search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
             WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer  History              Priority");
             WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  =======  ====================");
-            StringBuilder stringBuilder = new StringBuilder();
-            int legalMoveNumber = 0;
-            for (int moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
+            var stringBuilder = new StringBuilder();
+            var legalMoveNumber = 0;
+            for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
             {
-                ulong move = Board.CurrentPosition.Moves[moveIndex];
+                var move = Board.CurrentPosition.Moves[moveIndex];
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 legalMoveNumber++;
                 stringBuilder.Clear();
@@ -738,7 +738,7 @@ namespace ErikTheCoder.MadChess.Engine
                 stringBuilder.Append((Move.IsBest(move) ? "True" : string.Empty).PadLeft(6));
                 stringBuilder.Append(Piece.GetName(Move.CaptureVictim(move)).PadLeft(12));
                 stringBuilder.Append(Piece.GetName(Move.CaptureAttacker(move)).PadLeft(14));
-                string promotedPiece = Move.PromotedPiece(move) == Piece.None ? string.Empty : Piece.GetName(Move.PromotedPiece(move));
+                var promotedPiece = Move.PromotedPiece(move) == Piece.None ? string.Empty : Piece.GetName(Move.PromotedPiece(move));
                 stringBuilder.Append(promotedPiece.PadLeft(7));
                 stringBuilder.Append(Move.Killer(move).ToString().PadLeft(8));
                 stringBuilder.Append(Move.History(move).ToString().PadLeft(9));
@@ -753,51 +753,51 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void ExchangeScore(List<string> Tokens)
         {
-            ulong move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
-            bool validMove = Board.ValidateMove(ref move);
+            var move = Move.ParseLongAlgebraic(Tokens[1].Trim(), Board.CurrentPosition.WhiteMove);
+            var validMove = Board.ValidateMove(ref move);
             if (!validMove || !Board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {Board.CurrentPosition.ToFen()}.");
-            int exchangeScore = _search.GetExchangeScore(Board, move);
+            var exchangeScore = _search.GetExchangeScore(Board, move);
             WriteMessageLine(exchangeScore.ToString());
         }
 
 
         private void TestPositions(List<string> Tokens)
         {
-            string file = Tokens[1].Trim();
+            var file = Tokens[1].Trim();
             WriteMessageLine("Number                                                                     Position  Depth     Expected        Moves  Correct    Pct");
             WriteMessageLine("======  ===========================================================================  =====  ===========  ===========  =======  =====");
             Board.Nodes = 0;
             Board.NodesInfoUpdate = NodesInfoInterval;
-            int positions = 0;
-            int correctPositions = 0;
+            var positions = 0;
+            var correctPositions = 0;
             _commandStopwatch.Restart();
             // Verify move counts of test positions.
-            using (StreamReader reader = File.OpenText(file))
+            using (var reader = File.OpenText(file))
             {
                 while (!reader.EndOfStream)
                 {
                     // Load position, horizon, and correct move count.
-                    string line = reader.ReadLine();
+                    var line = reader.ReadLine();
                     if (line == null) continue;
                     positions++;
-                    List<string> tokens = Engine.Tokens.Parse(line, '|', '"');
-                    string fen = tokens[0];
-                    int horizon = int.Parse(tokens[1]);
-                    long expectedMoves = long.Parse(tokens[2]);
+                    var tokens = Engine.Tokens.Parse(line, '|', '"');
+                    var fen = tokens[0];
+                    var horizon = int.Parse(tokens[1]);
+                    var expectedMoves = long.Parse(tokens[2]);
                     // Setup position.  Preserve move count.
                     Board.SetPosition(fen, true);
                     // Count nodes.  Do not update node count.
                     Board.NodesInfoUpdate = long.MaxValue;
-                    long moves = CountMoves(0, horizon);
-                    bool correct = moves == expectedMoves;
+                    var moves = CountMoves(0, horizon);
+                    var correct = moves == expectedMoves;
                     if (correct) correctPositions++;
-                    double percent = (100d * correctPositions) / positions;
+                    var percent = (100d * correctPositions) / positions;
                     WriteMessageLine($"{positions,6}  {fen,75}  {horizon,5:0}  {expectedMoves,11:n0}  {moves,11:n0}  {correct,7}  {percent,5:0.0}");
                 }
             }
             _commandStopwatch.Stop();
             // Update node count.
-            double nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
+            var nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
             WriteMessageLine();
             WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
         }
@@ -805,11 +805,11 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void AnalyzePositions(IList<string> Tokens)
         {
-            string file = Tokens[1].Trim();
-            int moveTimeMilliseconds = int.Parse(Tokens[2].Trim());
-            int positions = 0;
-            int correctPositions = 0;
-            using (StreamReader reader = File.OpenText(file))
+            var file = Tokens[1].Trim();
+            var moveTimeMilliseconds = int.Parse(Tokens[2].Trim());
+            var positions = 0;
+            var correctPositions = 0;
+            using (var reader = File.OpenText(file))
             {
                 WriteMessageLine("Number                                                                     Position  Solution    Expected Moves   Move  Correct    Pct");
                 WriteMessageLine("======  ===========================================================================  ========  ================  =====  =======  =====");
@@ -819,17 +819,17 @@ namespace ErikTheCoder.MadChess.Engine
                 while (!reader.EndOfStream)
                 {
                     // Load position and solution.
-                    string line = reader.ReadLine();
+                    var line = reader.ReadLine();
                     if (line == null) continue;
                     positions++;
-                    List<string> tokens = Engine.Tokens.Parse(line, ' ', '"');
-                    PositionSolution positionSolution = PositionSolution.Unknown;
+                    var tokens = Engine.Tokens.Parse(line, ' ', '"');
+                    var positionSolution = PositionSolution.Unknown;
                     const int illegalIndex = -1;
-                    int solutionIndex = illegalIndex;
-                    int expectedMovesIndex = illegalIndex;
-                    for (int index = 0; index < tokens.Count; index++)
+                    var solutionIndex = illegalIndex;
+                    var expectedMovesIndex = illegalIndex;
+                    for (var index = 0; index < tokens.Count; index++)
                     {
-                        string token = tokens[index].Trim().ToLower();
+                        var token = tokens[index].Trim().ToLower();
                         // ReSharper disable once SwitchStatementMissingSomeCases
                         switch (token)
                         {
@@ -850,21 +850,21 @@ namespace ErikTheCoder.MadChess.Engine
                     }
                     if (solutionIndex == illegalIndex) throw new Exception("Position does not specify a best moves or avoid moves solution.");
                     if (expectedMovesIndex == illegalIndex) throw new Exception("Position does not terminate the expected moves with a semicolon.");
-                    int correctMoves = expectedMovesIndex - solutionIndex;
+                    var correctMoves = expectedMovesIndex - solutionIndex;
                     // Must convert tokens to array to prevent joining class name (System.Collections.Generic.List) instead of string value.
                     // This is because the IEnumerable<T> overload does not accept a StartIndex and Count so those parameters are interpreted as params object[].
-                    string fen = string.Join(" ", tokens.ToArray(), 0, solutionIndex).Trim();
-                    string expectedMovesListStandardAlgebraic = string.Join(" ", tokens.ToArray(), solutionIndex + 1, correctMoves).Trim().TrimEnd(";".ToCharArray());
-                    string[] expectedMovesStandardAlgebraic = expectedMovesListStandardAlgebraic.Split(" ".ToCharArray());
-                    ulong[] expectedMoves = new ulong[expectedMovesStandardAlgebraic.Length];
-                    string[] expectedMovesLongAlgebraic = new string[expectedMovesStandardAlgebraic.Length];
+                    var fen = string.Join(" ", tokens.ToArray(), 0, solutionIndex).Trim();
+                    var expectedMovesListStandardAlgebraic = string.Join(" ", tokens.ToArray(), solutionIndex + 1, correctMoves).Trim().TrimEnd(";".ToCharArray());
+                    var expectedMovesStandardAlgebraic = expectedMovesListStandardAlgebraic.Split(" ".ToCharArray());
+                    var expectedMoves = new ulong[expectedMovesStandardAlgebraic.Length];
+                    var expectedMovesLongAlgebraic = new string[expectedMovesStandardAlgebraic.Length];
                     // Setup position and reset search.
                     UciNewGame(true);
                     Board.SetPosition(fen, true);
-                    for (int moveIndex = 0; moveIndex < expectedMovesStandardAlgebraic.Length; moveIndex++)
+                    for (var moveIndex = 0; moveIndex < expectedMovesStandardAlgebraic.Length; moveIndex++)
                     {
-                        string expectedMoveStandardAlgebraic = expectedMovesStandardAlgebraic[moveIndex];
-                        ulong expectedMove = Move.ParseStandardAlgebraic(Board, expectedMoveStandardAlgebraic);
+                        var expectedMoveStandardAlgebraic = expectedMovesStandardAlgebraic[moveIndex];
+                        var expectedMove = Move.ParseStandardAlgebraic(Board, expectedMoveStandardAlgebraic);
                         expectedMoves[moveIndex] = expectedMove;
                         expectedMovesLongAlgebraic[moveIndex] = Move.ToLongAlgebraic(expectedMove);
                     }
@@ -874,7 +874,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _search.PvInfoUpdate = false;
                     _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
                     _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
-                    ulong bestMove = _search.FindBestMove(Board);
+                    var bestMove = _search.FindBestMove(Board);
                     _search.Signal.Set();
                     // Determine if search found correct move.
                     bool correct;
@@ -883,9 +883,9 @@ namespace ErikTheCoder.MadChess.Engine
                     {
                         case PositionSolution.BestMoves:
                             correct = false;
-                            for (int moveIndex = 0; moveIndex < expectedMoves.Length; moveIndex++)
+                            for (var moveIndex = 0; moveIndex < expectedMoves.Length; moveIndex++)
                             {
-                                ulong expectedMove = expectedMoves[moveIndex];
+                                var expectedMove = expectedMoves[moveIndex];
                                 if (Move.Equals(bestMove, expectedMove))
                                 {
                                     correct = true;
@@ -895,9 +895,9 @@ namespace ErikTheCoder.MadChess.Engine
                             break;
                         case PositionSolution.AvoidMoves:
                             correct = true;
-                            for (int moveIndex = 0; moveIndex < expectedMoves.Length; moveIndex++)
+                            for (var moveIndex = 0; moveIndex < expectedMoves.Length; moveIndex++)
                             {
-                                ulong expectedMove = expectedMoves[moveIndex];
+                                var expectedMove = expectedMoves[moveIndex];
                                 if (Move.Equals(bestMove, expectedMove))
                                 {
                                     correct = false;
@@ -909,8 +909,8 @@ namespace ErikTheCoder.MadChess.Engine
                             throw new Exception(positionSolution + " position solution not supported.");
                     }
                     if (correct) correctPositions++;
-                    double percent = (100d * correctPositions) / positions;
-                    string solution = positionSolution == PositionSolution.BestMoves ? "Best" : "Avoid";
+                    var percent = (100d * correctPositions) / positions;
+                    var solution = positionSolution == PositionSolution.BestMoves ? "Best" : "Avoid";
                     WriteMessageLine($"{positions,6}  {fen,75}  {solution,8}  {string.Join(" ", expectedMovesLongAlgebraic),16}  {Move.ToLongAlgebraic(bestMove),5}  {correct,7}  {percent,5:0.0}");
                 }
             }
@@ -919,12 +919,12 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine();
             WriteMessageLine($"Solved {correctPositions} of {positions} positions in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
             // Update node count.
-            double nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
+            var nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
             WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
             // Update stats.
-            double nullMoveCutoffPercent = (100d * _search.Stats.NullMoveCutoffs) / _search.Stats.NullMoves;
-            double betaCutoffMoveNumber = (double)_search.Stats.BetaCutoffMoveNumber / _search.Stats.BetaCutoffs;
-            double betaCutoffFirstMovePercent = (100d * _search.Stats.BetaCutoffFirstMove) / _search.Stats.BetaCutoffs;
+            var nullMoveCutoffPercent = (100d * _search.Stats.NullMoveCutoffs) / _search.Stats.NullMoves;
+            var betaCutoffMoveNumber = (double)_search.Stats.BetaCutoffMoveNumber / _search.Stats.BetaCutoffs;
+            var betaCutoffFirstMovePercent = (100d * _search.Stats.BetaCutoffFirstMove) / _search.Stats.BetaCutoffs;
             WriteMessageLine();
             WriteMessageLine($"Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent:0.00}%");
         }
@@ -932,10 +932,10 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void AnalyzeExchangePositions(IList<string> Tokens)
         {
-            string file = Tokens[1].Trim();
-            int positions = 0;
-            int correctPositions = 0;
-            using (StreamReader reader = File.OpenText(file))
+            var file = Tokens[1].Trim();
+            var positions = 0;
+            var correctPositions = 0;
+            using (var reader = File.OpenText(file))
             {
                 WriteMessageLine("Number                                                                     Position   Move  Expected Score  Score  Correct    Pct");
                 WriteMessageLine("======  ===========================================================================  =====  ==============  =====  =======  =====");
@@ -944,21 +944,21 @@ namespace ErikTheCoder.MadChess.Engine
                 while (!reader.EndOfStream)
                 {
                     // Load position and correct score.
-                    string line = reader.ReadLine();
+                    var line = reader.ReadLine();
                     if (line == null) continue;
                     positions++;
-                    List<string> tokens = Engine.Tokens.Parse(line, ',', '"');
-                    string fen = tokens[0].Trim();
-                    string moveStandardAlgebraic = tokens[1].Trim();
-                    int expectedScore = int.Parse(tokens[2].Trim());
+                    var tokens = Engine.Tokens.Parse(line, ',', '"');
+                    var fen = tokens[0].Trim();
+                    var moveStandardAlgebraic = tokens[1].Trim();
+                    var expectedScore = int.Parse(tokens[2].Trim());
                     // Setup position and reset search.
                     Board.SetPosition(fen, true);
                     _search.Reset(true);
-                    ulong move = Move.ParseStandardAlgebraic(Board, moveStandardAlgebraic);
-                    int score = _search.GetExchangeScore(Board, move);
-                    bool correct = score == expectedScore;
+                    var move = Move.ParseStandardAlgebraic(Board, moveStandardAlgebraic);
+                    var score = _search.GetExchangeScore(Board, move);
+                    var correct = score == expectedScore;
                     if (correct) correctPositions++;
-                    double percent = (100d * correctPositions) / positions;
+                    var percent = (100d * correctPositions) / positions;
                     WriteMessageLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),5}  {expectedScore,14}  {score,5}  {correct,7}  {percent,5:0.0}");
                 }
             }
@@ -967,20 +967,20 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine();
             WriteMessageLine($"Solved {correctPositions} of {positions} positions in {_commandStopwatch.Elapsed.TotalMilliseconds:000} milliseconds.");
             // Update node count.
-            double nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
+            var nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
             WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
         }
 
 
         private void Tune(IList<string> Tokens)
         {
-            string pgnFilename = Tokens[1].Trim();
-            int particleSwarmsCount = int.Parse(Tokens[2].Trim());
-            int particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            int winPercentScale = int.Parse(Tokens[4].Trim()); // Use 569 for Gm2600EloGoodGames.pgn.
-            int iterations = int.Parse(Tokens[5].Trim());
+            var pgnFilename = Tokens[1].Trim();
+            var particleSwarmsCount = int.Parse(Tokens[2].Trim());
+            var particlesPerSwarm = int.Parse(Tokens[3].Trim());
+            var winPercentScale = int.Parse(Tokens[4].Trim()); // Use 569 for Gm2600EloGoodGames.pgn.
+            var iterations = int.Parse(Tokens[5].Trim());
             _commandStopwatch.Restart();
-            ParticleSwarms particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, WriteMessageLine);
+            var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, WriteMessageLine);
             particleSwarms.Optimize(iterations);
             _commandStopwatch.Stop();
         }
@@ -988,49 +988,49 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void TuneWinPercentScale(IList<string> Tokens)
         {
-            string pgnFilename = Tokens[1].Trim();
+            var pgnFilename = Tokens[1].Trim();
             // Load games.
             _commandStopwatch.Restart();
             WriteMessageLine("Loading games.");
-            PgnGames pgnGames = new PgnGames();
+            var pgnGames = new PgnGames();
             pgnGames.Load(Board, pgnFilename);
             // Count positions.
             long positions = 0;
-            for (int index = 0; index < pgnGames.Count; index++)
+            for (var index = 0; index < pgnGames.Count; index++)
             {
-                PgnGame pgnGame = pgnGames[index];
+                var pgnGame = pgnGames[index];
                 positions += pgnGame.Moves.Count;
             }
-            int positionsPerSecond = (int)(positions / _commandStopwatch.Elapsed.TotalSeconds);
+            var positionsPerSecond = (int)(positions / _commandStopwatch.Elapsed.TotalSeconds);
             WriteMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
             WriteMessageLine("Tuning win percent scale.");
             WriteMessageLine();
             // Calculate evaluation error of all win percent scales.
-            Parameters parameters = ParticleSwarms.CreateParameters();
+            var parameters = ParticleSwarms.CreateParameters();
             const int scales = _maxWinPercentScale - _minWinPercentScale + 1;
-            Task[] tasks = new Task[scales];
-            double[] evaluationErrors = new double[scales];
-            for (int index = 0; index < scales; index++)
+            var tasks = new Task[scales];
+            var evaluationErrors = new double[scales];
+            for (var index = 0; index < scales; index++)
             {
-                int winPercentScale = _minWinPercentScale + index;
-                Particle particle = new Particle(pgnGames, parameters);
-                Board board = new Board(WriteMessageLine);
-                Cache cache = new Cache(1, board.ValidateMove);
-                KillerMoves killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
-                MoveHistory moveHistory = new MoveHistory();
-                Evaluation evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
-                Search search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
+                var winPercentScale = _minWinPercentScale + index;
+                var particle = new Particle(pgnGames, parameters);
+                var board = new Board(WriteMessageLine);
+                var cache = new Cache(1, board.ValidateMove);
+                var killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
+                var moveHistory = new MoveHistory();
+                var evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
+                var search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
                 tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
             }
             // Wait for particles to calculate evaluation error of all win percent scales.
             Task.WaitAll(tasks);
             // Find best win percent scale.
-            int bestWinPercentScale = _minWinPercentScale;
-            double bestEvaluationError = double.MaxValue;
-            for (int index = 0; index < scales; index++)
+            var bestWinPercentScale = _minWinPercentScale;
+            var bestEvaluationError = double.MaxValue;
+            for (var index = 0; index < scales; index++)
             {
-                int winPercentScale = _minWinPercentScale + index;
-                double evaluationError = evaluationErrors[index];
+                var winPercentScale = _minWinPercentScale + index;
+                var evaluationError = evaluationErrors[index];
                 if (evaluationError < bestEvaluationError)
                 {
                     bestWinPercentScale = winPercentScale;
@@ -1046,7 +1046,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void CalculateEvaluationError(Particle Particle, Board ParticleBoard, Search ParticleSearch, double[] EvaluationErrors, int WinPercentScale)
         {
-            int index = WinPercentScale - _minWinPercentScale;
+            var index = WinPercentScale - _minWinPercentScale;
             Particle.CalculateEvaluationError(ParticleBoard, ParticleSearch, WinPercentScale);
             WriteMessageLine($"Win Percent Scale = {WinPercentScale:0000}, Evaluation Error = {Particle.EvaluationError:0.000}");
             EvaluationErrors[index] = Particle.EvaluationError;
@@ -1104,7 +1104,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             lock (_messageLock)
             {
-                TimeSpan elapsed = _stopwatch.Elapsed;
+                var elapsed = _stopwatch.Elapsed;
                 _logWriter.Write($"{elapsed.Hours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}.{elapsed.Milliseconds:000}  ");
                 _logWriter.Write(Direction == CommandDirection.In ? " In   " : " Out  ");
                 _logWriter.WriteLine(Message);

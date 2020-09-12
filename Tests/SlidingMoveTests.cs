@@ -19,12 +19,12 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestBishopOnE7Moves()
         {
-            UciStream uciStream = new UciStream();
-            Board board = uciStream.Board;
+            var uciStream = new UciStream();
+            var board = uciStream.Board;
             board.SetPosition("rnbq1bnr/ppppkppp/4p3/8/8/BP6/P1PPPPPP/RN1QKBNR b KQ - 0 3");
 
-            ulong unoccupiedMovesMask = Board.BishopMoveMasks[Square.e7];
-            ulong expectedUnoccupiedMovesMask = 0;
+            var unoccupiedMovesMask = Board.BishopMoveMasks[Square.e7];
+            var expectedUnoccupiedMovesMask = 0ul;
             Bitwise.SetBit(ref expectedUnoccupiedMovesMask, Square.d8);
             Bitwise.SetBit(ref expectedUnoccupiedMovesMask, Square.f8);
             Bitwise.SetBit(ref expectedUnoccupiedMovesMask, Square.d6);
@@ -34,7 +34,7 @@ namespace ErikTheCoder.MadChess.Tests
             Bitwise.SetBit(ref expectedUnoccupiedMovesMask, Square.b4);
             Bitwise.SetBit(ref expectedUnoccupiedMovesMask, Square.h4);
             Bitwise.SetBit(ref expectedUnoccupiedMovesMask, Square.a3);
-            ulong relevantMoveDestinations = unoccupiedMovesMask & PrecalculatedMoves.GetRelevantOccupancy(Square.e7, false);
+            var relevantMoveDestinations = unoccupiedMovesMask & PrecalculatedMoves.GetRelevantOccupancy(Square.e7, false);
             uciStream.WriteMessageLine("Relevant move destinations = ");
             uciStream.WriteMessageLine(Position.ToString(relevantMoveDestinations));
             uciStream.WriteMessageLine();
@@ -50,11 +50,11 @@ namespace ErikTheCoder.MadChess.Tests
             Assert.That(relevantMoveDestinations, Is.EqualTo(expectedRelevantMoveDestinations));
 
             Direction[] bishopDirections = { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
-            ulong bishopDestinations = Board.CreateMoveDestinationsMask(Square.e7, board.CurrentPosition.Occupancy, bishopDirections);
+            var bishopDestinations = Board.CreateMoveDestinationsMask(Square.e7, board.CurrentPosition.Occupancy, bishopDirections);
             uciStream.WriteMessageLine("Bishop destinations = ");
             uciStream.WriteMessageLine(Position.ToString(bishopDestinations));
             uciStream.WriteMessageLine();
-            ulong expectedBishopDestinations = 0;
+            var expectedBishopDestinations = 0ul;
             Bitwise.SetBit(ref expectedBishopDestinations, Square.d8);
             Bitwise.SetBit(ref expectedBishopDestinations, Square.f8);
             Bitwise.SetBit(ref expectedBishopDestinations, Square.d6);
@@ -69,7 +69,7 @@ namespace ErikTheCoder.MadChess.Tests
             uciStream.WriteMessageLine();
             Assert.That(bishopDestinations, Is.EqualTo(expectedBishopDestinations));
 
-            ulong precalculatedBishopDestinations = Board.PrecalculatedMoves.GetBishopMovesMask(Square.e7, board.CurrentPosition.Occupancy);
+            var precalculatedBishopDestinations = Board.PrecalculatedMoves.GetBishopMovesMask(Square.e7, board.CurrentPosition.Occupancy);
             uciStream.WriteMessageLine("Precalculated bishop destinations = ");
             uciStream.WriteMessageLine(Position.ToString(precalculatedBishopDestinations));
             uciStream.WriteMessageLine();

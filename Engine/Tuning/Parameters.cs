@@ -28,23 +28,23 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         public Parameters DuplicateWithSameValues()
         {
-            Parameters parameters = new Parameters();
-            for (int index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithSameValue());
+            var parameters = new Parameters();
+            for (var index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithSameValue());
             return parameters;
         }
 
 
         public Parameters DuplicateWithRandomValues()
         {
-            Parameters parameters = new Parameters();
-            for (int index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithRandomValue());
+            var parameters = new Parameters();
+            for (var index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithRandomValue());
             return parameters;
         }
 
 
         public void CopyValuesTo(Parameters Parameters)
         {
-            for (int index = 0; index < Count; index++) Parameters[index].Value = this[index].Value;
+            for (var index = 0; index < Count; index++) Parameters[index].Value = this[index].Value;
         }
 
 

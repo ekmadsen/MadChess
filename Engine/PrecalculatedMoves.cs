@@ -38,8 +38,8 @@ namespace ErikTheCoder.MadChess.Engine
             _rookShifts = new int[64];
             _rookMoveMasks = new ulong[64][];
             // Calculate relevant occupancy masks.
-            for (int square = 0; square < 64; square++) _bishopRelevantOccupancyMasks[square] = Board.BishopMoveMasks[square] & GetRelevantOccupancy(square, false);
-            for (int square = 0; square < 64; square++) _rookRelevantOccupancyMasks[square] = Board.RookMoveMasks[square] & GetRelevantOccupancy(square, true);
+            for (var square = 0; square < 64; square++) _bishopRelevantOccupancyMasks[square] = Board.BishopMoveMasks[square] & GetRelevantOccupancy(square, false);
+            for (var square = 0; square < 64; square++) _rookRelevantOccupancyMasks[square] = Board.RookMoveMasks[square] & GetRelevantOccupancy(square, true);
 
             // Find magic multipliers if not already known.
             _bishopMagicMultipliers[Square.a8] = 0x7099C1ECF439F7FEul;
@@ -193,16 +193,16 @@ namespace ErikTheCoder.MadChess.Engine
 
         public ulong GetBishopMovesMask(int Square, ulong Occupancy)
         {
-            ulong occupancy = Occupancy & _bishopRelevantOccupancyMasks[Square];
-            int index = GetIndex(occupancy, _bishopMagicMultipliers[Square], _bishopShifts[Square]);
+            var occupancy = Occupancy & _bishopRelevantOccupancyMasks[Square];
+            var index = GetIndex(occupancy, _bishopMagicMultipliers[Square], _bishopShifts[Square]);
             return _bishopMoveMasks[Square][index];
         }
 
 
         public ulong GetRookMovesMask(int Square, ulong Occupancy)
         {
-            ulong occupancy = Occupancy & _rookRelevantOccupancyMasks[Square];
-            int index = GetIndex(occupancy, _rookMagicMultipliers[Square], _rookShifts[Square]);
+            var occupancy = Occupancy & _rookRelevantOccupancyMasks[Square];
+            var index = GetIndex(occupancy, _rookMagicMultipliers[Square], _rookShifts[Square]);
             return _rookMoveMasks[Square][index];
         }
 
@@ -239,26 +239,26 @@ namespace ErikTheCoder.MadChess.Engine
                     throw new ArgumentException($"{Piece} piece not supported.");
             }
             // Generate moves mask on each square.
-            Dictionary<ulong, ulong> occupancyToMovesMask = new Dictionary<ulong, ulong>();
-            HashSet<ulong> uniqueMovesMasks = new HashSet<ulong>();
-            for (int square = 0; square < 64; square++)
+            var occupancyToMovesMask = new Dictionary<ulong, ulong>();
+            var uniqueMovesMasks = new HashSet<ulong>();
+            for (var square = 0; square < 64; square++)
             {
                 occupancyToMovesMask.Clear();
                 uniqueMovesMasks.Clear();
-                ulong moveDestinations = unoccupiedMoveMasks[square];
-                ulong relevantMoveDestinations = moveDestinations & relevantOccupancyMasks[square];
-                int uniqueOccupancies = (int) Math.Pow(2, Bitwise.CountSetBits(relevantMoveDestinations));
+                var moveDestinations = unoccupiedMoveMasks[square];
+                var relevantMoveDestinations = moveDestinations & relevantOccupancyMasks[square];
+                var uniqueOccupancies = (int) Math.Pow(2, Bitwise.CountSetBits(relevantMoveDestinations));
                 occupancyToMovesMask.EnsureCapacity(uniqueOccupancies);
                 // Generate moves mask for every permutation of relevant occupancy bits.
-                using (IEnumerator<ulong> occupancyPermutations = Bitwise.GetAllPermutations(relevantMoveDestinations).GetEnumerator())
+                using (var occupancyPermutations = Bitwise.GetAllPermutations(relevantMoveDestinations).GetEnumerator())
                 {
                     while (occupancyPermutations.MoveNext())
                     {
-                        ulong occupancy = occupancyPermutations.Current;
+                        var occupancy = occupancyPermutations.Current;
                         if (!occupancyToMovesMask.ContainsKey(occupancy))
                         {
                             // Have not yet generated moves for this occupancy mask.
-                            ulong movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
+                            var movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
                             occupancyToMovesMask.Add(occupancy, movesMask);
                             if (!uniqueMovesMasks.Contains(movesMask)) uniqueMovesMasks.Add(movesMask);
                         }
@@ -268,9 +268,9 @@ namespace ErikTheCoder.MadChess.Engine
                 Debug.Assert(occupancyToMovesMask.Count == uniqueOccupancies);
                 // Determine bit shift that produces number >= unique occupancies.
                 // A stricter condition is number >= unique moves but this requires more computing time to find magic multipliers.
-                int shift = 64 - (int) Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
+                var shift = 64 - (int) Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
                 shifts[square] = shift;
-                ulong magicMultiplier = magicMultipliers[square];
+                var magicMultiplier = magicMultipliers[square];
                 if (magicMultiplier == 0) (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
                 else (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, magicMultiplier);
                 WriteMessageLine?.Invoke($"{Board.SquareLocations[square],6}  {Engine.Piece.GetName(Piece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[square],16:X16}");
@@ -285,8 +285,8 @@ namespace ErikTheCoder.MadChess.Engine
             if (!FileRankSlidingPiece) return ~Board.EdgeSquareMask;
             // Piece can slide along file or rank.
             ulong occupancy;
-            int file = Board.Files[Square];
-            int rank = Board.WhiteRanks[Square];
+            var file = Board.Files[Square];
+            var rank = Board.WhiteRanks[Square];
             // ReSharper disable ConvertSwitchStatementToSwitchExpression
             switch (file)
             {
@@ -355,19 +355,19 @@ namespace ErikTheCoder.MadChess.Engine
 
         private static (ulong MagicMultiplier, ulong[] MovesMasks) FindMagicMultiplier(Dictionary<ulong, ulong> OccupancyToMovesMask, int Shift, ulong? KnownMagicMultiplier)
         {
-            int indexBits = 64 - Shift;
-            int indexLength = (int) Math.Pow(2d, indexBits);
-            ulong[] movesMasks = new ulong[indexLength];
-            List<ulong> occupancies = new List<ulong>(OccupancyToMovesMask.Keys);
+            var indexBits = 64 - Shift;
+            var indexLength = (int) Math.Pow(2d, indexBits);
+            var movesMasks = new ulong[indexLength];
+            var occupancies = new List<ulong>(OccupancyToMovesMask.Keys);
             NextMagicMultiplier:
-            ulong magicMultiplier = KnownMagicMultiplier ?? SafeRandom.NextULong();
+            var magicMultiplier = KnownMagicMultiplier ?? SafeRandom.NextULong();
             // Clear moves masks.
-            for (int maskIndex = 0; maskIndex < movesMasks.Length; maskIndex++) movesMasks[maskIndex] = 0;
-            for (int occupancyIndex = 0; occupancyIndex < occupancies.Count; occupancyIndex++)
+            for (var maskIndex = 0; maskIndex < movesMasks.Length; maskIndex++) movesMasks[maskIndex] = 0;
+            for (var occupancyIndex = 0; occupancyIndex < occupancies.Count; occupancyIndex++)
             {
-                ulong occupancy = occupancies[occupancyIndex];
-                int index = GetIndex(occupancy, magicMultiplier, Shift);
-                ulong movesMask = movesMasks[index];
+                var occupancy = occupancies[occupancyIndex];
+                var index = GetIndex(occupancy, magicMultiplier, Shift);
+                var movesMask = movesMasks[index];
                 if (movesMask == 0) movesMasks[index] = OccupancyToMovesMask[occupancy]; // Moves mask not yet added to unique moves array.
                 else if (movesMask != OccupancyToMovesMask[occupancy]) goto NextMagicMultiplier; // Moves mask already added to unique moves array but mask is incorrect.
             }

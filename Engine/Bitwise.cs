@@ -39,8 +39,8 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert((LeastSignificantBit >= 0) && (LeastSignificantBit < _intBits));
             Debug.Assert((MostSignificantBit >= 0) && (MostSignificantBit < _intBits));
             Debug.Assert(LeastSignificantBit <= MostSignificantBit);
-            uint mask = 0;
-            for (int index = LeastSignificantBit; index <= MostSignificantBit; index++) SetBit(ref mask, index);
+            var mask = 0u;
+            for (var index = LeastSignificantBit; index <= MostSignificantBit; index++) SetBit(ref mask, index);
             return mask;
         }
 
@@ -48,8 +48,8 @@ namespace ErikTheCoder.MadChess.Engine
         // ReSharper disable once MemberCanBePrivate.Global
         public static uint CreateUIntMask(int[] Indices)
         {
-            uint mask = 0;
-            for (int index = 0; index < Indices.Length; index++) SetBit(ref mask, Indices[index]);
+            var mask = 0u;
+            for (var index = 0; index < Indices.Length; index++) SetBit(ref mask, Indices[index]);
             Debug.Assert(Indices.All(Index => (Index >= 0) && (Index < _intBits)));
             return mask;
         }
@@ -67,16 +67,16 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert((LeastSignificantBit) >= 0 && (LeastSignificantBit < _longBits));
             Debug.Assert((MostSignificantBit >= 0) && (MostSignificantBit < _longBits));
             Debug.Assert(LeastSignificantBit <= MostSignificantBit);
-            ulong mask = 0;
-            for (int index = LeastSignificantBit; index <= MostSignificantBit; index++) SetBit(ref mask, index);
+            var mask = 0ul;
+            for (var index = LeastSignificantBit; index <= MostSignificantBit; index++) SetBit(ref mask, index);
             return mask;
         }
 
 
         public static ulong CreateULongMask(int[] Indices)
         {
-            ulong mask = 0;
-            for (int index = 0; index < Indices.Length; index++) SetBit(ref mask, Indices[index]);
+            var mask = 0ul;
+            for (var index = 0; index < Indices.Length; index++) SetBit(ref mask, Indices[index]);
             Debug.Assert(Indices.All(Index => (Index >= 0) && (Index < _longBits)));
             return mask;
         }
@@ -208,8 +208,8 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static IEnumerable<ulong> GetAllPermutations(ulong Mask)
         {
-            List<int> setBits = new List<int>();
-            for (int index = 0; index < 64; index++) if (IsBitSet(Mask, index)) setBits.Add(index);
+            var setBits = new List<int>();
+            for (var index = 0; index < 64; index++) if (IsBitSet(Mask, index)) setBits.Add(index);
             return GetAllPermutations(setBits, 0, 0);
         }
 
@@ -218,23 +218,33 @@ namespace ErikTheCoder.MadChess.Engine
         {
             SetBit(ref Value, SetBits[Index]);
             yield return Value;
-            int index = Index + 1;
+            var index = Index + 1;
             if (index < SetBits.Count)
-                using (IEnumerator<ulong> occupancyPermutations = GetAllPermutations(SetBits, index, Value).GetEnumerator()) { while (occupancyPermutations.MoveNext()) yield return occupancyPermutations.Current; }
+            {
+                using (var occupancyPermutations = GetAllPermutations(SetBits, index, Value).GetEnumerator())
+                {
+                    while (occupancyPermutations.MoveNext()) yield return occupancyPermutations.Current;
+                }
+            }
             ClearBit(ref Value, SetBits[Index]);
             yield return Value;
             if (index < SetBits.Count)
-                using (IEnumerator<ulong> occupancyPermutations = GetAllPermutations(SetBits, index, Value).GetEnumerator()) { while (occupancyPermutations.MoveNext()) yield return occupancyPermutations.Current; }
+            {
+                using (var occupancyPermutations = GetAllPermutations(SetBits, index, Value).GetEnumerator())
+                {
+                    while (occupancyPermutations.MoveNext()) yield return occupancyPermutations.Current;
+                }
+            }
         }
 
 
         public static string ToString(uint Value)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (int index = _intBits - 1; index >= 0; index--)
+            var stringBuilder = new StringBuilder();
+            for (var index = _intBits - 1; index >= 0; index--)
             {
                 stringBuilder.Append(IsBitSet(Value, index) ? '1' : '0');
-                if (index <= _intBits && index > 0) if (index % 8 == 0) stringBuilder.Append('_');
+                if ((index <= _intBits && index > 0) && (index % 8 == 0)) stringBuilder.Append('_');
             }
             return stringBuilder.ToString();
         }
@@ -242,11 +252,11 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static string ToString(ulong Value)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (int index = _longBits - 1; index >= 0; index--)
+            var stringBuilder = new StringBuilder();
+            for (var index = _longBits - 1; index >= 0; index--)
             {
                 stringBuilder.Append(IsBitSet(Value, index) ? '1' : '0');
-                if (index <= _longBits && index > 0) if (index % 8 == 0) stringBuilder.Append('_');
+                if ((index <= _longBits && index > 0) && (index % 8 == 0)) stringBuilder.Append('_');
             }
             return stringBuilder.ToString();
         }

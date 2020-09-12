@@ -99,7 +99,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public string ToString(int Phase)
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("                             |         Middlegame        |          Endgame          |           Total           |");
             stringBuilder.AppendLine("Evaluation Term              |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |");
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
@@ -115,7 +115,7 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
             AppendLine(stringBuilder, "Total", MiddlegameWhite, MiddlegameBlack, EndgameWhite, EndgameBlack, Phase);
             stringBuilder.AppendLine();
-            int middlegamePercent = (100 * Phase) / EvaluationConfig.MiddlegamePhase;
+            var middlegamePercent = (100 * Phase) / EvaluationConfig.MiddlegamePhase;
             stringBuilder.AppendLine($"Middlegame  = {Phase} of {EvaluationConfig.MiddlegamePhase} ({middlegamePercent}%)");
             return stringBuilder.ToString();
         }
@@ -127,18 +127,18 @@ namespace ErikTheCoder.MadChess.Engine
 
         private static void AppendLine(StringBuilder StringBuilder, string EvaluationTerm, int WhiteMg, int BlackMg, int WhiteEg, int BlackEg, int Phase)
         {
-            string evaluationTerm = EvaluationTerm.PadRight(27);
-            string mgWhite = (WhiteMg / 100d).ToString("0.00").PadLeft(7);
-            string mgBlack = (BlackMg / 100d).ToString("0.00").PadLeft(7);
-            string mgDiff = ((WhiteMg - BlackMg) / 100d).ToString("0.00").PadLeft(7);
-            string egWhite = (WhiteEg / 100d).ToString("0.00").PadLeft(7);
-            string egBlack = (BlackEg / 100d).ToString("0.00").PadLeft(7);
-            string egDiff = ((WhiteEg - BlackEg) / 100d).ToString("0.00").PadLeft(7);
-            int white = GetTaperedScore(WhiteMg, WhiteEg, Phase);
-            int black = GetTaperedScore(BlackMg, BlackEg, Phase);
-            string totalWhite = (white / 100d).ToString("0.00").PadLeft(7);
-            string totalBlack = (black / 100d).ToString("0.00").PadLeft(7);
-            string totalDiff = ((white - black) / 100d).ToString("0.00").PadLeft(7);
+            var evaluationTerm = EvaluationTerm.PadRight(27);
+            var mgWhite = (WhiteMg / 100d).ToString("0.00").PadLeft(7);
+            var mgBlack = (BlackMg / 100d).ToString("0.00").PadLeft(7);
+            var mgDiff = ((WhiteMg - BlackMg) / 100d).ToString("0.00").PadLeft(7);
+            var egWhite = (WhiteEg / 100d).ToString("0.00").PadLeft(7);
+            var egBlack = (BlackEg / 100d).ToString("0.00").PadLeft(7);
+            var egDiff = ((WhiteEg - BlackEg) / 100d).ToString("0.00").PadLeft(7);
+            var white = GetTaperedScore(WhiteMg, WhiteEg, Phase);
+            var black = GetTaperedScore(BlackMg, BlackEg, Phase);
+            var totalWhite = (white / 100d).ToString("0.00").PadLeft(7);
+            var totalBlack = (black / 100d).ToString("0.00").PadLeft(7);
+            var totalDiff = ((white - black) / 100d).ToString("0.00").PadLeft(7);
             StringBuilder.AppendLine($"{evaluationTerm}   {mgWhite}  {mgBlack}  {mgDiff}   {egWhite}  {egBlack}  {egDiff}   {totalWhite}  {totalBlack}  {totalDiff}");
         }
     }

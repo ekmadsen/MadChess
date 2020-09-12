@@ -20,8 +20,8 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestStartPosition()
         {
-            UciStream uciStream = new UciStream();
-            Board board = uciStream.Board;
+            var uciStream = new UciStream();
+            var board = uciStream.Board;
             board.SetPosition(Board.StartPositionFen);
             uciStream.WriteMessageLine(board.ToString());
             // Validate integrity of board and occupancy of every square.
@@ -34,7 +34,7 @@ namespace ErikTheCoder.MadChess.Tests
             Assert.That(board.CurrentPosition.GetPiece(Square.f8), Is.EqualTo(Piece.BlackBishop));
             Assert.That(board.CurrentPosition.GetPiece(Square.g8), Is.EqualTo(Piece.BlackKnight));
             Assert.That(board.CurrentPosition.GetPiece(Square.h8), Is.EqualTo(Piece.BlackRook));
-            int square = Square.a7;
+            var square = Square.a7;
             do
             {
                 Assert.That(board.CurrentPosition.GetPiece(square), Is.EqualTo(Piece.BlackPawn));
@@ -77,8 +77,8 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestWac11Position()
         {
-            UciStream uciStream = new UciStream();
-            Board board = uciStream.Board;
+            var uciStream = new UciStream();
+            var board = uciStream.Board;
             board.SetPosition("r1b1kb1r/3q1ppp/pBp1pn2/8/Np3P2/5B2/PPP3PP/R2Q1RK1 w kq -");
             uciStream.WriteMessageLine(board.ToString());
             // Validate integrity of board and occupancy of every square.
