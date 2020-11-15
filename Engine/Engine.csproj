@@ -12,17 +12,15 @@
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<RootNamespace>ErikTheCoder.MadChess.Engine</RootNamespace>
 		<LangVersion>latest</LangVersion>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>net5.0</TargetFramework>
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Exe</OutputType>
-		<PublishTrimmed>true</PublishTrimmed>
-		<PublishSingleFile>true</PublishSingleFile>
-		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<PackageId>MadChess.Engine</PackageId>
 	</PropertyGroup>
 
 
 	<ItemGroup>
+		<PackageReference Include="ErikTheCoder.Utilities" Version="1.0.12" />
 		<PackageReference Include="JetBrains.Annotations" Version="2020.1.0" />
 	</ItemGroup>
 
