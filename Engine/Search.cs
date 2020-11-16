@@ -148,7 +148,7 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            _singlePvAspirationWindows = new[] {50, 200, 500};
+            _singlePvAspirationWindows = new[] {25, 50, 100, 300, 500};
             _multiPvAspirationWindows =  new[] {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 5000, StaticScore.Max};
             // To Horizon =              000  001  002  003  004  005
             _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
@@ -408,8 +408,8 @@ namespace ErikTheCoder.MadChess.Engine
             if (MoveTimeHardLimit.TotalMilliseconds > (timeRemaining.TotalMilliseconds - _millisecondsReserved))
             {
                 // Prevent loss on time.
-                MoveTimeHardLimit = TimeSpan.FromMilliseconds(timeRemaining.TotalMilliseconds / _minMovesRemaining);
-                MoveTimeSoftLimit = TimeSpan.FromMilliseconds((MoveTimeHardLimit.TotalMilliseconds * 128) / _moveTimeHardLimitPer128);
+                MoveTimeSoftLimit = TimeSpan.FromMilliseconds(timeRemaining.TotalMilliseconds / _minMovesRemaining);
+                MoveTimeHardLimit = MoveTimeSoftLimit;
             }
             if (_debug()) _writeMessageLine($"info string MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0}");
         }
