@@ -148,7 +148,7 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            _singlePvAspirationWindows = new[] {25, 50, 100, 300, 500};
+            _singlePvAspirationWindows = new[] {50, 200, 500};
             _multiPvAspirationWindows =  new[] {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 5000, StaticScore.Max};
             // To Horizon =              000  001  002  003  004  005
             _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
@@ -443,8 +443,6 @@ namespace ErikTheCoder.MadChess.Engine
                 return GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
             }
             int[] aspirationWindows;
-            var lowAspirationIndex = 0;
-            var highAspirationIndex = 0;
             // ReSharper disable once ConvertSwitchStatementToSwitchExpression
             switch (_scoreError)
             {
@@ -460,10 +458,9 @@ namespace ErikTheCoder.MadChess.Engine
             var alpha = 0;
             var beta = 0;
             var scorePrecision = ScorePrecision.Exact;
-            do
+            for (var aspirationIndex = 0; aspirationIndex < aspirationWindows.Length; aspirationIndex++)
             {
-                var lowAspirationWindow = aspirationWindows[lowAspirationIndex];
-                var highAspirationWindow = aspirationWindows[highAspirationIndex];
+                var aspirationWindow = aspirationWindows[aspirationIndex];
                 // Reset move scores.
                 for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootScores[moveIndex] = -StaticScore.Max;
                 // Adjust alpha / beta window.
@@ -472,30 +469,27 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     case ScorePrecision.LowerBound:
                         // Fail High
-                        beta += highAspirationWindow;
-                        highAspirationIndex++;
+                        alpha = beta - 1;
+                        beta += aspirationWindow;
                         break;
                     case ScorePrecision.UpperBound:
                         // Fail Low
-                        alpha -= lowAspirationWindow;
-                        lowAspirationIndex++;
+                        beta = alpha + 1;
+                        alpha -= aspirationWindow;
                         break;
                     case ScorePrecision.Exact:
                         // Initial Aspiration Window
                         // Center aspiration window around best score from prior iteration.
-                        alpha = _lastAlpha;
-                        beta = bestScore + highAspirationWindow;
+                        alpha = PrincipalVariations > 1
+                            ? _lastAlpha
+                            : bestScore - _scoreError - aspirationWindow;
+                        beta = bestScore + aspirationWindow;
                         break;
                     default:
                         throw new Exception(scorePrecision + " score precision not supported.");
                 }
                 // Search moves with aspiration window.
-
-                if (_debug())
-                {
-                    _writeMessageLine($"info string LowAspirationWindow = {lowAspirationWindow} HighAspirationWindow = {highAspirationWindow}");
-                    _writeMessageLine($"info string Alpha = {alpha} Beta = {beta}");
-                }
+                if (_debug()) _writeMessageLine($"info string LowAspirationWindow = {aspirationWindow} Alpha = {alpha} Beta = {beta}");
                 var score = GetDynamicScore(Board, 0, _originalHorizon, false, alpha, beta);
                 if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if (score >= beta)
@@ -517,8 +511,7 @@ namespace ErikTheCoder.MadChess.Engine
                 // Score within aspiration window.
                 _lastAlpha = alpha;
                 return score;
-
-            } while ((lowAspirationIndex < aspirationWindows.Length) && (highAspirationIndex < aspirationWindows.Length));
+            }
             // Search moves with infinite aspiration window.
             return GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
         }
