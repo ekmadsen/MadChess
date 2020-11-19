@@ -49,7 +49,6 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _piecesMovesPer128 = 160;
         private const int _materialAdvantageMovesPer1024 = 25;
         private const int _moveTimeHardLimitPer128 = 512;
-        private const int _moveTimeFirstOutOfBookPer128 = 256;
         private const int _haveTimeNextHorizonPer128 = 70;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
@@ -148,7 +147,7 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            _singlePvAspirationWindows = new[] {50, 200, 500};
+            _singlePvAspirationWindows = new[] {100, 500};
             _multiPvAspirationWindows =  new[] {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 5000, StaticScore.Max};
             // To Horizon =              000  001  002  003  004  005
             _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
@@ -402,7 +401,6 @@ namespace ErikTheCoder.MadChess.Engine
             // Calculate move time.
             var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
             var milliseconds = millisecondsRemaining / movesRemaining;
-            if (_cache.Searches == 1) milliseconds = (milliseconds * _moveTimeFirstOutOfBookPer128) / 128; // Search longer for first move out of opening book.
             MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
             MoveTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _moveTimeHardLimitPer128) / 128);
             if (MoveTimeHardLimit.TotalMilliseconds > (timeRemaining.TotalMilliseconds - _millisecondsReserved))
@@ -496,7 +494,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     // Search failed high.
                     scorePrecision = ScorePrecision.LowerBound;
-                    if (PvInfoUpdate) UpdateInfoScoreOutsideAspirationWindow(Board.Nodes, beta, true);
+                    if (PvInfoUpdate) UpdateInfoScoreOutsideAspirationWindow(Board.Nodes, score, true);
                     continue;
                 }
                 // Find lowest score.
@@ -505,7 +503,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     // Search failed low.
                     scorePrecision = ScorePrecision.UpperBound;
-                    if (PvInfoUpdate) UpdateInfoScoreOutsideAspirationWindow(Board.Nodes, alpha, false);
+                    if (PvInfoUpdate) UpdateInfoScoreOutsideAspirationWindow(Board.Nodes, score, false);
                     continue;
                 }
                 // Score within aspiration window.
