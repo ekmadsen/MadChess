@@ -50,6 +50,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _materialAdvantageMovesPer1024 = 25;
         private const int _moveTimeHardLimitPer128 = 512;
         private const int _haveTimeNextHorizonPer128 = 70;
+        private const int _aspirationMinToHorizon = 7;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _historyPriorMovePer128 = 256;
@@ -434,7 +435,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int GetScoreWithinAspirationWindow(Board Board, int PrincipalVariations)
         {
             var bestScore = _bestScores[0];
-            if ((_originalHorizon == 1) || (Math.Abs(bestScore) >= StaticScore.Checkmate))
+            if ((_originalHorizon < _aspirationMinToHorizon) || (Math.Abs(bestScore) >= StaticScore.Checkmate))
             {
                 // Reset move scores, then search moves with infinite aspiration window.
                 for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootScores[moveIndex] = -StaticScore.Max;
@@ -468,12 +469,12 @@ namespace ErikTheCoder.MadChess.Engine
                     case ScorePrecision.LowerBound:
                         // Fail High
                         alpha = beta - 1;
-                        beta += aspirationWindow;
+                        beta = Math.Min(beta + aspirationWindow, StaticScore.Max);
                         break;
                     case ScorePrecision.UpperBound:
                         // Fail Low
                         beta = alpha + 1;
-                        alpha -= aspirationWindow;
+                        alpha = Math.Max(alpha - aspirationWindow, -StaticScore.Max);
                         break;
                     case ScorePrecision.Exact:
                         // Initial Aspiration Window
