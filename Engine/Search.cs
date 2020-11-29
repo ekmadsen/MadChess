@@ -35,8 +35,8 @@ namespace ErikTheCoder.MadChess.Engine
         public int? MateInMoves;
         public int HorizonLimit;
         public long NodeLimit;
-        public TimeSpan SearchTimeSoftLimit;
-        public TimeSpan SearchTimeHardLimit;
+        public TimeSpan MoveTimeSoftLimit;
+        public TimeSpan MoveTimeHardLimit;
         public bool TruncatePrincipalVariation;
         public int MultiPv;
         public int? NodesPerSecond;
@@ -47,14 +47,14 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _minMovesRemaining = 8;
         private const int _piecesMovesPer128 = 160;
         private const int _materialAdvantageMovesPer1024 = 25;
-        private const int _searchTimeHardLimitPer128 = 512;
+        private const int _moveTimeHardLimitPer128 = 512;
         private const int _haveTimeSearchNextPlyPer128 = 70;
         private const int _aspirationMinToHorizon = 7;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
-        private readonly TimeSpan _searchTimeReserved = TimeSpan.FromMilliseconds(100);
+        private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
         private int[] _singlePvAspirationWindows;
         private int[] _multiPvAspirationWindows;
         private int[] _futilityMargins;
@@ -319,8 +319,8 @@ namespace ErikTheCoder.MadChess.Engine
             _scoreError = 0;
             if ((BlunderError > 0) && (SafeRandom.NextInt(0, 101) <= BlunderPercent)) _scoreError = BlunderError; // Blunder
             _scoreError = Math.Max(_scoreError, MoveError);
-            // Determine search time.
-            GetSearchTime(Board.CurrentPosition);
+            // Determine move time.
+            GetMoveTime(Board.CurrentPosition);
             Board.NodesExamineTime = UciStream.NodesTimeInterval;
             // Iteratively deepen search.
             _originalHorizon = 0;
@@ -356,10 +356,10 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         // TODO: Test engine performance using tournament time control (20 moves / 1 min repeating) in addition to Fischer time control (2 min + 1 sec / game).
-        private void GetSearchTime(Position Position)
+        private void GetMoveTime(Position Position)
         {
-            // No need to calculate search time if go command specified search time or horizon limit.
-            if ((SearchTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon)) return;
+            // No need to calculate move time if go command specified move time or horizon limit.
+            if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon)) return;
             // Retrieve time remaining increment.
             TimeSpan timeRemaining;
             TimeSpan timeIncrement;
@@ -375,7 +375,7 @@ namespace ErikTheCoder.MadChess.Engine
                 timeRemaining = BlackTimeRemaining.Value;
                 timeIncrement = BlackTimeIncrement ?? TimeSpan.Zero;
             }
-            if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate search time if go command specified infinite search.
+            if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate move time if go command specified infinite search.
             timeRemaining -= _stopwatch.Elapsed; // Account for lag between receiving go command and now.
             int movesRemaining;
             if (MovesToTimeControl.HasValue) movesRemaining = MovesToTimeControl.Value;
@@ -389,20 +389,20 @@ namespace ErikTheCoder.MadChess.Engine
                 movesRemaining = Math.Max(piecesMovesRemaining - materialAdvantageMovesRemaining, _minMovesRemaining);
                 if (_debug()) _writeMessageLine($"Moves Remaining = {movesRemaining} ({piecesMovesRemaining} Pieces Moves - {materialAdvantageMovesRemaining} Material Advantage Moves, Min {_minMovesRemaining})");
             }
-            // Calculate search time.
+            // Calculate move time.
             var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
             var milliseconds = millisecondsRemaining / movesRemaining;
-            SearchTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
-            SearchTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _searchTimeHardLimitPer128) / 128);
-            if (SearchTimeHardLimit > (timeRemaining - _searchTimeReserved))
+            MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
+            MoveTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _moveTimeHardLimitPer128) / 128);
+            if (MoveTimeHardLimit > (timeRemaining - _moveTimeReserved))
             {
                 // Prevent loss on time.
                 movesRemaining = MovesToTimeControl ?? _minMovesRemaining;
-                SearchTimeSoftLimit = TimeSpan.FromMilliseconds(timeRemaining.TotalMilliseconds / movesRemaining);
-                SearchTimeHardLimit = SearchTimeSoftLimit;
+                MoveTimeSoftLimit = TimeSpan.FromMilliseconds(timeRemaining.TotalMilliseconds / movesRemaining);
+                MoveTimeHardLimit = MoveTimeSoftLimit;
                 if (_debug()) _writeMessageLine($"info string Preventing loss on time.  Moves Remaining = {movesRemaining}");
             }
-            if (_debug()) _writeMessageLine($"info string SearchTimeSoftLimit = {SearchTimeSoftLimit.TotalMilliseconds:0} SearchTimeHardLimit = {SearchTimeHardLimit.TotalMilliseconds:0}");
+            if (_debug()) _writeMessageLine($"info string MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0}");
         }
 
 
@@ -528,9 +528,9 @@ namespace ErikTheCoder.MadChess.Engine
 
         private bool HaveTimeForNextHorizon()
         {
-            if (SearchTimeSoftLimit == TimeSpan.MaxValue) return true;
-            var searchTimePer128 = (int) ((128 * _stopwatch.Elapsed.TotalMilliseconds) / SearchTimeSoftLimit.TotalMilliseconds);
-            return searchTimePer128 <= _haveTimeSearchNextPlyPer128;
+            if (MoveTimeSoftLimit == TimeSpan.MaxValue) return true;
+            var moveTimePer128 = (int) ((128 * _stopwatch.Elapsed.TotalMilliseconds) / MoveTimeSoftLimit.TotalMilliseconds);
+            return moveTimePer128 <= _haveTimeSearchNextPlyPer128;
         }
 
 
@@ -827,7 +827,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     // Delay search but keep CPU busy to simulate "thinking".
                     nodesPerSecond = (int)(Nodes / _stopwatch.Elapsed.TotalSeconds);
-                    if (_stopwatch.Elapsed >= SearchTimeSoftLimit)
+                    if (_stopwatch.Elapsed >= MoveTimeSoftLimit)
                     {
                         // No time is available to continue searching.
                         Continue = false;
@@ -836,7 +836,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             // Search at full speed until hard time limit is exceeded.
-            Continue = _stopwatch.Elapsed < SearchTimeHardLimit;
+            Continue = _stopwatch.Elapsed < MoveTimeHardLimit;
         }
 
 
@@ -1224,7 +1224,7 @@ namespace ErikTheCoder.MadChess.Engine
         public void Reset(bool PreserveStats)
         {
             _stopwatch.Restart();
-            // Reset search times and limits.
+            // Reset move times and limits.
             WhiteTimeRemaining = null;
             BlackTimeRemaining = null;
             WhiteTimeIncrement = null;
@@ -1233,8 +1233,8 @@ namespace ErikTheCoder.MadChess.Engine
             MateInMoves = null;
             HorizonLimit = MaxHorizon;
             NodeLimit = long.MaxValue;
-            SearchTimeSoftLimit = TimeSpan.MaxValue;
-            SearchTimeHardLimit = TimeSpan.MaxValue;
+            MoveTimeSoftLimit = TimeSpan.MaxValue;
+            MoveTimeHardLimit = TimeSpan.MaxValue;
             // Reset score error, best moves, possible and principal variations, last alpha, and stats.
             _scoreError = 0;
             for (var moveIndex = 0; moveIndex < MultiPv; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -StaticScore.Max);
