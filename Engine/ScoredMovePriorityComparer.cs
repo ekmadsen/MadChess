@@ -14,12 +14,12 @@ using System.Runtime.CompilerServices;
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    public sealed class MoveScoreComparer : IComparer<ScoredMove>
+    public sealed class ScoredMovePriorityComparer : IComparer<ScoredMove>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(ScoredMove Move1, ScoredMove Move2)
         {
-            // Sort moves by score descending.
+            // Sort moves by priority descending.
             if (Move2.Score > Move1.Score) return 1;
             return Move2.Score < Move1.Score ? -1 : 0;
         }

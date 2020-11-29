@@ -8,20 +8,18 @@
 // +------------------------------------------------------------------------------+
 
 
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-
-
 namespace ErikTheCoder.MadChess.Engine
 {
-    public sealed class MoveScoreComparer : IComparer<ScoredMove>
+    public struct ScoredMove
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Compare(ScoredMove Move1, ScoredMove Move2)
+        public ulong Move;
+        public int Score;
+
+
+        public ScoredMove(ulong Move, int Score)
         {
-            // Sort moves by score descending.
-            if (Move2.Score > Move1.Score) return 1;
-            return Move2.Score < Move1.Score ? -1 : 0;
+            this.Move = Move;
+            this.Score = Score;
         }
     }
 }

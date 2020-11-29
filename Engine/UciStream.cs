@@ -22,8 +22,8 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class UciStream : IDisposable
     {
-        public const long NodesInfoInterval = 1000000;
-        public const long NodesTimeInterval = 5000;
+        public const long NodesInfoInterval = 1_000_000;
+        public const long NodesTimeInterval = 10_000;
         public Board Board;
         private string[] _defaultHalfAndFullMove;
         private const int _cacheSizeMegabytes = 128;
@@ -576,15 +576,15 @@ namespace ErikTheCoder.MadChess.Engine
                         break;
                     case "mate":
                         _search.MateInMoves = int.Parse(Tokens[tokenIndex + 1]);
-                        _search.MoveTimeHardLimit = TimeSpan.MaxValue;
+                        _search.SearchTimeHardLimit = TimeSpan.MaxValue;
                         _search.WhiteTimeRemaining = TimeSpan.MaxValue;
                         _search.BlackTimeRemaining = TimeSpan.MaxValue;
                         break;
                     case "movetime":
-                        _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
+                        _search.SearchTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
                         break;
                     case "infinite":
-                        _search.MoveTimeHardLimit = TimeSpan.MaxValue;
+                        _search.SearchTimeHardLimit = TimeSpan.MaxValue;
                         _search.WhiteTimeRemaining = TimeSpan.MaxValue;
                         _search.BlackTimeRemaining = TimeSpan.MaxValue;
                         break;
@@ -722,7 +722,7 @@ namespace ErikTheCoder.MadChess.Engine
             Board.CurrentPosition.GenerateMoves();
             var lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
             _search.PrioritizeMoves(Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
-            Search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
+            _search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
             WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer  History              Priority");
             WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  =======  ====================");
             var stringBuilder = new StringBuilder();
@@ -806,7 +806,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void AnalyzePositions(IList<string> Tokens)
         {
             var file = Tokens[1].Trim();
-            var moveTimeMilliseconds = int.Parse(Tokens[2].Trim());
+            var searchTimeMilliseconds = int.Parse(Tokens[2].Trim());
             var positions = 0;
             var correctPositions = 0;
             using (var reader = File.OpenText(file))
@@ -872,8 +872,8 @@ namespace ErikTheCoder.MadChess.Engine
                     // Find best move.  Do not update node count or PV.
                     Board.NodesInfoUpdate = long.MaxValue;
                     _search.PvInfoUpdate = false;
-                    _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
-                    _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
+                    _search.SearchTimeSoftLimit = TimeSpan.MaxValue;
+                    _search.SearchTimeHardLimit = TimeSpan.FromMilliseconds(searchTimeMilliseconds);
                     var bestMove = _search.FindBestMove(Board);
                     _search.Signal.Set();
                     // Determine if search found correct move.
