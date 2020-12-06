@@ -18,7 +18,6 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class Position
     {
         public const int MaxMoves = 128;
-        // TODO: Change Position.Moves to reference an array shared across all positions (to improve memory locality).
         public readonly ulong[] Moves;
         public ulong WhitePawns;
         public ulong WhiteKnights;

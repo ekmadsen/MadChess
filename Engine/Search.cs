@@ -54,18 +54,19 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _estimateBestMoveReduction = 2;
         private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
+        private static MovePriorityComparer _movePriorityComparer;
+        private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
+        private static MoveScoreComparer _moveScoreComparer;
+        private static Delegates.GetStaticScore _getExchangeMaterialScore;
+        private static int[] _futilityMargins;
+        private static int[] _lateMovePruning;
         private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
         private int[] _singlePvAspirationWindows;
         private int[] _multiPvAspirationWindows;
-        private int[] _futilityMargins;
         private int[] _lateMoveReductions;
-        private int[] _lateMovePruning;
         private ScoredMove[] _rootMoves;
         private ScoredMove[] _bestMoves;
         private ScoredMove[] _bestMovePlies;
-        private MovePriorityComparer _movePriorityComparer;
-        private ScoredMovePriorityComparer _scoredMovePriorityComparer;
-        private MoveScoreComparer _moveScoreComparer;
         private ulong[][] _possibleVariations;
         private int[] _possibleVariationLength;
         private Dictionary<string, ulong[]> _principalVariations;
@@ -79,7 +80,6 @@ namespace ErikTheCoder.MadChess.Engine
         private Delegates.GetNextMove _getNextMove;
         private Delegates.GetNextMove _getNextCapture;
         private Delegates.GetStaticScore _getStaticScore;
-        private Delegates.GetStaticScore _getExchangeMaterialScore;
         private int _originalHorizon;
         private int _selectiveHorizon;
         private ulong _rootMove;
@@ -124,6 +124,18 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        static Search()
+        {
+            _movePriorityComparer = new MovePriorityComparer();
+            _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
+            _moveScoreComparer = new MoveScoreComparer();
+            _getExchangeMaterialScore = Evaluation.GetExchangeMaterialScore;
+            // To Horizon =            000  001  002  003  004  005
+            _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
+            _lateMovePruning = new[] { 999, 003, 006, 010, 015, 021 };
+        }
+
+
         public Search(Cache Cache, KillerMoves KillerMoves, MoveHistory MoveHistory, Evaluation Evaluation, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
         {
             _cache = Cache;
@@ -135,7 +147,6 @@ namespace ErikTheCoder.MadChess.Engine
             _getNextMove = GetNextMove;
             _getNextCapture = GetNextCapture;
             _getStaticScore = _evaluation.GetStaticScore;
-            _getExchangeMaterialScore = Evaluation.GetExchangeMaterialScore;
             Stats = new SearchStats();
             // Create synchronization and diagnostic objects.
             Signal = new AutoResetEvent(false);
@@ -143,19 +154,12 @@ namespace ErikTheCoder.MadChess.Engine
             // Create search parameters.
             _singlePvAspirationWindows = new[] {100, 500};
             _multiPvAspirationWindows =  new[] {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 5000, StaticScore.Max};
-            // To Horizon =              000  001  002  003  004  005
-            _futilityMargins =    new[] {050, 100, 175, 275, 400, 550};
-            _lateMovePruning =    new[] {999, 003, 006, 010, 015, 021};
             // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
             _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005};
             // Create scored move arrays.
             _rootMoves = new ScoredMove[Position.MaxMoves];
             _bestMoves = new ScoredMove[Position.MaxMoves];
             _bestMovePlies = new ScoredMove[Position.MaxMoves];
-            // Create move comparers.
-            _movePriorityComparer = new MovePriorityComparer();
-            _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
-            _moveScoreComparer = new MoveScoreComparer();
             // Create possible and principal variations.
             _possibleVariations = new ulong[MaxHorizon + 1][];
             for (var depth = 0; depth < _possibleVariations.Length; depth++) _possibleVariations[depth] = new ulong[MaxHorizon - depth];
@@ -201,9 +205,14 @@ namespace ErikTheCoder.MadChess.Engine
                 _movePriorityComparer = null;
                 _scoredMovePriorityComparer = null;
                 _moveScoreComparer = null;
+                _movePriorityComparer = null;
+                _scoredMovePriorityComparer = null;
+                _moveScoreComparer = null;
+                _getExchangeMaterialScore = null;
                 _singlePvAspirationWindows = null;
                 _multiPvAspirationWindows = null;
                 _futilityMargins = null;
+                _lateMovePruning = null;
                 _lateMoveReductions = null;
                 _lateMovePruning = null;
                 _rootMoves = null;
@@ -224,7 +233,6 @@ namespace ErikTheCoder.MadChess.Engine
                 _getNextMove = null;
                 _getNextCapture = null;
                 _getStaticScore = null;
-                _getExchangeMaterialScore = null;
             }
             // Release unmanaged resources.
             Signal?.Dispose();
@@ -330,7 +338,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _originalHorizon++;
                 _selectiveHorizon = 0;
                 // Clear principal variations and age move history.
-                // TODO: Eliminate use of enumerator (because it allocates memory).
+                // TODO: Eliminate use of enumerator because it allocates memory.
                 using (var pvEnumerator = _principalVariations.GetEnumerator())
                 {
                     while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
@@ -365,12 +373,14 @@ namespace ErikTheCoder.MadChess.Engine
             TimeSpan timeIncrement;
             if (Position.WhiteMove)
             {
+                // White Move
                 if (!WhiteTimeRemaining.HasValue) throw new Exception($"{nameof(WhiteTimeRemaining)} is null.");
                 timeRemaining = WhiteTimeRemaining.Value;
                 timeIncrement = WhiteTimeIncrement ?? TimeSpan.Zero;
             }
             else
             {
+                // Black Move
                 if (!BlackTimeRemaining.HasValue) throw new Exception($"{nameof(BlackTimeRemaining)} is null.");
                 timeRemaining = BlackTimeRemaining.Value;
                 timeIncrement = BlackTimeIncrement ?? TimeSpan.Zero;
@@ -841,7 +851,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
+        private static bool IsPositionFutile(Position Position, int Depth, int Horizon, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             var toHorizon = Horizon - Depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
@@ -944,7 +954,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         // Pass BestMove parameter even though it isn't referenced to satisfy GetNextMove delegate signature.
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private (ulong Move, int MoveIndex) GetNextCapture(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
+        private static (ulong Move, int MoveIndex) GetNextCapture(Position Position, ulong ToSquareMask, int Depth, ulong BestMove)
         {
             while (true)
             {
@@ -978,7 +988,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
+        private static bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             var toHorizon = Horizon - Depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
@@ -1002,7 +1012,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
             var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
+            return StaticScore + Evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
         }
 
 
@@ -1112,19 +1122,19 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SortMovesByPriority(ScoredMove[] Moves, int LastMoveIndex) => Array.Sort(Moves, 0, LastMoveIndex + 1, _scoredMovePriorityComparer);
+        private static void SortMovesByPriority(ScoredMove[] Moves, int LastMoveIndex) => Array.Sort(Moves, 0, LastMoveIndex + 1, _scoredMovePriorityComparer);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SortMovesByScore(ScoredMove[] Moves, int LastMoveIndex) => Array.Sort(Moves, 0, LastMoveIndex + 1, _moveScoreComparer);
+        private static void SortMovesByScore(ScoredMove[] Moves, int LastMoveIndex) => Array.Sort(Moves, 0, LastMoveIndex + 1, _moveScoreComparer);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SortMovesByPriority(ulong[] Moves, int LastMoveIndex) => Array.Sort(Moves, 0, LastMoveIndex + 1, _movePriorityComparer);
+        public static void SortMovesByPriority(ulong[] Moves, int LastMoveIndex) => Array.Sort(Moves, 0, LastMoveIndex + 1, _movePriorityComparer);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SortMovesByPriority(ulong[] Moves, int FirstMoveIndex, int LastMoveIndex) => Array.Sort(Moves, FirstMoveIndex, LastMoveIndex - FirstMoveIndex + 1, _movePriorityComparer);
+        private static void SortMovesByPriority(ulong[] Moves, int FirstMoveIndex, int LastMoveIndex) => Array.Sort(Moves, FirstMoveIndex, LastMoveIndex - FirstMoveIndex + 1, _movePriorityComparer);
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]

@@ -722,7 +722,7 @@ namespace ErikTheCoder.MadChess.Engine
             Board.CurrentPosition.GenerateMoves();
             var lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
             _search.PrioritizeMoves(Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
-            _search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
+            Search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
             WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer  History              Priority");
             WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  =======  ====================");
             var stringBuilder = new StringBuilder();
