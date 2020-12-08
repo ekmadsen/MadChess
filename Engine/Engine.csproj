@@ -21,7 +21,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="ErikTheCoder.Utilities" Version="1.0.12" />
-		<PackageReference Include="JetBrains.Annotations" Version="2020.1.0" />
+		<PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
 	</ItemGroup>
 
 
