@@ -37,6 +37,7 @@ namespace ErikTheCoder.MadChess.Engine
         public long NodeLimit;
         public TimeSpan MoveTimeSoftLimit;
         public TimeSpan MoveTimeHardLimit;
+        public bool CanAdjustMoveTime;
         public bool TruncatePrincipalVariation;
         public int MultiPv;
         public int? NodesPerSecond;
@@ -48,6 +49,9 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _piecesMovesPer128 = 160;
         private const int _materialAdvantageMovesPer1024 = 25;
         private const int _moveTimeHardLimitPer128 = 512;
+        private const int _adjustMoveTimeMinDepth = 9;
+        private const int _adjustMoveTimeMinScoreDecrease = 33;
+        private const int _adjustMoveTimePer128 = 64;
         private const int _haveTimeSearchNextPlyPer128 = 70;
         private const int _aspirationMinToHorizon = 7;
         private const int _nullMoveReduction = 3;
@@ -355,7 +359,8 @@ namespace ErikTheCoder.MadChess.Engine
                 bestMove = _bestMoves[0];
                 _bestMovePlies[_originalHorizon] = bestMove;
                 if (MateInMoves.HasValue && (Math.Abs(bestMove.Score) >= StaticScore.Checkmate) && (Evaluation.GetMateDistance(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
-                if (!HaveTimeForNextHorizon()) break; // Do not have time to search next depth.
+                AdjustMoveTime();
+                if (!HaveTimeForNextHorizon()) break; // Do not have time to search next ply.
             } while (Continue && (_originalHorizon < HorizonLimit));
             _stopwatch.Stop();
             if (_debug()) _writeMessageLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
@@ -407,12 +412,30 @@ namespace ErikTheCoder.MadChess.Engine
             if (MoveTimeHardLimit > (timeRemaining - _moveTimeReserved))
             {
                 // Prevent loss on time.
-                movesRemaining = MovesToTimeControl ?? _minMovesRemaining;
                 MoveTimeSoftLimit = TimeSpan.FromMilliseconds(timeRemaining.TotalMilliseconds / movesRemaining);
                 MoveTimeHardLimit = MoveTimeSoftLimit;
                 if (_debug()) _writeMessageLine($"info string Preventing loss on time.  Moves Remaining = {movesRemaining}");
             }
             if (_debug()) _writeMessageLine($"info string MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0}");
+        }
+
+
+        private void AdjustMoveTime()
+        {
+            if (!CanAdjustMoveTime || (_originalHorizon < _adjustMoveTimeMinDepth) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
+            if (_bestMovePlies[_originalHorizon].Score >= (_bestMovePlies[_originalHorizon - 1].Score - _adjustMoveTimeMinScoreDecrease)) return;
+            // Score has decreased significantly from last ply.
+            if (_debug()) _writeMessageLine("Adjusting move time because score has dropped significantly from previous ply.");
+            MoveTimeSoftLimit += TimeSpan.FromMilliseconds((MoveTimeSoftLimit.TotalMilliseconds * _adjustMoveTimePer128) / 128);
+            if (MoveTimeSoftLimit > MoveTimeHardLimit) MoveTimeSoftLimit = MoveTimeHardLimit;
+        }
+
+
+        private bool HaveTimeForNextHorizon()
+        {
+            if (MoveTimeSoftLimit == TimeSpan.MaxValue) return true;
+            var moveTimePer128 = (int)((128 * _stopwatch.Elapsed.TotalMilliseconds) / MoveTimeSoftLimit.TotalMilliseconds);
+            return moveTimePer128 <= _haveTimeSearchNextPlyPer128;
         }
 
 
@@ -533,14 +556,6 @@ namespace ErikTheCoder.MadChess.Engine
             // Sort moves and return Rank best move (1 based index).
             Array.Sort(_rootMoves, 0, Position.MoveIndex, _moveScoreComparer);
             return _rootMoves[Rank - 1].Score;
-        }
-
-
-        private bool HaveTimeForNextHorizon()
-        {
-            if (MoveTimeSoftLimit == TimeSpan.MaxValue) return true;
-            var moveTimePer128 = (int) ((128 * _stopwatch.Elapsed.TotalMilliseconds) / MoveTimeSoftLimit.TotalMilliseconds);
-            return moveTimePer128 <= _haveTimeSearchNextPlyPer128;
         }
 
 
@@ -1245,6 +1260,7 @@ namespace ErikTheCoder.MadChess.Engine
             NodeLimit = long.MaxValue;
             MoveTimeSoftLimit = TimeSpan.MaxValue;
             MoveTimeHardLimit = TimeSpan.MaxValue;
+            CanAdjustMoveTime = true;
             // Reset score error, best moves, possible and principal variations, last alpha, and stats.
             _scoreError = 0;
             for (var moveIndex = 0; moveIndex < MultiPv; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -StaticScore.Max);

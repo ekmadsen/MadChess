@@ -570,23 +570,28 @@ namespace ErikTheCoder.MadChess.Engine
                         break;
                     case "depth":
                         _search.HorizonLimit = Math.Min(int.Parse(Tokens[tokenIndex + 1]), Search.MaxHorizon);
+                        _search.CanAdjustMoveTime = false;
                         break;
                     case "nodes":
                         _search.NodeLimit = long.Parse(Tokens[tokenIndex + 1]);
+                        _search.CanAdjustMoveTime = false;
                         break;
                     case "mate":
                         _search.MateInMoves = int.Parse(Tokens[tokenIndex + 1]);
                         _search.MoveTimeHardLimit = TimeSpan.MaxValue;
                         _search.WhiteTimeRemaining = TimeSpan.MaxValue;
                         _search.BlackTimeRemaining = TimeSpan.MaxValue;
+                        _search.CanAdjustMoveTime = false;
                         break;
                     case "movetime":
                         _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
+                        _search.CanAdjustMoveTime = false;
                         break;
                     case "infinite":
                         _search.MoveTimeHardLimit = TimeSpan.MaxValue;
                         _search.WhiteTimeRemaining = TimeSpan.MaxValue;
                         _search.BlackTimeRemaining = TimeSpan.MaxValue;
+                        _search.CanAdjustMoveTime = false;
                         break;
                 }
             }
