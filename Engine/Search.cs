@@ -51,7 +51,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _moveTimeHardLimitPer128 = 512;
         private const int _adjustMoveTimeMinDepth = 9;
         private const int _adjustMoveTimeMinScoreDecrease = 33;
-        private const int _adjustMoveTimePer128 = 64;
+        private const int _adjustMoveTimePer128 = 32;
         private const int _haveTimeSearchNextPlyPer128 = 70;
         private const int _aspirationMinToHorizon = 7;
         private const int _nullMoveReduction = 3;
