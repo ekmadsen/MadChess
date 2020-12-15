@@ -394,11 +394,11 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     if (file >= 0 && file <= 7 && rank >= 0 && rank <= 7)
                     {
-                        // Legal square
+                        // Legal Square
                         squareIndices1212To88[square1212] = square88;
                         square88++;
                     }
-                    else squareIndices1212To88[square1212] = Square.Illegal; // Illegal square
+                    else squareIndices1212To88[square1212] = Square.Illegal; // Illegal Square
                     square1212++;
                 }
             return squareIndices1212To88;
@@ -541,7 +541,7 @@ namespace ErikTheCoder.MadChess.Engine
             var enPassantAttackerMasks = new ulong[64];
             for (var file = 0; file < 8; file++)
             {
-                // White takes black pawn en passant
+                // White takes black pawn en passant.
                 var toSquare = GetSquare(file, 4);
                 var targetSquare = _neighborSquares[toSquare][(int)Direction.North];
                 enPassantVictimSquares[targetSquare] = _neighborSquares[targetSquare][(int)Direction.South];
@@ -552,7 +552,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (westAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(westAttackerSquare);
                 if (eastAttackerSquare != Square.Illegal) attackerMask |= Bitwise.CreateULongMask(eastAttackerSquare);
                 enPassantAttackerMasks[targetSquare] = attackerMask;
-                // Black takes white pawn en passant
+                // Black takes white pawn en passant.
                 toSquare = GetSquare(file, 3);
                 targetSquare = _neighborSquares[toSquare][(int)Direction.South];
                 enPassantVictimSquares[targetSquare] = _neighborSquares[targetSquare][(int)Direction.North];
@@ -902,7 +902,7 @@ namespace ErikTheCoder.MadChess.Engine
                     var piece = rank[rankIndex];
                     if (char.IsNumber(piece))
                     {
-                        // Empty squares
+                        // Empty Squares
                         var emptySquares = int.Parse(piece.ToString());
                         square += emptySquares - 1;
                     }
@@ -1169,7 +1169,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else if (Engine.Move.IsEnPassantCapture(Move))
             {
-                // En passant capture
+                // En Passant Capture
                 captureVictim = Engine.Move.CaptureVictim(Move);
                 EnPassantCapture(piece, fromSquare);
             }

@@ -16,7 +16,6 @@ using System.Text;
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    // TODO: Capitalize first letter of each word in comment if the comment is not a complete sentence.
     // TODO: Refactor evaluation into color-agnostic methods using delegates.
     public sealed class Evaluation
     {
@@ -254,8 +253,8 @@ namespace ErikTheCoder.MadChess.Engine
         public (bool TerminalDraw, bool RepeatPosition) IsTerminalDraw(Position Position)
         {
             // Only return true if position is drawn and no sequence of moves can make game winnable.
-            if (_isRepeatPosition(DrawMoves)) return (true, true); // Draw by repetition of position
-            if (Position.HalfMoveNumber >= 99) return (true, false); // Draw by fifty moves without a capture or pawn move
+            if (_isRepeatPosition(DrawMoves)) return (true, true); // Draw by repetition of position.
+            if (Position.HalfMoveNumber >= 99) return (true, false); // Draw by fifty moves without a capture or pawn move.
             // Determine if insufficient material remains for checkmate.
             if (Bitwise.CountSetBits(Position.WhitePawns | Position.BlackPawns) == 0)
             {
@@ -296,7 +295,7 @@ namespace ErikTheCoder.MadChess.Engine
             int side2Queens;
             if (WhiteIsSide1)
             {
-                // White is Side 1
+                // White is side 1.
                 side1Knights = Bitwise.CountSetBits(Position.WhiteKnights);
                 side1Bishops = Bitwise.CountSetBits(Position.WhiteBishops);
                 side1Rooks = Bitwise.CountSetBits(Position.WhiteRooks);
@@ -308,7 +307,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black is Side 1
+                // Black is side 1.
                 side1Knights = Bitwise.CountSetBits(Position.BlackKnights);
                 side1Bishops = Bitwise.CountSetBits(Position.BlackBishops);
                 side1Rooks = Bitwise.CountSetBits(Position.BlackRooks);
@@ -418,7 +417,7 @@ namespace ErikTheCoder.MadChess.Engine
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (whitePawnsAndPieces)
             {
-                // Case 0 = Lone white king
+                // Case 0 = Lone White King
                 case 0 when loneBlackPawn:
                     return EvaluateKingVersusPawn(Position, false);
                 // ReSharper disable once SwitchStatementMissingSomeCases
@@ -426,7 +425,7 @@ namespace ErikTheCoder.MadChess.Engine
                     switch (blackPawns)
                     {
                         case 0 when (blackKnights == 1) && (blackBishops == 1) && (blackMajorPieces == 0):
-                            // King versus knight and bishop
+                            // King Versus Knight and Bishop
                             var lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.BlackBishops)];
                             var distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[whiteKingSquare]
@@ -434,7 +433,7 @@ namespace ErikTheCoder.MadChess.Engine
                             _staticScore.BlackSimpleEndgame = EvaluationConfig.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                         case 0 when (blackMinorPieces == 0) && (blackMajorPieces >= 1):
-                            // King versus major pieces
+                            // King Versus Major Pieces
                             _staticScore.BlackSimpleEndgame = EvaluationConfig.SimpleEndgame - Board.DistanceToNearestCorner[whiteKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
@@ -443,7 +442,7 @@ namespace ErikTheCoder.MadChess.Engine
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (blackPawnsAndPieces)
             {
-                // Case 0 = Lone black king
+                // Case 0 = Lone Black King
                 case 0 when loneWhitePawn:
                     return EvaluateKingVersusPawn(Position, true);
                 // ReSharper disable once SwitchStatementMissingSomeCases
@@ -451,7 +450,7 @@ namespace ErikTheCoder.MadChess.Engine
                     switch (whitePawns)
                     {
                         case 0 when (whiteKnights == 1) && (whiteBishops == 1) && (whiteMajorPieces == 0):
-                            // King versus knight and bishop
+                            // King Versus Knight and Bishop
                             var lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.WhiteBishops)];
                             var distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[blackKingSquare]
@@ -459,7 +458,7 @@ namespace ErikTheCoder.MadChess.Engine
                             _staticScore.WhiteSimpleEndgame = EvaluationConfig.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                         case 0 when (whiteMinorPieces == 0) && (whiteMajorPieces >= 1):
-                            // King versus major pieces
+                            // King Versus Major Pieces
                             _staticScore.WhiteSimpleEndgame = EvaluationConfig.SimpleEndgame - Board.DistanceToNearestCorner[blackKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
@@ -481,7 +480,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Get rank and file of all pieces.
             if (LoneWhitePawn)
             {
-                // White winning
+                // White Winning
                 var winningKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
                 winningKingRank = Board.WhiteRanks[winningKingSquare];
                 winningKingFile = Board.Files[winningKingSquare];
@@ -494,7 +493,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black winning
+                // Black Winning
                 var winningKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
                 winningKingRank = Board.BlackRanks[winningKingSquare];
                 winningKingFile = Board.Files[winningKingSquare];
@@ -717,7 +716,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
                 Bitwise.ClearBit(ref pawns, pawnSquare);
             }
-            // Black pawns
+            // Black Pawns
             pawns = Position.BlackPawns;
             kingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
             enemyKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
@@ -781,7 +780,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Black pawn
+                // Black Pawn
                 promotionSquare = Board.GetSquare(file, 0);
                 enemyPieces = Bitwise.CountSetBits(Position.WhiteKnights | Position.WhiteBishops | Position.WhiteRooks | Position.WhiteQueens);
             }

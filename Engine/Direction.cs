@@ -16,7 +16,7 @@ namespace ErikTheCoder.MadChess.Engine
     public enum Direction
     {
         [UsedImplicitly] Unknown,
-        // Sliding piece moves
+        // Sliding Piece Moves
         North,
         NorthEast,
         East,
@@ -25,7 +25,7 @@ namespace ErikTheCoder.MadChess.Engine
         SouthWest,
         West,
         NorthWest,
-        // Knight moves
+        // Knight Moves
         North2East1,
         East2North1,
         East2South1,

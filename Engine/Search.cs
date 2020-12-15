@@ -342,7 +342,8 @@ namespace ErikTheCoder.MadChess.Engine
                 _originalHorizon++;
                 _selectiveHorizon = 0;
                 // Clear principal variations and age move history.
-                // TODO: Eliminate use of enumerator because it allocates memory.
+                // The Dictionary enumerator allocates memory which is not desirable when searching positions.
+                // However, this occurs only once per ply.
                 using (var pvEnumerator = _principalVariations.GetEnumerator())
                 {
                     while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
@@ -366,9 +367,8 @@ namespace ErikTheCoder.MadChess.Engine
             if (_debug()) _writeMessageLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
             return _scoreError == 0 ? bestMove.Move : GetInferiorMove(Board.CurrentPosition);
         }
-
-
-        // TODO: Test engine performance using tournament time control (20 moves / 1 min repeating) in addition to Fischer time control (2 min + 1 sec / game).
+        
+        
         private void GetMoveTime(Position Position)
         {
             // No need to calculate move time if go command specified move time or horizon limit.
@@ -570,7 +570,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (!Continue && (_bestMoves[0].Move != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
             var (terminalDraw, repeatPosition) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
-            if ((Depth > 0) && terminalDraw) return 0; // Terminal node (games ends on this move)
+            if ((Depth > 0) && terminalDraw) return 0; // Game ends on this move.
             // Get cached position.
             var toHorizon = Horizon - Depth;
             var historyIncrement = toHorizon * toHorizon;
@@ -757,7 +757,7 @@ namespace ErikTheCoder.MadChess.Engine
                     Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
                 }
             } while (true);
-            if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or stalemate
+            if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or Stalemate
             if ((bestScore <= originalAlpha) || (bestScore >= Beta)) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, originalAlpha, Beta); // Score fails low or high.
             return bestScore;
         }
@@ -787,7 +787,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (!Continue && (_bestMoves[0].Move != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
             var (terminalDraw, _) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
-            if ((Depth > 0) && terminalDraw) return 0; // Terminal node (games ends on this move)
+            if ((Depth > 0) && terminalDraw) return 0; // Game ends on this move.
             // Search for a quiet position where no captures are possible.
             var fromHorizon = Depth - Horizon;
             _selectiveHorizon = Math.Max(Depth, _selectiveHorizon);
@@ -835,7 +835,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (score >= Beta) return Beta; // Position is not the result of best play by both players.
                 Alpha = Math.Max(score, Alpha);
             } while (true);
-            if ((legalMoveNumber == 0) && Board.CurrentPosition.KingInCheck) return Evaluation.GetMateScore(Depth); // Terminal node (games ends on this move)
+            if ((legalMoveNumber == 0) && Board.CurrentPosition.KingInCheck) return Evaluation.GetMateScore(Depth); // Game ends on this move.
             // Return score of best move.
             return Alpha;
         }
@@ -1204,11 +1204,11 @@ namespace ErikTheCoder.MadChess.Engine
                 if (IncludePrincipalVariation)
                 {
                     var principalVariation = _principalVariations[Move.ToLongAlgebraic(_bestMoves[pv].Move)];
-                    // TODO: Review if long algebraic principal variation can be created without allocating a StringBuilder.
+                    // StringBuilder allocates memory.
                     var stringBuilder = new StringBuilder("pv");
-                    for (var pvIndex = 0; pvIndex < principalVariation.Length; pvIndex++)
+                    for (var moveIndex = 0; moveIndex < principalVariation.Length; moveIndex++)
                     {
-                        var move = principalVariation[pvIndex];
+                        var move = principalVariation[moveIndex];
                         if (move == Move.Null) break;  // Null move marks the last move of the principal variation.
                         stringBuilder.Append(' ');
                         stringBuilder.Append(Move.ToLongAlgebraic(move));
@@ -1221,7 +1221,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _writeMessageLine($"info multipv {(pv + 1)} depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
                                   $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
             }
-            var hashFull = (int) (1000L * _cache.Positions / _cache.Capacity);
+            var hashFull = (int) ((1000L * _cache.Positions) / _cache.Capacity);
             _writeMessageLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
             if (_debug())
             {

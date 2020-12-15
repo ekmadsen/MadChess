@@ -39,7 +39,7 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly ulong _lastAccessedUnmask;
 
 
-        // CachedPosition.Data bits
+        // CachedPosition.Data Bits
 
         // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
         // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
@@ -86,7 +86,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Clear
             Data &= _toHorizonUnmask;
-            // Set.
+            // Set
             Data |= ((ulong)ToHorizon << _toHorizonShift) & _toHorizonMask;
             // Validate cached position.
             Debug.Assert(CachedPositionData.ToHorizon(Data) == ToHorizon);
@@ -102,7 +102,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Clear
             Data &= _bestMoveFromUnmask;
-            // Set.
+            // Set
             Data |= ((ulong)BestMoveFrom << _bestMoveFromShift) & _bestMoveFromMask;
             // Validate cached position.
             Debug.Assert(CachedPositionData.BestMoveFrom(Data) == BestMoveFrom);
@@ -118,7 +118,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Clear
             Data &= _bestMoveToUnmask;
-            // Set.
+            // Set
             Data |= ((ulong)BestMoveTo << _bestMoveToShift) & _bestMoveToMask;
             // Validate cached position.
             Debug.Assert(CachedPositionData.BestMoveTo(Data) == BestMoveTo);
@@ -134,7 +134,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Clear
             Data &= _bestMovePromotedPieceUnmask;
-            // Set.
+            // Set
             Data |= ((ulong)BestMovePromotedPiece << _bestMovePromotedPieceShift) & _bestMovePromotedPieceMask;
             // Validate cached position.
             Debug.Assert(CachedPositionData.BestMovePromotedPiece(Data) == BestMovePromotedPiece);
@@ -152,7 +152,7 @@ namespace ErikTheCoder.MadChess.Engine
             var score = Score + _scorePadding;
             // Clear
             Data &= _scoreUnmask;
-            // Set.
+            // Set
             Data |= ((ulong)score << _scoreShift) & _scoreMask;
             // Validate cached position.
             Debug.Assert(CachedPositionData.Score(Data) == Score);
@@ -169,7 +169,7 @@ namespace ErikTheCoder.MadChess.Engine
             var scorePrecision = (ulong)ScorePrecision;
             // Clear
             Data &= _scorePrecisionUnmask;
-            // Set.
+            // Set
             Data |= (scorePrecision << _scorePrecisionShift) & _scorePrecisionMask;
             // Validate cached position.
             Debug.Assert(CachedPositionData.ScorePrecision(Data) == ScorePrecision);
@@ -185,7 +185,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Clear
             Data &= _lastAccessedUnmask;
-            // Set.
+            // Set
             Data |= LastAccessed & _lastAccessedMask;
             // Validate cached position.
             Debug.Assert(CachedPositionData.LastAccessed(Data) == LastAccessed);

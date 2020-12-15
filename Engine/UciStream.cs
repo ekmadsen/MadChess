@@ -29,6 +29,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _cacheSizeMegabytes = 128;
         private const int _minWinPercentScale = 400;
         private const int _maxWinPercentScale = 800;
+        private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
         private Cache _cache;
         private KillerMoves _killerMoves;
         private MoveHistory _moveHistory;
@@ -238,7 +239,7 @@ namespace ErikTheCoder.MadChess.Engine
             var writeMessageLine = true;
             switch (Tokens[0].ToLowerInvariant())
             {
-                // Standard commands
+                // Standard Commands
                 case "uci":
                     Uci();
                     break;
@@ -262,14 +263,12 @@ namespace ErikTheCoder.MadChess.Engine
                     writeMessageLine = false;
                     break;
                 case "stop":
-                    _search.Continue = false;
-                    // Wait for search to complete.
-                    _search.Signal.WaitOne();
+                    Stop();
                     break;
                 case "quit":
                     Quit(0);
                     break;
-                // Extended commands
+                // Extended Commands
                 case "showboard":
                     WriteMessageLine(Board.ToString());
                     break;
@@ -371,10 +370,9 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // Standard commands
         private void Uci()
         {
-            // Display engine name and author.
+            // Display engine name, author, and standard commands.
             WriteMessageLine("id name MadChess 3.0");
             WriteMessageLine("id author Erik Madsen");
             WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
@@ -449,6 +447,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _evaluation.UnderstandsKingSafety = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "multipv":
+                    Stop();
                     _search.MultiPv = int.Parse(optionValue);
                     break;
                 case "nps":
@@ -606,9 +605,20 @@ namespace ErikTheCoder.MadChess.Engine
             // Signal search has stopped.
             _commandStopwatch.Stop();
             _search.Signal.Set();
-            // Collect memory from unreferenced objects in generation 0 and 1.
-            // Do not collect memory from generation 2 which contains the large object heap, since it's mostly arrays whose lifetime is the duration of the application.
+            // Collect memory from unreferenced objects in generations 0 and 1.
+            // Do not collect memory from generation 2 (that contains the large object heap) since it's mostly arrays whose lifetime is the duration of the application.
             GC.Collect(1, GCCollectionMode.Forced, true, true);
+        }
+
+
+        private void Stop()
+        {
+            if (_search.Continue)
+            {
+                _search.Continue = false;
+                // Wait for search to complete.
+                _search.Signal.WaitOne(_maxStopTime);
+            }
         }
 
 
@@ -619,7 +629,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // Extended commands
+        // Extended Commands
         private void FindMagicMultipliers()
         {
             WriteMessageLine("Square   Piece  Shift  Unique Occupancies  Unique Moves  Magic Multiplier");
@@ -879,6 +889,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _search.PvInfoUpdate = false;
                     _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
                     _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
+                    _search.CanAdjustMoveTime = false;
                     var bestMove = _search.FindBestMove(Board);
                     _search.Signal.Set();
                     // Determine if search found correct move.
