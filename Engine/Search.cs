@@ -401,9 +401,9 @@ namespace ErikTheCoder.MadChess.Engine
                 var piecesMovesRemaining = (pieces * _piecesMovesPer128) / 128;
                 var materialAdvantage = Math.Abs(_evaluation.GetMaterialScore(Position));
                 var materialAdvantageMovesRemaining = (materialAdvantage * _materialAdvantageMovesPer1024) / 1024;
-                movesRemaining = Math.Max(piecesMovesRemaining - materialAdvantageMovesRemaining, _minMovesRemaining);
-                if (_debug()) _writeMessageLine($"Moves Remaining = {movesRemaining} ({piecesMovesRemaining} Pieces Moves - {materialAdvantageMovesRemaining} Material Advantage Moves, Min {_minMovesRemaining})");
+                movesRemaining = piecesMovesRemaining - materialAdvantageMovesRemaining;
             }
+            movesRemaining = Math.Max(movesRemaining, _minMovesRemaining);
             // Calculate move time.
             var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
             var milliseconds = millisecondsRemaining / movesRemaining;
