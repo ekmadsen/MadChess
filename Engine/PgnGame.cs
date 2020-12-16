@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using ErikTheCoder.Utilities;
 
 
 namespace ErikTheCoder.MadChess.Engine
@@ -92,7 +93,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 var move = moves[moveIndex];
                 var cleanMove = move.Trim();
-                if (string.IsNullOrEmpty(cleanMove)) continue;
+                if (cleanMove.IsNullOrEmpty()) continue;
                 var firstCharacter = cleanMove[0];
                 if (char.IsNumber(firstCharacter)) continue; // Skip move number or result.
                 if (firstCharacter == '*') continue; // Skip unknown result.

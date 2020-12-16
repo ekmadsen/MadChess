@@ -22,13 +22,14 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class UciStream : IDisposable
     {
-        public const long NodesInfoInterval = 1000000;
-        public const long NodesTimeInterval = 5000;
+        public const long NodesInfoInterval = 1_000_000;
+        public const long NodesTimeInterval = 5_000;
         public Board Board;
         private string[] _defaultHalfAndFullMove;
         private const int _cacheSizeMegabytes = 128;
         private const int _minWinPercentScale = 400;
         private const int _maxWinPercentScale = 800;
+        private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
         private Cache _cache;
         private KillerMoves _killerMoves;
         private MoveHistory _moveHistory;
@@ -89,7 +90,7 @@ namespace ErikTheCoder.MadChess.Engine
             _cache = new Cache(_cacheSizeMegabytes * Cache.CapacityPerMegabyte, Board.ValidateMove);
             _killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
             _moveHistory = new MoveHistory();
-            _evaluation = new Evaluation(Board.GetPositionCount, () => _debug, WriteMessageLine);
+            _evaluation = new Evaluation(Board.IsRepeatPosition, () => _debug, WriteMessageLine);
             _search = new Search(_cache, _killerMoves, _moveHistory, _evaluation, () => _debug, WriteMessageLine);
             _defaultHalfAndFullMove = new[] { "0", "1" };
             Board.SetPosition(Board.StartPositionFen);
@@ -238,7 +239,7 @@ namespace ErikTheCoder.MadChess.Engine
             var writeMessageLine = true;
             switch (Tokens[0].ToLowerInvariant())
             {
-                // Standard commands
+                // Standard Commands
                 case "uci":
                     Uci();
                     break;
@@ -262,14 +263,12 @@ namespace ErikTheCoder.MadChess.Engine
                     writeMessageLine = false;
                     break;
                 case "stop":
-                    _search.Continue = false;
-                    // Wait for search to complete.
-                    _search.Signal.WaitOne();
+                    Stop();
                     break;
                 case "quit":
                     Quit(0);
                     break;
-                // Extended commands
+                // Extended Commands
                 case "showboard":
                     WriteMessageLine(Board.ToString());
                     break;
@@ -371,10 +370,9 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // Standard commands
         private void Uci()
         {
-            // Display engine name and author.
+            // Display engine name, author, and standard commands.
             WriteMessageLine("id name MadChess 3.0");
             WriteMessageLine("id author Erik Madsen");
             WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
@@ -449,6 +447,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _evaluation.UnderstandsKingSafety = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "multipv":
+                    Stop();
                     _search.MultiPv = int.Parse(optionValue);
                     break;
                 case "nps":
@@ -570,23 +569,28 @@ namespace ErikTheCoder.MadChess.Engine
                         break;
                     case "depth":
                         _search.HorizonLimit = Math.Min(int.Parse(Tokens[tokenIndex + 1]), Search.MaxHorizon);
+                        _search.CanAdjustMoveTime = false;
                         break;
                     case "nodes":
                         _search.NodeLimit = long.Parse(Tokens[tokenIndex + 1]);
+                        _search.CanAdjustMoveTime = false;
                         break;
                     case "mate":
                         _search.MateInMoves = int.Parse(Tokens[tokenIndex + 1]);
                         _search.MoveTimeHardLimit = TimeSpan.MaxValue;
                         _search.WhiteTimeRemaining = TimeSpan.MaxValue;
                         _search.BlackTimeRemaining = TimeSpan.MaxValue;
+                        _search.CanAdjustMoveTime = false;
                         break;
                     case "movetime":
                         _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
+                        _search.CanAdjustMoveTime = false;
                         break;
                     case "infinite":
                         _search.MoveTimeHardLimit = TimeSpan.MaxValue;
                         _search.WhiteTimeRemaining = TimeSpan.MaxValue;
                         _search.BlackTimeRemaining = TimeSpan.MaxValue;
+                        _search.CanAdjustMoveTime = false;
                         break;
                 }
             }
@@ -601,9 +605,20 @@ namespace ErikTheCoder.MadChess.Engine
             // Signal search has stopped.
             _commandStopwatch.Stop();
             _search.Signal.Set();
-            // Collect memory from unreferenced objects in generation 0 and 1.
-            // Do not collect memory from generation 2 which contains the large object heap, since it's mostly arrays whose lifetime is the duration of the application.
+            // Collect memory from unreferenced objects in generations 0 and 1.
+            // Do not collect memory from generation 2 (that contains the large object heap) since it's mostly arrays whose lifetime is the duration of the application.
             GC.Collect(1, GCCollectionMode.Forced, true, true);
+        }
+
+
+        private void Stop()
+        {
+            if (_search.Continue)
+            {
+                _search.Continue = false;
+                // Wait for search to complete.
+                _search.Signal.WaitOne(_maxStopTime);
+            }
         }
 
 
@@ -614,7 +629,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // Extended commands
+        // Extended Commands
         private void FindMagicMultipliers()
         {
             WriteMessageLine("Square   Piece  Shift  Unique Occupancies  Unique Moves  Magic Multiplier");
@@ -874,6 +889,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _search.PvInfoUpdate = false;
                     _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
                     _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
+                    _search.CanAdjustMoveTime = false;
                     var bestMove = _search.FindBestMove(Board);
                     _search.Signal.Set();
                     // Determine if search found correct move.
@@ -1018,7 +1034,7 @@ namespace ErikTheCoder.MadChess.Engine
                 var cache = new Cache(1, board.ValidateMove);
                 var killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
                 var moveHistory = new MoveHistory();
-                var evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
+                var evaluation = new Evaluation(board.IsRepeatPosition, () => false, WriteMessageLine);
                 var search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
                 tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
             }

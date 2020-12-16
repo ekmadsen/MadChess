@@ -8,16 +8,20 @@
 // +------------------------------------------------------------------------------+
 
 
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
+
 namespace ErikTheCoder.MadChess.Engine
 {
-    public static class Delegates
+    public sealed class ScoredMovePriorityComparer : IComparer<ScoredMove>
     {
-        // Allocate delegates at program startup so they aren't allocated repeatedly via lambda syntax inside search loop.
-        public delegate bool ValidateMove(ref ulong Move);
-        public delegate bool Debug();
-        public delegate (ulong Move, int MoveIndex) GetNextMove(Position Position, ulong ToSquareMask, int Depth, ulong BestMove);
-        public delegate bool IsRepeatPosition(int Repeats);
-        public delegate void WriteMessageLine(string Message);
-        public delegate int GetStaticScore(Position Position);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Compare(ScoredMove Move1, ScoredMove Move2)
+        {
+            // Sort moves by priority descending.
+            if (Move2.Move > Move1.Move) return 1;
+            return Move2.Move < Move1.Move ? -1 : 0;
+        }
     }
 }

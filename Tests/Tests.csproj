@@ -12,7 +12,7 @@
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<RootNamespace>ErikTheCoder.MadChess.Tests</RootNamespace>
 		<LangVersion>latest</LangVersion>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>net5.0</TargetFramework>
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Library</OutputType>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -20,7 +20,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
+	  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
 	  <PackageReference Include="NUnit" Version="3.12.0" />
 	  <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 	</ItemGroup>

@@ -57,7 +57,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             var cache = new Cache(1, board.ValidateMove);
             var killerMoves = new KillerMoves(Search.MaxHorizon);
             var moveHistory = new MoveHistory();
-            var evaluation = new Evaluation(board.GetPositionCount, () => false, WriteMessageLine);
+            var evaluation = new Evaluation(board.IsRepeatPosition, () => false, WriteMessageLine);
             var search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
@@ -257,7 +257,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 var cache = new Cache(1, board.ValidateMove);
                 var killerMoves = new KillerMoves(Search.MaxHorizon);
                 var moveHistory = new MoveHistory();
-                var evaluation = new Evaluation(board.GetPositionCount, () => false, _writeMessageLine);
+                var evaluation = new Evaluation(board.IsRepeatPosition, () => false, _writeMessageLine);
                 evaluations[index] = evaluation;
                 searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
             }

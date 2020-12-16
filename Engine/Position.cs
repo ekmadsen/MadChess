@@ -18,7 +18,6 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class Position
     {
         public const int MaxMoves = 128;
-        // TODO: Change Position.Moves to reference an array shared across all positions (to improve memory locality).
         public readonly ulong[] Moves;
         public ulong WhitePawns;
         public ulong WhiteKnights;
@@ -773,11 +772,11 @@ namespace ErikTheCoder.MadChess.Engine
                 var piece = GetPiece(square);
                 if (piece == Piece.None)
                 {
-                    // Unoccupied square
+                    // Unoccupied Square
                     unoccupiedSquares++;
                     if (x == 8)
                     {
-                        // Last file
+                        // Last File
                         // Display count of unoccupied squares.
                         stringBuilder.Append(unoccupiedSquares);
                         unoccupiedSquares = 0;
@@ -785,7 +784,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
                 else
                 {
-                    // Occupied square
+                    // Occupied Square
                     if (unoccupiedSquares > 0)
                     {
                         // Display count of unoccupied squares.
@@ -828,7 +827,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public override string ToString()
         {
-            // Iterate over the piece array to construct an  8 x 8 text display of the chessboard.
+            // Iterate over the piece array to construct an 8 x 8 text display of the chessboard.
             var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("  ----+---+---+---+---+---+---+---+");
             var square = 0;

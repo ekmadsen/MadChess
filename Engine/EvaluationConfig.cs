@@ -23,19 +23,11 @@ namespace ErikTheCoder.MadChess.Engine
         public const int RookPhase = 22; //   + 4 * 22 = 168
         public const int QueenPhase = 44; //  + 2 * 44 = 256
         public const int MiddlegamePhase = 4 * (KnightPhase + BishopPhase + RookPhase) + 2 * QueenPhase;
-        // Material and Simple Endgame
-        public const int KnightExchangeMaterial = 300;
-        public const int BishopExchangeMaterial = 300;
-        public const int RookExchangeMaterial = 500;
-        public const int QueenExchangeMaterial = 900;
-        public int KnightMaterial = 300;
-        public int BishopMaterial = 330;
-        public int RookMaterial = 500;
-        public int QueenMaterial = 975;
-        // Incentivize engine to promote pawn in king and pawn endgames.
+        // Incentivize engine to promote pawns.
         // Also incentivize engine to eliminate opponent's last pawn in KQkp endgame (to trigger simple endgame scoring that pushes opposing king to a corner).
         // Want to ensure simple endgame score > (queen material + position + mobility - opponent pawn material - opponent pawn position).
-        public int SimpleEndgame => 2 * UnstoppablePassedPawn;
+        public static int UnstoppablePassedPawn => Evaluation.QueenMaterial - (2 * Evaluation.PawnMaterial);
+        public static int SimpleEndgame => 2 * UnstoppablePassedPawn;
         // Pawn Location
         public int MgPawnAdvancement = 0;
         public int EgPawnAdvancement = 7;
@@ -87,7 +79,6 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgPassedPawnScalePer128 = 527;
         public int EgFreePassedPawnScalePer128 = 1100;
         public int EgKingEscortedPassedPawn = 9;
-        public int UnstoppablePassedPawn => QueenMaterial - (2 * Evaluation.PawnMaterial);  // Incentivize engine to promote pawn.
         // Piece Mobility
         public int PieceMobilityPowerPer16 = 9;
         public int MgKnightMobilityScale = 19;
@@ -114,11 +105,6 @@ namespace ErikTheCoder.MadChess.Engine
 
         public void Set(EvaluationConfig CopyFromConfig)
         {
-            // Copy material values.
-            KnightMaterial = CopyFromConfig.KnightMaterial;
-            BishopMaterial = CopyFromConfig.BishopMaterial;
-            RookMaterial = CopyFromConfig.RookMaterial;
-            QueenMaterial = CopyFromConfig.QueenMaterial;
             // Copy piece location values.
             MgPawnAdvancement = CopyFromConfig.MgPawnAdvancement;
             EgPawnAdvancement = CopyFromConfig.EgPawnAdvancement;
