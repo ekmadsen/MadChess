@@ -53,7 +53,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _adjustMoveTimeMinScoreDecrease = 33;
         private const int _adjustMoveTimePer128 = 32;
         private const int _haveTimeSearchNextPlyPer128 = 70;
-        private const int _aspirationMinToHorizon = 7;
+        private const int _aspirationMinToHorizon = 99; // Effectively disables aspiration windows.
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _historyPriorMovePer128 = 256;
