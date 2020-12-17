@@ -53,7 +53,6 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _adjustMoveTimeMinScoreDecrease = 33;
         private const int _adjustMoveTimePer128 = 32;
         private const int _haveTimeSearchNextPlyPer128 = 70;
-        private const int _aspirationMinToHorizon = 99; // Effectively disables aspiration windows.
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _historyPriorMovePer128 = 256;
@@ -65,8 +64,6 @@ namespace ErikTheCoder.MadChess.Engine
         private static int[] _futilityMargins;
         private static int[] _lateMovePruning;
         private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
-        private int[] _singlePvAspirationWindows;
-        private int[] _multiPvAspirationWindows;
         private int[] _lateMoveReductions;
         private ScoredMove[] _rootMoves;
         private ScoredMove[] _bestMoves;
@@ -88,7 +85,6 @@ namespace ErikTheCoder.MadChess.Engine
         private int _selectiveHorizon;
         private ulong _rootMove;
         private int _rootMoveNumber;
-        private int _lastAlpha;
         private int _scoreError;
         private bool _limitStrength;
         private int _elo;
@@ -156,8 +152,6 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            _singlePvAspirationWindows = new[] {100, 500};
-            _multiPvAspirationWindows =  new[] {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 5000, StaticScore.Max};
             // Quiet Move Number =       000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
             _lateMoveReductions = new[] {000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005};
             // Create scored move arrays.
@@ -213,8 +207,6 @@ namespace ErikTheCoder.MadChess.Engine
                 _scoredMovePriorityComparer = null;
                 _moveScoreComparer = null;
                 _getExchangeMaterialScore = null;
-                _singlePvAspirationWindows = null;
-                _multiPvAspirationWindows = null;
                 _futilityMargins = null;
                 _lateMovePruning = null;
                 _lateMoveReductions = null;
@@ -328,8 +320,9 @@ namespace ErikTheCoder.MadChess.Engine
             }
             var principalVariations = Math.Min(MultiPv, legalMoveIndex);
             // Determine score error.
-            _scoreError = 0;
-            if ((BlunderError > 0) && (SafeRandom.NextInt(0, 101) <= BlunderPercent)) _scoreError = BlunderError; // Blunder
+            _scoreError = ((BlunderError > 0) && (SafeRandom.NextInt(1, 101) <= BlunderPercent))
+                ? BlunderError // Blunder
+                : 0;
             _scoreError = Math.Max(_scoreError, MoveError);
             // Determine move time.
             GetMoveTime(Board.CurrentPosition);
@@ -349,13 +342,13 @@ namespace ErikTheCoder.MadChess.Engine
                     while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
                 }
                 _moveHistory.Age(Board.CurrentPosition.WhiteMove);
-                // Get score within aspiration window.
-                var score = GetScoreWithinAspirationWindow(Board, principalVariations);
+                // Reset move scores, then search moves with infinite alpha / beta window.
+                for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
+                var score = GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
                 if (Math.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
-                // Find best moves.
+                // Find best move.
                 SortMovesByScore(_rootMoves, Board.CurrentPosition.MoveIndex - 1);
-                var bestMoves = _scoreError == 0 ? principalVariations : legalMoveIndex;
-                for (var moveIndex = 0; moveIndex < bestMoves; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
+                for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
                 if (PvInfoUpdate) UpdateInfo(Board, principalVariations, true);
                 bestMove = _bestMoves[0];
                 _bestMovePlies[_originalHorizon] = bestMove;
@@ -439,123 +432,20 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        // TODO: Test score error.
         private ulong GetInferiorMove(Position Position)
         {
             // Determine how many moves are within score error.
             var bestScore = _bestMoves[0].Score;
             var worstScore = bestScore - _scoreError;
             var inferiorMoves = 0;
-            for (var moveIndex = 0; moveIndex < Position.MoveIndex; moveIndex++)
+            for (var moveIndex = 1; moveIndex < Position.MoveIndex; moveIndex++)
             {
                 if (_bestMoves[moveIndex].Score < worstScore) break;
                 inferiorMoves++;
             }
             // Randomly select a move within score error.
             return _bestMoves[SafeRandom.NextInt(0, inferiorMoves)].Move;
-        }
-
-        
-        // TODO: Test multi-pv and score error.
-        private int GetScoreWithinAspirationWindow(Board Board, int PrincipalVariations)
-        {
-            var bestScore = _bestMoves[0].Score;
-            if ((_originalHorizon < _aspirationMinToHorizon) || (Math.Abs(bestScore) >= StaticScore.Checkmate))
-            {
-                // Reset move scores, then search moves with infinite aspiration window.
-                for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
-                return GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
-            }
-            int[] aspirationWindows;
-            // ReSharper disable once ConvertSwitchStatementToSwitchExpression
-            switch (_scoreError)
-            {
-                case 0 when PrincipalVariations == 1:
-                    // Use single PV aspiration windows.
-                    aspirationWindows = _singlePvAspirationWindows;
-                    break;
-                default:
-                    // Use multi PV aspiration windows.
-                    aspirationWindows = _multiPvAspirationWindows;
-                    break;
-            }
-            var alpha = 0;
-            var beta = 0;
-            var scorePrecision = ScorePrecision.Exact;
-            for (var aspirationIndex = 0; aspirationIndex < aspirationWindows.Length; aspirationIndex++)
-            {
-                var aspirationWindow = aspirationWindows[aspirationIndex];
-                // Reset move scores.
-                for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
-                // Adjust alpha / beta window.
-                // ReSharper disable once SwitchStatementMissingSomeCases
-                switch (scorePrecision)
-                {
-                    case ScorePrecision.LowerBound:
-                        // Fail High
-                        alpha = beta - 1;
-                        beta = Math.Min(beta + aspirationWindow, StaticScore.Max);
-                        break;
-                    case ScorePrecision.UpperBound:
-                        // Fail Low
-                        beta = alpha + 1;
-                        alpha = Math.Max(alpha - aspirationWindow, -StaticScore.Max);
-                        break;
-                    case ScorePrecision.Exact:
-                        // Initial Aspiration Window
-                        // Center aspiration window around best score from prior ply.
-                        alpha = PrincipalVariations > 1
-                            ? _lastAlpha
-                            : bestScore - _scoreError - aspirationWindow;
-                        beta = bestScore + aspirationWindow;
-                        break;
-                    default:
-                        throw new Exception(scorePrecision + " score precision not supported.");
-                }
-                // Search moves with aspiration window.
-                if (_debug()) _writeMessageLine($"info string LowAspirationWindow = {aspirationWindow} Alpha = {alpha} Beta = {beta}");
-                var score = GetDynamicScore(Board, 0, _originalHorizon, false, alpha, beta);
-                if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
-                if (score >= beta)
-                {
-                    // Search failed high.
-                    scorePrecision = ScorePrecision.LowerBound;
-                    if (PvInfoUpdate) UpdateInfoScoreOutsideAspirationWindow(Board.Nodes, score, true);
-                    continue;
-                }
-                // Find lowest score.
-                var lowestScore = PrincipalVariations == 1 ? score : GetBestScore(Board.CurrentPosition, PrincipalVariations);
-                if (lowestScore <= alpha)
-                {
-                    // Search failed low.
-                    scorePrecision = ScorePrecision.UpperBound;
-                    if (PvInfoUpdate) UpdateInfoScoreOutsideAspirationWindow(Board.Nodes, score, false);
-                    continue;
-                }
-                // Score within aspiration window.
-                _lastAlpha = alpha;
-                return score;
-            }
-            // Search moves with infinite aspiration window.
-            return GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
-        }
-
-
-        private int GetBestScore(Position Position, int Rank)
-        {
-            Debug.Assert(Rank > 0);
-            if (Rank == 1)
-            {
-                var bestScore = -StaticScore.Max;
-                for (var moveIndex = 0; moveIndex < Position.MoveIndex; moveIndex++)
-                {
-                    var score = _rootMoves[moveIndex].Score;
-                    if (score > bestScore) bestScore = score;
-                }
-                return bestScore;
-            }
-            // Sort moves and return Rank best move (1 based index).
-            Array.Sort(_rootMoves, 0, Position.MoveIndex, _moveScoreComparer);
-            return _rootMoves[Rank - 1].Score;
         }
 
 
@@ -726,8 +616,8 @@ namespace ErikTheCoder.MadChess.Engine
                     UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, move, score, Alpha, Beta);
                     return Beta;
                 }
-                var withinAspirationWindow = (Depth == 0) && (score > Alpha);
-                if (withinAspirationWindow || (score > bestScore))
+                var rootMoveWithinWindow = (Depth == 0) && (score > Alpha);
+                if (rootMoveWithinWindow || (score > bestScore))
                 {
                     // Update possible variation.
                     _possibleVariations[Depth][0] = move;
@@ -758,7 +648,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             } while (true);
             if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or Stalemate
-            if ((bestScore <= originalAlpha) || (bestScore >= Beta)) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, originalAlpha, Beta); // Score fails low or high.
+            if (bestScore <= originalAlpha) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, originalAlpha, Beta); // Score fails low.
             return bestScore;
         }
 
@@ -1167,12 +1057,7 @@ namespace ErikTheCoder.MadChess.Engine
                 CachedPositionData.SetBestMovePromotedPiece(ref cachedPosition.Data, Move.PromotedPiece(BestMove));
             }
             var score = Score;
-            if (Math.Abs(score) >= StaticScore.Checkmate)
-            {
-                // Adjust checkmate score.
-                if (score > 0) score += Depth;
-                else score -= Depth;
-            }
+            if (Math.Abs(score) >= StaticScore.Checkmate) score += score > 0 ? Depth : -Depth; // Adjust checkmate score.
             // Update score.
             if (score <= Alpha)
             {
@@ -1237,15 +1122,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void UpdateInfoScoreOutsideAspirationWindow(long Nodes, int Score, bool FailHigh)
-        {
-            var milliseconds = _stopwatch.Elapsed.TotalMilliseconds;
-            var nodesPerSecond = Nodes / _stopwatch.Elapsed.TotalSeconds;
-            var boundary = FailHigh ? "lowerbound " : "upperbound ";
-            _writeMessageLine($"info multipv 1 depth {_originalHorizon} seldepth {_selectiveHorizon} score {boundary} {Score} time {milliseconds:0} nodes {Nodes} nps {nodesPerSecond:0}");
-        }
-
-
         public void Reset(bool PreserveStats)
         {
             _stopwatch.Restart();
@@ -1266,7 +1142,6 @@ namespace ErikTheCoder.MadChess.Engine
             for (var moveIndex = 0; moveIndex < MultiPv; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -StaticScore.Max);
             for (var depth = 0; depth < _possibleVariationLength.Length; depth++) _possibleVariationLength[depth] = 0;
             _principalVariations.Clear();
-            _lastAlpha = 0;
             if (!PreserveStats) Stats.Reset();
             // Enable PV update, increment search counter, and continue search.
             PvInfoUpdate = true;
