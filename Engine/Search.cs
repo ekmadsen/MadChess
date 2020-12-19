@@ -936,6 +936,7 @@ namespace ErikTheCoder.MadChess.Engine
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon; // Do not reduce killer move, pawn promotion, or castling.
             if (Engine.Move.IsPawnMove(Move))
             {
+                // TODO: Change pawn push condition to rank >= 5 (zero based) for TO square, not FROM square.
                 var rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
                 if (rank >= 5) return Horizon; // Do not reduce pawn push.
             }
