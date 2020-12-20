@@ -418,7 +418,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (!CanAdjustMoveTime || (_originalHorizon < _adjustMoveTimeMinDepth) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
             if (_bestMovePlies[_originalHorizon].Score >= (_bestMovePlies[_originalHorizon - 1].Score - _adjustMoveTimeMinScoreDecrease)) return;
             // Score has decreased significantly from last ply.
-            if (_debug()) _writeMessageLine("Adjusting move time because score has dropped significantly from previous ply.");
+            if (_debug()) _writeMessageLine("Adjusting move time because score has decreased significantly from previous ply.");
             MoveTimeSoftLimit += TimeSpan.FromMilliseconds((MoveTimeSoftLimit.TotalMilliseconds * _adjustMoveTimePer128) / 128);
             if (MoveTimeSoftLimit > MoveTimeHardLimit) MoveTimeSoftLimit = MoveTimeHardLimit;
         }
