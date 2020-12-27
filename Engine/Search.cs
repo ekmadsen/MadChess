@@ -562,6 +562,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 var searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, drawnEndgame);
                 int moveBeta;
+                // TODO: Determine if moveBeta should == Beta if Depth = 0 and MultiPv > 1.
                 if (legalMoveNumber == 1) moveBeta = Beta; // Search with full alpha / beta window.
                 else moveBeta = bestScore + 1; // Search with zero alpha / beta window.
                 // Play and search move.
@@ -787,9 +788,8 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool DoesNullMoveCauseBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
         {
-            // Play and search null move.
-            Board.PlayNullMove();
             // Do not play two null moves consecutively.  Search with zero alpha / beta window.
+            Board.PlayNullMove();
             var score = -GetDynamicScore(Board, Depth + 1, Horizon - _nullMoveReduction, false, -Beta, -Beta + 1);
             Board.UndoMove();
             return score >= Beta;
@@ -936,9 +936,8 @@ namespace ErikTheCoder.MadChess.Engine
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon; // Do not reduce killer move, pawn promotion, or castling.
             if (Engine.Move.IsPawnMove(Move))
             {
-                // TODO: Change pawn push condition to rank >= 5 (zero based) for TO square, not FROM square.
-                var rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
-                if (rank >= 5) return Horizon; // Do not reduce pawn push.
+                var rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.To(Move)] : Board.BlackRanks[Engine.Move.To(Move)];
+                if (rank >= 6) return Horizon; // Do not reduce pawn push.
             }
             // Count pawns and pieces (but don't include kings).
             var whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;

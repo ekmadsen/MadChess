@@ -323,6 +323,7 @@ namespace ErikTheCoder.MadChess.Engine
             var side2MajorPieces = side2Rooks + side2Queens;
             var side1QueenOr2Rooks = ((side1Queens == 1) && (side1MajorPieces == 1) && (side1MinorPieces == 0)) || ((side1Rooks == 2) && (side1MajorPieces == 2) && (side1MinorPieces == 0));
             var side2QueenOr2Rooks = ((side2Queens == 1) && (side2MajorPieces == 1) && (side2MinorPieces == 0)) || ((side2Rooks == 2) && (side2MajorPieces == 2) && (side2MinorPieces == 0));
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (side1QueenOr2Rooks && side2QueenOr2Rooks) return true; // Both sides have queen or two rooks.
             if (side1QueenOr2Rooks)
             {
@@ -558,7 +559,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static int GetMaterialScore(int Piece)
         {
-            // Sequence cases in order of enum integer value to improve performance of switch statement.
+            // Sequence cases in order of integer value to improve performance of switch statement.
             return Piece switch
             {
                 Engine.Piece.None => 0,
@@ -813,11 +814,14 @@ namespace ErikTheCoder.MadChess.Engine
             var whiteEgKingSafetyIndexPer8 = 0;
             var blackMgKingSafetyIndexPer8 = 0;
             var blackEgKingSafetyIndexPer8 = 0;
+            // Determine safe squares not attacked by pawns.
+            var safeSquaresForWhite = ~GetSquaresAttackedByPawns(Position, false);
+            var safeSquaresForBlack = ~GetSquaresAttackedByPawns(Position, true);
             // White Knights
             var pieces = Position.WhiteKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetKnightDestinations(Position, square, true);
+                pieceDestinations = Board.GetKnightDestinations(Position, square, true) & safeSquaresForWhite;
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -830,7 +834,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetKnightDestinations(Position, square, false);
+                pieceDestinations = Board.GetKnightDestinations(Position, square, false) & safeSquaresForBlack;
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -843,7 +847,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetBishopDestinations(Position, square, true);
+                pieceDestinations = Board.GetBishopDestinations(Position, square, true) & safeSquaresForWhite;
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -856,7 +860,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetBishopDestinations(Position, square, false);
+                pieceDestinations = Board.GetBishopDestinations(Position, square, false) & safeSquaresForBlack;
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -869,7 +873,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetRookDestinations(Position, square, true);
+                pieceDestinations = Board.GetRookDestinations(Position, square, true) & safeSquaresForWhite;
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -882,7 +886,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetRookDestinations(Position, square, false);
+                pieceDestinations = Board.GetRookDestinations(Position, square, false) & safeSquaresForBlack;
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -895,7 +899,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetQueenDestinations(Position, square, true);
+                pieceDestinations = Board.GetQueenDestinations(Position, square, true) & safeSquaresForWhite;
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -908,7 +912,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetQueenDestinations(Position, square, false);
+                pieceDestinations = Board.GetQueenDestinations(Position, square, false) & safeSquaresForBlack;
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -946,6 +950,33 @@ namespace ErikTheCoder.MadChess.Engine
             _staticScore.BlackMgKingSafety = _kingSafety[Math.Min(blackMgKingSafetyIndexPer8 / 8, maxIndex)];
             _staticScore.BlackEgKingSafety = _kingSafety[Math.Min(blackEgKingSafetyIndexPer8 / 8, maxIndex)];
         }
+        
+        
+        private static ulong GetSquaresAttackedByPawns(Position Position, bool AttackedByWhite)
+        {
+            ulong pawns;
+            ulong[] attackMasks;
+            if (AttackedByWhite)
+            {
+                // White Pawn Attacks
+                pawns = Position.WhitePawns;
+                attackMasks = Board.WhitePawnAttackMasks;
+            }
+            else
+            {
+                // Black Pawn Attacks
+                pawns = Position.BlackPawns;
+                attackMasks = Board.BlackPawnAttackMasks;
+            }
+            var attackedSquares = 0ul;
+            int square;
+            while ((square = Bitwise.FindFirstSetBit(pawns)) != Square.Illegal)
+            {
+                attackedSquares |= attackMasks[square];
+                Bitwise.ClearBit(ref pawns, square);
+            }
+            return attackedSquares;
+        }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -968,15 +999,13 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetMateScore(int Depth) => -StaticScore.Checkmate - StaticScore.LongestCheckmate + Depth;
+        public static int GetMateScore(int Depth) => -StaticScore.Max + Depth;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMateDistance(int Score)
         {
-            var mateDistance = (Score > 0)
-                ? StaticScore.Checkmate + StaticScore.LongestCheckmate - Score
-                : -StaticScore.Checkmate - StaticScore.LongestCheckmate - Score;
+            var mateDistance = (Score > 0) ? StaticScore.Max - Score : -StaticScore.Max - Score;
             // Convert plies to full moves.
             var quotient = Math.DivRem(mateDistance, 2, out var remainder);
             return quotient + remainder;

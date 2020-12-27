@@ -993,7 +993,7 @@ namespace ErikTheCoder.MadChess.Engine
             var pgnFilename = Tokens[1].Trim();
             var particleSwarmsCount = int.Parse(Tokens[2].Trim());
             var particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            var winPercentScale = int.Parse(Tokens[4].Trim()); // Use 569 for Gm2600EloGoodGames.pgn.
+            var winPercentScale = int.Parse(Tokens[4].Trim()); // Use 601 for Gm2600EloGoodGames.pgn.
             var iterations = int.Parse(Tokens[5].Trim());
             _commandStopwatch.Restart();
             var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, WriteMessageLine);
@@ -1071,7 +1071,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void Help()
         {
-            WriteMessageLine("MadChess by Erik Madsen.  See http://www.madchess.net.");
+            WriteMessageLine("MadChess by Erik Madsen.  See https://www.madchess.net/.");
             WriteMessageLine();
             WriteMessageLine("In addition to standard UCI commands, MadChess supports the following custom commands.");
             WriteMessageLine();
