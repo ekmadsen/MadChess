@@ -1121,7 +1121,8 @@ namespace ErikTheCoder.MadChess.Engine
             var hashFull = (int)((1000L * _cache.Positions) / _cache.Capacity);
             if (IncludePrincipalVariation)
             {
-                for (var pv = 0; pv < MultiPv; pv++)
+                var principalVariations = Math.Min(MultiPv, Board.CurrentPosition.MoveIndex);
+                for (var pv = 0; pv < principalVariations; pv++)
                 {
                     var principalVariation = _principalVariations[Move.ToLongAlgebraic(_bestMoves[pv].Move)];
                     // TODO: Determine if PV can be constructed without allocating memory via StringBuilder instance.
