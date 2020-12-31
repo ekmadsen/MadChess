@@ -394,12 +394,12 @@ namespace ErikTheCoder.MadChess.Engine
                 // Find best move.
                 for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
                 bestMove = _bestMoves[0];
-                if (PvInfoUpdate) UpdateInfo(Board, true);
                 _bestMovePlies[_originalHorizon] = bestMove;
+                if (PvInfoUpdate) UpdateInfo(Board, true);
                 if (MateInMoves.HasValue && (Math.Abs(bestMove.Score) >= StaticScore.Checkmate) && (Evaluation.GetMateDistance(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
                 AdjustMoveTime();
                 if (!HaveTimeForNextHorizon()) break; // Do not have time to search next ply.
-            } while (Continue && (_originalHorizon <= HorizonLimit));
+            } while (Continue && (_originalHorizon < HorizonLimit));
             _stopwatch.Stop();
             if (_debug()) _writeMessageLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
             return scoreError == 0 ? bestMove.Move : GetInferiorMove(Board.CurrentPosition, scoreError);
@@ -967,7 +967,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetSearchHorizon(Board Board, int Depth, int Horizon, ulong Move, int QuietMoveNumber, bool IsDrawnEndgame)
         {
-            if ((Depth == 0) && (MultiPv > 1)) return Horizon; // Do not reduce root move in Multi-PV searches.
+            if ((Depth == 0) && !CompetitivePlay) return Horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
             var capture = Engine.Move.CaptureVictim(Move) != Piece.None;
             if (capture) return Horizon; // Do not reduce capture.
             if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, or move when king is in check.
