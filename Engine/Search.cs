@@ -1197,7 +1197,7 @@ namespace ErikTheCoder.MadChess.Engine
             MoveTimeSoftLimit = TimeSpan.MaxValue;
             MoveTimeHardLimit = TimeSpan.MaxValue;
             CanAdjustMoveTime = true;
-            // Reset best moves, possible and principal variations, last alpha, and stats.
+            // Reset best moves, possible and principal variations, and stats.
             for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -StaticScore.Max);
             for (var depth = 0; depth < _bestMovePlies.Length; depth++) _bestMovePlies[depth] = new ScoredMove(Move.Null, -StaticScore.Max);
             for (var depth = 0; depth < _possibleVariationLength.Length; depth++) _possibleVariationLength[depth] = 0;

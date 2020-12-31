@@ -814,14 +814,11 @@ namespace ErikTheCoder.MadChess.Engine
             var whiteEgKingSafetyIndexPer8 = 0;
             var blackMgKingSafetyIndexPer8 = 0;
             var blackEgKingSafetyIndexPer8 = 0;
-            // Determine safe squares not attacked by pawns.
-            var safeSquaresForWhite = ~GetSquaresAttackedByPawns(Position, false);
-            var safeSquaresForBlack = ~GetSquaresAttackedByPawns(Position, true);
             // White Knights
             var pieces = Position.WhiteKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetKnightDestinations(Position, square, true) & safeSquaresForWhite;
+                pieceDestinations = Board.GetKnightDestinations(Position, square, true);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -834,7 +831,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetKnightDestinations(Position, square, false) & safeSquaresForBlack;
+                pieceDestinations = Board.GetKnightDestinations(Position, square, false);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -847,7 +844,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetBishopDestinations(Position, square, true) & safeSquaresForWhite;
+                pieceDestinations = Board.GetBishopDestinations(Position, square, true);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -860,7 +857,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackBishops;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetBishopDestinations(Position, square, false) & safeSquaresForBlack;
+                pieceDestinations = Board.GetBishopDestinations(Position, square, false);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -873,7 +870,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetRookDestinations(Position, square, true) & safeSquaresForWhite;
+                pieceDestinations = Board.GetRookDestinations(Position, square, true);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -886,7 +883,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackRooks;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetRookDestinations(Position, square, false) & safeSquaresForBlack;
+                pieceDestinations = Board.GetRookDestinations(Position, square, false);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -899,7 +896,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.WhiteQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetQueenDestinations(Position, square, true) & safeSquaresForWhite;
+                pieceDestinations = Board.GetQueenDestinations(Position, square, true);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
@@ -912,7 +909,7 @@ namespace ErikTheCoder.MadChess.Engine
             pieces = Position.BlackQueens;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
             {
-                pieceDestinations = Board.GetQueenDestinations(Position, square, false) & safeSquaresForBlack;
+                pieceDestinations = Board.GetQueenDestinations(Position, square, false);
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
@@ -949,33 +946,6 @@ namespace ErikTheCoder.MadChess.Engine
             _staticScore.WhiteEgKingSafety = _kingSafety[Math.Min(whiteEgKingSafetyIndexPer8 / 8, maxIndex)];
             _staticScore.BlackMgKingSafety = _kingSafety[Math.Min(blackMgKingSafetyIndexPer8 / 8, maxIndex)];
             _staticScore.BlackEgKingSafety = _kingSafety[Math.Min(blackEgKingSafetyIndexPer8 / 8, maxIndex)];
-        }
-        
-        
-        private static ulong GetSquaresAttackedByPawns(Position Position, bool AttackedByWhite)
-        {
-            ulong pawns;
-            ulong[] attackMasks;
-            if (AttackedByWhite)
-            {
-                // White Pawn Attacks
-                pawns = Position.WhitePawns;
-                attackMasks = Board.WhitePawnAttackMasks;
-            }
-            else
-            {
-                // Black Pawn Attacks
-                pawns = Position.BlackPawns;
-                attackMasks = Board.BlackPawnAttackMasks;
-            }
-            var attackedSquares = 0ul;
-            int square;
-            while ((square = Bitwise.FindFirstSetBit(pawns)) != Square.Illegal)
-            {
-                attackedSquares |= attackMasks[square];
-                Bitwise.ClearBit(ref pawns, square);
-            }
-            return attackedSquares;
         }
 
 
