@@ -632,7 +632,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
                 Board.UndoMove();
                 if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
-                if (Depth == 0) _rootMoves[moveIndex].Score = score; // Update root move score.
+                if ((score > Alpha) && (score < Beta) && (Depth == 0)) _rootMoves[moveIndex].Score = score; // Update root move score.
                 if (score >= Beta)
                 {
                     // Position is not the result of best play by both players.
