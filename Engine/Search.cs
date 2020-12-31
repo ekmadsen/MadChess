@@ -53,8 +53,8 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _adjustMoveTimeMinScoreDecrease = 33;
         private const int _adjustMoveTimePer128 = 32;
         private const int _haveTimeSearchNextPlyPer128 = 70;
-        private const int _multiPvAspirationMinHorizon = 5;
-        private const int _multiPvAspirationWindow = 100;
+        private const int _aspirationMinHorizon = 5;
+        private const int _aspirationWindow = 100;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _historyPriorMovePer128 = 256;
@@ -87,7 +87,6 @@ namespace ErikTheCoder.MadChess.Engine
         private int _selectiveHorizon;
         private ulong _rootMove;
         private int _rootMoveNumber;
-        private int _scoreError;
         private bool _limitStrength;
         private int _elo;
         private bool _disposed;
@@ -126,6 +125,9 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        private bool CompetitivePlay => !LimitStrength && (MultiPv == 1);
+
+
         static Search()
         {
             _movePriorityComparer = new MovePriorityComparer();
@@ -159,10 +161,10 @@ namespace ErikTheCoder.MadChess.Engine
             // Create scored move arrays.
             _rootMoves = new ScoredMove[Position.MaxMoves];
             _bestMoves = new ScoredMove[Position.MaxMoves];
-            _bestMovePlies = new ScoredMove[Position.MaxMoves];
+            _bestMovePlies = new ScoredMove[MaxHorizon + 1];
             // Create possible and principal variations.
             _possibleVariations = new ulong[MaxHorizon + 1][];
-            for (var depth = 0; depth < _possibleVariations.Length; depth++) _possibleVariations[depth] = new ulong[MaxHorizon - depth];
+            for (var depth = 0; depth < _possibleVariations.Length; depth++) _possibleVariations[depth] = new ulong[_possibleVariations.Length - depth];
             _possibleVariationLength = new int[MaxHorizon + 1];
             _principalVariations = new Dictionary<string, ulong[]>();
             _disposed = false;
@@ -322,18 +324,16 @@ namespace ErikTheCoder.MadChess.Engine
             }
             var principalVariations = Math.Min(MultiPv, legalMoveIndex);
             // Determine score error.
-            _scoreError = ((BlunderError > 0) && (SafeRandom.NextInt(1, 101) <= BlunderPercent))
+            var scoreError = ((BlunderError > 0) && (SafeRandom.NextInt(0, 100) < BlunderPercent))
                 ? BlunderError // Blunder
                 : 0;
-            _scoreError = Math.Max(_scoreError, MoveError);
+            scoreError = Math.Max(scoreError, MoveError);
             // Determine move time.
             GetMoveTime(Board.CurrentPosition);
             Board.NodesExamineTime = UciStream.NodesTimeInterval;
             // Iteratively deepen search.
             _originalHorizon = 0;
             var bestMove = new ScoredMove(Move.Null, -StaticScore.Max);
-            var multiPvMaxScore = StaticScore.Max;
-            var multiPvMinScore = -StaticScore.Max;
             do
             {
                 _originalHorizon++;
@@ -348,8 +348,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _moveHistory.Age(Board.CurrentPosition.WhiteMove);
                 int alpha;
                 int beta;
-                
-                if ((MultiPv == 1) || (_originalHorizon < _multiPvAspirationMinHorizon))
+                if (CompetitivePlay || (_originalHorizon < _aspirationMinHorizon))
                 {
                     // Search with full alpha / beta window.
                     alpha = -StaticScore.Max;
@@ -358,46 +357,52 @@ namespace ErikTheCoder.MadChess.Engine
                 else
                 {
                     // Search with aspiration window.
-                    // This speeds up Multi-PV searches (for analysis) but slows down Single-PV searches (weakening engine when playing timed games).
-                    alpha = Math.Max(multiPvMinScore - _multiPvAspirationWindow, -StaticScore.Max);
-                    beta = Math.Min(multiPvMaxScore + _multiPvAspirationWindow, StaticScore.Max);
+                    // This speeds up Multi-PV searches (for analysis and UCI_LimitStrength) but slows down Single-PV searches (competitive play).
+                    if (LimitStrength)
+                    {
+                        alpha = _rootMoves[0].Score - scoreError - 1;
+                        beta = _rootMoves[0].Score + _aspirationWindow;
+                    }
+                    else
+                    {
+                        alpha = _rootMoves[principalVariations - 1].Score - _aspirationWindow;
+                        beta = _rootMoves[0].Score + _aspirationWindow;
+                    }
+                    alpha = Math.Max(alpha, -StaticScore.Max);
+                    beta = Math.Min(beta, StaticScore.Max);
                 }
                 // Reset move scores then search moves.
                 for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
                 var score = GetDynamicScore(Board, 0, _originalHorizon, false, alpha, beta);
                 if (Math.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
                 SortMovesByScore(_rootMoves, Board.CurrentPosition.MoveIndex - 1);
-                multiPvMaxScore = _rootMoves[0].Score;
-                multiPvMinScore = _rootMoves[principalVariations - 1].Score;
-                var failHigh = multiPvMaxScore >= beta;
-                var failLow = !failHigh && (multiPvMinScore <= alpha);
+                var failHigh = _rootMoves[0].Score >= beta;
+                var failLow = !failHigh && (_rootMoves[principalVariations - 1].Score <= alpha);
                 if (failHigh || failLow)
                 {
                     if (PvInfoUpdate)
                     {
-                        if (failHigh) UpdateInfoFailHigh(Board.Nodes, multiPvMaxScore);
-                        if (failLow) UpdateInfoFailLow(Board.Nodes, multiPvMinScore);
+                        if (failHigh) UpdateInfoFailHigh(Board.Nodes, _rootMoves[0].Score);
+                        if (failLow) UpdateInfoFailLow(Board.Nodes, _rootMoves[principalVariations - 1].Score);
                     }
                     // Reset move scores then search moves within infinite alpha / beta window.
                     for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
                     score = GetDynamicScore(Board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
                     if (Math.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
                     SortMovesByScore(_rootMoves, Board.CurrentPosition.MoveIndex - 1);
-                    multiPvMaxScore = _rootMoves[0].Score;
-                    multiPvMinScore = _rootMoves[principalVariations - 1].Score;
                 }
                 // Find best move.
-                for (var moveIndex = 0; moveIndex < principalVariations; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
+                for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
                 bestMove = _bestMoves[0];
                 if (PvInfoUpdate) UpdateInfo(Board, true);
                 _bestMovePlies[_originalHorizon] = bestMove;
                 if (MateInMoves.HasValue && (Math.Abs(bestMove.Score) >= StaticScore.Checkmate) && (Evaluation.GetMateDistance(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
                 AdjustMoveTime();
                 if (!HaveTimeForNextHorizon()) break; // Do not have time to search next ply.
-            } while (Continue && (_originalHorizon < HorizonLimit));
+            } while (Continue && (_originalHorizon <= HorizonLimit));
             _stopwatch.Stop();
             if (_debug()) _writeMessageLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
-            return _scoreError == 0 ? bestMove.Move : GetInferiorMove(Board.CurrentPosition);
+            return scoreError == 0 ? bestMove.Move : GetInferiorMove(Board.CurrentPosition, scoreError);
         }
         
         
@@ -472,11 +477,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         // TODO: Test score error.
-        private ulong GetInferiorMove(Position Position)
+        private ulong GetInferiorMove(Position Position, int ScoreError)
         {
             // Determine how many moves are within score error.
             var bestScore = _bestMoves[0].Score;
-            var worstScore = bestScore - _scoreError;
+            var worstScore = bestScore - ScoreError;
             var inferiorMoves = 0;
             for (var moveIndex = 1; moveIndex < Position.MoveIndex; moveIndex++)
             {
@@ -676,7 +681,7 @@ namespace ErikTheCoder.MadChess.Engine
                     // Found new principal variation.
                     bestScore = score;
                     UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, move, score, Alpha, Beta);
-                    if ((Depth > 0) || ((MultiPv == 1) && (_scoreError == 0))) Alpha = score;
+                    if ((Depth > 0) || CompetitivePlay) Alpha = score;
                 }
                 if ((_bestMoves[0].Move != Move.Null) && (Board.Nodes >= Board.NodesInfoUpdate))
                 {
@@ -962,7 +967,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetSearchHorizon(Board Board, int Depth, int Horizon, ulong Move, int QuietMoveNumber, bool IsDrawnEndgame)
         {
-            if ((Depth == 0) && ((MultiPv > 1) || (_scoreError > 0))) return Horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
+            if ((Depth == 0) && (MultiPv > 1)) return Horizon; // Do not reduce root move in Multi-PV searches.
             var capture = Engine.Move.CaptureVictim(Move) != Piece.None;
             if (capture) return Horizon; // Do not reduce capture.
             if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, or move when king is in check.
@@ -1192,9 +1197,9 @@ namespace ErikTheCoder.MadChess.Engine
             MoveTimeSoftLimit = TimeSpan.MaxValue;
             MoveTimeHardLimit = TimeSpan.MaxValue;
             CanAdjustMoveTime = true;
-            // Reset score error, best moves, possible and principal variations, last alpha, and stats.
-            _scoreError = 0;
-            for (var moveIndex = 0; moveIndex < MultiPv; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -StaticScore.Max);
+            // Reset best moves, possible and principal variations, last alpha, and stats.
+            for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -StaticScore.Max);
+            for (var depth = 0; depth < _bestMovePlies.Length; depth++) _bestMovePlies[depth] = new ScoredMove(Move.Null, -StaticScore.Max);
             for (var depth = 0; depth < _possibleVariationLength.Length; depth++) _possibleVariationLength[depth] = 0;
             _principalVariations.Clear();
             if (!PreserveStats) Stats.Reset();
