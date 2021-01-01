@@ -114,14 +114,14 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
             AppendLine(stringBuilder, "Total", MiddlegameWhite, MiddlegameBlack, EndgameWhite, EndgameBlack, Phase);
             stringBuilder.AppendLine();
-            var middlegamePercent = (100 * Phase) / EvaluationConfig.MiddlegamePhase;
-            stringBuilder.AppendLine($"Middlegame  = {Phase} of {EvaluationConfig.MiddlegamePhase} ({middlegamePercent}%)");
+            var middlegamePercent = (100 * Phase) / Evaluation.MiddlegamePhase;
+            stringBuilder.AppendLine($"Middlegame  = {Phase} of {Evaluation.MiddlegamePhase} ({middlegamePercent}%)");
             return stringBuilder.ToString();
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (EvaluationConfig.MiddlegamePhase - Phase))) / EvaluationConfig.MiddlegamePhase;
+        private static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (Evaluation.MiddlegamePhase - Phase))) / Evaluation.MiddlegamePhase;
 
 
         private static void AppendLine(StringBuilder StringBuilder, string EvaluationTerm, int WhiteMg, int BlackMg, int WhiteEg, int BlackEg, int Phase)

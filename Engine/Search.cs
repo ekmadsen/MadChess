@@ -57,7 +57,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _aspirationWindow = 100;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
-        private const int _historyPriorMovePer128 = 256;
+        private const int _historyPriorMovePer128 = 128;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -377,13 +377,15 @@ namespace ErikTheCoder.MadChess.Engine
                 if (Math.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
                 SortMovesByScore(_rootMoves, Board.CurrentPosition.MoveIndex - 1);
                 var failHigh = _rootMoves[0].Score >= beta;
+                var failHighScore = score;
                 var failLow = !failHigh && (_rootMoves[principalVariations - 1].Score <= alpha);
+                var failLowScore = MultiPv > 1 ? _rootMoves[principalVariations - 1].Score : score;
                 if (failHigh || failLow)
                 {
                     if (PvInfoUpdate)
                     {
-                        if (failHigh) UpdateInfoFailHigh(Board.Nodes, _rootMoves[0].Score);
-                        if (failLow) UpdateInfoFailLow(Board.Nodes, _rootMoves[principalVariations - 1].Score);
+                        if (failHigh) UpdateStatusFailHigh(Board.Nodes, failHighScore);
+                        if (failLow) UpdateStatusFailLow(Board.Nodes, failLowScore);
                     }
                     // Reset move scores then search moves within infinite alpha / beta window.
                     for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
@@ -395,7 +397,7 @@ namespace ErikTheCoder.MadChess.Engine
                 for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
                 bestMove = _bestMoves[0];
                 _bestMovePlies[_originalHorizon] = bestMove;
-                if (PvInfoUpdate) UpdateInfo(Board, true);
+                if (PvInfoUpdate) UpdateStatus(Board, true);
                 if (MateInMoves.HasValue && (Math.Abs(bestMove.Score) >= StaticScore.Checkmate) && (Evaluation.GetMateDistance(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
                 AdjustMoveTime();
                 if (!HaveTimeForNextHorizon()) break; // Do not have time to search next ply.
@@ -476,7 +478,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // TODO: Test score error.
         private ulong GetInferiorMove(Position Position, int ScoreError)
         {
             // Determine how many moves are within score error.
@@ -489,7 +490,7 @@ namespace ErikTheCoder.MadChess.Engine
                 inferiorMoves++;
             }
             // Randomly select a move within score error.
-            return _bestMoves[SafeRandom.NextInt(0, inferiorMoves)].Move;
+            return _bestMoves[SafeRandom.NextInt(0, inferiorMoves + 1)].Move;
         }
 
 
@@ -685,8 +686,8 @@ namespace ErikTheCoder.MadChess.Engine
                 }
                 if ((_bestMoves[0].Move != Move.Null) && (Board.Nodes >= Board.NodesInfoUpdate))
                 {
-                    // Update info.
-                    UpdateInfo(Board, false);
+                    // Update status.
+                    UpdateStatus(Board, false);
                     var intervals = (int) (Board.Nodes / UciStream.NodesInfoInterval);
                     Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
                 }
@@ -936,7 +937,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
+        private bool IsMoveFutile(Board Board, int Depth, int Horizon, ulong Move, int LegalMoveNumber, int QuietMoveNumber, int StaticScore, bool IsDrawnEndgame, int Alpha, int Beta)
         {
             var toHorizon = Horizon - Depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
@@ -960,7 +961,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
             var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return StaticScore + Evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
+            return StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
         }
 
 
@@ -1116,9 +1117,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
         
 
-        // TODO: Rename UpdateInfo to something more descriptive.
-        // TODO: Determine if info can be split across more lines.  Test in Hiarcs, Shredder, Cute Chess, and Fritz GUIs.
-        private void UpdateInfo(Board Board, bool IncludePrincipalVariation)
+        private void UpdateStatus(Board Board, bool IncludePrincipalVariation)
         {
             var milliseconds = _stopwatch.Elapsed.TotalMilliseconds;
             var nodesPerSecond = Board.Nodes / _stopwatch.Elapsed.TotalSeconds;
@@ -1166,7 +1165,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void UpdateInfoFailHigh(long Nodes, int Score)
+        private void UpdateStatusFailHigh(long Nodes, int Score)
         {
             var milliseconds = _stopwatch.Elapsed.TotalMilliseconds;
             var nodesPerSecond = Nodes / _stopwatch.Elapsed.TotalSeconds;
@@ -1174,7 +1173,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void UpdateInfoFailLow(long Nodes, int Score)
+        private void UpdateStatusFailLow(long Nodes, int Score)
         {
             var milliseconds = _stopwatch.Elapsed.TotalMilliseconds;
             var nodesPerSecond = Nodes / _stopwatch.Elapsed.TotalSeconds;
