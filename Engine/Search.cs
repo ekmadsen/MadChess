@@ -57,7 +57,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _aspirationWindow = 100;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
-        private const int _historyPriorMovePer128 = 128;
+        private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -134,9 +134,9 @@ namespace ErikTheCoder.MadChess.Engine
             _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
             _moveScoreComparer = new MoveScoreComparer();
             _getExchangeMaterialScore = Evaluation.GetExchangeMaterialScore;
-            // To Horizon =            000  001  002  003  004  005
-            _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
-            _lateMovePruning = new[] { 999, 003, 006, 010, 015, 021 };
+            // To Horizon =            000  001  002  003  004  005  007  008
+            _futilityMargins = new[] { 050, 100, 175, 275, 400, 550, 725, 925 };
+            _lateMovePruning = new[] { 999, 003, 007, 013, 021, 031, 043, 057 };
         }
 
 
@@ -708,6 +708,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
         
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta) => GetQuietScore(Board, Depth, Horizon, ToSquareMask, Alpha, Beta, _getStaticScore, true);
 
 
