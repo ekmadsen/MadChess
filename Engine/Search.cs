@@ -134,9 +134,9 @@ namespace ErikTheCoder.MadChess.Engine
             _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
             _moveScoreComparer = new MoveScoreComparer();
             _getExchangeMaterialScore = Evaluation.GetExchangeMaterialScore;
-            // To Horizon =            000  001  002  003  004  005
-            _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
-            _lateMovePruning = new[] { 999, 003, 006, 010, 015, 021 };
+            // To Horizon =            000  001  002  003
+            _futilityMargins = new[] { 050, 150, 300, 500 };
+            _lateMovePruning = new[] { 999, 003, 007, 015 };
         }
 
 
@@ -156,8 +156,8 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
-            _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
+            // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015
+            _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003 };
             // Create scored move arrays.
             _rootMoves = new ScoredMove[Position.MaxMoves];
             _bestMoves = new ScoredMove[Position.MaxMoves];
@@ -707,8 +707,7 @@ namespace ErikTheCoder.MadChess.Engine
             return scoreAfterMove - scoreBeforeMove;
         }
         
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        
         public int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta) => GetQuietScore(Board, Depth, Horizon, ToSquareMask, Alpha, Beta, _getStaticScore, true);
 
 

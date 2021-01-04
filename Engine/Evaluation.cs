@@ -289,7 +289,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsDrawnEndgame(Position Position)
         {
             if (Bitwise.CountSetBits(Position.WhitePawns | Position.BlackPawns) > 0) return false; // At least one pawn on board.
