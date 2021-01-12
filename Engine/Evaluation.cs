@@ -986,14 +986,14 @@ namespace ErikTheCoder.MadChess.Engine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMateScore(int Depth) => -StaticScore.Max + Depth;
-
-
+        
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetMateDistance(int Score)
+        public static int GetMateMoveCount(int Score)
         {
-            var mateDistance = (Score > 0) ? StaticScore.Max - Score : -StaticScore.Max - Score;
+            var plyCount = (Score > 0) ? StaticScore.Max - Score : -StaticScore.Max - Score;
             // Convert plies to full moves.
-            var quotient = Math.DivRem(mateDistance, 2, out var remainder);
+            var quotient = Math.DivRem(plyCount, 2, out var remainder);
             return quotient + remainder;
         }
 

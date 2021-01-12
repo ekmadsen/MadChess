@@ -57,6 +57,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _aspirationWindow = 100;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
+        private const int _pvsMinToHorizon = 3;
         private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
@@ -137,7 +138,7 @@ namespace ErikTheCoder.MadChess.Engine
             // _futilityMargins and _lateMovePruning should be the same length.
             // To Horizon =            000  001  002  003  004  005
             _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
-            _lateMovePruning = new[] { 999, 005, 009, 013, 017, 021 };
+            _lateMovePruning = new[] { 999, 003, 007, 013, 021, 031 };
         }
 
 
@@ -157,8 +158,8 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015
-            _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003 };
+            // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
+            _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
             // Create scored move arrays.
             _rootMoves = new ScoredMove[Position.MaxMoves];
             _bestMoves = new ScoredMove[Position.MaxMoves];
@@ -399,7 +400,7 @@ namespace ErikTheCoder.MadChess.Engine
                 bestMove = _bestMoves[0];
                 _bestMovePlies[_originalHorizon] = bestMove;
                 if (PvInfoUpdate) UpdateStatus(Board, true);
-                if (MateInMoves.HasValue && (Math.Abs(bestMove.Score) >= StaticScore.Checkmate) && (Evaluation.GetMateDistance(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
+                if (MateInMoves.HasValue && (bestMove.Score >= StaticScore.Checkmate) && (Evaluation.GetMateMoveCount(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
                 AdjustMoveTime();
                 if (!HaveTimeForNextHorizon()) break; // Do not have time to search next ply.
             } while (Continue && (_originalHorizon < HorizonLimit));
@@ -546,7 +547,7 @@ namespace ErikTheCoder.MadChess.Engine
                 UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
                 return Beta;
             }
-            if (IsNullMoveAllowed && Search.IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
+            if (IsNullMoveAllowed && Search.IsNullMoveAllowed(Board.CurrentPosition, Depth, Horizon, staticScore, Beta))
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
@@ -607,7 +608,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 var searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, quietMoveNumber, drawnEndgame);
-                var moveBeta = (legalMoveNumber == 1) || ((MultiPv > 1) && (Depth == 0))
+                var moveBeta = ((legalMoveNumber == 1) && (toHorizon >= _pvsMinToHorizon)) || ((MultiPv > 1) && (Depth == 0))
                     ? Beta // Search with full alpha / beta window.
                     : bestScore + 1; // Search with zero alpha / beta window.
                 // Play and search move.
@@ -693,7 +694,12 @@ namespace ErikTheCoder.MadChess.Engine
                     Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
                 }
             } while (true);
-            if (legalMoveNumber == 0) bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0; // Checkmate or Stalemate
+            if (legalMoveNumber == 0)
+            {
+                // Checkmate or Stalemate
+                bestScore = Board.CurrentPosition.KingInCheck ? Evaluation.GetMateScore(Depth) : 0;
+                _possibleVariationLength[Depth] = 0;
+            }
             if (bestScore <= originalAlpha) UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, bestScore, originalAlpha, Beta); // Score fails low.
             return bestScore;
         }
@@ -819,8 +825,10 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
+        private static bool IsNullMoveAllowed(Position Position, int Depth, int Horizon, int StaticScore, int Beta)
         {
+            var toHorizon = Horizon - Depth;
+            if (toHorizon <= _nullMoveReduction) return false; // Do not attempt null move near search horizon.
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
             var minorAndMajorPieces = Position.WhiteMove
@@ -1142,7 +1150,7 @@ namespace ErikTheCoder.MadChess.Engine
                     }
                     var pvLongAlgebraic = stringBuilder.ToString();
                     var score = _bestMoves[pv].Score;
-                    var scorePhrase = Math.Abs(score) >= StaticScore.Checkmate ? $"mate {Evaluation.GetMateDistance(score)}" : $"cp {score}";
+                    var scorePhrase = Math.Abs(score) >= StaticScore.Checkmate ? $"mate {Evaluation.GetMateMoveCount(score)}" : $"cp {score}";
                     _writeMessageLine($"info multipv {pv + 1} depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
                                       $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
                 }

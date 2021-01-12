@@ -11,7 +11,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 
 namespace ErikTheCoder.MadChess.Engine
@@ -1594,16 +1593,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public override string ToString()
-        {
-            var stringBuilder = new StringBuilder();
-            for (var index = 0; index <= _positionIndex; index++)
-            {
-                stringBuilder.AppendLine($"Position index = {index}.");
-                stringBuilder.AppendLine(_positions[index].ToString());
-                stringBuilder.AppendLine();
-            }
-            return stringBuilder.ToString();
-        }
+        public override string ToString() => CurrentPosition.ToString();
     }
 }
