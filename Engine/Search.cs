@@ -57,7 +57,6 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _aspirationWindow = 100;
         private const int _nullMoveReduction = 3;
         private const int _estimateBestMoveReduction = 2;
-        private const int _pvsMinToHorizon = 3;
         private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
@@ -158,8 +157,8 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
-            // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
-            _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
+            // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015
+            _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 002, 002, 003 };
             // Create scored move arrays.
             _rootMoves = new ScoredMove[Position.MaxMoves];
             _bestMoves = new ScoredMove[Position.MaxMoves];
@@ -547,7 +546,7 @@ namespace ErikTheCoder.MadChess.Engine
                 UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
                 return Beta;
             }
-            if (IsNullMoveAllowed && Search.IsNullMoveAllowed(Board.CurrentPosition, Depth, Horizon, staticScore, Beta))
+            if (IsNullMoveAllowed && Search.IsNullMoveAllowed(Board.CurrentPosition, staticScore, Beta))
             {
                 // Null move is allowed.
                 Stats.NullMoves++;
@@ -608,7 +607,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, staticScore, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 var searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, quietMoveNumber, drawnEndgame);
-                var moveBeta = ((legalMoveNumber == 1) && (toHorizon >= _pvsMinToHorizon)) || ((MultiPv > 1) && (Depth == 0))
+                var moveBeta = (legalMoveNumber == 1) || ((MultiPv > 1) && (Depth == 0))
                     ? Beta // Search with full alpha / beta window.
                     : bestScore + 1; // Search with zero alpha / beta window.
                 // Play and search move.
@@ -825,10 +824,8 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsNullMoveAllowed(Position Position, int Depth, int Horizon, int StaticScore, int Beta)
+        private static bool IsNullMoveAllowed(Position Position, int StaticScore, int Beta)
         {
-            var toHorizon = Horizon - Depth;
-            if (toHorizon <= _nullMoveReduction) return false; // Do not attempt null move near search horizon.
             if ((StaticScore < Beta) || Position.KingInCheck) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
             var minorAndMajorPieces = Position.WhiteMove
