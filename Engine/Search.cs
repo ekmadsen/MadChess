@@ -971,9 +971,7 @@ namespace ErikTheCoder.MadChess.Engine
             var lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
-            var futilityMargin = toHorizon <= 0
-                ? _futilityMargins[0]
-                : _futilityMargins[toHorizon];
+            var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return Board.CurrentPosition.StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
         }
 
