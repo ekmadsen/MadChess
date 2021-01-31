@@ -346,7 +346,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
                 }
-                _moveHistory.Age(Board.CurrentPosition.WhiteMove);
+                _moveHistory.Age();
                 int alpha;
                 int beta;
                 if (CompetitivePlay || (_originalHorizon < _aspirationMinHorizon))

@@ -16,6 +16,7 @@
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Exe</OutputType>
 		<PackageId>MadChess.Engine</PackageId>
+		<Configurations>Debug;Release;ReleaseNonPopcount</Configurations>
 	</PropertyGroup>
 
 

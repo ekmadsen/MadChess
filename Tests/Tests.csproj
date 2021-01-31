@@ -17,6 +17,7 @@
 		<OutputType>Library</OutputType>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<PackageId>MadChess.Tests</PackageId>
+		<Configurations>Debug;Release;ReleaseNonPopcount</Configurations>
 	</PropertyGroup>
 
 	<ItemGroup>
