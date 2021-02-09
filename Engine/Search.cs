@@ -56,6 +56,8 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _aspirationMinHorizon = 5;
         private const int _aspirationWindow = 100;
         private const int _nullMoveReduction = 3;
+        private const int _nullStaticScoreReduction = 200;
+        private const int _nullStaticScoreMaxReduction = 3;
         private const int _estimateBestMoveReduction = 2;
         private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
@@ -137,7 +139,7 @@ namespace ErikTheCoder.MadChess.Engine
             // _futilityMargins and _lateMovePruning should be the same length.
             // To Horizon =            000  001  002  003  004  005
             _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
-            _lateMovePruning = new[] { 999, 003, 006, 010, 015, 021 };
+            _lateMovePruning = new[] { 999, 003, 007, 013, 021, 031 };
         }
 
 
@@ -626,13 +628,11 @@ namespace ErikTheCoder.MadChess.Engine
                 if (score > bestScore)
                 {
                     // Move may be stronger than principal variation.
-                    if (moveBeta < Beta)
+                    if ((moveBeta < Beta) || (searchHorizon < Horizon))
                     {
-                        // Search move at reduced horizon with full alpha / beta window.
-                        score = -GetDynamicScore(Board, Depth + 1, searchHorizon, true, -Beta, -Alpha);
-                        if ((score > bestScore) && (searchHorizon < Horizon)) score = -GetDynamicScore(Board, Depth + 1, Horizon, true, -Beta, -Alpha); // Search move at unreduced horizon with full alpha / beta window.
+                        // Search move at unreduced horizon with full alpha / beta window.
+                        score = -GetDynamicScore(Board, Depth + 1, Horizon, true, -Beta, -Alpha);
                     }
-                    else if (searchHorizon < Horizon) score = -GetDynamicScore(Board, Depth + 1, Horizon, true, -Beta, -Alpha); // Search move at unreduced horizon with full alpha / beta window.
                 }
                 Board.UndoMove();
                 if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
@@ -842,9 +842,10 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool DoesNullMoveCauseBetaCutoff(Board Board, int Depth, int Horizon, int Beta)
         {
+            var reduction = _nullMoveReduction + Math.Min((Board.CurrentPosition.StaticScore - Beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
             Board.PlayNullMove();
             // Do not play two null moves consecutively.  Search with zero alpha / beta window.
-            var score = -GetDynamicScore(Board, Depth + 1, Horizon - _nullMoveReduction, false, -Beta, -Beta + 1);
+            var score = -GetDynamicScore(Board, Depth + 1, Horizon - reduction, false, -Beta, -Beta + 1);
             Board.UndoMove();
             return score >= Beta;
         }
@@ -871,6 +872,7 @@ namespace ErikTheCoder.MadChess.Engine
                 switch (Position.MoveGenerationStage)
                 {
                     case MoveGenerationStage.BestMove:
+                        // Find potentially pinned pieces and set best move.
                         Position.FindPotentiallyPinnedPieces();
                         if (BestMove != Move.Null)
                         {
@@ -883,6 +885,7 @@ namespace ErikTheCoder.MadChess.Engine
                     case MoveGenerationStage.Captures:
                         firstMoveIndex = Position.MoveIndex;
                         Position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, ToSquareMask);
+                        // Prioritize and sort captures.
                         lastMoveIndex = Math.Max(firstMoveIndex, Position.MoveIndex - 1);
                         if (lastMoveIndex > firstMoveIndex)
                         {
@@ -894,6 +897,7 @@ namespace ErikTheCoder.MadChess.Engine
                     case MoveGenerationStage.NonCaptures:
                         firstMoveIndex = Position.MoveIndex;
                         Position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, ToSquareMask);
+                        // Prioritize and sort non-captures.
                         lastMoveIndex = Math.Max(firstMoveIndex, Position.MoveIndex - 1);
                         if (lastMoveIndex > firstMoveIndex)
                         {
@@ -993,9 +997,10 @@ namespace ErikTheCoder.MadChess.Engine
             var whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;
             var blackPawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce move with lone king on board.
-            // Reduce search horizon based on quiet move number.
-            var reduction = Engine.Move.IsQuiet(Move) ? _lateMoveReductions[Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1)] : 0;
-            return Horizon - reduction;
+            if (!Engine.Move.IsQuiet(Move)) return Horizon;
+            // Reduce search horizon based on quiet move number and distance to search horizon.
+            var quietMoveIndex = Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1);
+            return Horizon - _lateMoveReductions[quietMoveIndex];
         }
 
 

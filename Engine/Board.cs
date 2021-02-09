@@ -1574,8 +1574,7 @@ namespace ErikTheCoder.MadChess.Engine
                 var piece = CurrentPosition.GetPiece(square);
                 if (piece != Piece.None) fullyUpdatedPiecesSquaresKey ^= _pieceSquareKeys[piece][square];
             }
-            Debug.Assert(fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey);
-            return true;
+            return fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey;
         }
 
         private void Reset(bool PreserveMoveCount)

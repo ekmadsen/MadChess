@@ -873,7 +873,7 @@ namespace ErikTheCoder.MadChess.Engine
                     var expectedMovesStandardAlgebraic = expectedMovesListStandardAlgebraic.Split(" ".ToCharArray());
                     var expectedMoves = new ulong[expectedMovesStandardAlgebraic.Length];
                     var expectedMovesLongAlgebraic = new string[expectedMovesStandardAlgebraic.Length];
-                    // Setup position and reset search.
+                    // Setup position and reset search and move heuristics.
                     UciNewGame(true);
                     Board.SetPosition(fen, true);
                     for (var moveIndex = 0; moveIndex < expectedMovesStandardAlgebraic.Length; moveIndex++)
@@ -884,6 +884,9 @@ namespace ErikTheCoder.MadChess.Engine
                         expectedMovesLongAlgebraic[moveIndex] = Move.ToLongAlgebraic(expectedMove);
                     }
                     _search.Reset(true);
+                    _cache.Reset();
+                    _killerMoves.Reset();
+                    _moveHistory.Reset();
                     // Find best move.  Do not update node count or PV.
                     Board.NodesInfoUpdate = long.MaxValue;
                     _search.PvInfoUpdate = false;
