@@ -80,7 +80,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         public static Parameters CreateParameters()
         {
-            return new Parameters
+            return new()
             {
                 // Piece Location
                 // Pawns

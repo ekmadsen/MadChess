@@ -51,23 +51,9 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void Age(bool WhiteMove)
+        public void Age()
         {
-            int minPiece;
-            int maxPiece;
-            if (WhiteMove)
-            {
-                // White Move
-                minPiece = Piece.WhitePawn;
-                maxPiece = Piece.WhiteKing;
-            }
-            else
-            {
-                // Black Move
-                minPiece = Piece.BlackPawn;
-                maxPiece = Piece.BlackKing;
-            }
-            for (var piece = minPiece; piece <= maxPiece; piece++)
+            for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
             {
                 for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = (_agePer256 * _moveHistory[piece][toSquare]) / 256;
             }

@@ -15,19 +15,16 @@ namespace ErikTheCoder.MadChess.Engine
         // ReSharper disable ConvertToConstant.Global
         // ReSharper disable FieldCanBeMadeReadOnly.Global
         // ReSharper disable RedundantDefaultMemberInitializer
-
-        // Game Phase
-        // Select phase constants such that starting material = 256.
-        public const int KnightPhase = 10; //   4 * 10 =  40
-        public const int BishopPhase = 10; // + 4 * 10 =  80
-        public const int RookPhase = 22; //   + 4 * 22 = 168
-        public const int QueenPhase = 44; //  + 2 * 44 = 256
-        public const int MiddlegamePhase = 4 * (KnightPhase + BishopPhase + RookPhase) + 2 * QueenPhase;
+        // Material
+        public int KnightMaterial = 300;
+        public int BishopMaterial = 330;
+        public int RookMaterial = 500;
+        public int QueenMaterial = 975;
         // Incentivize engine to promote pawns.
-        // Also incentivize engine to eliminate opponent's last pawn in KQkp endgame (to trigger simple endgame scoring that pushes opposing king to a corner).
-        // Want to ensure simple endgame score > (queen material + position + mobility - opponent pawn material - opponent pawn position).
-        public static int UnstoppablePassedPawn => Evaluation.QueenMaterial - (2 * Evaluation.PawnMaterial);
-        public static int SimpleEndgame => 2 * UnstoppablePassedPawn;
+        // Also incentivize engine to eliminate enemy's last pawn in KQkp endgame (to trigger simple endgame scoring that pushes enemy king to a corner).
+        // Want to ensure simple endgame score > (queen material + position + mobility - enemy pawn material - enemy pawn position).
+        public int UnstoppablePassedPawn => QueenMaterial - (2 * Evaluation.PawnMaterial);
+        public int SimpleEndgame => 2 * UnstoppablePassedPawn;
         // Pawn Location
         public int MgPawnAdvancement = 0;
         public int EgPawnAdvancement = 7;

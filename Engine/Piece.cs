@@ -14,7 +14,6 @@ using System.Runtime.CompilerServices;
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    // Piece must be a primitive type (not an enum) to use Buffer.BlockCopy in Position.Set method.
     public static class Piece
     {
         public const int None = 0;
@@ -34,7 +33,7 @@ namespace ErikTheCoder.MadChess.Engine
         
         public static char GetChar(int Piece)
         {
-            // Sequence cases in order of enum integer value to improve performance of switch statement.
+            // Sequence cases in order of integer value to improve performance of switch statement.
             return Piece switch
             {
                 None => ' ',
@@ -57,7 +56,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static string GetName(int Piece)
         {
-            // Sequence cases in order of enum integer value to improve performance of switch statement.
+            // Sequence cases in order of integer value to improve performance of switch statement.
             return Piece switch
             {
                 None => string.Empty,

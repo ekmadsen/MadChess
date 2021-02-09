@@ -13,7 +13,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices; // Use LINQ only for Debug.Asserts.
 using System.Text;
+#if !RELEASENONPOPCOUNT
 using System.Runtime.Intrinsics.X86;
+#endif
 
 
 namespace ErikTheCoder.MadChess.Engine
@@ -23,7 +25,27 @@ namespace ErikTheCoder.MadChess.Engine
     {
         private const int _intBits = 32;
         private const int _longBits = 64;
-        
+#if RELEASENONPOPCOUNT
+        private const ulong _deBruijnSequence = 0x37E84A99DAE458F;
+        private static readonly int[] _multiplyDeBruijnBitPosition;
+
+
+        static Bitwise()
+        {
+            _multiplyDeBruijnBitPosition = new[]
+            {
+                00, 01, 17, 02, 18, 50, 03, 57,
+                47, 19, 22, 51, 29, 04, 33, 58,
+                15, 48, 20, 27, 25, 23, 52, 41,
+                54, 30, 38, 05, 43, 34, 59, 08,
+                63, 16, 49, 56, 46, 21, 28, 32,
+                14, 26, 24, 40, 53, 37, 42, 07,
+                62, 55, 45, 31, 13, 39, 36, 06,
+                61, 44, 12, 35, 60, 11, 10, 09
+            };
+        }
+#endif
+
 
         // ReSharper disable UnusedMember.Global
         // ReSharper disable once MemberCanBePrivate.Global
@@ -194,16 +216,55 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+#if RELEASENONPOPCOUNT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountSetBits(uint Value)
+        {
+            var count = 0;
+            while (Value > 0)
+            {
+                count++;
+                Value &= Value - 1u;
+            }
+            Debug.Assert((count >= 0) && (count <= _intBits));
+            return count;
+        }
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(uint Value) => (int) Popcnt.PopCount(Value);
+#endif
 
 
+#if RELEASENONPOPCOUNT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountSetBits(ulong Value)
+        {
+            var count = 0;
+            while (Value > 0)
+            {
+                count++;
+                Value &= Value - 1ul;
+            }
+            Debug.Assert((count >= 0) && (count <= _longBits));
+            return count;
+        }
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(ulong Value) => (int) Popcnt.X64.PopCount(Value);
+#endif
 
 
+#if RELEASENONPOPCOUNT
+        // See https://stackoverflow.com/questions/37083402/fastest-way-to-get-last-significant-bit-position-in-a-ulong-c
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FindFirstSetBit(ulong Value)
+        {
+            return Value == 0 ? Square.Illegal : _multiplyDeBruijnBitPosition[((ulong)((long)Value & -(long)Value) * _deBruijnSequence) >> 58];
+        }
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FindFirstSetBit(ulong Value) => Value == 0 ? Square.Illegal : _longBits - (int) Lzcnt.X64.LeadingZeroCount(Value) - 1;
+#endif
 
 
         public static IEnumerable<ulong> GetAllPermutations(ulong Mask)

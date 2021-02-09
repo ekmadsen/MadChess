@@ -16,11 +16,12 @@
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Exe</OutputType>
 		<PackageId>MadChess.Engine</PackageId>
+		<Configurations>Debug;Release;ReleaseNonPopcount</Configurations>
 	</PropertyGroup>
 
 
 	<ItemGroup>
-		<PackageReference Include="ErikTheCoder.Utilities" Version="1.0.12" />
+		<PackageReference Include="ErikTheCoder.Utilities" Version="1.0.13" />
 		<PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
 	</ItemGroup>
 

@@ -46,6 +46,7 @@ namespace ErikTheCoder.MadChess.Engine
         public MoveGenerationStage MoveGenerationStage;
         public ulong PiecesSquaresKey;
         public ulong Key;
+        public int StaticScore;
         public ulong PlayedMove;
         private readonly Board _board;
 
@@ -751,6 +752,7 @@ namespace ErikTheCoder.MadChess.Engine
             MoveGenerationStage = MoveGenerationStage.BestMove;
             PiecesSquaresKey = 0;
             Key = 0;
+            StaticScore = -Engine.StaticScore.Max;
             PlayedMove = Move.Null;
         }
 
@@ -862,6 +864,7 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine($"Key:             {Key:X16}");
             stringBuilder.AppendLine($"Position Count:  {_board.GetPositionCount()}");
             stringBuilder.AppendLine($"King in Check:   {(KingInCheck ? "Yes" : "No")}");
+            stringBuilder.AppendLine($"Static Score:    {StaticScore}");
             stringBuilder.AppendLine($"Played Move:     {Move.ToString(PlayedMove)}");
             return stringBuilder.ToString();
         }

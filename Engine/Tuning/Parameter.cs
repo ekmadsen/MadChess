@@ -34,13 +34,13 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         public Parameter DuplicateWithSameValue()
         {
-            return new Parameter(Name, MinValue, MaxValue, Value);
+            return new(Name, MinValue, MaxValue, Value);
         }
 
 
         public Parameter DuplicateWithRandomValue()
         {
-            return new Parameter(Name, MinValue, MaxValue);
+            return new(Name, MinValue, MaxValue);
         }
     }
 }

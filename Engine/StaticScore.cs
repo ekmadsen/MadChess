@@ -17,10 +17,9 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class StaticScore
     {
         public const int Max = 9999;
-        public const int LongestCheckmate = 64;
-        public const int Checkmate = Max - LongestCheckmate;
-        public const int Interrupted = Max - LongestCheckmate - 1;
-        public const int NotCached = Max - LongestCheckmate - 2;
+        public const int Checkmate = Max - Search.MaxHorizon;
+        public const int Interrupted = Max - Search.MaxHorizon - 1;
+        public const int NotCached = Max - Search.MaxHorizon - 2;
         public int WhiteSimpleEndgame;
         public int WhiteMaterial;
         public int WhiteMgPieceLocation;
@@ -115,14 +114,14 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
             AppendLine(stringBuilder, "Total", MiddlegameWhite, MiddlegameBlack, EndgameWhite, EndgameBlack, Phase);
             stringBuilder.AppendLine();
-            var middlegamePercent = (100 * Phase) / EvaluationConfig.MiddlegamePhase;
-            stringBuilder.AppendLine($"Middlegame  = {Phase} of {EvaluationConfig.MiddlegamePhase} ({middlegamePercent}%)");
+            var middlegamePercent = (100 * Phase) / Evaluation.MiddlegamePhase;
+            stringBuilder.AppendLine($"Middlegame  = {Phase} of {Evaluation.MiddlegamePhase} ({middlegamePercent}%)");
             return stringBuilder.ToString();
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (EvaluationConfig.MiddlegamePhase - Phase))) / EvaluationConfig.MiddlegamePhase;
+        private static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (Evaluation.MiddlegamePhase - Phase))) / Evaluation.MiddlegamePhase;
 
 
         private static void AppendLine(StringBuilder StringBuilder, string EvaluationTerm, int WhiteMg, int BlackMg, int WhiteEg, int BlackEg, int Phase)
