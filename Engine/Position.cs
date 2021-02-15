@@ -34,7 +34,7 @@ namespace ErikTheCoder.MadChess.Engine
         public ulong BlackKing;
         public ulong OccupancyBlack;
         public ulong Occupancy;
-        public ulong PotentiallyPinnedPieces;
+        public ulong PinnedPieces;
         public bool WhiteMove;
         public uint Castling;
         public int EnPassantSquare;
@@ -116,7 +116,7 @@ namespace ErikTheCoder.MadChess.Engine
         public void GenerateMoves()
         {
             PrepareMoveGeneration();
-            FindPotentiallyPinnedPieces();
+            FindPinnedPieces();
             GenerateMoves(MoveGeneration.AllMoves, Board.AllSquaresMask, Board.AllSquaresMask);
         }
 
@@ -689,37 +689,52 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public void FindPotentiallyPinnedPieces()
+        public void FindPinnedPieces()
         {
             int kingSquare;
             ulong pieces;
-            ulong enemyBishopsQueens;
-            ulong enemyRooksQueens;
+            ulong enemyPieces;
+            ulong enemySlidingPieces;
             if (WhiteMove)
             {
                 // White Move
                 kingSquare = Bitwise.FindFirstSetBit(WhiteKing);
                 pieces = OccupancyWhite;
-                enemyBishopsQueens = BlackBishops | BlackQueens;
-                enemyRooksQueens = BlackRooks | BlackQueens;
+                enemyPieces = OccupancyBlack;
+                enemySlidingPieces = BlackBishops | BlackRooks | BlackQueens;
             }
             else
             {
                 // Black Move
                 kingSquare = Bitwise.FindFirstSetBit(BlackKing);
                 pieces = OccupancyBlack;
-                enemyBishopsQueens = WhiteBishops | WhiteQueens;
-                enemyRooksQueens = WhiteRooks | WhiteQueens;
+                enemyPieces = OccupancyWhite;
+                enemySlidingPieces = WhiteBishops | WhiteRooks | WhiteQueens;
             }
-            PotentiallyPinnedPieces = 0;
-            var fileAttackers = Board.FileMasks[Board.Files[kingSquare]] & enemyRooksQueens;
-            if (fileAttackers > 0) PotentiallyPinnedPieces |= Board.FileMasks[Board.Files[kingSquare]] & pieces;
-            var rankAttackers = Board.RankMasks[Board.WhiteRanks[kingSquare]] & enemyRooksQueens;
-            if (rankAttackers > 0) PotentiallyPinnedPieces |= Board.RankMasks[Board.WhiteRanks[kingSquare]] & pieces;
-            var upDiagonalAttackers = Board.UpDiagonalMasks[Board.UpDiagonals[kingSquare]] & enemyBishopsQueens;
-            if (upDiagonalAttackers > 0) PotentiallyPinnedPieces |= Board.UpDiagonalMasks[Board.UpDiagonals[kingSquare]] & pieces;
-            var downDiagonalAttackers = Board.DownDiagonalMasks[Board.DownDiagonals[kingSquare]] & enemyBishopsQueens;
-            if (downDiagonalAttackers > 0) PotentiallyPinnedPieces |= Board.DownDiagonalMasks[Board.DownDiagonals[kingSquare]] & pieces;
+            PinnedPieces = 0;
+            // Find pieces pinned to own king by enemy sliding pieces.
+            int attackerSquare;
+            while ((attackerSquare = Bitwise.FindFirstSetBit(enemySlidingPieces)) != Square.Illegal)
+            {
+                var betweenSquares = Board.SlidingBetweenSquares[attackerSquare][kingSquare];
+                if (betweenSquares == 0)
+                {
+                    Bitwise.ClearBit(ref enemySlidingPieces, attackerSquare);
+                    continue;
+                }
+                if ((betweenSquares & enemyPieces) == 0)
+                {
+                    // No enemy pieces between attacker and king.
+                    var potentiallyPinnedPieces = betweenSquares & pieces;
+                    if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+                    {
+                        // Exactly one piece between attacker and king.
+                        // Piece is pinned to own king.
+                        PinnedPieces |= potentiallyPinnedPieces;
+                    }
+                }
+                Bitwise.ClearBit(ref enemySlidingPieces, attackerSquare);
+            }
         }
 
 
@@ -740,7 +755,7 @@ namespace ErikTheCoder.MadChess.Engine
             BlackKing = 0;
             OccupancyBlack = 0;
             Occupancy = 0;
-            PotentiallyPinnedPieces = 0;
+            PinnedPieces = 0;
             WhiteMove = true;
             Castling = 0;
             EnPassantSquare = Square.Illegal;
