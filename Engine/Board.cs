@@ -1056,13 +1056,22 @@ namespace ErikTheCoder.MadChess.Engine
             }
             ChecksEnemyKing:
             // Move is legal.
+            // Change side to move.
+            var kingInCheck = CurrentPosition.KingInCheck;
+            var enPassantSquare = CurrentPosition.EnPassantSquare;
+            CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
+            CurrentPosition.KingInCheck = false;
+            CurrentPosition.EnPassantSquare = Square.Illegal;
             // Determine if move checks enemy king.
-            PlayNullMove();
             kingSquare = CurrentPosition.WhiteMove
                 ? Bitwise.FindFirstSetBit(CurrentPosition.BlackKing)
                 : Bitwise.FindFirstSetBit(CurrentPosition.WhiteKing);
             var check = IsSquareAttacked(kingSquare);
-            UndoMove();
+            // Revert side to move.
+            CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
+            CurrentPosition.KingInCheck = kingInCheck;
+            CurrentPosition.EnPassantSquare = enPassantSquare;
+            // Set check and quiet move properties and undo move.
             Engine.Move.SetIsCheck(ref Move, check);
             if (check) Engine.Move.SetIsQuiet(ref Move, false);
             UndoMove();
