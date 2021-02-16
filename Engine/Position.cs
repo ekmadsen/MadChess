@@ -34,7 +34,8 @@ namespace ErikTheCoder.MadChess.Engine
         public ulong BlackKing;
         public ulong OccupancyBlack;
         public ulong Occupancy;
-        public ulong PinnedPieces;
+        public ulong PiecesPinnedToOwnKing;
+        //public ulong PiecesPinnedToEnemyKing;
         public bool WhiteMove;
         public uint Castling;
         public int EnPassantSquare;
@@ -691,50 +692,133 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void FindPinnedPieces()
         {
-            int kingSquare;
-            ulong pieces;
+            int ownKingSquare;
+            //ulong ownRankFileAttackers;
+            //ulong ownDiagonalAttackers;
+            ulong ownPieces;
+            //int enemyKingSquare;
+            ulong enemyRankFileAttackers;
+            ulong enemyDiagonalAttackers;
             ulong enemyPieces;
-            ulong enemySlidingPieces;
             if (WhiteMove)
             {
                 // White Move
-                kingSquare = Bitwise.FindFirstSetBit(WhiteKing);
-                pieces = OccupancyWhite;
+                ownKingSquare = Bitwise.FindFirstSetBit(WhiteKing);
+                //ownRankFileAttackers = WhiteRooks | WhiteQueens;
+                //ownDiagonalAttackers = WhiteBishops | WhiteQueens;
+                ownPieces = OccupancyWhite;
+                //enemyKingSquare = Bitwise.FindFirstSetBit(BlackKing);
+                enemyRankFileAttackers = BlackRooks | BlackQueens;
+                enemyDiagonalAttackers = BlackBishops | BlackQueens;
                 enemyPieces = OccupancyBlack;
-                enemySlidingPieces = BlackBishops | BlackRooks | BlackQueens;
             }
             else
             {
                 // Black Move
-                kingSquare = Bitwise.FindFirstSetBit(BlackKing);
-                pieces = OccupancyBlack;
+                ownKingSquare = Bitwise.FindFirstSetBit(BlackKing);
+                //ownRankFileAttackers = BlackRooks | BlackQueens;
+                //ownDiagonalAttackers = BlackBishops | BlackQueens;
+                ownPieces = OccupancyBlack;
+                //enemyKingSquare = Bitwise.FindFirstSetBit(WhiteKing);
+                enemyRankFileAttackers = WhiteRooks | WhiteQueens;
+                enemyDiagonalAttackers = WhiteBishops | WhiteQueens;
                 enemyPieces = OccupancyWhite;
-                enemySlidingPieces = WhiteBishops | WhiteRooks | WhiteQueens;
             }
-            PinnedPieces = 0;
-            // Find pieces pinned to own king by enemy sliding pieces.
+            // Find pieces pinned to own king by enemy rank / file attackers.
+            PiecesPinnedToOwnKing = 0;
             int attackerSquare;
-            while ((attackerSquare = Bitwise.FindFirstSetBit(enemySlidingPieces)) != Square.Illegal)
+            while ((attackerSquare = Bitwise.FindFirstSetBit(enemyRankFileAttackers)) != Square.Illegal)
             {
-                var betweenSquares = Board.SlidingBetweenSquares[attackerSquare][kingSquare];
+                var betweenSquares = Board.RankFileBetweenSquares[attackerSquare][ownKingSquare];
                 if (betweenSquares == 0)
                 {
-                    Bitwise.ClearBit(ref enemySlidingPieces, attackerSquare);
+                    Bitwise.ClearBit(ref enemyRankFileAttackers, attackerSquare);
                     continue;
                 }
                 if ((betweenSquares & enemyPieces) == 0)
                 {
-                    // No enemy pieces between attacker and king.
-                    var potentiallyPinnedPieces = betweenSquares & pieces;
+                    // No enemy pieces between enemy attacker and own king.
+                    var potentiallyPinnedPieces = betweenSquares & ownPieces;
                     if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
                     {
-                        // Exactly one piece between attacker and king.
+                        // Exactly one own piece between enemy attacker and own king.
                         // Piece is pinned to own king.
-                        PinnedPieces |= potentiallyPinnedPieces;
+                        PiecesPinnedToOwnKing |= potentiallyPinnedPieces;
                     }
                 }
-                Bitwise.ClearBit(ref enemySlidingPieces, attackerSquare);
+                Bitwise.ClearBit(ref enemyRankFileAttackers, attackerSquare);
             }
+            // Find pieces pinned to own king by enemy diagonal attackers.
+            while ((attackerSquare = Bitwise.FindFirstSetBit(enemyDiagonalAttackers)) != Square.Illegal)
+            {
+                var betweenSquares = Board.DiagonalBetweenSquares[attackerSquare][ownKingSquare];
+                if (betweenSquares == 0)
+                {
+                    Bitwise.ClearBit(ref enemyDiagonalAttackers, attackerSquare);
+                    continue;
+                }
+                if ((betweenSquares & enemyPieces) == 0)
+                {
+                    // No enemy pieces between enemy attacker and own king.
+                    var potentiallyPinnedPieces = betweenSquares & ownPieces;
+                    if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+                    {
+                        // Exactly one own piece between enemy attacker and own king.
+                        // Piece is pinned to own king.
+                        PiecesPinnedToOwnKing |= potentiallyPinnedPieces;
+                    }
+                }
+                Bitwise.ClearBit(ref enemyDiagonalAttackers, attackerSquare);
+            }
+
+
+            //// Find pieces pinned to enemy king by own rank / file attackers.
+            //// Moving these pieces may result in discovered checks on enemy king.
+            //PiecesPinnedToEnemyKing = 0;
+            //while ((attackerSquare = Bitwise.FindFirstSetBit(ownRankFileAttackers)) != Square.Illegal)
+            //{
+            //    var betweenSquares = Board.RankFileBetweenSquares[attackerSquare][enemyKingSquare];
+            //    if (betweenSquares == 0)
+            //    {
+            //        Bitwise.ClearBit(ref ownRankFileAttackers, attackerSquare);
+            //        continue;
+            //    }
+            //    if ((betweenSquares & enemyPieces) == 0)
+            //    {
+            //        // No enemy pieces between own attacker and enemy king.
+            //        var potentiallyPinnedPieces = betweenSquares & ownPieces;
+            //        if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+            //        {
+            //            // Exactly one own piece between own attacker and enemy king.
+            //            // Piece is pinned to enemy king.
+            //            PiecesPinnedToEnemyKing |= potentiallyPinnedPieces;
+            //        }
+            //    }
+            //    Bitwise.ClearBit(ref ownRankFileAttackers, attackerSquare);
+            //}
+            //// Find pieces pinned to enemy king by own diagonal attackers.
+            //// Moving these pieces may result in discovered checks on enemy king.
+            //while ((attackerSquare = Bitwise.FindFirstSetBit(ownDiagonalAttackers)) != Square.Illegal)
+            //{
+            //    var betweenSquares = Board.DiagonalBetweenSquares[attackerSquare][enemyKingSquare];
+            //    if (betweenSquares == 0)
+            //    {
+            //        Bitwise.ClearBit(ref ownDiagonalAttackers, attackerSquare);
+            //        continue;
+            //    }
+            //    if ((betweenSquares & enemyPieces) == 0)
+            //    {
+            //        // No enemy pieces between own attacker and enemy king.
+            //        var potentiallyPinnedPieces = betweenSquares & ownPieces;
+            //        if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+            //        {
+            //            // Exactly one own piece between own attacker and enemy king.
+            //            // Piece is pinned to enemy king.
+            //            PiecesPinnedToEnemyKing |= potentiallyPinnedPieces;
+            //        }
+            //    }
+            //    Bitwise.ClearBit(ref ownDiagonalAttackers, attackerSquare);
+            //}
         }
 
 
@@ -755,7 +839,8 @@ namespace ErikTheCoder.MadChess.Engine
             BlackKing = 0;
             OccupancyBlack = 0;
             Occupancy = 0;
-            PinnedPieces = 0;
+            PiecesPinnedToOwnKing = 0;
+            //PiecesPinnedToEnemyKing = 0;
             WhiteMove = true;
             Castling = 0;
             EnPassantSquare = Square.Illegal;

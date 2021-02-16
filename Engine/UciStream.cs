@@ -815,9 +815,10 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             _commandStopwatch.Stop();
+            WriteMessageLine();
+            WriteMessageLine($"Test completed in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
             // Update node count.
             var nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
-            WriteMessageLine();
             WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
         }
 
