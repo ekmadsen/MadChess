@@ -57,7 +57,6 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly PrecalculatedMoves PrecalculatedMoves;
         public static readonly ulong[][] RankFileBetweenSquares;
         public static readonly ulong[][] DiagonalBetweenSquares;
-        //public static readonly ulong[][] RayBetweenSquares;
         public long Nodes;
         public long NodesInfoUpdate;
         public long NodesExamineTime;
@@ -317,48 +316,6 @@ namespace ErikTheCoder.MadChess.Engine
                     } while (true);
                 }
             }
-            //// Determine squares in a ray along direction between two squares.
-            //RayBetweenSquares = new ulong[64][];
-            //for (var square1 = 0; square1 < 64; square1++)
-            //{
-            //    RayBetweenSquares[square1] = new ulong[64];
-            //    var directions =         new[] {Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest};
-            //    var oppositeDirections = new[] {Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest, Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast};
-            //    var rayDirections = new Direction[2];
-            //    for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
-            //    {
-            //        // Create ray.
-            //        var ray = SquareMasks[square1];
-            //        rayDirections[0] = directions[directionIndex];
-            //        rayDirections[1] = oppositeDirections[directionIndex];
-            //        int square2;
-            //        for (var rayDirectionIndex = 0; rayDirectionIndex < rayDirections.Length; rayDirectionIndex++)
-            //        {
-            //            var direction = rayDirections[rayDirectionIndex];
-            //            square2 = square1;
-            //            do
-            //            {
-            //                square2 = _neighborSquares[square2][(int) direction];
-            //                if (square2 == Square.Illegal) break;
-            //                ray |= SquareMasks[square2];
-            //            } while (true);
-            //        }
-            //        // Assign ray to each square 1 / square 2 combination.
-            //        var originalRay = ray;
-            //        while ((square2 = Bitwise.FindFirstSetBit(ray)) != Square.Illegal)
-            //        {
-            //            RayBetweenSquares[square1][square2] = originalRay;
-            //            Bitwise.ClearBit(ref ray, square2);
-            //        }
-            //    }
-            //}
-            // Delete test code.
-            //var fromSquare = GetSquare("b4");
-            //var toSquare = GetSquare("f8");
-            //Console.WriteLine(Position.ToString(RayBetweenSquares[fromSquare][toSquare]));
-            //Environment.Exit(0);
-
-
             // Create en passant, passed pawn, and free pawn masks.
             (_enPassantTargetSquares, _enPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
             WhitePassedPawnMasks = CreateWhitePassedPawnMasks();
@@ -1070,7 +1027,7 @@ namespace ErikTheCoder.MadChess.Engine
             var fromSquare = Engine.Move.From(Move);
             if (!CurrentPosition.KingInCheck && !Engine.Move.IsKingMove(Move) && !Engine.Move.IsEnPassantCapture(Move))
             {
-                if ((SquareMasks[fromSquare] & CurrentPosition.PiecesPinnedToOwnKing) == 0)
+                if ((SquareMasks[fromSquare] & CurrentPosition.PinnedPieces) == 0)
                 {
                     // Move cannot expose king to check.
                     PlayMove(Move);
@@ -1094,94 +1051,13 @@ namespace ErikTheCoder.MadChess.Engine
             }
             ChecksEnemyKing:
             // Move is legal.
-            //if (!Engine.Move.IsCastling(Move) && (Engine.Move.PromotedPiece(Move) == Piece.None) && !Engine.Move.IsEnPassantCapture(Move))
-            //{
-            //    // Without making move, determine if move checks enemy king.
-            //    int pawn;
-            //    int knight;
-            //    int bishop;
-            //    int rook;
-            //    int queen;
-            //    ulong pawnAttackMask;
-            //    if (CurrentPosition.WhiteMove)
-            //    {
-            //        // White Move
-            //        pawn = Piece.WhitePawn;
-            //        knight = Piece.WhiteKnight;
-            //        bishop = Piece.WhiteBishop;
-            //        rook = Piece.WhiteRook;
-            //        queen = Piece.WhiteQueen;
-            //        kingSquare = Bitwise.FindFirstSetBit(CurrentPosition.BlackKing);
-            //        pawnAttackMask = BlackPawnAttackMasks[kingSquare];
-            //    }
-            //    else
-            //    {
-            //        // Black Move
-            //        pawn = Piece.BlackPawn;
-            //        knight = Piece.BlackKnight;
-            //        bishop = Piece.BlackBishop;
-            //        rook = Piece.BlackRook;
-            //        queen = Piece.BlackQueen;
-            //        kingSquare = Bitwise.FindFirstSetBit(CurrentPosition.WhiteKing);
-            //        pawnAttackMask = WhitePawnAttackMasks[kingSquare];
-            //    }
-            //    var piece = CurrentPosition.GetPiece(fromSquare);
-            //    var toSquare = Engine.Move.To(Move);
-            //    var toSquareMask = SquareMasks[toSquare];
-            //    var fromSquareMask = SquareMasks[fromSquare];
-            //    if ((piece == pawn) && ((toSquareMask & pawnAttackMask) > 0))
-            //    {
-            //        // Pawn attacks enemy king.
-            //        Engine.Move.SetIsCheck(ref Move, true);
-            //        Engine.Move.SetIsQuiet(ref Move, false);
-            //        return true;
-            //    }
-            //    if ((piece == knight) && ((toSquareMask & KnightMoveMasks[kingSquare]) > 0))
-            //    {
-            //        // Knight attacks enemy king.
-            //        Engine.Move.SetIsCheck(ref Move, true);
-            //        Engine.Move.SetIsQuiet(ref Move, false);
-            //        return true;
-            //    }
-            //    if ((piece == bishop) || (piece == queen))
-            //    {
-            //        if (((toSquareMask & BishopMoveMasks[kingSquare]) > 0) && ((DiagonalBetweenSquares[toSquare][kingSquare] & CurrentPosition.Occupancy) == 0))
-            //        {
-            //            // Bishop or queen attacks enemy king.
-            //            Engine.Move.SetIsCheck(ref Move, true);
-            //            Engine.Move.SetIsQuiet(ref Move, false);
-            //            return true;
-            //        }
-            //    }
-            //    if ((piece == rook) || (piece == queen))
-            //    {
-            //        if (((toSquareMask & RookMoveMasks[kingSquare]) > 0) && ((RankFileBetweenSquares[toSquare][kingSquare] & CurrentPosition.Occupancy) == 0))
-            //        {
-            //            // Rook or queen attacks enemy king.
-            //            Engine.Move.SetIsCheck(ref Move, true);
-            //            Engine.Move.SetIsQuiet(ref Move, false);
-            //            return true;
-            //        }
-            //    }
-            //    //    //if (((fromSquareMask & CurrentPosition.PiecesPinnedToEnemyKing) > 0) && ((toSquareMask & RayBetweenSquares[fromSquare][kingSquare]) == 0))
-            //    //    //{
-            //    //    //    // Move discovers check on enemy king.
-            //    //    //    Engine.Move.SetIsCheck(ref Move, true);
-            //    //    //    Engine.Move.SetIsQuiet(ref Move, false);
-            //    //    //    return true;
-            //    //    //}
-            //    //    //// Move does not check enemy king.
-            //    //    //Engine.Move.SetIsCheck(ref Move, false);
-            //    //    //Engine.Move.SetIsQuiet(ref Move, true);
-            //}
-            // Make move to determine if move checks enemy king.
             // Change side to move.
             var kingInCheck = CurrentPosition.KingInCheck;
             var enPassantSquare = CurrentPosition.EnPassantSquare;
             CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
             CurrentPosition.KingInCheck = false;
             CurrentPosition.EnPassantSquare = Square.Illegal;
-            // Determine if enemy king is attacked.
+            // Determine if move checks enemy king.
             kingSquare = CurrentPosition.WhiteMove
                 ? Bitwise.FindFirstSetBit(CurrentPosition.BlackKing)
                 : Bitwise.FindFirstSetBit(CurrentPosition.WhiteKing);
