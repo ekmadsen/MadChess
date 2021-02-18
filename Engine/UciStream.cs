@@ -61,7 +61,7 @@ namespace ErikTheCoder.MadChess.Engine
                         // Include GUID in log filename to avoid multiple engine instances interleaving lines in a single log file.
                         var file = $"MadChess-{Guid.NewGuid()}.log";
                         var fileStream = File.Open(file, FileMode.Append, FileAccess.Write, FileShare.Read);
-                        _logWriter = new StreamWriter(fileStream) {AutoFlush = true};
+                        _logWriter = new StreamWriter(fileStream) { AutoFlush = true };
                     }
                 }
                 else
@@ -143,7 +143,7 @@ namespace ErikTheCoder.MadChess.Engine
         public void Run()
         {
             // Create async thread.
-            _asyncThread = new Thread(MonitorQueue) {Name = "UCI Asynchronous", IsBackground = true};
+            _asyncThread = new Thread(MonitorQueue) { Name = "UCI Asynchronous", IsBackground = true };
             _asyncThread.Start();
             // Monitor input stream.
             Thread.CurrentThread.Name = "UCI Synchronous";
@@ -525,7 +525,7 @@ namespace ErikTheCoder.MadChess.Engine
             // This is because the IEnumerable<T> overload does not accept a StartIndex and Count so those parameters are interpreted as params object[].
             var fen = Tokens[1] == "startpos"
                 ? Board.StartPositionFen
-                : string.Join(" ",Tokens.ToArray(), 2, Tokens.Count - 2);
+                : string.Join(" ", Tokens.ToArray(), 2, Tokens.Count - 2);
             // Setup position and play moves if specified.
             Board.SetPosition(fen);
             while (moveIndex < Tokens.Count)
@@ -644,7 +644,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void CountMoves(List<string> Tokens)
         {
             var horizon = int.Parse(Tokens[1].Trim());
-            if (horizon <= 0) throw new ArgumentException();
+            if (horizon <= 0) throw new ArgumentException("Horizon must be > 0.", nameof(Tokens));
             Board.Nodes = 0;
             Board.NodesInfoUpdate = NodesInfoInterval;
             _commandStopwatch.Restart();
@@ -656,13 +656,14 @@ namespace ErikTheCoder.MadChess.Engine
 
         private long CountMoves(int Depth, int Horizon)
         {
-            if ((Depth < 0) || (Horizon < 0)) throw new ArgumentException();
+            if (Depth < 0) throw new ArgumentException($"{nameof(Depth)} must be >= 0.", nameof(Depth));
+            if (Horizon < 0) throw new ArgumentException($"{nameof(Horizon)} must be >= 0.", nameof(Horizon));
             if (Board.Nodes >= Board.NodesInfoUpdate)
             {
                 // Update move count.
                 var nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
                 WriteMessageLine($"Counted {Board.NodesInfoUpdate:n0} nodes ({nodesPerSecond:n0} nodes per second).");
-                var intervals = (int) (Board.Nodes / NodesInfoInterval);
+                var intervals = (int)(Board.Nodes / NodesInfoInterval);
                 Board.NodesInfoUpdate = NodesInfoInterval * (intervals + 1);
             }
             var toHorizon = Horizon - Depth;
@@ -672,21 +673,14 @@ namespace ErikTheCoder.MadChess.Engine
             while (true)
             {
                 var (move, moveIndex) = _search.GetNextMove(Board.CurrentPosition, Board.AllSquaresMask, Depth, Move.Null);
-                if (move == Move.Null) break;
+                if (move == Move.Null) break; // All moves have been searched.
                 if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 Move.SetPlayed(ref move, true);
                 Board.CurrentPosition.Moves[moveIndex] = move;
-                if (toHorizon > 1)
-                {
-                    Board.PlayMove(move);
-                    moves += CountMoves(Depth + 1, Horizon);
-                    Board.UndoMove();
-                }
-                else
-                {
-                    moves++;
-                    Board.Nodes++;
-                }
+                Board.PlayMove(move);
+                if (toHorizon > 1) moves += CountMoves(Depth + 1, Horizon);
+                else moves++;
+                Board.UndoMove();
             }
             return moves;
         }
@@ -695,35 +689,45 @@ namespace ErikTheCoder.MadChess.Engine
         private void DivideMoves(List<string> Tokens)
         {
             var horizon = int.Parse(Tokens[1].Trim());
-            if (horizon < 1) throw new ArgumentException();
+            if (horizon < 1) throw new ArgumentException("Horizon must be >= 1.", nameof(Tokens));
             Board.Nodes = 0;
             Board.NodesInfoUpdate = NodesInfoInterval;
             _commandStopwatch.Restart();
+            // Ensure all root moves are legal.
             Board.CurrentPosition.GenerateMoves();
+            var legalMoveIndex = 0;
+            for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
+            {
+                var move = Board.CurrentPosition.Moves[moveIndex];
+                if (Board.IsMoveLegal(ref move))
+                {
+                    // Move is legal.
+                    Move.SetPlayed(ref move, true); // All root moves will be played so set this in advance.
+                    Board.CurrentPosition.Moves[legalMoveIndex] = move;
+                    legalMoveIndex++;
+                }
+            }
+            Board.CurrentPosition.MoveIndex = legalMoveIndex;
             // Count moves for each root move.
             var rootMoves = new long[Board.CurrentPosition.MoveIndex];
             for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
             {
                 var move = Board.CurrentPosition.Moves[moveIndex];
-                if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
                 Board.PlayMove(move);
                 rootMoves[moveIndex] = horizon == 1 ? 1 : CountMoves(1, horizon);
                 Board.UndoMove();
             }
             _commandStopwatch.Stop();
             // Display move count for each root move.
-            var legalMoves = 0;
             WriteMessageLine("Root Move    Moves");
             WriteMessageLine("=========  =======");
             for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
             {
                 var move = Board.CurrentPosition.Moves[moveIndex];
-                if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
-                legalMoves++;
                 WriteMessageLine($"{Move.ToLongAlgebraic(move),9}  {rootMoves[moveIndex],7}");
             }
             WriteMessageLine();
-            WriteMessageLine(legalMoves + " legal root moves");
+            WriteMessageLine($"{legalMoveIndex} legal root moves.");
         }
 
 
@@ -761,7 +765,7 @@ namespace ErikTheCoder.MadChess.Engine
                 WriteMessageLine(stringBuilder.ToString());
             }
             WriteMessageLine();
-            WriteMessageLine(legalMoveNumber + " legal moves");
+            WriteMessageLine($"{legalMoveNumber} legal moves.");
             _commandStopwatch.Stop();
         }
 
@@ -811,9 +815,10 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             _commandStopwatch.Stop();
+            WriteMessageLine();
+            WriteMessageLine($"Test completed in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
             // Update node count.
             var nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
-            WriteMessageLine();
             WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
         }
 
@@ -828,7 +833,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 WriteMessageLine("Number                                                                     Position  Solution    Expected Moves   Move  Correct    Pct");
                 WriteMessageLine("======  ===========================================================================  ========  ================  =====  =======  =====");
-                Board.Nodes = 0L;
+                Board.Nodes = 0;
                 Board.NodesInfoUpdate = NodesInfoInterval;
                 _commandStopwatch.Restart();
                 while (!reader.EndOfStream)
@@ -958,7 +963,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 WriteMessageLine("Number                                                                     Position   Move  Expected Score  Score  Correct    Pct");
                 WriteMessageLine("======  ===========================================================================  =====  ==============  =====  =======  =====");
-                Board.Nodes = 0L;
+                Board.Nodes = 0;
                 _commandStopwatch.Restart();
                 while (!reader.EndOfStream)
                 {
@@ -1061,7 +1066,7 @@ namespace ErikTheCoder.MadChess.Engine
             _commandStopwatch.Stop();
             WriteMessageLine($"Completed tuning of win percent scale in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
         }
-        
+
 
         private void CalculateEvaluationError(Particle Particle, Board ParticleBoard, Search ParticleSearch, double[] EvaluationErrors, int WinPercentScale)
         {
@@ -1069,7 +1074,7 @@ namespace ErikTheCoder.MadChess.Engine
             Particle.CalculateEvaluationError(ParticleBoard, ParticleSearch, WinPercentScale);
             WriteMessageLine($"Win Percent Scale = {WinPercentScale:0000}, Evaluation Error = {Particle.EvaluationError:0.000}");
             EvaluationErrors[index] = Particle.EvaluationError;
-        }   
+        }
 
 
         private void Help()

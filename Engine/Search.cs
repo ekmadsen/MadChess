@@ -872,8 +872,8 @@ namespace ErikTheCoder.MadChess.Engine
                 switch (Position.MoveGenerationStage)
                 {
                     case MoveGenerationStage.BestMove:
-                        // Find potentially pinned pieces and set best move.
-                        Position.FindPotentiallyPinnedPieces();
+                        // Find pinned pieces and set best move.
+                        Position.FindPinnedPieces();
                         if (BestMove != Move.Null)
                         {
                             Move.SetIsBest(ref BestMove, true);
@@ -934,7 +934,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     case MoveGenerationStage.BestMove:
                     case MoveGenerationStage.Captures:
-                        Position.FindPotentiallyPinnedPieces();
+                        Position.FindPinnedPieces();
                         var firstMoveIndex = Position.MoveIndex;
                         Position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, ToSquareMask);
                         var lastMoveIndex = Math.Max(firstMoveIndex, Position.MoveIndex - 1);

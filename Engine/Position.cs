@@ -34,7 +34,7 @@ namespace ErikTheCoder.MadChess.Engine
         public ulong BlackKing;
         public ulong OccupancyBlack;
         public ulong Occupancy;
-        public ulong PotentiallyPinnedPieces;
+        public ulong PinnedPieces;
         public bool WhiteMove;
         public uint Castling;
         public int EnPassantSquare;
@@ -116,7 +116,7 @@ namespace ErikTheCoder.MadChess.Engine
         public void GenerateMoves()
         {
             PrepareMoveGeneration();
-            FindPotentiallyPinnedPieces();
+            FindPinnedPieces();
             GenerateMoves(MoveGeneration.AllMoves, Board.AllSquaresMask, Board.AllSquaresMask);
         }
 
@@ -689,37 +689,77 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public void FindPotentiallyPinnedPieces()
+        public void FindPinnedPieces()
         {
-            int kingSquare;
-            ulong pieces;
-            ulong enemyBishopsQueens;
-            ulong enemyRooksQueens;
+            int ownKingSquare;
+            ulong ownPieces;
+            ulong enemyRankFileAttackers;
+            ulong enemyDiagonalAttackers;
+            ulong enemyPieces;
             if (WhiteMove)
             {
                 // White Move
-                kingSquare = Bitwise.FindFirstSetBit(WhiteKing);
-                pieces = OccupancyWhite;
-                enemyBishopsQueens = BlackBishops | BlackQueens;
-                enemyRooksQueens = BlackRooks | BlackQueens;
+                ownKingSquare = Bitwise.FindFirstSetBit(WhiteKing);
+                ownPieces = OccupancyWhite;
+                enemyRankFileAttackers = BlackRooks | BlackQueens;
+                enemyDiagonalAttackers = BlackBishops | BlackQueens;
+                enemyPieces = OccupancyBlack;
             }
             else
             {
                 // Black Move
-                kingSquare = Bitwise.FindFirstSetBit(BlackKing);
-                pieces = OccupancyBlack;
-                enemyBishopsQueens = WhiteBishops | WhiteQueens;
-                enemyRooksQueens = WhiteRooks | WhiteQueens;
+                ownKingSquare = Bitwise.FindFirstSetBit(BlackKing);
+                ownPieces = OccupancyBlack;
+                enemyRankFileAttackers = WhiteRooks | WhiteQueens;
+                enemyDiagonalAttackers = WhiteBishops | WhiteQueens;
+                enemyPieces = OccupancyWhite;
             }
-            PotentiallyPinnedPieces = 0;
-            var fileAttackers = Board.FileMasks[Board.Files[kingSquare]] & enemyRooksQueens;
-            if (fileAttackers > 0) PotentiallyPinnedPieces |= Board.FileMasks[Board.Files[kingSquare]] & pieces;
-            var rankAttackers = Board.RankMasks[Board.WhiteRanks[kingSquare]] & enemyRooksQueens;
-            if (rankAttackers > 0) PotentiallyPinnedPieces |= Board.RankMasks[Board.WhiteRanks[kingSquare]] & pieces;
-            var upDiagonalAttackers = Board.UpDiagonalMasks[Board.UpDiagonals[kingSquare]] & enemyBishopsQueens;
-            if (upDiagonalAttackers > 0) PotentiallyPinnedPieces |= Board.UpDiagonalMasks[Board.UpDiagonals[kingSquare]] & pieces;
-            var downDiagonalAttackers = Board.DownDiagonalMasks[Board.DownDiagonals[kingSquare]] & enemyBishopsQueens;
-            if (downDiagonalAttackers > 0) PotentiallyPinnedPieces |= Board.DownDiagonalMasks[Board.DownDiagonals[kingSquare]] & pieces;
+            // Find pieces pinned to own king by enemy rank / file attackers.
+            PinnedPieces = 0;
+            int attackerSquare;
+            while ((attackerSquare = Bitwise.FindFirstSetBit(enemyRankFileAttackers)) != Square.Illegal)
+            {
+                var betweenSquares = Board.RankFileBetweenSquares[attackerSquare][ownKingSquare];
+                if (betweenSquares == 0)
+                {
+                    Bitwise.ClearBit(ref enemyRankFileAttackers, attackerSquare);
+                    continue;
+                }
+                if ((betweenSquares & enemyPieces) == 0)
+                {
+                    // No enemy pieces between enemy attacker and own king.
+                    var potentiallyPinnedPieces = betweenSquares & ownPieces;
+                    if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+                    {
+                        // Exactly one own piece between enemy attacker and own king.
+                        // Piece is pinned to own king.
+                        PinnedPieces |= potentiallyPinnedPieces;
+                    }
+                }
+                Bitwise.ClearBit(ref enemyRankFileAttackers, attackerSquare);
+            }
+            // Find pieces pinned to own king by enemy diagonal attackers.
+            while ((attackerSquare = Bitwise.FindFirstSetBit(enemyDiagonalAttackers)) != Square.Illegal)
+            {
+                var betweenSquares = Board.DiagonalBetweenSquares[attackerSquare][ownKingSquare];
+                if (betweenSquares == 0)
+                {
+                    Bitwise.ClearBit(ref enemyDiagonalAttackers, attackerSquare);
+                    continue;
+                }
+                if ((betweenSquares & enemyPieces) == 0)
+                {
+                    // No enemy pieces between enemy attacker and own king.
+                    var potentiallyPinnedPieces = betweenSquares & ownPieces;
+                    if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+                    {
+                        // Exactly one own piece between enemy attacker and own king.
+                        // Piece is pinned to own king.
+                        PinnedPieces |= potentiallyPinnedPieces;
+                    }
+                }
+                Bitwise.ClearBit(ref enemyDiagonalAttackers, attackerSquare);
+            }
         }
 
 
@@ -740,7 +780,7 @@ namespace ErikTheCoder.MadChess.Engine
             BlackKing = 0;
             OccupancyBlack = 0;
             Occupancy = 0;
-            PotentiallyPinnedPieces = 0;
+            PinnedPieces = 0;
             WhiteMove = true;
             Castling = 0;
             EnPassantSquare = Square.Illegal;

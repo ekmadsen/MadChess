@@ -21,8 +21,6 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly int[] Files;
         public static readonly int[] WhiteRanks;
         public static readonly int[] BlackRanks;
-        public static readonly int[] UpDiagonals;
-        public static readonly int[] DownDiagonals;
         public static readonly bool[] LightSquares;
         public static readonly int[][] SquareDistances;
         public static readonly int[] DistanceToCentralSquares;
@@ -33,8 +31,6 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong[] SquareMasks;
         public static readonly ulong[] FileMasks;
         public static readonly ulong[] RankMasks;
-        public static readonly ulong[] UpDiagonalMasks;
-        public static readonly ulong[] DownDiagonalMasks;
         public static readonly ulong AllSquaresMask;
         public static readonly ulong EdgeSquareMask;
         public static readonly ulong WhiteCastleQEmptySquaresMask;
@@ -59,6 +55,8 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong[] InnerRingMasks;
         public static readonly ulong[] OuterRingMasks;
         public static readonly PrecalculatedMoves PrecalculatedMoves;
+        public static readonly ulong[][] RankFileBetweenSquares;
+        public static readonly ulong[][] DiagonalBetweenSquares;
         public long Nodes;
         public long NodesInfoUpdate;
         public long NodesExamineTime;
@@ -142,30 +140,6 @@ namespace ErikTheCoder.MadChess.Engine
                 6, 6, 6, 6, 6, 6, 6, 6,
                 7, 7, 7, 7, 7, 7, 7, 7
             };
-            // Up diagonals are indexed Northwest to Southeast from 0 to 14.
-            UpDiagonals = new[]
-            {
-                00, 01, 02, 03, 04, 05, 06, 07,
-                01, 02, 03, 04, 05, 06, 07, 08,
-                02, 03, 04, 05, 06, 07, 08, 09,
-                03, 04, 05, 06, 07, 08, 09, 10,
-                04, 05, 06, 07, 08, 09, 10, 11,
-                05, 06, 07, 08, 09, 10, 11, 12,
-                06, 07, 08, 09, 10, 11, 12, 13,
-                07, 08, 09, 10, 11, 12, 13, 14
-            };
-            // Down diagonals are indexed SouthWest to Northeast from 0 to 14.
-            DownDiagonals = new[]
-            {
-                07, 08, 09, 10, 11, 12, 13, 14,
-                06, 07, 08, 09, 10, 11, 12, 13,
-                05, 06, 07, 08, 09, 10, 11, 12,
-                04, 05, 06, 07, 08, 09, 10, 11,
-                03, 04, 05, 06, 07, 08, 09, 10,
-                02, 03, 04, 05, 06, 07, 08, 09,
-                01, 02, 03, 04, 05, 06, 07, 08,
-                00, 01, 02, 03, 04, 05, 06, 07
-            };
             int[] centralSquares = { Square.d4, Square.e4, Square.d5, Square.e5 };
             int[] cornerSquares = { Square.a8, Square.h8, Square.a1, Square.h1 };
             LightSquares = new[]
@@ -244,38 +218,6 @@ namespace ErikTheCoder.MadChess.Engine
                     RankMasks[rank] |= Bitwise.CreateULongMask(square);
                 }
             }
-            UpDiagonalMasks = new ulong[15];
-            UpDiagonalMasks[00] = Bitwise.CreateULongMask(new[] {00});
-            UpDiagonalMasks[01] = Bitwise.CreateULongMask(new[] {08, 01});
-            UpDiagonalMasks[02] = Bitwise.CreateULongMask(new[] {16, 09, 02});
-            UpDiagonalMasks[03] = Bitwise.CreateULongMask(new[] {24, 17, 10, 03});
-            UpDiagonalMasks[04] = Bitwise.CreateULongMask(new[] {32, 25, 18, 11, 04});
-            UpDiagonalMasks[05] = Bitwise.CreateULongMask(new[] {40, 33, 26, 19, 12, 05});
-            UpDiagonalMasks[06] = Bitwise.CreateULongMask(new[] {48, 41, 34, 27, 20, 13, 06});
-            UpDiagonalMasks[07] = Bitwise.CreateULongMask(new[] {56, 49, 42, 35, 28, 21, 14, 07});
-            UpDiagonalMasks[08] = Bitwise.CreateULongMask(new[] {57, 50, 43, 36, 29, 22, 15});
-            UpDiagonalMasks[09] = Bitwise.CreateULongMask(new[] {58, 51, 44, 37, 30, 23});
-            UpDiagonalMasks[10] = Bitwise.CreateULongMask(new[] {59, 52, 45, 38, 31});
-            UpDiagonalMasks[11] = Bitwise.CreateULongMask(new[] {60, 53, 46, 39});
-            UpDiagonalMasks[12] = Bitwise.CreateULongMask(new[] {61, 54, 47});
-            UpDiagonalMasks[13] = Bitwise.CreateULongMask(new[] {62, 55});
-            UpDiagonalMasks[14] = Bitwise.CreateULongMask(new[] {63});
-            DownDiagonalMasks = new ulong[15];
-            DownDiagonalMasks[00] = Bitwise.CreateULongMask(new[] {56});
-            DownDiagonalMasks[01] = Bitwise.CreateULongMask(new[] {48, 57});
-            DownDiagonalMasks[02] = Bitwise.CreateULongMask(new[] {40, 49, 58});
-            DownDiagonalMasks[03] = Bitwise.CreateULongMask(new[] {32, 41, 50, 59});
-            DownDiagonalMasks[04] = Bitwise.CreateULongMask(new[] {24, 33, 42, 51, 60});
-            DownDiagonalMasks[05] = Bitwise.CreateULongMask(new[] {16, 25, 34, 43, 52, 61});
-            DownDiagonalMasks[06] = Bitwise.CreateULongMask(new[] {08, 17, 26, 35, 44, 53, 62});
-            DownDiagonalMasks[07] = Bitwise.CreateULongMask(new[] {00, 09, 18, 27, 36, 45, 54, 63});
-            DownDiagonalMasks[08] = Bitwise.CreateULongMask(new[] {01, 10, 19, 28, 37, 46, 55});
-            DownDiagonalMasks[09] = Bitwise.CreateULongMask(new[] {02, 11, 20, 29, 38, 47});
-            DownDiagonalMasks[10] = Bitwise.CreateULongMask(new[] {03, 12, 21, 30, 39});
-            DownDiagonalMasks[11] = Bitwise.CreateULongMask(new[] {04, 13, 22, 31});
-            DownDiagonalMasks[12] = Bitwise.CreateULongMask(new[] {05, 14, 23});
-            DownDiagonalMasks[13] = Bitwise.CreateULongMask(new[] {06, 15});
-            DownDiagonalMasks[14] = Bitwise.CreateULongMask(new[] {07});
             AllSquaresMask = Bitwise.CreateULongMask(0, 63);
             EdgeSquareMask = FileMasks[0] | RankMasks[7] | FileMasks[7] | RankMasks[0];
             // Create castling masks.
@@ -308,7 +250,6 @@ namespace ErikTheCoder.MadChess.Engine
             var directionOffsets1212 = CreateDirectionOffsets1212();
             var squareIndices1212To88 = MapSquareIndices1212To88();
             _neighborSquares = CreateNeighborSquares(directionOffsets1212, squareIndices1212To88);
-            
             // Create move masks and precalculated moves.
             WhitePawnMoveMasks = CreateWhitePawnMoveMasks();
             WhitePawnDoubleMoveMasks = CreateWhitePawnDoubleMoveMasks();
@@ -321,6 +262,60 @@ namespace ErikTheCoder.MadChess.Engine
             RookMoveMasks = CreateRookMoveMasks();
             KingMoveMasks = CreateKingMoveMasks();
             PrecalculatedMoves = new PrecalculatedMoves();
+            // Determine squares in a rank / file direction between two squares.
+            RankFileBetweenSquares = new ulong[64][];
+            for (var square1 = 0; square1 < 64; square1++)
+            {
+                RankFileBetweenSquares[square1] = new ulong[64];
+                var directions = new[] {Direction.North, Direction.East, Direction.South, Direction.West};
+                for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+                {
+                    var direction = directions[directionIndex];
+                    var distance = 1;
+                    var square2 = square1;
+                    var previousSquare2 = Square.Illegal;
+                    var betweenSquares = 0ul;
+                    do
+                    {
+                        square2 = _neighborSquares[square2][(int)direction];
+                        if (square2 == Square.Illegal) break;
+                        if (distance > 1)
+                        {
+                            betweenSquares |= SquareMasks[previousSquare2];
+                            RankFileBetweenSquares[square1][square2] = betweenSquares;
+                        }
+                        previousSquare2 = square2;
+                        distance++;
+                    } while (true);
+                }
+            }
+            // Determine squares in a diagonal direction between two squares.
+            DiagonalBetweenSquares = new ulong[64][];
+            for (var square1 = 0; square1 < 64; square1++)
+            {
+                DiagonalBetweenSquares[square1] = new ulong[64];
+                var directions = new[] { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
+                for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+                {
+                    var direction = directions[directionIndex];
+                    var distance = 1;
+                    var square2 = square1;
+                    var previousSquare2 = Square.Illegal;
+                    var betweenSquares = 0ul;
+                    do
+                    {
+                        square2 = _neighborSquares[square2][(int)direction];
+                        if (square2 == Square.Illegal) break;
+                        if (distance > 1)
+                        {
+                            betweenSquares |= SquareMasks[previousSquare2];
+                            DiagonalBetweenSquares[square1][square2] = betweenSquares;
+                        }
+                        previousSquare2 = square2;
+                        distance++;
+                    } while (true);
+                }
+            }
             // Create en passant, passed pawn, and free pawn masks.
             (_enPassantTargetSquares, _enPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
             WhitePassedPawnMasks = CreateWhitePassedPawnMasks();
@@ -408,15 +403,15 @@ namespace ErikTheCoder.MadChess.Engine
         {
             var neighborSquares = new int[64][];
             int square88;
-            for (square88 = 0; square88 < 64; square88++) neighborSquares[square88] = new int[17];
+            for (square88 = 0; square88 < 64; square88++) neighborSquares[square88] = new int[(int)Direction.North2West1 + 1];
             for (var square1212 = 0; square1212 < 144; square1212++)
             {
                 square88 = SquareIndices1212To88[square1212];
                 if (square88 != Square.Illegal)
-                    for (var directionIndex = 1; directionIndex < 17; directionIndex++)
+                    for (var direction = 1; direction <= (int)Direction.North2West1; direction++)
                     {
-                        var directionOffset1212 = DirectionOffsets1212[directionIndex];
-                        neighborSquares[square88][directionIndex] = SquareIndices1212To88[square1212 + directionOffset1212];
+                        var directionOffset1212 = DirectionOffsets1212[direction];
+                        neighborSquares[square88][direction] = SquareIndices1212To88[square1212 + directionOffset1212];
                     }
             }
             return neighborSquares;
@@ -1029,10 +1024,10 @@ namespace ErikTheCoder.MadChess.Engine
         public bool IsMoveLegal(ref ulong Move)
         {
             if (Engine.Move.IsCastling(Move) && CurrentPosition.KingInCheck) return false;
+            var fromSquare = Engine.Move.From(Move);
             if (!CurrentPosition.KingInCheck && !Engine.Move.IsKingMove(Move) && !Engine.Move.IsEnPassantCapture(Move))
             {
-                var fromSquare = Engine.Move.From(Move);
-                if ((SquareMasks[fromSquare] & CurrentPosition.PotentiallyPinnedPieces) == 0)
+                if ((SquareMasks[fromSquare] & CurrentPosition.PinnedPieces) == 0)
                 {
                     // Move cannot expose king to check.
                     PlayMove(Move);
@@ -1056,13 +1051,22 @@ namespace ErikTheCoder.MadChess.Engine
             }
             ChecksEnemyKing:
             // Move is legal.
+            // Change side to move.
+            var kingInCheck = CurrentPosition.KingInCheck;
+            var enPassantSquare = CurrentPosition.EnPassantSquare;
+            CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
+            CurrentPosition.KingInCheck = false;
+            CurrentPosition.EnPassantSquare = Square.Illegal;
             // Determine if move checks enemy king.
-            PlayNullMove();
             kingSquare = CurrentPosition.WhiteMove
                 ? Bitwise.FindFirstSetBit(CurrentPosition.BlackKing)
                 : Bitwise.FindFirstSetBit(CurrentPosition.WhiteKing);
             var check = IsSquareAttacked(kingSquare);
-            UndoMove();
+            // Revert side to move.
+            CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
+            CurrentPosition.KingInCheck = kingInCheck;
+            CurrentPosition.EnPassantSquare = enPassantSquare;
+            // Set check and quiet move properties and undo move.
             Engine.Move.SetIsCheck(ref Move, check);
             if (check) Engine.Move.SetIsQuiet(ref Move, false);
             UndoMove();
