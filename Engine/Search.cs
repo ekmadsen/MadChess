@@ -513,13 +513,13 @@ namespace ErikTheCoder.MadChess.Engine
             var toHorizon = Horizon - Depth;
             var historyIncrement = toHorizon * toHorizon;
             var cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
-            Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
+            Debug.Assert(CachedPosition.IsValid(cachedPosition));
             ulong bestMove;
             if ((cachedPosition != _cache.NullPosition) && (Depth > 0) && !repeatPosition)
             {
                 // Not a root or repeat position.
                 // Determine if score is cached.
-                var cachedScore = GetCachedScore(cachedPosition.Data, Depth, Horizon, Alpha, Beta);
+                var cachedScore = GetCachedScore(cachedPosition, Depth, Horizon, Alpha, Beta);
                 if (cachedScore != StaticScore.NotCached)
                 {
                     // Score is cached.
@@ -1005,12 +1005,17 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private int GetCachedScore(ulong PositionData, int Depth, int Horizon, int Alpha, int Beta)
+        private int GetCachedScore(ulong CachedPosition, int Depth, int Horizon, int Alpha, int Beta)
         {
-            var score = CachedPositionData.Score(PositionData);
+            var score = Engine.CachedPosition.Score(CachedPosition);
             if (score == StaticScore.NotCached) return StaticScore.NotCached; // Score is not cached.
+
+
+            Console.WriteLine($"Score = {score}.");
+
+
             var toHorizon = Horizon - Depth;
-            var cachedToHorizon = CachedPositionData.ToHorizon(PositionData);
+            var cachedToHorizon = Engine.CachedPosition.ToHorizon(CachedPosition);
             if (cachedToHorizon < toHorizon) return StaticScore.NotCached; // Cached position is shallower than current horizon. Do not use cached score.
             if (Math.Abs(score) >= StaticScore.Checkmate)
             {
@@ -1018,7 +1023,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (score > 0) score -= Depth;
                 else score += Depth;
             }
-            var scorePrecision = CachedPositionData.ScorePrecision(PositionData);
+            var scorePrecision = Engine.CachedPosition.ScorePrecision(CachedPosition);
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (scorePrecision)
             {
@@ -1102,34 +1107,33 @@ namespace ErikTheCoder.MadChess.Engine
         {
             if (Math.Abs(Score) == StaticScore.Interrupted) return;
             var cachedPosition = _cache.NullPosition;
-            cachedPosition.Key = CurrentPosition.Key;
-            CachedPositionData.SetToHorizon(ref cachedPosition.Data, Horizon - Depth);
+            CachedPosition.SetToHorizon(ref cachedPosition, Horizon - Depth);
             if (BestMove != Move.Null)
             {
                 // Set best move.
-                CachedPositionData.SetBestMoveFrom(ref cachedPosition.Data, Move.From(BestMove));
-                CachedPositionData.SetBestMoveTo(ref cachedPosition.Data, Move.To(BestMove));
-                CachedPositionData.SetBestMovePromotedPiece(ref cachedPosition.Data, Move.PromotedPiece(BestMove));
+                CachedPosition.SetBestMoveFrom(ref cachedPosition, Move.From(BestMove));
+                CachedPosition.SetBestMoveTo(ref cachedPosition, Move.To(BestMove));
+                CachedPosition.SetBestMovePromotedPiece(ref cachedPosition, Move.PromotedPiece(BestMove));
             }
             var score = Score;
             if (Math.Abs(score) >= StaticScore.Checkmate) score += score > 0 ? Depth : -Depth; // Adjust checkmate score.
             // Update score.
             if (score <= Alpha)
             {
-                CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.UpperBound);
-                CachedPositionData.SetScore(ref cachedPosition.Data, Alpha);
+                CachedPosition.SetScorePrecision(ref cachedPosition, ScorePrecision.UpperBound);
+                CachedPosition.SetScore(ref cachedPosition, Alpha);
             }
             else if (score >= Beta)
             {
-                CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.LowerBound);
-                CachedPositionData.SetScore(ref cachedPosition.Data, Beta);
+                CachedPosition.SetScorePrecision(ref cachedPosition, ScorePrecision.LowerBound);
+                CachedPosition.SetScore(ref cachedPosition, Beta);
             }
             else
             {
-                CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.Exact);
-                CachedPositionData.SetScore(ref cachedPosition.Data, score);
+                CachedPosition.SetScorePrecision(ref cachedPosition, ScorePrecision.Exact);
+                CachedPosition.SetScore(ref cachedPosition, score);
             }
-            _cache.SetPosition(cachedPosition);
+            _cache.SetPosition(CurrentPosition.Key, cachedPosition);
         }
         
 

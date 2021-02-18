@@ -87,7 +87,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Cannot use object initializer because it changes order of object construction (to PreCalculatedMoves first, Board second, which causes null reference in PrecalculatedMove.FindMagicMultipliers).
             // ReSharper disable once UseObjectOrCollectionInitializer
             Board = new Board(WriteMessageLine);
-            _cache = new Cache(_cacheSizeMegabytes * Cache.CapacityPerMegabyte, Board.ValidateMove);
+            _cache = new Cache(_cacheSizeMegabytes, Board.ValidateMove);
             _killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
             _moveHistory = new MoveHistory();
             _evaluation = new Evaluation(Board.IsRepeatPosition, () => _debug, WriteMessageLine);
@@ -378,7 +378,7 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
             WriteMessageLine("option name Debug type check default false");
             WriteMessageLine("option name Log type check default false");
-            WriteMessageLine("option name Hash type spin default 128 min 0 max 1024");
+            WriteMessageLine("option name Hash type spin default 128 min 0 max 2048");
             WriteMessageLine("option name ClearHash type button");
             WriteMessageLine("option name UCI_AnalyseMode type check default false");
             WriteMessageLine("option name Analyze type check default false");
