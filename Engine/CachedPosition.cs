@@ -8,8 +8,10 @@
 // +------------------------------------------------------------------------------+
 
 
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 
 namespace ErikTheCoder.MadChess.Engine
@@ -214,17 +216,32 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static bool IsValid(ulong CachedPosition)
         {
-            Debug.Assert(ToHorizon(CachedPosition) <= Search.MaxHorizon);
-            Debug.Assert(BestMoveFrom(CachedPosition) <= Square.Illegal);
-            Debug.Assert(BestMoveTo(CachedPosition) <= Square.Illegal);
-            Debug.Assert(BestMovePromotedPiece(CachedPosition) >= Piece.None);
-            Debug.Assert(BestMovePromotedPiece(CachedPosition) != Piece.WhitePawn);
-            Debug.Assert(BestMovePromotedPiece(CachedPosition) != Piece.WhiteKing);
-            Debug.Assert(BestMovePromotedPiece(CachedPosition) != Piece.BlackPawn);
-            Debug.Assert(BestMovePromotedPiece(CachedPosition) < Piece.BlackKing);
-            Debug.Assert(Score(CachedPosition) >= -StaticScore.Max);
-            Debug.Assert(Score(CachedPosition) <= StaticScore.Max);
+            Debug.Assert(ToHorizon(CachedPosition) <= Search.MaxHorizon, $"ToHorizon(CachedPosition) = {ToHorizon(CachedPosition)}, Search.MaxHorizon = {Search.MaxHorizon}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(BestMoveFrom(CachedPosition) <= Square.Illegal, $"BestMoveFrom(CachedPosition) = {BestMoveFrom(CachedPosition)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(BestMoveTo(CachedPosition) <= Square.Illegal, $"BestMoveTo(CachedPosition) = {BestMoveTo(CachedPosition)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPosition) >= Piece.None, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPosition)}, Piece.None = {Piece.None}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPosition) != Piece.WhitePawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPosition)}, Piece.WhitePawn = {Piece.WhitePawn}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPosition) != Piece.WhiteKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPosition)}, Piece.WhiteKing = {Piece.WhiteKing}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPosition) != Piece.BlackPawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPosition)}, Piece.BlackPawn = {Piece.BlackPawn}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPosition) < Piece.BlackKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPosition)}, Piece.BlackKing = {Piece.BlackKing}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(Score(CachedPosition) >= -StaticScore.Max, $"Score(CachedPosition) = {Score(CachedPosition)}, -StaticScore.Max = {-StaticScore.Max}{Environment.NewLine}{ToString(CachedPosition)}");
+            Debug.Assert(Score(CachedPosition) <= StaticScore.Max, $"Score(CachedPosition) = {Score(CachedPosition)}, StaticScore.Max = {StaticScore.Max}{Environment.NewLine}{ToString(CachedPosition)}");
             return true;
+        }
+
+
+        private static string ToString(ulong CachedPosition)
+        {
+            var stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine($"Partial Key = {Bitwise.ToString(PartialKey(CachedPosition))}");
+            stringBuilder.AppendLine($"To Horizon = {ToHorizon(CachedPosition)}");
+            stringBuilder.AppendLine($"Best Move From = {BestMoveFrom(CachedPosition)}");
+            stringBuilder.AppendLine($"Best Move To = {BestMoveTo(CachedPosition)}");
+            stringBuilder.AppendLine($"Best Move Promoted Piece = {BestMovePromotedPiece(CachedPosition)}");
+            stringBuilder.AppendLine($"Score = {Score(CachedPosition)}");
+            stringBuilder.AppendLine($"Score Precision = {ScorePrecision(CachedPosition)}");
+            stringBuilder.AppendLine($"Last Accessed = {LastAccessed(CachedPosition)}");
+            return stringBuilder.ToString();
         }
     }
 }

@@ -10,13 +10,20 @@
 
 namespace ErikTheCoder.MadChess.Engine
 {
-    public sealed class SearchStats
+    public sealed class Stats
     {
         public long NullMoves;
         public long NullMoveCutoffs;
         public long BetaCutoffs;
         public long BetaCutoffMoveNumber;
         public long BetaCutoffFirstMove;
+        public long Evaluations;
+        public long CacheProbes;
+        public long CacheHits;
+        public long CacheScoreCutoff;
+        public long CacheBestMoveProbes;
+        public long CacheValidBestMove;
+        public long CacheInvalidBestMove;
 
 
         public void Reset()
@@ -26,6 +33,13 @@ namespace ErikTheCoder.MadChess.Engine
             BetaCutoffs = 0;
             BetaCutoffMoveNumber = 0;
             BetaCutoffFirstMove = 0;
+            Evaluations = 0;
+            CacheProbes = 0;
+            CacheHits = 0;
+            CacheScoreCutoff = 0;
+            CacheBestMoveProbes = 0;
+            CacheValidBestMove = 0;
+            CacheInvalidBestMove = 0;
         }
     }
 }

@@ -18,13 +18,15 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
     public sealed class ParticleSwarms : List<ParticleSwarm>
     {
         public const double Influence = 0.375d;
+        private readonly Delegates.DisplayStats _displayStats;
         private readonly Delegates.WriteMessageLine _writeMessageLine;
         private readonly double _originalEvaluationError;
         private int _iterations;
 
 
-        public ParticleSwarms(string PgnFilename, int ParticleSwarms, int ParticlesPerSwarm, int WinPercentScale, Delegates.WriteMessageLine WriteMessageLine)
+        public ParticleSwarms(string PgnFilename, int ParticleSwarms, int ParticlesPerSwarm, int WinPercentScale, Delegates.DisplayStats DisplayStats, Delegates.WriteMessageLine WriteMessageLine)
         {
+            _displayStats = DisplayStats;
             _writeMessageLine = WriteMessageLine;
             // Load games.
             WriteMessageLine("Loading games.");
@@ -54,11 +56,12 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             // Set parameter values of first particle in first swarm to known best.
             var firstParticleInFirstSwarm = this[0].Particles[0];
             SetDefaultParameters(firstParticleInFirstSwarm.Parameters);
-            var cache = new Cache(1, board.ValidateMove);
+            var stats = new Stats();
+            var cache = new Cache(1, stats, board.ValidateMove);
             var killerMoves = new KillerMoves(Search.MaxHorizon);
             var moveHistory = new MoveHistory();
-            var evaluation = new Evaluation(board.IsRepeatPosition, () => false, WriteMessageLine);
-            var search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
+            var evaluation = new Evaluation(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
+            var search = new Search(stats, cache, killerMoves, moveHistory, evaluation, () => false, DisplayStats, WriteMessageLine);
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
             stopwatch.Stop();
@@ -254,12 +257,13 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             {
                 var board = new Board(_writeMessageLine);
                 boards[index] = board;
-                var cache = new Cache(1, board.ValidateMove);
+                var stats = new Stats();
+                var cache = new Cache(1, stats, board.ValidateMove);
                 var killerMoves = new KillerMoves(Search.MaxHorizon);
                 var moveHistory = new MoveHistory();
-                var evaluation = new Evaluation(board.IsRepeatPosition, () => false, _writeMessageLine);
+                var evaluation = new Evaluation(stats, board.IsRepeatPosition, () => false, _writeMessageLine);
                 evaluations[index] = evaluation;
-                searches[index] = new Search(cache, killerMoves, moveHistory, evaluation, () => false, _writeMessageLine);
+                searches[index] = new Search(stats, cache, killerMoves, moveHistory, evaluation, () => false, _displayStats, _writeMessageLine);
             }
             var tasks = new Task[Count];
             var bestEvaluationError = double.MaxValue;

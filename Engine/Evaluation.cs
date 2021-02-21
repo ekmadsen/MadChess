@@ -19,8 +19,13 @@ namespace ErikTheCoder.MadChess.Engine
     // TODO: Refactor evaluation into color-agnostic methods using delegates.
     public sealed class Evaluation
     {
-        // Game Phase
-        // Select phase constants such that starting material = 256.
+        private readonly Stats _stats;
+        private readonly EvaluationConfig _defaultConfig;
+        private readonly Delegates.IsRepeatPosition _isRepeatPosition;
+        private readonly Delegates.Debug _debug;
+        private readonly Delegates.WriteMessageLine _writeMessageLine;
+        private readonly StaticScore _staticScore;
+        // Game Phase (constants selected such that starting material = 256)
         public const int MiddlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + 2 * _queenPhase;
         private const int _knightPhase = 10; //   4 * 10 =  40
         private const int _bishopPhase = 10; // + 4 * 10 =  80
@@ -29,7 +34,6 @@ namespace ErikTheCoder.MadChess.Engine
         // Material
         public const int PawnMaterial = 100;
         public readonly EvaluationConfig Config;
-        public readonly EvaluationStats Stats;
         public int DrawMoves;
         public bool UnderstandsPieceLocation;
         public bool UnderstandsPassedPawns;
@@ -39,11 +43,6 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _bishopExchangeMaterial = 300;
         private const int _rookExchangeMaterial = 500;
         private const int _queenExchangeMaterial = 900;
-        private readonly EvaluationConfig _defaultConfig;
-        private readonly Delegates.IsRepeatPosition _isRepeatPosition;
-        private readonly Delegates.Debug _debug;
-        private readonly Delegates.WriteMessageLine _writeMessageLine;
-        private readonly StaticScore _staticScore;
         // Piece Location
         private readonly int[] _mgPawnLocations;
         private readonly int[] _egPawnLocations;
@@ -73,15 +72,14 @@ namespace ErikTheCoder.MadChess.Engine
         // King Safety
         private readonly int[] _kingSafety;
 
-
         
-        public Evaluation(Delegates.IsRepeatPosition IsRepeatPosition, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
+        public Evaluation(Stats Stats, Delegates.IsRepeatPosition IsRepeatPosition, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
         {
+            _stats = Stats;
             _isRepeatPosition = IsRepeatPosition;
             _debug = Debug;
             _writeMessageLine = WriteMessageLine;
             _staticScore = new StaticScore();
-            Stats = new EvaluationStats();
             // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureStrength method overwriting defaults.
             Config = new EvaluationConfig();
             _defaultConfig = new EvaluationConfig();
@@ -383,7 +381,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int GetStaticScore(Position Position)
         {
             Debug.Assert(!Position.KingInCheck);
-            Stats.Evaluations++;
+            _stats.Evaluations++;
             _staticScore.Reset();
             if (!EvaluateSimpleEndgame(Position))
             {
@@ -1143,12 +1141,6 @@ namespace ErikTheCoder.MadChess.Engine
         {
             for (var index = 0; index < Parameters.Length; index++) StringBuilder.Append(Parameters[index].ToString("+000;-000").PadRight(5));
             StringBuilder.AppendLine();
-        }
-
-
-        public void Reset(bool PreserveStats)
-        {
-            if (!PreserveStats) Stats.Reset();
         }
 
 

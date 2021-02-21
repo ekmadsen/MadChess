@@ -30,6 +30,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _minWinPercentScale = 400;
         private const int _maxWinPercentScale = 800;
         private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
+        private Stats _stats;
         private Cache _cache;
         private KillerMoves _killerMoves;
         private MoveHistory _moveHistory;
@@ -87,11 +88,12 @@ namespace ErikTheCoder.MadChess.Engine
             // Cannot use object initializer because it changes order of object construction (to PreCalculatedMoves first, Board second, which causes null reference in PrecalculatedMove.FindMagicMultipliers).
             // ReSharper disable once UseObjectOrCollectionInitializer
             Board = new Board(WriteMessageLine);
-            _cache = new Cache(_cacheSizeMegabytes, Board.ValidateMove);
+            _stats = new Stats();
+            _cache = new Cache(_cacheSizeMegabytes, _stats, Board.ValidateMove);
             _killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
             _moveHistory = new MoveHistory();
-            _evaluation = new Evaluation(Board.IsRepeatPosition, () => _debug, WriteMessageLine);
-            _search = new Search(_cache, _killerMoves, _moveHistory, _evaluation, () => _debug, WriteMessageLine);
+            _evaluation = new Evaluation(_stats, Board.IsRepeatPosition, () => _debug, WriteMessageLine);
+            _search = new Search(_stats, _cache, _killerMoves, _moveHistory, _evaluation, () => _debug, DisplayStats, WriteMessageLine);
             _defaultHalfAndFullMove = new[] { "0", "1" };
             Board.SetPosition(Board.StartPositionFen);
         }
@@ -117,6 +119,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Release managed resources.
                 Board = null;
+                _stats = null;
                 _cache = null;
                 _killerMoves = null;
                 _moveHistory = null;
@@ -543,8 +546,8 @@ namespace ErikTheCoder.MadChess.Engine
         {
             _commandStopwatch.Restart();
             // Reset search and evaluation.  Shift killer moves.
-            _search.Reset(false);
-            _evaluation.Reset(false);
+            _stats.Reset();
+            _search.Reset();
             _killerMoves.Shift(2);
             for (var tokenIndex = 1; tokenIndex < Tokens.Count; tokenIndex++)
             {
@@ -643,11 +646,11 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void CountMoves(List<string> Tokens)
         {
+            _commandStopwatch.Restart();
             var horizon = int.Parse(Tokens[1].Trim());
             if (horizon <= 0) throw new ArgumentException("Horizon must be > 0.", nameof(Tokens));
             Board.Nodes = 0;
             Board.NodesInfoUpdate = NodesInfoInterval;
-            _commandStopwatch.Restart();
             var moves = CountMoves(0, horizon);
             _commandStopwatch.Stop();
             WriteMessageLine($"Counted {moves:n0} moves in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds.");
@@ -688,11 +691,11 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void DivideMoves(List<string> Tokens)
         {
+            _commandStopwatch.Restart();
             var horizon = int.Parse(Tokens[1].Trim());
             if (horizon < 1) throw new ArgumentException("Horizon must be >= 1.", nameof(Tokens));
             Board.Nodes = 0;
             Board.NodesInfoUpdate = NodesInfoInterval;
-            _commandStopwatch.Restart();
             // Ensure all root moves are legal.
             Board.CurrentPosition.GenerateMoves();
             var legalMoveIndex = 0;
@@ -733,7 +736,6 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void ListMoves()
         {
-            _commandStopwatch.Restart();
             // Get cached position.
             var cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
             var bestMove = _cache.GetBestMove(cachedPosition);
@@ -766,7 +768,6 @@ namespace ErikTheCoder.MadChess.Engine
             }
             WriteMessageLine();
             WriteMessageLine($"{legalMoveNumber} legal moves.");
-            _commandStopwatch.Stop();
         }
 
 
@@ -782,6 +783,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void TestPositions(List<string> Tokens)
         {
+            _commandStopwatch.Restart();
             var file = Tokens[1].Trim();
             WriteMessageLine("Number                                                                     Position  Depth     Expected        Moves  Correct    Pct");
             WriteMessageLine("======  ===========================================================================  =====  ===========  ===========  =======  =====");
@@ -789,7 +791,6 @@ namespace ErikTheCoder.MadChess.Engine
             Board.NodesInfoUpdate = NodesInfoInterval;
             var positions = 0;
             var correctPositions = 0;
-            _commandStopwatch.Restart();
             // Verify move counts of test positions.
             using (var reader = File.OpenText(file))
             {
@@ -825,17 +826,18 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void AnalyzePositions(IList<string> Tokens)
         {
+            _commandStopwatch.Restart();
             var file = Tokens[1].Trim();
             var moveTimeMilliseconds = int.Parse(Tokens[2].Trim());
             var positions = 0;
             var correctPositions = 0;
+            Board.Nodes = 0;
+            Board.NodesInfoUpdate = NodesInfoInterval;
+            _stats.Reset();
             using (var reader = File.OpenText(file))
             {
                 WriteMessageLine("Number                                                                     Position  Solution    Expected Moves   Move  Correct    Pct");
                 WriteMessageLine("======  ===========================================================================  ========  ================  =====  =======  =====");
-                Board.Nodes = 0;
-                Board.NodesInfoUpdate = NodesInfoInterval;
-                _commandStopwatch.Restart();
                 while (!reader.EndOfStream)
                 {
                     // Load position and solution.
@@ -888,7 +890,7 @@ namespace ErikTheCoder.MadChess.Engine
                         expectedMoves[moveIndex] = expectedMove;
                         expectedMovesLongAlgebraic[moveIndex] = Move.ToLongAlgebraic(expectedMove);
                     }
-                    _search.Reset(true);
+                    _search.Reset();
                     _cache.Reset();
                     _killerMoves.Reset();
                     _moveHistory.Reset();
@@ -939,32 +941,42 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             _commandStopwatch.Stop();
-            // Update score.
+            // Display score, node count, and stats.
             WriteMessageLine();
             WriteMessageLine($"Solved {correctPositions} of {positions} positions in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
-            // Update node count.
             var nodesPerSecond = Board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
             WriteMessageLine($"Counted {Board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
-            // Update stats.
-            var nullMoveCutoffPercent = (100d * _search.Stats.NullMoveCutoffs) / _search.Stats.NullMoves;
-            var betaCutoffMoveNumber = (double)_search.Stats.BetaCutoffMoveNumber / _search.Stats.BetaCutoffs;
-            var betaCutoffFirstMovePercent = (100d * _search.Stats.BetaCutoffFirstMove) / _search.Stats.BetaCutoffs;
             WriteMessageLine();
-            WriteMessageLine($"Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent:0.00}%");
+            DisplayStats();
+        }
+
+
+        private void DisplayStats()
+        {
+            var nullMoveCutoffPercent = (100d * _stats.NullMoveCutoffs) / _stats.NullMoves;
+            var betaCutoffMoveNumber = (double) _stats.BetaCutoffMoveNumber / _stats.BetaCutoffs;
+            var betaCutoffFirstMovePercent = (100d * _stats.BetaCutoffFirstMove) / _stats.BetaCutoffs;
+            var cacheHitPercent = (100d * _stats.CacheHits) / _stats.CacheProbes;
+            var scoreCutoffPercent = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
+            var bestMoveHitPercent = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
+            WriteMessageLine($"info string Cache Hit = {cacheHitPercent:0.00}% Score Cutoff = {scoreCutoffPercent:0.00}% Best Move Hit = {bestMoveHitPercent:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove}");
+            WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
+            WriteMessageLine($"info string Evals = {_stats.Evaluations:n0}");
         }
 
 
         private void AnalyzeExchangePositions(IList<string> Tokens)
         {
+            _commandStopwatch.Restart();
             var file = Tokens[1].Trim();
             var positions = 0;
             var correctPositions = 0;
+            _stats.Reset();
             using (var reader = File.OpenText(file))
             {
                 WriteMessageLine("Number                                                                     Position   Move  Expected Score  Score  Correct    Pct");
                 WriteMessageLine("======  ===========================================================================  =====  ==============  =====  =======  =====");
                 Board.Nodes = 0;
-                _commandStopwatch.Restart();
                 while (!reader.EndOfStream)
                 {
                     // Load position and correct score.
@@ -977,7 +989,7 @@ namespace ErikTheCoder.MadChess.Engine
                     var expectedScore = int.Parse(tokens[2].Trim());
                     // Setup position and reset search.
                     Board.SetPosition(fen, true);
-                    _search.Reset(true);
+                    _search.Reset();
                     var move = Move.ParseStandardAlgebraic(Board, moveStandardAlgebraic);
                     var score = _search.GetExchangeScore(Board, move);
                     var correct = score == expectedScore;
@@ -998,13 +1010,13 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void Tune(IList<string> Tokens)
         {
+            _commandStopwatch.Restart();
             var pgnFilename = Tokens[1].Trim();
             var particleSwarmsCount = int.Parse(Tokens[2].Trim());
             var particlesPerSwarm = int.Parse(Tokens[3].Trim());
             var winPercentScale = int.Parse(Tokens[4].Trim()); // Use 601 for Gm2600EloGoodGames.pgn.
             var iterations = int.Parse(Tokens[5].Trim());
-            _commandStopwatch.Restart();
-            var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, WriteMessageLine);
+            var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, DisplayStats, WriteMessageLine);
             particleSwarms.Optimize(iterations);
             _commandStopwatch.Stop();
         }
@@ -1039,11 +1051,12 @@ namespace ErikTheCoder.MadChess.Engine
                 var winPercentScale = _minWinPercentScale + index;
                 var particle = new Particle(pgnGames, parameters);
                 var board = new Board(WriteMessageLine);
-                var cache = new Cache(1, board.ValidateMove);
+                var stats = new Stats();
+                var cache = new Cache(1, stats, board.ValidateMove);
                 var killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
                 var moveHistory = new MoveHistory();
-                var evaluation = new Evaluation(board.IsRepeatPosition, () => false, WriteMessageLine);
-                var search = new Search(cache, killerMoves, moveHistory, evaluation, () => false, WriteMessageLine);
+                var evaluation = new Evaluation(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
+                var search = new Search(stats, cache, killerMoves, moveHistory, evaluation, () => false, DisplayStats, WriteMessageLine);
                 tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
             }
             // Wait for particles to calculate evaluation error of all win percent scales.
