@@ -8,15 +8,17 @@
 // +------------------------------------------------------------------------------+
 
 
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 
 namespace ErikTheCoder.MadChess.Engine
 {
     public static class CachedPositionData
     {
-        private const int _scorePadding = 131_072;
+        private const int _scorePadding = 16_384;
         private static readonly int _toHorizonShift;
         private static readonly ulong _toHorizonMask;
         private static readonly ulong _toHorizonUnmask;
@@ -38,9 +40,7 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly ulong _lastAccessedMask;
         private static readonly ulong _lastAccessedUnmask;
 
-
-        // CachedPosition.Data Bits
-
+        
         // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
         // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
         // To Horizon |Best From    |Best To      |BMP    |Score                                                      |SP |Last Accessed
@@ -78,145 +78,147 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ToHorizon(ulong Data) => (int)((Data & _toHorizonMask) >> _toHorizonShift);
+        public static int ToHorizon(ulong CachedPositionData) => (int)((CachedPositionData & _toHorizonMask) >> _toHorizonShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetToHorizon(ref ulong Data, int ToHorizon)
+        public static void SetToHorizon(ref ulong CachedPositionData, int ToHorizon)
         {
             // Clear
-            Data &= _toHorizonUnmask;
+            CachedPositionData &= _toHorizonUnmask;
             // Set
-            Data |= ((ulong)ToHorizon << _toHorizonShift) & _toHorizonMask;
+            CachedPositionData |= ((ulong)ToHorizon << _toHorizonShift) & _toHorizonMask;
             // Validate cached position.
-            Debug.Assert(CachedPositionData.ToHorizon(Data) == ToHorizon);
+            Debug.Assert(Engine.CachedPositionData.ToHorizon(CachedPositionData) == ToHorizon);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int BestMoveFrom(ulong Data) => (int)((Data & _bestMoveFromMask) >> _bestMoveFromShift);
+        public static int BestMoveFrom(ulong CachedPositionData) => (int)((CachedPositionData & _bestMoveFromMask) >> _bestMoveFromShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBestMoveFrom(ref ulong Data, int BestMoveFrom)
+        public static void SetBestMoveFrom(ref ulong CachedPositionData, int BestMoveFrom)
         {
             // Clear
-            Data &= _bestMoveFromUnmask;
+            CachedPositionData &= _bestMoveFromUnmask;
             // Set
-            Data |= ((ulong)BestMoveFrom << _bestMoveFromShift) & _bestMoveFromMask;
+            CachedPositionData |= ((ulong)BestMoveFrom << _bestMoveFromShift) & _bestMoveFromMask;
             // Validate cached position.
-            Debug.Assert(CachedPositionData.BestMoveFrom(Data) == BestMoveFrom);
+            Debug.Assert(Engine.CachedPositionData.BestMoveFrom(CachedPositionData) == BestMoveFrom);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int BestMoveTo(ulong Data) => (int)((Data & _bestMoveToMask) >> _bestMoveToShift);
+        public static int BestMoveTo(ulong CachedPositionData) => (int)((CachedPositionData & _bestMoveToMask) >> _bestMoveToShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBestMoveTo(ref ulong Data, int BestMoveTo)
+        public static void SetBestMoveTo(ref ulong CachedPositionData, int BestMoveTo)
         {
             // Clear
-            Data &= _bestMoveToUnmask;
+            CachedPositionData &= _bestMoveToUnmask;
             // Set
-            Data |= ((ulong)BestMoveTo << _bestMoveToShift) & _bestMoveToMask;
+            CachedPositionData |= ((ulong)BestMoveTo << _bestMoveToShift) & _bestMoveToMask;
             // Validate cached position.
-            Debug.Assert(CachedPositionData.BestMoveTo(Data) == BestMoveTo);
+            Debug.Assert(Engine.CachedPositionData.BestMoveTo(CachedPositionData) == BestMoveTo);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int BestMovePromotedPiece(ulong Data) => (int)((Data & _bestMovePromotedPieceMask) >> _bestMovePromotedPieceShift);
+        public static int BestMovePromotedPiece(ulong CachedPositionData) => (int)((CachedPositionData & _bestMovePromotedPieceMask) >> _bestMovePromotedPieceShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBestMovePromotedPiece(ref ulong Data, int BestMovePromotedPiece)
+        public static void SetBestMovePromotedPiece(ref ulong CachedPositionData, int BestMovePromotedPiece)
         {
             // Clear
-            Data &= _bestMovePromotedPieceUnmask;
+            CachedPositionData &= _bestMovePromotedPieceUnmask;
             // Set
-            Data |= ((ulong)BestMovePromotedPiece << _bestMovePromotedPieceShift) & _bestMovePromotedPieceMask;
+            CachedPositionData |= ((ulong)BestMovePromotedPiece << _bestMovePromotedPieceShift) & _bestMovePromotedPieceMask;
             // Validate cached position.
-            Debug.Assert(CachedPositionData.BestMovePromotedPiece(Data) == BestMovePromotedPiece);
+            Debug.Assert(Engine.CachedPositionData.BestMovePromotedPiece(CachedPositionData) == BestMovePromotedPiece);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Score(ulong Data) => (int)((Data & _scoreMask) >> _scoreShift) - _scorePadding; // Cached score is a positive number.
+        public static int Score(ulong CachedPositionData) => (int)((CachedPositionData & _scoreMask) >> _scoreShift) - _scorePadding; // Cached score is a positive number.
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetScore(ref ulong Data, int Score)
+        public static void SetScore(ref ulong CachedPositionData, int Score)
         {
             // Ensure cached score is a positive number.
             var score = Score + _scorePadding;
             // Clear
-            Data &= _scoreUnmask;
+            CachedPositionData &= _scoreUnmask;
             // Set
-            Data |= ((ulong)score << _scoreShift) & _scoreMask;
+            CachedPositionData |= ((ulong)score << _scoreShift) & _scoreMask;
             // Validate cached position.
-            Debug.Assert(CachedPositionData.Score(Data) == Score);
+            Debug.Assert(Engine.CachedPositionData.Score(CachedPositionData) == Score);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ScorePrecision ScorePrecision(ulong Data) => (ScorePrecision)((Data & _scorePrecisionMask) >> _scorePrecisionShift);
+        public static ScorePrecision ScorePrecision(ulong CachedPositionData) => (ScorePrecision)((CachedPositionData & _scorePrecisionMask) >> _scorePrecisionShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetScorePrecision(ref ulong Data, ScorePrecision ScorePrecision)
+        public static void SetScorePrecision(ref ulong CachedPositionData, ScorePrecision ScorePrecision)
         {
             var scorePrecision = (ulong)ScorePrecision;
             // Clear
-            Data &= _scorePrecisionUnmask;
+            CachedPositionData &= _scorePrecisionUnmask;
             // Set
-            Data |= (scorePrecision << _scorePrecisionShift) & _scorePrecisionMask;
+            CachedPositionData |= (scorePrecision << _scorePrecisionShift) & _scorePrecisionMask;
             // Validate cached position.
-            Debug.Assert(CachedPositionData.ScorePrecision(Data) == ScorePrecision);
+            Debug.Assert(Engine.CachedPositionData.ScorePrecision(CachedPositionData) == ScorePrecision);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte LastAccessed(ulong Data) => (byte)(Data & _lastAccessedMask);
+        public static byte LastAccessed(ulong CachedPositionData) => (byte)(CachedPositionData & _lastAccessedMask);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetLastAccessed(ref ulong Data, byte LastAccessed)
+        public static void SetLastAccessed(ref ulong CachedPositionData, byte LastAccessed)
         {
             // Clear
-            Data &= _lastAccessedUnmask;
+            CachedPositionData &= _lastAccessedUnmask;
             // Set
-            Data |= LastAccessed & _lastAccessedMask;
+            CachedPositionData |= LastAccessed & _lastAccessedMask;
             // Validate cached position.
-            Debug.Assert(CachedPositionData.LastAccessed(Data) == LastAccessed);
+            Debug.Assert(Engine.CachedPositionData.LastAccessed(CachedPositionData) == LastAccessed);
         }
 
 
-        public static void Clear(ref ulong Data)
+        public static bool IsValid(ulong CachedPositionData)
         {
-            SetToHorizon(ref Data, 0);
-            SetBestMoveFrom(ref Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
-            SetBestMoveTo(ref Data, Square.Illegal);
-            SetBestMovePromotedPiece(ref Data, Piece.None);
-            SetScore(ref Data, StaticScore.NotCached);
-            SetScorePrecision(ref Data, Engine.ScorePrecision.Unknown);
-            SetLastAccessed(ref Data, 0);
-        }
-
-
-        public static bool IsValid(ulong Data)
-        {
-            Debug.Assert(ToHorizon(Data) <= Search.MaxHorizon);
-            Debug.Assert(BestMoveFrom(Data) <= Square.Illegal);
-            Debug.Assert(BestMoveTo(Data) <= Square.Illegal);
-            Debug.Assert(BestMovePromotedPiece(Data) >= Piece.None);
-            Debug.Assert(BestMovePromotedPiece(Data) != Piece.WhitePawn);
-            Debug.Assert(BestMovePromotedPiece(Data) != Piece.WhiteKing);
-            Debug.Assert(BestMovePromotedPiece(Data) != Piece.BlackPawn);
-            Debug.Assert(BestMovePromotedPiece(Data) < Piece.BlackKing);
-            Debug.Assert(Score(Data) >= -StaticScore.Max);
-            Debug.Assert(Score(Data) <= StaticScore.Max);
+            Debug.Assert(ToHorizon(CachedPositionData) <= Search.MaxHorizon, $"ToHorizon(CachedPosition) = {ToHorizon(CachedPositionData)}, Search.MaxHorizon = {Search.MaxHorizon}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(BestMoveFrom(CachedPositionData) <= Square.Illegal, $"BestMoveFrom(CachedPosition) = {BestMoveFrom(CachedPositionData)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(BestMoveTo(CachedPositionData) <= Square.Illegal, $"BestMoveTo(CachedPosition) = {BestMoveTo(CachedPositionData)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPositionData) >= Piece.None, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPositionData)}, Piece.None = {Piece.None}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPositionData) != Piece.WhitePawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPositionData)}, Piece.WhitePawn = {Piece.WhitePawn}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPositionData) != Piece.WhiteKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPositionData)}, Piece.WhiteKing = {Piece.WhiteKing}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPositionData) != Piece.BlackPawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPositionData)}, Piece.BlackPawn = {Piece.BlackPawn}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(BestMovePromotedPiece(CachedPositionData) < Piece.BlackKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(CachedPositionData)}, Piece.BlackKing = {Piece.BlackKing}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(Score(CachedPositionData) >= -StaticScore.Max, $"Score(CachedPosition) = {Score(CachedPositionData)}, -StaticScore.Max = {-StaticScore.Max}{Environment.NewLine}{ToString(CachedPositionData)}");
+            Debug.Assert(Score(CachedPositionData) <= StaticScore.Max, $"Score(CachedPosition) = {Score(CachedPositionData)}, StaticScore.Max = {StaticScore.Max}{Environment.NewLine}{ToString(CachedPositionData)}");
             return true;
+        }
+
+
+        private static string ToString(ulong CachedPositionData)
+        {
+            var stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine($"To Horizon = {ToHorizon(CachedPositionData)}");
+            stringBuilder.AppendLine($"Best Move From = {BestMoveFrom(CachedPositionData)}");
+            stringBuilder.AppendLine($"Best Move To = {BestMoveTo(CachedPositionData)}");
+            stringBuilder.AppendLine($"Best Move Promoted Piece = {BestMovePromotedPiece(CachedPositionData)}");
+            stringBuilder.AppendLine($"Score = {Score(CachedPositionData)}");
+            stringBuilder.AppendLine($"Score Precision = {ScorePrecision(CachedPositionData)}");
+            stringBuilder.AppendLine($"Last Accessed = {LastAccessed(CachedPositionData)}");
+            return stringBuilder.ToString();
         }
     }
 }

@@ -605,24 +605,24 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static bool IsValid(ulong Move)
         {
-            Debug.Assert(CaptureVictim(Move) >= Piece.None);
-            Debug.Assert(CaptureVictim(Move) < Piece.BlackKing);
-            Debug.Assert(CaptureVictim(Move) != Piece.WhiteKing);
-            Debug.Assert(CaptureVictim(Move) != Piece.BlackKing);
-            Debug.Assert(CaptureAttacker(Move) >= Piece.None);
-            Debug.Assert(CaptureAttacker(Move) <= Piece.BlackKing);
-            Debug.Assert(PromotedPiece(Move) >= Piece.None);
-            Debug.Assert(PromotedPiece(Move) < Piece.BlackKing);
-            Debug.Assert(PromotedPiece(Move) != Piece.WhitePawn);
-            Debug.Assert(PromotedPiece(Move) != Piece.BlackPawn);
-            Debug.Assert(PromotedPiece(Move) != Piece.WhiteKing);
-            Debug.Assert(PromotedPiece(Move) != Piece.BlackKing);
-            Debug.Assert(Killer(Move) >= 0);
-            Debug.Assert(Killer(Move) <= 2);
-            Debug.Assert(From(Move) >= Square.a8);
-            Debug.Assert(From(Move) <= Square.Illegal);
-            Debug.Assert(To(Move) >= Square.a8);
-            Debug.Assert(To(Move) <= Square.Illegal);
+            Debug.Assert(CaptureVictim(Move) >= Piece.None, $"CaptureVictim(Move) = {CaptureVictim(Move)}, Piece.None = {Piece.None}");
+            Debug.Assert(CaptureVictim(Move) < Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(Move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(CaptureVictim(Move) != Piece.WhiteKing, $"CaptureVictim(Move) = {CaptureVictim(Move)}, Piece.WhiteKing = {Piece.WhiteKing}");
+            Debug.Assert(CaptureVictim(Move) != Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(Move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(CaptureAttacker(Move) >= Piece.None, $"CaptureAttacker(Move) = {CaptureAttacker(Move)}, Piece.None = {Piece.None}");
+            Debug.Assert(CaptureAttacker(Move) <= Piece.BlackKing, $"CaptureAttacker(Move) = {CaptureAttacker(Move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(PromotedPiece(Move) >= Piece.None, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.None = {Piece.None}");
+            Debug.Assert(PromotedPiece(Move) < Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(PromotedPiece(Move) != Piece.WhitePawn, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.WhitePawn = {Piece.WhitePawn}");
+            Debug.Assert(PromotedPiece(Move) != Piece.BlackPawn, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.BlackPawn = {Piece.BlackPawn}");
+            Debug.Assert(PromotedPiece(Move) != Piece.WhiteKing, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.WhiteKing = {Piece.WhiteKing}");
+            Debug.Assert(PromotedPiece(Move) != Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(Killer(Move) >= 0, $"Killer(Move) = {Killer(Move)}");
+            Debug.Assert(Killer(Move) <= 2, $"Killer(Move) = {Killer(Move)}");
+            Debug.Assert(From(Move) >= Square.a8, $"From(Move) = {From(Move)}");
+            Debug.Assert(From(Move) <= Square.Illegal, $"From(Move) = {From(Move)}");
+            Debug.Assert(To(Move) >= Square.a8, $"To(Move) = {To(Move)}");
+            Debug.Assert(To(Move) <= Square.Illegal, $"To(Move) = {To(Move)}");
             return true;
         }
 

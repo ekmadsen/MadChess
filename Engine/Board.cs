@@ -1581,6 +1581,7 @@ namespace ErikTheCoder.MadChess.Engine
             return fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey;
         }
 
+
         private void Reset(bool PreserveMoveCount)
         {
             // Reset position index, position, key, and stats.

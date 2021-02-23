@@ -24,7 +24,6 @@ namespace ErikTheCoder.MadChess.Engine
         public const int MaxQuietDepth = 32;
         public const int MinElo = 400;
         public const int MaxElo = 2200;
-        public SearchStats Stats;
         public AutoResetEvent Signal;
         public bool PvInfoUpdate;
         public TimeSpan? WhiteTimeRemaining;
@@ -75,16 +74,18 @@ namespace ErikTheCoder.MadChess.Engine
         private ulong[][] _possibleVariations;
         private int[] _possibleVariationLength;
         private Dictionary<string, ulong[]> _principalVariations;
+        private Stats _stats;
         private Cache _cache;
         private KillerMoves _killerMoves;
         private MoveHistory _moveHistory;
         private Evaluation _evaluation;
         private Delegates.Debug _debug;
+        private Delegates.DisplayStats _displayStats;
         private Delegates.WriteMessageLine _writeMessageLine;
-        private Stopwatch _stopwatch;
         private Delegates.GetNextMove _getNextMove;
         private Delegates.GetNextMove _getNextCapture;
         private Delegates.GetStaticScore _getStaticScore;
+        private Stopwatch _stopwatch;
         private int _originalHorizon;
         private int _selectiveHorizon;
         private ulong _rootMove;
@@ -143,18 +144,20 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public Search(Cache Cache, KillerMoves KillerMoves, MoveHistory MoveHistory, Evaluation Evaluation, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
+        public Search(Stats Stats, Cache Cache, KillerMoves KillerMoves, MoveHistory MoveHistory, Evaluation Evaluation,
+            Delegates.Debug Debug, Delegates.DisplayStats DisplayStats, Delegates.WriteMessageLine WriteMessageLine)
         {
+            _stats = Stats;
             _cache = Cache;
             _killerMoves = KillerMoves;
             _moveHistory = MoveHistory;
             _evaluation = Evaluation;
             _debug = Debug;
+            _displayStats = DisplayStats;
             _writeMessageLine = WriteMessageLine;
             _getNextMove = GetNextMove;
             _getNextCapture = GetNextCapture;
             _getStaticScore = _evaluation.GetStaticScore;
-            Stats = new SearchStats();
             // Create synchronization and diagnostic objects.
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
@@ -199,8 +202,6 @@ namespace ErikTheCoder.MadChess.Engine
             if (Disposing)
             {
                 // Release managed resources.
-                _evaluation = null;
-                Stats = null;
                 WhiteTimeRemaining = null;
                 BlackTimeRemaining = null;
                 WhiteTimeIncrement = null;
@@ -227,15 +228,18 @@ namespace ErikTheCoder.MadChess.Engine
                 _possibleVariations = null;
                 _possibleVariationLength = null;
                 _principalVariations = null;
+                _stats = null;
                 _cache = null;
                 _killerMoves = null;
                 _moveHistory = null;
+                _evaluation = null;
                 _debug = null;
+                _displayStats = null;
                 _writeMessageLine = null;
-                _stopwatch = null;
                 _getNextMove = null;
                 _getNextCapture = null;
                 _getStaticScore = null;
+                _stopwatch = null;
             }
             // Release unmanaged resources.
             Signal?.Dispose();
@@ -513,7 +517,6 @@ namespace ErikTheCoder.MadChess.Engine
             var toHorizon = Horizon - Depth;
             var historyIncrement = toHorizon * toHorizon;
             var cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
-            Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
             ulong bestMove;
             if ((cachedPosition != _cache.NullPosition) && (Depth > 0) && !repeatPosition)
             {
@@ -523,9 +526,10 @@ namespace ErikTheCoder.MadChess.Engine
                 if (cachedScore != StaticScore.NotCached)
                 {
                     // Score is cached.
+                    _stats.CacheScoreCutoff++;
                     if (cachedScore >= Beta)
                     {
-                        bestMove = _cache.GetBestMove(cachedPosition);
+                        bestMove = _cache.GetBestMove(cachedPosition.Data);
                         if ((bestMove != Move.Null) && Move.IsQuiet(bestMove))
                         {
                             // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
@@ -553,26 +557,26 @@ namespace ErikTheCoder.MadChess.Engine
             if (IsNullMoveAllowed && Search.IsNullMoveAllowed(Board.CurrentPosition, Beta))
             {
                 // Null move is allowed.
-                Stats.NullMoves++;
+                _stats.NullMoves++;
                 if (DoesNullMoveCauseBetaCutoff(Board, Depth, Horizon, Beta))
                 {
                     // Enemy is unable to capitalize on position even if player forfeits right to move.
                     // While forfeiting right to move is illegal, this indicates position is strong.
                     // Position is not the result of best play by both players.
-                    Stats.NullMoveCutoffs++;
+                    _stats.NullMoveCutoffs++;
                     UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
                     return Beta;
                 }
             }
             // Get best move.
-            bestMove = _cache.GetBestMove(cachedPosition);
+            bestMove = _cache.GetBestMove(cachedPosition.Data);
             if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon > _estimateBestMoveReduction))
             {
                 // Cached position in a principal variation does not specify a best move.
                 // Estimate best move by searching at reduced depth.
                 GetDynamicScore(Board, Depth, Horizon - _estimateBestMoveReduction, false, Alpha, Beta);
                 cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
-                bestMove = _cache.GetBestMove(cachedPosition);
+                bestMove = _cache.GetBestMove(cachedPosition.Data);
             }
             var originalAlpha = Alpha;
             var bestScore = Alpha;
@@ -640,9 +644,9 @@ namespace ErikTheCoder.MadChess.Engine
                 if (score >= Beta)
                 {
                     // Position is not the result of best play by both players.
-                    Stats.BetaCutoffs++;
-                    if (legalMoveNumber == 1) Stats.BetaCutoffFirstMove++;
-                    Stats.BetaCutoffMoveNumber += legalMoveNumber;
+                    _stats.BetaCutoffs++;
+                    if (legalMoveNumber == 1) _stats.BetaCutoffFirstMove++;
+                    _stats.BetaCutoffMoveNumber += legalMoveNumber;
                     if (Move.IsQuiet(move))
                     {
                         // Update move heuristics.
@@ -1005,12 +1009,12 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private int GetCachedScore(ulong PositionData, int Depth, int Horizon, int Alpha, int Beta)
+        private int GetCachedScore(ulong CachedPositionData, int Depth, int Horizon, int Alpha, int Beta)
         {
-            var score = CachedPositionData.Score(PositionData);
+            var score = Engine.CachedPositionData.Score(CachedPositionData);
             if (score == StaticScore.NotCached) return StaticScore.NotCached; // Score is not cached.
             var toHorizon = Horizon - Depth;
-            var cachedToHorizon = CachedPositionData.ToHorizon(PositionData);
+            var cachedToHorizon = Engine.CachedPositionData.ToHorizon(CachedPositionData);
             if (cachedToHorizon < toHorizon) return StaticScore.NotCached; // Cached position is shallower than current horizon. Do not use cached score.
             if (Math.Abs(score) >= StaticScore.Checkmate)
             {
@@ -1018,7 +1022,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (score > 0) score -= Depth;
                 else score += Depth;
             }
-            var scorePrecision = CachedPositionData.ScorePrecision(PositionData);
+            var scorePrecision = Engine.CachedPositionData.ScorePrecision(CachedPositionData);
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (scorePrecision)
             {
@@ -1167,15 +1171,7 @@ namespace ErikTheCoder.MadChess.Engine
                                   $"time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
             }
             _writeMessageLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
-            if (_debug())
-            {
-                // Update stats.
-                var nullMoveCutoffPercent = (100d * Stats.NullMoveCutoffs) / Stats.NullMoves;
-                var betaCutoffMoveNumber = (double)Stats.BetaCutoffMoveNumber / Stats.BetaCutoffs;
-                var betaCutoffFirstMovePercent = (100d * Stats.BetaCutoffFirstMove) / Stats.BetaCutoffs;
-                _writeMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
-                _writeMessageLine($"info string Evals = {_evaluation.Stats.Evaluations}");
-            }
+            if (_debug()) _displayStats();
             var intervals = (int) (Board.Nodes / UciStream.NodesInfoInterval);
             Board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
         }
@@ -1197,7 +1193,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void Reset(bool PreserveStats)
+        public void Reset()
         {
             _stopwatch.Restart();
             // Reset move times and limits.
@@ -1217,7 +1213,6 @@ namespace ErikTheCoder.MadChess.Engine
             for (var depth = 0; depth < _bestMovePlies.Length; depth++) _bestMovePlies[depth] = new ScoredMove(Move.Null, -StaticScore.Max);
             for (var depth = 0; depth < _possibleVariationLength.Length; depth++) _possibleVariationLength[depth] = 0;
             _principalVariations.Clear();
-            if (!PreserveStats) Stats.Reset();
             // Enable PV update, increment search counter, and continue search.
             PvInfoUpdate = true;
             _cache.Searches++;

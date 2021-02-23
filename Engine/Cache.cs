@@ -9,61 +9,79 @@
 
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 
 namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class Cache
     {
-        public const int CapacityPerMegabyte = 1024 * 1024 / (3 * sizeof(ulong)); // CachedPosition struct contains two ulongs.
+        public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf(typeof(CachedPosition));
+        public readonly CachedPosition NullPosition;
         public int Positions;
         public byte Searches;
-        public CachedPosition NullPosition;
         private const int _buckets = 4;
+        private readonly Stats _stats;
         private readonly Delegates.ValidateMove _validateMove;
-        private CachedPosition[][] _positions;
+        private int _indices;
+        private CachedPosition[] _positions; // More memory efficient than a jagged array that has a .NET object header for each sub-array (for garbage collection tracking of reachable-from-root).
         
         
-        public long Capacity
+        public int Capacity
         {
-            get => _positions.Length * _buckets;
+            get => _positions.Length;
             set
             {
                 _positions = null;
                 GC.Collect();
-                _positions = new CachedPosition[value / _buckets][];
-                for (var index = 0; index < _positions.Length; index++) _positions[index] = new CachedPosition[_buckets];
+                _positions = new CachedPosition[value];
+                _indices = value / _buckets;
                 Reset();
             }
         }
 
 
-        public Cache(long Capacity, Delegates.ValidateMove ValidateMove)
+        public Cache(int SizeMegabyte, Stats Stats, Delegates.ValidateMove ValidateMove)
         {
-            this.Capacity = Capacity;
+            _stats = Stats;
             _validateMove = ValidateMove;
+            // Set null position.
             NullPosition = new CachedPosition(0, 0);
-            CachedPositionData.Clear(ref NullPosition.Data);
+            CachedPositionData.SetToHorizon(ref NullPosition.Data, 0);
+            CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
+            CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.Illegal);
+            CachedPositionData.SetBestMovePromotedPiece(ref NullPosition.Data, Piece.None);
+            CachedPositionData.SetScore(ref NullPosition.Data, StaticScore.NotCached);
+            CachedPositionData.SetScorePrecision(ref NullPosition.Data, ScorePrecision.Unknown);
+            CachedPositionData.SetLastAccessed(ref NullPosition.Data, 0);
+            // Set capacity (which resets position array).
+            Capacity = SizeMegabyte * CapacityPerMegabyte;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public CachedPosition GetPosition(ulong Key)
         {
+            _stats.CacheProbes++;
             var index = GetIndex(Key);
             for (var bucket = 0; bucket < _buckets; bucket++)
             {
-                var cachedPosition = _positions[index][bucket];
+                var bucketIndex = index + bucket;
+                var cachedPosition = _positions[bucketIndex];
                 if (cachedPosition.Key == Key)
                 {
                     // Position is cached.
+                    _stats.CacheHits++;
                     CachedPositionData.SetLastAccessed(ref cachedPosition.Data, Searches);
-                    _positions[index][bucket] = cachedPosition;
+                    _positions[bucketIndex] = cachedPosition;
+                    Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
                     return cachedPosition;
                 }
             }
             // Position is not cached.
+            Debug.Assert(CachedPositionData.IsValid(NullPosition.Data));
             return NullPosition;
         }
 
@@ -71,56 +89,60 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void SetPosition(CachedPosition CachedPosition)
         {
-            CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
+            Debug.Assert(CachedPositionData.IsValid(CachedPosition.Data));
             var index = GetIndex(CachedPosition.Key);
+            CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
             // Find oldest bucket.
             var earliestAccess = byte.MaxValue;
-            var oldestBucket = 0;
+            var oldestBucketIndex = 0;
             for (var bucket = 0; bucket < _buckets; bucket++)
             {
-                var cachedPosition = _positions[index][bucket];
+                var bucketIndex = index + bucket;
+                var cachedPosition = _positions[bucketIndex];
                 if (cachedPosition.Key == CachedPosition.Key)
                 {
                     // Position is cached.  Overwrite position.
-                    _positions[index][bucket] = CachedPosition;
+                    Debug.Assert(CachedPositionData.IsValid(CachedPosition.Data));
+                    _positions[bucketIndex] = CachedPosition;
                     return;
                 }
                 var lastAccessed = CachedPositionData.LastAccessed(cachedPosition.Data);
                 if (lastAccessed < earliestAccess)
                 {
                     earliestAccess = lastAccessed;
-                    oldestBucket = bucket;
+                    oldestBucketIndex = bucketIndex;
                 }
             }
-            if (_positions[index][oldestBucket].Key == 0) Positions++; // Oldest bucket has not been used.
+            if (_positions[oldestBucketIndex] == NullPosition) Positions++; // Oldest bucket has not been used.
             // Overwrite oldest bucket.
-            _positions[index][oldestBucket] = CachedPosition;
+            Debug.Assert(CachedPositionData.IsValid(CachedPosition.Data));
+            _positions[oldestBucketIndex] = CachedPosition;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public ulong GetBestMove(CachedPosition Position)
+        public ulong GetBestMove(ulong CachedPosition)
         {
-            if (Position.Key == 0) return Move.Null;
-            var fromSquare = CachedPositionData.BestMoveFrom(Position.Data);
+            _stats.CacheBestMoveProbes++;
+            Debug.Assert(CachedPositionData.IsValid(CachedPosition));
+            var fromSquare = CachedPositionData.BestMoveFrom(CachedPosition);
             if (fromSquare == Square.Illegal) return Move.Null; // Cached position does not specify a best move.
             var bestMove = Move.Null;
             Move.SetFrom(ref bestMove, fromSquare);
-            Move.SetTo(ref bestMove, CachedPositionData.BestMoveTo(Position.Data));
-            Move.SetPromotedPiece(ref bestMove, CachedPositionData.BestMovePromotedPiece(Position.Data));
+            Move.SetTo(ref bestMove, CachedPositionData.BestMoveTo(CachedPosition));
+            Move.SetPromotedPiece(ref bestMove, CachedPositionData.BestMovePromotedPiece(CachedPosition));
             Move.SetIsBest(ref bestMove, true);
             var validMove = _validateMove(ref bestMove);
+            if (validMove) _stats.CacheValidBestMove++;
+            else _stats.CacheInvalidBestMove++;
+            Debug.Assert(Move.IsValid(bestMove));
             return validMove ? bestMove : Move.Null;
         }
 
 
         public void Reset()
         {
-            for (var index = 0; index < _positions.Length; index++)
-            {
-                var position = _positions[index];
-                for (var bucket = 0; bucket < _buckets; bucket++) { position[bucket] = NullPosition; }
-            }
+            for (var index = 0; index < _positions.Length; index++) _positions[index] = NullPosition;
             Positions = 0;
             Searches = 0;
         }
@@ -129,8 +151,8 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetIndex(ulong Key)
         {
-            // Ensure even distribution of indices by using GetHashCode method rather than using raw Zobrist Key for modular division.
-            var index = Key.GetHashCode() % _positions.Length; // Index may be negative.
+            // Ensure even distribution of indices by using GetHashCode method rather than raw Zobrist Key for modular division.
+            var index = (Key.GetHashCode() % _indices) * _buckets; // Index may be negative.
             // Ensure index is positive using technique faster than Math.Abs().  See http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs.
             var mask = index >> 31;
             return (index ^ mask) - mask;
