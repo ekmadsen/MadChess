@@ -11,21 +11,22 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 
 namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class Cache
     {
-        public const int CapacityPerMegabyte = 1024 * 1024 / sizeof(ulong);
-        public readonly ulong NullPosition;
+        public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf(typeof(CachedPosition));
+        public readonly CachedPosition NullPosition;
         public int Positions;
         public byte Searches;
         private const int _buckets = 4;
         private readonly Stats _stats;
         private readonly Delegates.ValidateMove _validateMove;
         private int _indices;
-        private ulong[] _positions; // More memory efficient than a jagged array (that has an object header for each sub-array).
+        private CachedPosition[] _positions; // More memory efficient than a jagged array that has a .NET object header for each sub-array (for garbage collection tracking of reachable-from-root).
         
         
         public int Capacity
@@ -35,7 +36,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 _positions = null;
                 GC.Collect();
-                _positions = new ulong[value];
+                _positions = new CachedPosition[value];
                 _indices = value / _buckets;
                 Reset();
             }
@@ -47,54 +48,50 @@ namespace ErikTheCoder.MadChess.Engine
             _stats = Stats;
             _validateMove = ValidateMove;
             // Set null position.
-            NullPosition = 0;
-            CachedPosition.SetPartialKey(ref NullPosition, 0);
-            CachedPosition.SetToHorizon(ref NullPosition, 0);
-            CachedPosition.SetBestMoveFrom(ref NullPosition, Square.Illegal); // An illegal square indicates no best move stored in cached position.
-            CachedPosition.SetBestMoveTo(ref NullPosition, Square.Illegal);
-            CachedPosition.SetBestMovePromotedPiece(ref NullPosition, Piece.None);
-            CachedPosition.SetScore(ref NullPosition, StaticScore.NotCached);
-            CachedPosition.SetScorePrecision(ref NullPosition, ScorePrecision.Unknown);
-            CachedPosition.SetLastAccessed(ref NullPosition, 0);
+            NullPosition = new CachedPosition(0, 0);
+            CachedPositionData.SetToHorizon(ref NullPosition.Data, 0);
+            CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
+            CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.Illegal);
+            CachedPositionData.SetBestMovePromotedPiece(ref NullPosition.Data, Piece.None);
+            CachedPositionData.SetScore(ref NullPosition.Data, StaticScore.NotCached);
+            CachedPositionData.SetScorePrecision(ref NullPosition.Data, ScorePrecision.Unknown);
+            CachedPositionData.SetLastAccessed(ref NullPosition.Data, 0);
             // Set capacity (which resets position array).
             Capacity = SizeMegabyte * CapacityPerMegabyte;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public ulong GetPosition(ulong Key)
+        public CachedPosition GetPosition(ulong Key)
         {
             _stats.CacheProbes++;
             var index = GetIndex(Key);
-            var partialKey = CachedPosition.PartialKey(Key);
             for (var bucket = 0; bucket < _buckets; bucket++)
             {
                 var bucketIndex = index + bucket;
                 var cachedPosition = _positions[bucketIndex];
-                if (CachedPosition.PartialKey(cachedPosition) == partialKey)
+                if (cachedPosition.Key == Key)
                 {
                     // Position is cached.
                     _stats.CacheHits++;
-                    CachedPosition.SetLastAccessed(ref cachedPosition, Searches);
+                    CachedPositionData.SetLastAccessed(ref cachedPosition.Data, Searches);
                     _positions[bucketIndex] = cachedPosition;
-                    Debug.Assert(CachedPosition.IsValid(cachedPosition));
+                    Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
                     return cachedPosition;
                 }
             }
             // Position is not cached.
-            Debug.Assert(CachedPosition.IsValid(NullPosition));
+            Debug.Assert(CachedPositionData.IsValid(NullPosition.Data));
             return NullPosition;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public void SetPosition(ulong Key, ulong CachedPosition)
+        public void SetPosition(CachedPosition CachedPosition)
         {
-            Debug.Assert(Engine.CachedPosition.IsValid(CachedPosition));
-            var index = GetIndex(Key);
-            var partialKey = Engine.CachedPosition.PartialKey(Key);
-            Engine.CachedPosition.SetPartialKey(ref CachedPosition, partialKey);
-            Engine.CachedPosition.SetLastAccessed(ref CachedPosition, Searches);
+            Debug.Assert(CachedPositionData.IsValid(CachedPosition.Data));
+            var index = GetIndex(CachedPosition.Key);
+            CachedPositionData.SetLastAccessed(ref CachedPosition.Data, Searches);
             // Find oldest bucket.
             var earliestAccess = byte.MaxValue;
             var oldestBucketIndex = 0;
@@ -102,14 +99,14 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 var bucketIndex = index + bucket;
                 var cachedPosition = _positions[bucketIndex];
-                if (Engine.CachedPosition.PartialKey(cachedPosition) == partialKey)
+                if (cachedPosition.Key == CachedPosition.Key)
                 {
                     // Position is cached.  Overwrite position.
-                    Debug.Assert(Engine.CachedPosition.IsValid(CachedPosition));
+                    Debug.Assert(CachedPositionData.IsValid(CachedPosition.Data));
                     _positions[bucketIndex] = CachedPosition;
                     return;
                 }
-                var lastAccessed = Engine.CachedPosition.LastAccessed(cachedPosition);
+                var lastAccessed = CachedPositionData.LastAccessed(cachedPosition.Data);
                 if (lastAccessed < earliestAccess)
                 {
                     earliestAccess = lastAccessed;
@@ -118,7 +115,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (_positions[oldestBucketIndex] == NullPosition) Positions++; // Oldest bucket has not been used.
             // Overwrite oldest bucket.
-            Debug.Assert(Engine.CachedPosition.IsValid(CachedPosition));
+            Debug.Assert(CachedPositionData.IsValid(CachedPosition.Data));
             _positions[oldestBucketIndex] = CachedPosition;
         }
 
@@ -127,13 +124,13 @@ namespace ErikTheCoder.MadChess.Engine
         public ulong GetBestMove(ulong CachedPosition)
         {
             _stats.CacheBestMoveProbes++;
-            Debug.Assert(Engine.CachedPosition.IsValid(CachedPosition));
-            var fromSquare = Engine.CachedPosition.BestMoveFrom(CachedPosition);
+            Debug.Assert(CachedPositionData.IsValid(CachedPosition));
+            var fromSquare = CachedPositionData.BestMoveFrom(CachedPosition);
             if (fromSquare == Square.Illegal) return Move.Null; // Cached position does not specify a best move.
             var bestMove = Move.Null;
             Move.SetFrom(ref bestMove, fromSquare);
-            Move.SetTo(ref bestMove, Engine.CachedPosition.BestMoveTo(CachedPosition));
-            Move.SetPromotedPiece(ref bestMove, Engine.CachedPosition.BestMovePromotedPiece(CachedPosition));
+            Move.SetTo(ref bestMove, CachedPositionData.BestMoveTo(CachedPosition));
+            Move.SetPromotedPiece(ref bestMove, CachedPositionData.BestMovePromotedPiece(CachedPosition));
             Move.SetIsBest(ref bestMove, true);
             var validMove = _validateMove(ref bestMove);
             if (validMove) _stats.CacheValidBestMove++;

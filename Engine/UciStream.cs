@@ -738,7 +738,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Get cached position.
             var cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
-            var bestMove = _cache.GetBestMove(cachedPosition);
+            var bestMove = _cache.GetBestMove(cachedPosition.Data);
             // Generate and sort moves.
             Board.CurrentPosition.GenerateMoves();
             var lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
@@ -959,7 +959,7 @@ namespace ErikTheCoder.MadChess.Engine
             var cacheHitPercent = (100d * _stats.CacheHits) / _stats.CacheProbes;
             var scoreCutoffPercent = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
             var bestMoveHitPercent = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
-            WriteMessageLine($"info string Cache Hit = {cacheHitPercent:0.00}% Score Cutoff = {scoreCutoffPercent:0.00}% Best Move Hit = {bestMoveHitPercent:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove}");
+            WriteMessageLine($"info string Cache Hit = {cacheHitPercent:0.00}% Score Cutoff = {scoreCutoffPercent:0.00}% Best Move Hit = {bestMoveHitPercent:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
             WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
             WriteMessageLine($"info string Evals = {_stats.Evaluations:n0}");
         }
