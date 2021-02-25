@@ -32,7 +32,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _rookPhase = 22; //   + 4 * 22 = 168
         private const int _queenPhase = 44; //  + 2 * 44 = 256
         // Material
-        public const int PawnMaterial = 100;
+        public const int MgPawnMaterial = 100;
         public readonly EvaluationConfig Config;
         public int DrawMoves;
         public bool UnderstandsPieceLocation;
@@ -57,10 +57,12 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _mgKingLocations;
         private readonly int[] _egKingLocations;
         // Passed Pawns
+        private const double _passedPawnPower = 2d;
         private readonly int[] _mgPassedPawns;
         private readonly int[] _egPassedPawns;
         private readonly int[] _egFreePassedPawns;
         // Piece Mobility
+        private const double _pieceMobilityPower = 0.5d;
         private readonly int[] _mgKnightMobility;
         private readonly int[] _egKnightMobility;
         private readonly int[] _mgBishopMobility;
@@ -70,6 +72,7 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _mgQueenMobility;
         private readonly int[] _egQueenMobility;
         // King Safety
+        private const double _kingSafetyPower = 2d;
         private readonly int[] _kingSafety;
 
         
@@ -125,28 +128,27 @@ namespace ErikTheCoder.MadChess.Engine
                 var fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
                 var nearCorner = 3 - Board.DistanceToNearestCorner[square];
                 _mgPawnLocations[square] = rank * Config.MgPawnAdvancement + squareCentrality * Config.MgPawnCentrality;
-                _egPawnLocations[square] = rank * Config.EgPawnAdvancement + squareCentrality * Config.EgPawnCentrality + Config.EgPawnConstant;
+                _egPawnLocations[square] = rank * Config.EgPawnAdvancement + squareCentrality * Config.EgPawnCentrality;
                 _mgKnightLocations[square] = rank * Config.MgKnightAdvancement + squareCentrality * Config.MgKnightCentrality + nearCorner * Config.MgKnightCorner;
-                _egKnightLocations[square] = rank * Config.EgKnightAdvancement + squareCentrality * Config.EgKnightCentrality + nearCorner * Config.EgKnightCorner + Config.EgKnightConstant;
+                _egKnightLocations[square] = rank * Config.EgKnightAdvancement + squareCentrality * Config.EgKnightCentrality + nearCorner * Config.EgKnightCorner;
                 _mgBishopLocations[square] = rank * Config.MgBishopAdvancement + squareCentrality * Config.MgBishopCentrality + nearCorner * Config.MgBishopCorner;
-                _egBishopLocations[square] = rank * Config.EgBishopAdvancement + squareCentrality * Config.EgBishopCentrality + nearCorner * Config.EgBishopCorner + Config.EgBishopConstant;
+                _egBishopLocations[square] = rank * Config.EgBishopAdvancement + squareCentrality * Config.EgBishopCentrality + nearCorner * Config.EgBishopCorner;
                 _mgRookLocations[square] = rank * Config.MgRookAdvancement + fileCentrality * Config.MgRookCentrality + nearCorner * Config.MgRookCorner;
-                _egRookLocations[square] = rank * Config.EgRookAdvancement + squareCentrality * Config.EgRookCentrality + nearCorner * Config.EgRookCorner + Config.EgRookConstant;
+                _egRookLocations[square] = rank * Config.EgRookAdvancement + squareCentrality * Config.EgRookCentrality + nearCorner * Config.EgRookCorner;
                 _mgQueenLocations[square] = rank * Config.MgQueenAdvancement + squareCentrality * Config.MgQueenCentrality + nearCorner * Config.MgQueenCorner;
-                _egQueenLocations[square] = rank * Config.EgQueenAdvancement + squareCentrality * Config.EgQueenCentrality + nearCorner * Config.EgQueenCorner + Config.EgQueenConstant;
+                _egQueenLocations[square] = rank * Config.EgQueenAdvancement + squareCentrality * Config.EgQueenCentrality + nearCorner * Config.EgQueenCorner;
                 _mgKingLocations[square] = rank * Config.MgKingAdvancement + squareCentrality * Config.MgKingCentrality + nearCorner * Config.MgKingCorner;
                 _egKingLocations[square] = rank * Config.EgKingAdvancement + squareCentrality * Config.EgKingCentrality + nearCorner * Config.EgKingCorner;
             }
             // Calculate passed pawn values.
-            var passedPawnPower = Config.PassedPawnPowerPer16 / 16d;
             var mgScale = Config.MgPassedPawnScalePer128 / 128d;
             var egScale = Config.EgPassedPawnScalePer128 / 128d;
             var egFreeScale = Config.EgFreePassedPawnScalePer128 / 128d;
             for (var rank = 1; rank < 7; rank++)
             {
-                _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
-                _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
-                _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
+                _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, _passedPawnPower, 0);
+                _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, _passedPawnPower, 0);
+                _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, _passedPawnPower, 0);
             }
             // Calculate piece mobility values.
             CalculatePieceMobility(_mgKnightMobility, _egKnightMobility, Config.MgKnightMobilityScale, Config.EgKnightMobilityScale);
@@ -154,25 +156,23 @@ namespace ErikTheCoder.MadChess.Engine
             CalculatePieceMobility(_mgRookMobility, _egRookMobility, Config.MgRookMobilityScale, Config.EgRookMobilityScale);
             CalculatePieceMobility(_mgQueenMobility, _egQueenMobility, Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
             // Calculate king safety values.
-            var kingSafetyPower = Config.KingSafetyPowerPer16 / 16d;
             for (var index = 0; index < _kingSafety.Length; index++)
             {
                 var scale = -Config.KingSafetyScalePer128 / 128d;
-                _kingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
+                _kingSafety[index] = GetNonLinearBonus(index, scale, _kingSafetyPower, 0);
             }
         }
 
 
-        private void CalculatePieceMobility(int[] MgPieceMobility, int[] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
+        private static void CalculatePieceMobility(int[] MgPieceMobility, int[] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
         {
             Debug.Assert(MgPieceMobility.Length == EgPieceMobility.Length);
             var maxMoves = MgPieceMobility.Length - 1;
-            var pieceMobilityPower = Config.PieceMobilityPowerPer16 / 16d;
             for (var moves = 0; moves <= maxMoves; moves++)
             {
                 var percentMaxMoves = (double)moves / maxMoves;
-                MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, pieceMobilityPower, -MgMobilityScale / 2);
-                EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, pieceMobilityPower, -EgMobilityScale / 2);
+                MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, _pieceMobilityPower, -MgMobilityScale / 2);
+                EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, _pieceMobilityPower, -EgMobilityScale / 2);
             }
             // Adjust constant so piece mobility bonus for average number of moves is zero.
             var averageMoves = maxMoves / 2;
@@ -207,15 +207,17 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Beginner
                 // Undervalue rook and overvalue queen.
-                Config.RookMaterial = 300;
-                Config.QueenMaterial = 1200;
+                Config.MgRookMaterial = 300;
+                Config.EgRookMaterial = 300;
+                Config.MgQueenMaterial = 1200;
+                Config.EgQueenMaterial = 1200;
             }
             if (Elo < 1000)
             {
                 // Novice
                 // Value knight and bishop equally.
-                Config.KnightMaterial = 300;
-                Config.BishopMaterial = 300;
+                Config.MgBishopMaterial = Config.MgKnightMaterial;
+                Config.EgBishopMaterial = Config.EgKnightMaterial;
                 // Misjudge danger of passed pawns.
                 UnderstandsPassedPawns = false;
                 // Misplace pieces.
@@ -246,11 +248,16 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (_debug())
             {
-                _writeMessageLine($"info string PawnMaterialScore = {PawnMaterial}");
-                _writeMessageLine($"info string KnightMaterialScore = {Config.KnightMaterial}");
-                _writeMessageLine($"info string BishopMaterialScore = {Config.BishopMaterial}");
-                _writeMessageLine($"info string RookMaterialScore = {Config.RookMaterial}");
-                _writeMessageLine($"info string QueenMaterialScore = {Config.QueenMaterial}");
+                _writeMessageLine($"info string {nameof(MgPawnMaterial)} = {MgPawnMaterial}");
+                _writeMessageLine($"info string {nameof(Config.EgPawnMaterial)} = {Config.EgPawnMaterial}");
+                _writeMessageLine($"info string {nameof(Config.MgKnightMaterial)} = {Config.MgKnightMaterial}");
+                _writeMessageLine($"info string {nameof(Config.EgKnightMaterial)} = {Config.EgKnightMaterial}");
+                _writeMessageLine($"info string {nameof(Config.MgBishopMaterial)} = {Config.MgBishopMaterial}");
+                _writeMessageLine($"info string {nameof(Config.EgBishopMaterial)} = {Config.EgBishopMaterial}");
+                _writeMessageLine($"info string {nameof(Config.MgRookMaterial)} = {Config.MgRookMaterial}");
+                _writeMessageLine($"info string {nameof(Config.EgRookMaterial)} = {Config.EgRookMaterial}");
+                _writeMessageLine($"info string {nameof(Config.MgQueenMaterial)} = {Config.MgQueenMaterial}");
+                _writeMessageLine($"info string {nameof(Config.EgQueenMaterial)} = {Config.EgQueenMaterial}");
                 _writeMessageLine($"info string UnderstandsPieceLocation = {UnderstandsPieceLocation}");
                 _writeMessageLine($"info string UnderstandsPassedPawns = {UnderstandsPassedPawns}");
                 _writeMessageLine($"info string UnderstandsMobility = {UnderstandsMobility}");
@@ -386,7 +393,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (!EvaluateSimpleEndgame(Position))
             {
                 // Not a simple endgame.
-                GetMaterialScore(Position);
+                EvaluateMaterial(Position);
                 if (UnderstandsPieceLocation) EvaluatePieceLocation(Position);
                 if (UnderstandsPassedPawns) EvaluatePawns(Position);
                 EvaluatePieceMobilityKingSafety(Position);
@@ -557,49 +564,96 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetMaterialScore(Position Position)
+        private void EvaluateMaterial(Position Position)
         {
-            _staticScore.WhiteMaterial = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial +
-                                         Bitwise.CountSetBits(Position.WhiteKnights) * Config.KnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.BishopMaterial +
-                                         Bitwise.CountSetBits(Position.WhiteRooks) * Config.RookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.QueenMaterial;
-            _staticScore.BlackMaterial = Bitwise.CountSetBits(Position.BlackPawns) * PawnMaterial +
-                                         Bitwise.CountSetBits(Position.BlackKnights) * Config.KnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.BishopMaterial +
-                                         Bitwise.CountSetBits(Position.BlackRooks) * Config.RookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.QueenMaterial;
-            return Position.WhiteMove
-                ? _staticScore.WhiteMaterial - _staticScore.BlackMaterial
-                : _staticScore.BlackMaterial - _staticScore.WhiteMaterial;
+            _staticScore.WhiteMgMaterial = Bitwise.CountSetBits(Position.WhitePawns) * MgPawnMaterial +
+                                         Bitwise.CountSetBits(Position.WhiteKnights) * Config.MgKnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.MgBishopMaterial +
+                                         Bitwise.CountSetBits(Position.WhiteRooks) * Config.MgRookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.MgQueenMaterial;
+            _staticScore.WhiteEgMaterial = Bitwise.CountSetBits(Position.WhitePawns) * Config.EgPawnMaterial +
+                                           Bitwise.CountSetBits(Position.WhiteKnights) * Config.EgKnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.EgBishopMaterial +
+                                           Bitwise.CountSetBits(Position.WhiteRooks) * Config.EgRookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.EgQueenMaterial;
+            _staticScore.BlackMgMaterial = Bitwise.CountSetBits(Position.BlackPawns) * MgPawnMaterial +
+                                           Bitwise.CountSetBits(Position.BlackKnights) * Config.MgKnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.MgBishopMaterial +
+                                           Bitwise.CountSetBits(Position.BlackRooks) * Config.MgRookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.MgQueenMaterial;
+            _staticScore.BlackEgMaterial = Bitwise.CountSetBits(Position.BlackPawns) * Config.EgPawnMaterial +
+                                           Bitwise.CountSetBits(Position.BlackKnights) * Config.EgKnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.EgBishopMaterial +
+                                           Bitwise.CountSetBits(Position.BlackRooks) * Config.EgRookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.EgQueenMaterial;
         }
 
 
-        public int GetMaterialScore(int Piece)
+        public int GetMaterialScore(Position Position, int Piece)
         {
+            int mgMaterial;
+            int egMaterial;
             // Sequence cases in order of integer value to improve performance of switch statement.
-            return Piece switch
+            switch (Piece)
             {
-                Engine.Piece.None => 0,
-                Engine.Piece.WhitePawn => PawnMaterial,
-                Engine.Piece.WhiteKnight => Config.KnightMaterial,
-                Engine.Piece.WhiteBishop => Config.BishopMaterial,
-                Engine.Piece.WhiteRook => Config.RookMaterial,
-                Engine.Piece.WhiteQueen => Config.QueenMaterial,
-                Engine.Piece.WhiteKing => 0,
-                Engine.Piece.BlackPawn => PawnMaterial,
-                Engine.Piece.BlackKnight => Config.KnightMaterial,
-                Engine.Piece.BlackBishop => Config.BishopMaterial,
-                Engine.Piece.BlackRook => Config.RookMaterial,
-                Engine.Piece.BlackQueen => Config.QueenMaterial,
-                Engine.Piece.BlackKing => 0,
-                _ => throw new ArgumentException($"{Piece} piece not supported.")
-            };
+                case Engine.Piece.None:
+                    mgMaterial = 0;
+                    egMaterial = 0;
+                    break;
+                case Engine.Piece.WhitePawn:
+                    mgMaterial = MgPawnMaterial;
+                    egMaterial = Config.EgPawnMaterial;
+                    break;
+                case Engine.Piece.WhiteKnight:
+                    mgMaterial = Config.MgKnightMaterial;
+                    egMaterial = Config.EgKnightMaterial;
+                    break;
+                case Engine.Piece.WhiteBishop:
+                    mgMaterial = Config.MgBishopMaterial;
+                    egMaterial = Config.EgBishopMaterial;
+                    break;
+                case Engine.Piece.WhiteRook:
+                    mgMaterial = Config.MgRookMaterial;
+                    egMaterial = Config.EgRookMaterial;
+                    break;
+                case Engine.Piece.WhiteQueen:
+                    mgMaterial = Config.MgQueenMaterial;
+                    egMaterial = Config.EgQueenMaterial;
+                    break;
+                case Engine.Piece.WhiteKing:
+                    mgMaterial = 0;
+                    egMaterial = 0;
+                    break;
+                case Engine.Piece.BlackPawn:
+                    mgMaterial = MgPawnMaterial;
+                    egMaterial = Config.EgPawnMaterial;
+                    break;
+                case Engine.Piece.BlackKnight:
+                    mgMaterial = Config.MgKnightMaterial;
+                    egMaterial = Config.EgKnightMaterial;
+                    break;
+                case Engine.Piece.BlackBishop:
+                    mgMaterial = Config.MgBishopMaterial;
+                    egMaterial = Config.EgBishopMaterial;
+                    break;
+                case Engine.Piece.BlackRook:
+                    mgMaterial = Config.MgRookMaterial;
+                    egMaterial = Config.EgRookMaterial;
+                    break;
+                case Engine.Piece.BlackQueen:
+                    mgMaterial = Config.MgQueenMaterial;
+                    egMaterial = Config.EgQueenMaterial;
+                    break;
+                case Engine.Piece.BlackKing:
+                    mgMaterial = 0;
+                    egMaterial = 0;
+                    break;
+                default:
+                    throw new ArgumentException($"{Piece} piece not supported.");
+            }
+            var phase = DetermineGamePhase(Position);
+            return StaticScore.GetTaperedScore(mgMaterial, egMaterial, phase);
         }
 
 
         public static int GetExchangeMaterialScore(Position Position)
         {
-            var whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial +
+            var whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * MgPawnMaterial +
                              Bitwise.CountSetBits(Position.WhiteKnights) * _knightExchangeMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * _bishopExchangeMaterial +
                              Bitwise.CountSetBits(Position.WhiteRooks) * _rookExchangeMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * _queenExchangeMaterial;
-            var blackScore = Bitwise.CountSetBits(Position.BlackPawns) * PawnMaterial +
+            var blackScore = Bitwise.CountSetBits(Position.BlackPawns) * MgPawnMaterial +
                              Bitwise.CountSetBits(Position.BlackKnights) * _knightExchangeMaterial + Bitwise.CountSetBits(Position.BlackBishops) * _bishopExchangeMaterial +
                              Bitwise.CountSetBits(Position.BlackRooks) * _rookExchangeMaterial + Bitwise.CountSetBits(Position.BlackQueens) * _queenExchangeMaterial;
             return Position.WhiteMove
@@ -1017,11 +1071,16 @@ namespace ErikTheCoder.MadChess.Engine
             // Material
             stringBuilder.AppendLine("Material");
             stringBuilder.AppendLine("===========");
-            stringBuilder.AppendLine($"Pawn:    {PawnMaterial}");
-            stringBuilder.AppendLine($"Knight:  {Config.KnightMaterial}");
-            stringBuilder.AppendLine($"Bishop:  {Config.BishopMaterial}");
-            stringBuilder.AppendLine($"Rook:    {Config.RookMaterial}");
-            stringBuilder.AppendLine($"Queen:   {Config.QueenMaterial}");
+            stringBuilder.AppendLine($"MG Pawn:    {MgPawnMaterial}");
+            stringBuilder.AppendLine($"EG Pawn:    {Config.EgPawnMaterial}");
+            stringBuilder.AppendLine($"MG Knight:  {Config.MgKnightMaterial}");
+            stringBuilder.AppendLine($"EG Knight:  {Config.EgKnightMaterial}");
+            stringBuilder.AppendLine($"MG Bishop:  {Config.MgBishopMaterial}");
+            stringBuilder.AppendLine($"EG Bishop:  {Config.EgBishopMaterial}");
+            stringBuilder.AppendLine($"MG Rook:    {Config.MgRookMaterial}");
+            stringBuilder.AppendLine($"EG Rook:    {Config.EgRookMaterial}");
+            stringBuilder.AppendLine($"MG Queen:   {Config.MgQueenMaterial}");
+            stringBuilder.AppendLine($"EG Queen:   {Config.EgQueenMaterial}");
             stringBuilder.AppendLine();
             // Piece Location
             stringBuilder.AppendLine("Middlegame Pawn Location");
@@ -1107,7 +1166,6 @@ namespace ErikTheCoder.MadChess.Engine
             ShowParameterArray(_egQueenMobility, stringBuilder);
             stringBuilder.AppendLine();
             // King Safety
-            stringBuilder.AppendLine($"King Safety KingSafetyPowerPer16:                {Config.KingSafetyPowerPer16:000}");
             stringBuilder.AppendLine($"King Safety MgKingSafetySemiOpenFilePer8:        {Config.MgKingSafetySemiOpenFilePer8:000}");
             stringBuilder.AppendLine($"King Safety KingSafetyMinorAttackOuterRingPer8:  {Config.KingSafetyMinorAttackOuterRingPer8:000}");
             stringBuilder.AppendLine($"King Safety KingSafetyMinorAttackInnerRingPer8:  {Config.KingSafetyMinorAttackInnerRingPer8:000}");

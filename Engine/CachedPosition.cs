@@ -26,14 +26,14 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static bool operator ==(CachedPosition Position1, CachedPosition Position2) => Position1.Key == Position2.Key;
+        public static bool operator ==(CachedPosition Position1, CachedPosition Position2) => (Position1.Key == Position2.Key) && (Position1.Data == Position2.Data);
 
 
-        public static bool operator !=(CachedPosition Position1, CachedPosition Position2) => Position1.Key != Position2.Key;
+        public static bool operator !=(CachedPosition Position1, CachedPosition Position2) => (Position1.Key != Position2.Key) || (Position1.Data != Position2.Data);
 
 
         // ReSharper disable once MemberCanBePrivate.Global
-        public bool Equals(CachedPosition OtherPosition) => Key == OtherPosition.Key;
+        public bool Equals(CachedPosition OtherPosition) => (Key == OtherPosition.Key) && (Data == OtherPosition.Data);
 
 
         public override bool Equals(object OtherPosition) => OtherPosition is CachedPosition otherPosition && Equals(otherPosition);
