@@ -16,11 +16,11 @@ namespace ErikTheCoder.MadChess.Engine
         // ReSharper disable FieldCanBeMadeReadOnly.Global
         // ReSharper disable RedundantDefaultMemberInitializer
         // Material
-        public int EgPawnMaterial = 140;
+        public int EgPawnMaterial = 130;
         public int MgKnightMaterial = 300;
         public int EgKnightMaterial = 300;
         public int MgBishopMaterial = 330;
-        public int EgBishopMaterial = 380;
+        public int EgBishopMaterial = 330;
         public int MgRookMaterial = 500;
         public int EgRookMaterial = 600;
         public int MgQueenMaterial = 975;
@@ -32,67 +32,67 @@ namespace ErikTheCoder.MadChess.Engine
         public int SimpleEndgame => 2 * UnstoppablePassedPawn;
         // Pawn Location
         public int MgPawnAdvancement = 2;
-        public int EgPawnAdvancement = 5;
+        public int EgPawnAdvancement = 6;
         public int MgPawnCentrality = 1;
-        public int EgPawnCentrality = -13;
+        public int EgPawnCentrality = -12;
         // Knight Location 
-        public int MgKnightAdvancement = 0;
-        public int EgKnightAdvancement = 18;
-        public int MgKnightCentrality = 8;
-        public int EgKnightCentrality = 22;
-        public int MgKnightCorner = -3;
+        public int MgKnightAdvancement = -1;
+        public int EgKnightAdvancement = 17;
+        public int MgKnightCentrality = 7;
+        public int EgKnightCentrality = 18;
+        public int MgKnightCorner = -5;
         public int EgKnightCorner = -14;
         // Bishop Location
-        public int MgBishopAdvancement = 3;
-        public int EgBishopAdvancement = 6;
+        public int MgBishopAdvancement = 2;
+        public int EgBishopAdvancement = 12;
         public int MgBishopCentrality = 7;
-        public int EgBishopCentrality = 6;
+        public int EgBishopCentrality = 9;
         public int MgBishopCorner = 0;
-        public int EgBishopCorner = -5;
+        public int EgBishopCorner = 0;
         // Rook Location
-        public int MgRookAdvancement = 1;
-        public int EgRookAdvancement = 15;
-        public int MgRookCentrality = 6;
-        public int EgRookCentrality = 0;
-        public int MgRookCorner = -13;
-        public int EgRookCorner = 7;
+        public int MgRookAdvancement = 0;
+        public int EgRookAdvancement = 16;
+        public int MgRookCentrality = 5;
+        public int EgRookCentrality = -1;
+        public int MgRookCorner = -14;
+        public int EgRookCorner = 4;
         // Queen Location
-        public int MgQueenAdvancement = -13;
-        public int EgQueenAdvancement = 30;
-        public int MgQueenCentrality = 6;
-        public int EgQueenCentrality = 10;
-        public int MgQueenCorner = -2;
+        public int MgQueenAdvancement = -16;
+        public int EgQueenAdvancement = 25;
+        public int MgQueenCentrality = 5;
+        public int EgQueenCentrality = 8;
+        public int MgQueenCorner = -1;
         public int EgQueenCorner = -5;
         // King Location
-        public int MgKingAdvancement = -11;
+        public int MgKingAdvancement = -10;
         public int EgKingAdvancement = 22;
         public int MgKingCentrality = 0;
         public int EgKingCentrality = 23;
         public int MgKingCorner = 5;
-        public int EgKingCorner = -11;
+        public int EgKingCorner = -13;
         // Passed Pawns
-        public int MgPassedPawnScalePer128 = 156;
-        public int EgPassedPawnScalePer128 = 507;
-        public int EgFreePassedPawnScalePer128 = 1179;
+        public int MgPassedPawnScalePer128 = 147;
+        public int EgPassedPawnScalePer128 = 478;
+        public int EgFreePassedPawnScalePer128 = 1207;
         public int EgKingEscortedPassedPawn = 5;
         // Piece Mobility
         public int MgKnightMobilityScale = 30;
-        public int EgKnightMobilityScale = 53;
-        public int MgBishopMobilityScale = 39;
-        public int EgBishopMobilityScale = 163;
-        public int MgRookMobilityScale = 80;
-        public int EgRookMobilityScale = 145;
-        public int MgQueenMobilityScale = 96;
-        public int EgQueenMobilityScale = 293;
+        public int EgKnightMobilityScale = 45;
+        public int MgBishopMobilityScale = 36;
+        public int EgBishopMobilityScale = 181;
+        public int MgRookMobilityScale = 75;
+        public int EgRookMobilityScale = 149;
+        public int MgQueenMobilityScale = 108;
+        public int EgQueenMobilityScale = 253;
         // King Safety
-        public int MgKingSafetySemiOpenFilePer8 = 40;
+        public int MgKingSafetySemiOpenFilePer8 = 41;
         public int KingSafetyMinorAttackOuterRingPer8 = 7;
-        public int KingSafetyMinorAttackInnerRingPer8 = 16;
+        public int KingSafetyMinorAttackInnerRingPer8 = 17;
         public int KingSafetyRookAttackOuterRingPer8 = 7;
-        public int KingSafetyRookAttackInnerRingPer8 = 11;
-        public int KingSafetyQueenAttackOuterRingPer8 = 9;
+        public int KingSafetyRookAttackInnerRingPer8 = 10;
+        public int KingSafetyQueenAttackOuterRingPer8 = 11;
         public int KingSafetyQueenAttackInnerRingPer8 = 19;
-        public int KingSafetyScalePer128 = 57;
+        public int KingSafetyScalePer128 = 59;
         // ReSharper restore FieldCanBeMadeReadOnly.Global
         // ReSharper restore ConvertToConstant.Global
 
