@@ -514,7 +514,7 @@ namespace ErikTheCoder.MadChess.Engine
             var historyIncrement = toHorizon * toHorizon;
             var cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
             ulong bestMove;
-            if ((cachedPosition != _cache.NullPosition) && (Depth > 0) && !repeatPosition)
+            if ((cachedPosition.Key != _cache.NullPosition.Key) && (Depth > 0) && !repeatPosition)
             {
                 // Not a root or repeat position.
                 // Determine if score is cached.
