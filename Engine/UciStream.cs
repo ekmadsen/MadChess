@@ -1019,6 +1019,8 @@ namespace ErikTheCoder.MadChess.Engine
             var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, DisplayStats, WriteMessageLine);
             particleSwarms.Optimize(iterations);
             _commandStopwatch.Stop();
+            WriteMessageLine();
+            WriteMessageLine("Tuning complete.");
         }
 
 

@@ -57,12 +57,10 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _mgKingLocations;
         private readonly int[] _egKingLocations;
         // Passed Pawns
-        private const double _passedPawnPower = 2d;
         private readonly int[] _mgPassedPawns;
         private readonly int[] _egPassedPawns;
         private readonly int[] _egFreePassedPawns;
         // Piece Mobility
-        private const double _pieceMobilityPower = 0.5d;
         private readonly int[] _mgKnightMobility;
         private readonly int[] _egKnightMobility;
         private readonly int[] _mgBishopMobility;
@@ -72,7 +70,6 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _mgQueenMobility;
         private readonly int[] _egQueenMobility;
         // King Safety
-        private const double _kingSafetyPower = 2d;
         private readonly int[] _kingSafety;
 
         
@@ -141,14 +138,15 @@ namespace ErikTheCoder.MadChess.Engine
                 _egKingLocations[square] = rank * Config.EgKingAdvancement + squareCentrality * Config.EgKingCentrality + nearCorner * Config.EgKingCorner;
             }
             // Calculate passed pawn values.
+            var passedPawnPower = Config.PassedPawnPowerPer128 / 128d;
             var mgScale = Config.MgPassedPawnScalePer128 / 128d;
             var egScale = Config.EgPassedPawnScalePer128 / 128d;
             var egFreeScale = Config.EgFreePassedPawnScalePer128 / 128d;
             for (var rank = 1; rank < 7; rank++)
             {
-                _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, _passedPawnPower, 0);
-                _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, _passedPawnPower, 0);
-                _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, _passedPawnPower, 0);
+                _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
+                _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
+                _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
             }
             // Calculate piece mobility values.
             CalculatePieceMobility(_mgKnightMobility, _egKnightMobility, Config.MgKnightMobilityScale, Config.EgKnightMobilityScale);
@@ -156,23 +154,25 @@ namespace ErikTheCoder.MadChess.Engine
             CalculatePieceMobility(_mgRookMobility, _egRookMobility, Config.MgRookMobilityScale, Config.EgRookMobilityScale);
             CalculatePieceMobility(_mgQueenMobility, _egQueenMobility, Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
             // Calculate king safety values.
+            var kingSafetyPower = Config.KingSafetyPowerPer128 / 128d;
             for (var index = 0; index < _kingSafety.Length; index++)
             {
                 var scale = -Config.KingSafetyScalePer128 / 128d;
-                _kingSafety[index] = GetNonLinearBonus(index, scale, _kingSafetyPower, 0);
+                _kingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
             }
         }
 
 
-        private static void CalculatePieceMobility(int[] MgPieceMobility, int[] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
+        private void CalculatePieceMobility(int[] MgPieceMobility, int[] EgPieceMobility, int MgMobilityScale, int EgMobilityScale)
         {
             Debug.Assert(MgPieceMobility.Length == EgPieceMobility.Length);
             var maxMoves = MgPieceMobility.Length - 1;
+            var pieceMobilityPower = Config.PieceMobilityPowerPer128 / 128d;
             for (var moves = 0; moves <= maxMoves; moves++)
             {
                 var percentMaxMoves = (double)moves / maxMoves;
-                MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, _pieceMobilityPower, -MgMobilityScale / 2);
-                EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, _pieceMobilityPower, -EgMobilityScale / 2);
+                MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, pieceMobilityPower, -MgMobilityScale / 2);
+                EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, pieceMobilityPower, -EgMobilityScale / 2);
             }
             // Adjust constant so piece mobility bonus for average number of moves is zero.
             var averageMoves = maxMoves / 2;

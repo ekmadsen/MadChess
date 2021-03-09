@@ -74,6 +74,12 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         public void ConfigureEvaluation(Evaluation Evaluation)
         {
+            // Endgame Material
+            Evaluation.Config.EgPawnMaterial = Parameters[nameof(EvaluationConfig.EgPawnMaterial)].Value;
+            Evaluation.Config.EgKnightMaterial = Parameters[nameof(EvaluationConfig.EgKnightMaterial)].Value;
+            Evaluation.Config.EgBishopMaterial = Parameters[nameof(EvaluationConfig.EgBishopMaterial)].Value;
+            Evaluation.Config.EgRookMaterial = Parameters[nameof(EvaluationConfig.EgRookMaterial)].Value;
+            Evaluation.Config.EgQueenMaterial = Parameters[nameof(EvaluationConfig.EgQueenMaterial)].Value;
             // Pawns
             Evaluation.Config.MgPawnAdvancement = Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value;
             Evaluation.Config.EgPawnAdvancement = Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value;
@@ -115,11 +121,13 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.MgKingCorner = Parameters[nameof(EvaluationConfig.MgKingCorner)].Value;
             Evaluation.Config.EgKingCorner = Parameters[nameof(EvaluationConfig.EgKingCorner)].Value;
             // Passed Pawns
+            Evaluation.Config.PassedPawnPowerPer128 = Parameters[nameof(EvaluationConfig.PassedPawnPowerPer128)].Value;
             Evaluation.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.MgPassedPawnScalePer128)].Value;
             Evaluation.Config.EgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePer128)].Value;
             Evaluation.Config.EgFreePassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePer128)].Value;
             Evaluation.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value;
             // Piece Mobility
+            Evaluation.Config.PieceMobilityPowerPer128 = Parameters[nameof(EvaluationConfig.PieceMobilityPowerPer128)].Value;
             Evaluation.Config.MgKnightMobilityScale = Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value;
             Evaluation.Config.EgKnightMobilityScale = Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value;
             Evaluation.Config.MgBishopMobilityScale = Parameters[nameof(EvaluationConfig.MgBishopMobilityScale)].Value;
@@ -130,6 +138,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.EgQueenMobilityScale = Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value;
             Evaluation.CalculatePositionalFactors();
             // King Safety
+            Evaluation.Config.KingSafetyPowerPer128 = Parameters[nameof(EvaluationConfig.KingSafetyPowerPer128)].Value;
             Evaluation.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value;
             Evaluation.Config.KingSafetyMinorAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackOuterRingPer8)].Value;
             Evaluation.Config.KingSafetyMinorAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackInnerRingPer8)].Value;
