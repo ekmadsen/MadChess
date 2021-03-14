@@ -147,6 +147,9 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.KingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackOuterRingPer8)].Value;
             Evaluation.Config.KingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackInnerRingPer8)].Value;
             Evaluation.Config.KingSafetyScalePer128 = Parameters[nameof(EvaluationConfig.KingSafetyScalePer128)].Value;
+            // Minor Pieces
+            Evaluation.Config.MgBishopPair = Parameters[nameof(EvaluationConfig.MgBishopPair)].Value;
+            Evaluation.Config.EgBishopPair = Parameters[nameof(EvaluationConfig.EgBishopPair)].Value;
         }
         
 

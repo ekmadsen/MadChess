@@ -34,6 +34,8 @@ namespace ErikTheCoder.MadChess.Engine
         public int WhiteEgPieceMobility;
         public int WhiteMgKingSafety;
         public int WhiteEgKingSafety;
+        public int WhiteMgBishopPair;
+        public int WhiteEgBishopPair;
         public int BlackSimpleEndgame;
         public int BlackMgMaterial;
         public int BlackEgMaterial;
@@ -48,20 +50,22 @@ namespace ErikTheCoder.MadChess.Engine
         public int BlackEgPieceMobility;
         public int BlackMgKingSafety;
         public int BlackEgKingSafety;
+        public int BlackMgBishopPair;
+        public int BlackEgBishopPair;
 
 
-        private int MiddlegameWhite => WhiteSimpleEndgame + WhiteMgMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility + WhiteMgKingSafety;
+        private int MiddlegameWhite => WhiteSimpleEndgame + WhiteMgMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility + WhiteMgKingSafety + WhiteMgBishopPair;
 
 
-        private int MiddlegameBlack => BlackSimpleEndgame + BlackMgMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns + BlackMgPieceMobility + BlackMgKingSafety;
+        private int MiddlegameBlack => BlackSimpleEndgame + BlackMgMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns + BlackMgPieceMobility + BlackMgKingSafety + BlackMgBishopPair;
 
 
         private int EndgameWhite => WhiteSimpleEndgame + WhiteEgMaterial + WhiteEgPieceLocation + WhiteEgPassedPawns + WhiteEgFreePassedPawns + WhiteEgKingEscortedPassedPawns + WhiteUnstoppablePassedPawns +
-                                    WhiteEgPieceMobility + WhiteEgKingSafety;
+                                    WhiteEgPieceMobility + WhiteEgKingSafety + WhiteEgBishopPair;
 
 
         private int EndgameBlack => BlackSimpleEndgame + BlackEgMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns +
-                                    BlackEgPieceMobility + BlackEgKingSafety;
+                                    BlackEgPieceMobility + BlackEgKingSafety + BlackEgBishopPair;
 
 
         public int TotalScore(int Phase) => GetTaperedScore(MiddlegameWhite - MiddlegameBlack, EndgameWhite - EndgameBlack, Phase);
@@ -83,6 +87,8 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteEgPieceMobility = 0;
             WhiteMgKingSafety = 0;
             WhiteEgKingSafety = 0;
+            WhiteMgBishopPair = 0;
+            WhiteEgBishopPair = 0;
             BlackSimpleEndgame = 0;
             BlackMgMaterial = 0;
             BlackEgMaterial = 0;
@@ -97,6 +103,8 @@ namespace ErikTheCoder.MadChess.Engine
             BlackEgPieceMobility = 0;
             BlackMgKingSafety = 0;
             BlackEgKingSafety = 0;
+            BlackMgBishopPair = 0;
+            BlackEgBishopPair = 0;
         }
 
 
@@ -106,17 +114,18 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.AppendLine("                             |         Middlegame        |          Endgame          |           Total           |");
             stringBuilder.AppendLine("Evaluation Term              |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |");
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
-            AppendLine(stringBuilder, "Simple Endgame", WhiteSimpleEndgame, BlackSimpleEndgame, WhiteSimpleEndgame, BlackSimpleEndgame, Phase);
-            AppendLine(stringBuilder, "Material", WhiteMgMaterial, BlackMgMaterial, WhiteEgMaterial, BlackEgMaterial, Phase);
-            AppendLine(stringBuilder, "Piece Location", WhiteMgPieceLocation, BlackMgPieceLocation, WhiteEgPieceLocation, BlackEgPieceLocation, Phase);
-            AppendLine(stringBuilder, "Passed Pawns", WhiteMgPassedPawns, BlackMgPassedPawns, WhiteEgPassedPawns, BlackEgPassedPawns, Phase);
-            AppendLine(stringBuilder, "Free Passed Pawns", 0, 0, WhiteEgFreePassedPawns, BlackEgFreePassedPawns, Phase);
-            AppendLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, WhiteEgKingEscortedPassedPawns, BlackEgKingEscortedPassedPawns, Phase);
-            AppendLine(stringBuilder, "Unstoppable Passed Pawns", WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, Phase);
-            AppendLine(stringBuilder, "Piece Mobility", WhiteMgPieceMobility, BlackMgPieceMobility, WhiteEgPieceMobility, BlackEgPieceMobility, Phase);
-            AppendLine(stringBuilder, "King Safety", WhiteMgKingSafety, BlackMgKingSafety, WhiteEgKingSafety, BlackEgKingSafety, Phase);
+            AppendStaticScoreLine(stringBuilder, "Simple Endgame", WhiteSimpleEndgame, BlackSimpleEndgame, WhiteSimpleEndgame, BlackSimpleEndgame, Phase);
+            AppendStaticScoreLine(stringBuilder, "Material", WhiteMgMaterial, BlackMgMaterial, WhiteEgMaterial, BlackEgMaterial, Phase);
+            AppendStaticScoreLine(stringBuilder, "Piece Location", WhiteMgPieceLocation, BlackMgPieceLocation, WhiteEgPieceLocation, BlackEgPieceLocation, Phase);
+            AppendStaticScoreLine(stringBuilder, "Passed Pawns", WhiteMgPassedPawns, BlackMgPassedPawns, WhiteEgPassedPawns, BlackEgPassedPawns, Phase);
+            AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, WhiteEgFreePassedPawns, BlackEgFreePassedPawns, Phase);
+            AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, WhiteEgKingEscortedPassedPawns, BlackEgKingEscortedPassedPawns, Phase);
+            AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, Phase);
+            AppendStaticScoreLine(stringBuilder, "Piece Mobility", WhiteMgPieceMobility, BlackMgPieceMobility, WhiteEgPieceMobility, BlackEgPieceMobility, Phase);
+            AppendStaticScoreLine(stringBuilder, "King Safety", WhiteMgKingSafety, BlackMgKingSafety, WhiteEgKingSafety, BlackEgKingSafety, Phase);
+            AppendStaticScoreLine(stringBuilder, "Bishop Pair", WhiteMgBishopPair, BlackMgBishopPair, WhiteEgBishopPair, BlackEgBishopPair, Phase);
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
-            AppendLine(stringBuilder, "Total", MiddlegameWhite, MiddlegameBlack, EndgameWhite, EndgameBlack, Phase);
+            AppendStaticScoreLine(stringBuilder, "Total", MiddlegameWhite, MiddlegameBlack, EndgameWhite, EndgameBlack, Phase);
             stringBuilder.AppendLine();
             var middlegamePercent = (100 * Phase) / Evaluation.MiddlegamePhase;
             stringBuilder.AppendLine($"Middlegame  = {Phase} of {Evaluation.MiddlegamePhase} ({middlegamePercent}%)");
@@ -128,7 +137,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (Evaluation.MiddlegamePhase - Phase))) / Evaluation.MiddlegamePhase;
 
 
-        private static void AppendLine(StringBuilder StringBuilder, string EvaluationTerm, int WhiteMg, int BlackMg, int WhiteEg, int BlackEg, int Phase)
+        private static void AppendStaticScoreLine(StringBuilder StringBuilder, string EvaluationTerm, int WhiteMg, int BlackMg, int WhiteEg, int BlackEg, int Phase)
         {
             var evaluationTerm = EvaluationTerm.PadRight(27);
             var mgWhite = (WhiteMg / 100d).ToString("0.00").PadLeft(7);

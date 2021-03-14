@@ -158,7 +158,10 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new (nameof(EvaluationConfig.KingSafetyRookAttackInnerRingPer8), 0, 64),
                 new (nameof(EvaluationConfig.KingSafetyQueenAttackOuterRingPer8), 0, 64),
                 new (nameof(EvaluationConfig.KingSafetyQueenAttackInnerRingPer8), 0, 64),
-                new (nameof(EvaluationConfig.KingSafetyScalePer128), 0, 128)
+                new (nameof(EvaluationConfig.KingSafetyScalePer128), 0, 128),
+                // Minor Pieces
+                new (nameof(EvaluationConfig.MgBishopPair), 0, 50),
+                new (nameof(EvaluationConfig.EgBishopPair), 50, 200)
             };
         }
 
@@ -238,6 +241,9 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackOuterRingPer8)].Value = evaluationConfig.KingSafetyQueenAttackOuterRingPer8;
             Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackInnerRingPer8)].Value = evaluationConfig.KingSafetyQueenAttackInnerRingPer8;
             Parameters[nameof(EvaluationConfig.KingSafetyScalePer128)].Value = evaluationConfig.KingSafetyScalePer128;
+            // Minor Pieces
+            Parameters[nameof(EvaluationConfig.MgBishopPair)].Value = evaluationConfig.MgBishopPair;
+            Parameters[nameof(EvaluationConfig.EgBishopPair)].Value = evaluationConfig.EgBishopPair;
         }
 
 

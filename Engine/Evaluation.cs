@@ -411,6 +411,7 @@ namespace ErikTheCoder.MadChess.Engine
                     _staticScore.BlackMgKingSafety = 0;
                     _staticScore.BlackEgKingSafety = 0;
                 }
+                EvaluateMinorPieces(Position);
             }
             var phase = DetermineGamePhase(Position);
             return Position.WhiteMove ? _staticScore.TotalScore(phase) : -_staticScore.TotalScore(phase);
@@ -1014,6 +1015,23 @@ namespace ErikTheCoder.MadChess.Engine
             _staticScore.WhiteEgKingSafety = _kingSafety[Math.Min(whiteEgKingSafetyIndexPer8 / 8, maxIndex)];
             _staticScore.BlackMgKingSafety = _kingSafety[Math.Min(blackMgKingSafetyIndexPer8 / 8, maxIndex)];
             _staticScore.BlackEgKingSafety = _kingSafety[Math.Min(blackEgKingSafetyIndexPer8 / 8, maxIndex)];
+        }
+
+
+        private void EvaluateMinorPieces(Position Position)
+        {
+            var whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
+            if (whiteBishops >= 2)
+            {
+                _staticScore.WhiteMgBishopPair += Config.MgBishopPair;
+                _staticScore.WhiteEgBishopPair += Config.EgBishopPair;
+            }
+            var blackBishops = Bitwise.CountSetBits(Position.BlackBishops);
+            if (blackBishops >= 2)
+            {
+                _staticScore.BlackMgBishopPair += Config.MgBishopPair;
+                _staticScore.BlackEgBishopPair += Config.EgBishopPair;
+            }
         }
 
 
