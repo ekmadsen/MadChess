@@ -1014,11 +1014,13 @@ namespace ErikTheCoder.MadChess.Engine
             var pgnFilename = Tokens[1].Trim();
             var particleSwarmsCount = int.Parse(Tokens[2].Trim());
             var particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            var winPercentScale = int.Parse(Tokens[4].Trim()); // Use 601 for Gm2600EloGoodGames.pgn.
+            var winPercentScale = int.Parse(Tokens[4].Trim()); // Use 602 for Gm2600EloGoodGames.pgn.
             var iterations = int.Parse(Tokens[5].Trim());
             var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, DisplayStats, WriteMessageLine);
             particleSwarms.Optimize(iterations);
             _commandStopwatch.Stop();
+            WriteMessageLine();
+            WriteMessageLine("Tuning complete.");
         }
 
 

@@ -74,12 +74,17 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         public void ConfigureEvaluation(Evaluation Evaluation)
         {
+            // Endgame Material
+            Evaluation.Config.EgPawnMaterial = Parameters[nameof(EvaluationConfig.EgPawnMaterial)].Value;
+            Evaluation.Config.EgKnightMaterial = Parameters[nameof(EvaluationConfig.EgKnightMaterial)].Value;
+            Evaluation.Config.EgBishopMaterial = Parameters[nameof(EvaluationConfig.EgBishopMaterial)].Value;
+            Evaluation.Config.EgRookMaterial = Parameters[nameof(EvaluationConfig.EgRookMaterial)].Value;
+            Evaluation.Config.EgQueenMaterial = Parameters[nameof(EvaluationConfig.EgQueenMaterial)].Value;
             // Pawns
             Evaluation.Config.MgPawnAdvancement = Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value;
             Evaluation.Config.EgPawnAdvancement = Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value;
             Evaluation.Config.MgPawnCentrality = Parameters[nameof(EvaluationConfig.MgPawnCentrality)].Value;
             Evaluation.Config.EgPawnCentrality = Parameters[nameof(EvaluationConfig.EgPawnCentrality)].Value;
-            Evaluation.Config.EgPawnConstant = Parameters[nameof(EvaluationConfig.EgPawnConstant)].Value;
             // Knights
             Evaluation.Config.MgKnightAdvancement = Parameters[nameof(EvaluationConfig.MgKnightAdvancement)].Value;
             Evaluation.Config.EgKnightAdvancement = Parameters[nameof(EvaluationConfig.EgKnightAdvancement)].Value;
@@ -87,7 +92,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.EgKnightCentrality = Parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value;
             Evaluation.Config.MgKnightCorner = Parameters[nameof(EvaluationConfig.MgKnightCorner)].Value;
             Evaluation.Config.EgKnightCorner = Parameters[nameof(EvaluationConfig.EgKnightCorner)].Value;
-            Evaluation.Config.EgKnightConstant = Parameters[nameof(EvaluationConfig.EgKnightConstant)].Value;
             // Bishops
             Evaluation.Config.MgBishopAdvancement = Parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value;
             Evaluation.Config.EgBishopAdvancement = Parameters[nameof(EvaluationConfig.EgBishopAdvancement)].Value;
@@ -95,23 +99,20 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.EgBishopCentrality = Parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value;
             Evaluation.Config.MgBishopCorner = Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value;
             Evaluation.Config.EgBishopCorner = Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value;
-            Evaluation.Config.EgBishopConstant = Parameters[nameof(EvaluationConfig.EgBishopConstant)].Value;
             // Rooks
-            Evaluation.Config.MgRookAdvancement = Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value;
+            //Evaluation.Config.MgRookAdvancement = Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value;
             Evaluation.Config.EgRookAdvancement = Parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value;
             Evaluation.Config.MgRookCentrality = Parameters[nameof(EvaluationConfig.MgRookCentrality)].Value;
             Evaluation.Config.EgRookCentrality = Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value;
             Evaluation.Config.MgRookCorner = Parameters[nameof(EvaluationConfig.MgRookCorner)].Value;
             Evaluation.Config.EgRookCorner = Parameters[nameof(EvaluationConfig.EgRookCorner)].Value;
-            Evaluation.Config.EgRookConstant = Parameters[nameof(EvaluationConfig.EgRookConstant)].Value;
             // Queens
-            Evaluation.Config.MgQueenAdvancement = Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value;
+            //Evaluation.Config.MgQueenAdvancement = Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value;
             Evaluation.Config.EgQueenAdvancement = Parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value;
             Evaluation.Config.MgQueenCentrality = Parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value;
             Evaluation.Config.EgQueenCentrality = Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value;
             Evaluation.Config.MgQueenCorner = Parameters[nameof(EvaluationConfig.MgQueenCorner)].Value;
             Evaluation.Config.EgQueenCorner = Parameters[nameof(EvaluationConfig.EgQueenCorner)].Value;
-            Evaluation.Config.EgQueenConstant = Parameters[nameof(EvaluationConfig.EgQueenConstant)].Value;
             // King
             Evaluation.Config.MgKingAdvancement = Parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value;
             Evaluation.Config.EgKingAdvancement = Parameters[nameof(EvaluationConfig.EgKingAdvancement)].Value;
@@ -120,13 +121,13 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.MgKingCorner = Parameters[nameof(EvaluationConfig.MgKingCorner)].Value;
             Evaluation.Config.EgKingCorner = Parameters[nameof(EvaluationConfig.EgKingCorner)].Value;
             // Passed Pawns
-            Evaluation.Config.PassedPawnPowerPer16 = Parameters[nameof(EvaluationConfig.PassedPawnPowerPer16)].Value;
+            Evaluation.Config.PassedPawnPowerPer128 = Parameters[nameof(EvaluationConfig.PassedPawnPowerPer128)].Value;
             Evaluation.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.MgPassedPawnScalePer128)].Value;
             Evaluation.Config.EgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePer128)].Value;
             Evaluation.Config.EgFreePassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePer128)].Value;
             Evaluation.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value;
             // Piece Mobility
-            Evaluation.Config.PieceMobilityPowerPer16 = Parameters[nameof(EvaluationConfig.PieceMobilityPowerPer16)].Value;
+            Evaluation.Config.PieceMobilityPowerPer128 = Parameters[nameof(EvaluationConfig.PieceMobilityPowerPer128)].Value;
             Evaluation.Config.MgKnightMobilityScale = Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value;
             Evaluation.Config.EgKnightMobilityScale = Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value;
             Evaluation.Config.MgBishopMobilityScale = Parameters[nameof(EvaluationConfig.MgBishopMobilityScale)].Value;
@@ -137,7 +138,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.EgQueenMobilityScale = Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value;
             Evaluation.CalculatePositionalFactors();
             // King Safety
-            Evaluation.Config.KingSafetyPowerPer16 = Parameters[nameof(EvaluationConfig.KingSafetyPowerPer16)].Value;
+            Evaluation.Config.KingSafetyPowerPer128 = Parameters[nameof(EvaluationConfig.KingSafetyPowerPer128)].Value;
             Evaluation.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value;
             Evaluation.Config.KingSafetyMinorAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackOuterRingPer8)].Value;
             Evaluation.Config.KingSafetyMinorAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackInnerRingPer8)].Value;
@@ -146,6 +147,9 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.KingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackOuterRingPer8)].Value;
             Evaluation.Config.KingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackInnerRingPer8)].Value;
             Evaluation.Config.KingSafetyScalePer128 = Parameters[nameof(EvaluationConfig.KingSafetyScalePer128)].Value;
+            // Minor Pieces
+            Evaluation.Config.MgBishopPair = Parameters[nameof(EvaluationConfig.MgBishopPair)].Value;
+            Evaluation.Config.EgBishopPair = Parameters[nameof(EvaluationConfig.EgBishopPair)].Value;
         }
         
 

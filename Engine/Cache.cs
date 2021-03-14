@@ -113,7 +113,7 @@ namespace ErikTheCoder.MadChess.Engine
                     oldestBucketIndex = bucketIndex;
                 }
             }
-            if (_positions[oldestBucketIndex] == NullPosition) Positions++; // Oldest bucket has not been used.
+            if (_positions[oldestBucketIndex].Key == NullPosition.Key) Positions++; // Oldest bucket has not been used.
             // Overwrite oldest bucket.
             Debug.Assert(CachedPositionData.IsValid(CachedPosition.Data));
             _positions[oldestBucketIndex] = CachedPosition;

@@ -46,7 +46,6 @@ namespace ErikTheCoder.MadChess.Engine
         public bool Continue;
         private const int _minMovesRemaining = 8;
         private const int _piecesMovesPer128 = 160;
-        private const int _materialAdvantageMovesPer1024 = 25;
         private const int _moveTimeHardLimitPer128 = 512;
         private const int _adjustMoveTimeMinDepth = 9;
         private const int _adjustMoveTimeMinScoreDecrease = 33;
@@ -444,10 +443,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Estimate moves remaining.
                 var pieces = Bitwise.CountSetBits(Position.Occupancy) - 2; // Don't include kings.
-                var piecesMovesRemaining = (pieces * _piecesMovesPer128) / 128;
-                var materialAdvantage = Math.Abs(_evaluation.GetMaterialScore(Position));
-                var materialAdvantageMovesRemaining = (materialAdvantage * _materialAdvantageMovesPer1024) / 1024;
-                movesRemaining = piecesMovesRemaining - materialAdvantageMovesRemaining;
+                movesRemaining = (pieces * _piecesMovesPer128) / 128;
             }
             movesRemaining = Math.Max(movesRemaining, _minMovesRemaining);
             // Calculate move time.
@@ -518,7 +514,7 @@ namespace ErikTheCoder.MadChess.Engine
             var historyIncrement = toHorizon * toHorizon;
             var cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
             ulong bestMove;
-            if ((cachedPosition != _cache.NullPosition) && (Depth > 0) && !repeatPosition)
+            if ((cachedPosition.Key != _cache.NullPosition.Key) && (Depth > 0) && !repeatPosition)
             {
                 // Not a root or repeat position.
                 // Determine if score is cached.
@@ -980,7 +976,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (Engine.Move.IsQuiet(Move) && (QuietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
             var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return Board.CurrentPosition.StaticScore + _evaluation.GetMaterialScore(captureVictim) + futilityMargin < Alpha;
+            return Board.CurrentPosition.StaticScore + _evaluation.GetMaterialScore(Board.CurrentPosition, captureVictim) + futilityMargin < Alpha;
         }
 
 
