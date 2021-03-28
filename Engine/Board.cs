@@ -941,6 +941,41 @@ namespace ErikTheCoder.MadChess.Engine
             if ((victim == Piece.WhiteKing) || (victim == Piece.BlackKing)) return false;  // Piece cannot attack king.
             var promotedPiece = Engine.Move.PromotedPiece(Move);
             if ((promotedPiece != Piece.None) && (CurrentPosition.WhiteMove != Piece.IsWhite(promotedPiece))) return false; // Promoted piece is wrong color.
+            var distance = SquareDistances[fromSquare][toSquare];
+            if (distance > 1)
+            {
+                // For sliding pieces, validate to square is reachable and not blocked.
+                ulong betweenSquares;
+                switch (attacker)
+                {
+                    case Piece.WhiteBishop:
+                        betweenSquares = DiagonalBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.WhiteRook:
+                        betweenSquares = RankFileBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.WhiteQueen:
+                        betweenSquares = DiagonalBetweenSquares[fromSquare][toSquare];
+                        if (betweenSquares == 0) betweenSquares = RankFileBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.BlackBishop:
+                        betweenSquares = DiagonalBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.BlackRook:
+                        betweenSquares = RankFileBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.BlackQueen:
+                        betweenSquares = DiagonalBetweenSquares[fromSquare][toSquare];
+                        if (betweenSquares == 0) betweenSquares = RankFileBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                }
+            }
             int pawn;
             int king;
             int enPassantVictim;
@@ -960,7 +995,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if ((promotedPiece != Piece.None) && (attacker != pawn)) return false; // Only pawns can promote.
             if ((promotedPiece == pawn) || (promotedPiece == king)) return false; // Cannot promote pawn to pawn or king.
-            var castling = (attacker == king) && (SquareDistances[fromSquare][toSquare] == 2);
+            var castling = (attacker == king) && (distance == 2);
             if (castling)
             {
                 // ReSharper disable ConvertIfStatementToSwitchStatement
@@ -1013,7 +1048,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Engine.Move.SetCaptureVictim(ref Move, enPassantVictim);
             }
             else Engine.Move.SetCaptureVictim(ref Move, victim);
-            Engine.Move.SetIsDoublePawnMove(ref Move, (attacker == pawn) && (SquareDistances[fromSquare][toSquare] == 2));
+            Engine.Move.SetIsDoublePawnMove(ref Move, (attacker == pawn) && (distance == 2));
             Engine.Move.SetIsPawnMove(ref Move, attacker == pawn);
             var pawnPromotion = Engine.Move.PromotedPiece(Move) != Piece.None;
             Engine.Move.SetIsQuiet(ref Move, !capture && !pawnPromotion && !castling);

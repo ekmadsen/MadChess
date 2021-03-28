@@ -965,8 +965,8 @@ namespace ErikTheCoder.MadChess.Engine
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return false; // Killer move, pawn promotion, or castling is not futile.
             if (Engine.Move.IsPawnMove(Move))
             {
-                var rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.From(Move)] : Board.BlackRanks[Engine.Move.From(Move)];
-                if (rank >= 5) return false; // Pawn push is not futile.
+                var rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.To(Move)] : Board.BlackRanks[Engine.Move.To(Move)];
+                if (rank >= 6) return false; // Pawn push is not futile.
             }
             // Count pawns and pieces (but don't include kings).
             var whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;

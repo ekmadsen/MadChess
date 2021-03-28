@@ -1020,6 +1020,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void EvaluateMinorPieces(Position Position)
         {
+            // Bishop Pair
             var whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
             if (whiteBishops >= 2)
             {
