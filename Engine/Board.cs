@@ -33,6 +33,8 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong[] RankMasks;
         public static readonly ulong AllSquaresMask;
         public static readonly ulong EdgeSquareMask;
+        public static readonly ulong QueensideMask;
+        public static readonly ulong KingsideMask;
         public static readonly ulong WhiteCastleQEmptySquaresMask;
         public static readonly ulong WhiteCastleKEmptySquaresMask;
         public static readonly ulong BlackCastleQEmptySquaresMask;
@@ -220,6 +222,8 @@ namespace ErikTheCoder.MadChess.Engine
             }
             AllSquaresMask = Bitwise.CreateULongMask(0, 63);
             EdgeSquareMask = FileMasks[0] | RankMasks[7] | FileMasks[7] | RankMasks[0];
+            QueensideMask = FileMasks[0] | FileMasks[1] | FileMasks[2] | FileMasks[3];
+            KingsideMask = FileMasks[4] | FileMasks[5] | FileMasks[6] | FileMasks[7];
             // Create castling masks.
             WhiteCastleQEmptySquaresMask = Bitwise.CreateULongMask(new[] {Square.b1, Square.c1, Square.d1});
             _whiteCastleQAttackedSquareMask = Bitwise.CreateULongMask(Square.d1);
@@ -904,14 +908,14 @@ namespace ErikTheCoder.MadChess.Engine
                     square++;
                 }
             }
-            // Set side to move, castling rights, en passant square, half and full move counts.
+            // Set side to move, castling rights, en passant square, ply, and full move number.
             CurrentPosition.WhiteMove = fen[1].Equals("w");
             Castling.SetWhiteKingside(ref CurrentPosition.Castling, fen[2].IndexOf("K") > -1);
             Castling.SetWhiteQueenside(ref CurrentPosition.Castling, fen[2].IndexOf("Q") > -1);
             Castling.SetBlackKingside(ref CurrentPosition.Castling, fen[2].IndexOf("k") > -1);
             Castling.SetBlackQueenside(ref CurrentPosition.Castling, fen[2].IndexOf("q") > -1);
             CurrentPosition.EnPassantSquare = fen[3] == "-" ? Square.Illegal : GetSquare(fen[3]);
-            CurrentPosition.HalfMoveNumber = fen.Count == 6 ? int.Parse(fen[4]) : 0;
+            CurrentPosition.PlySinceCaptureOrPawnMove = fen.Count == 6 ? int.Parse(fen[4]) : 0;
             CurrentPosition.FullMoveNumber = fen.Count == 6 ? int.Parse(fen[5]) : 1;
             // Determine if king is in check and set position key.
             PlayNullMove();
@@ -1264,8 +1268,8 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Update en passant capture square, move counts, side to move, position key, and nodes.
             CurrentPosition.EnPassantSquare = Engine.Move.IsDoublePawnMove(Move) ? _enPassantTargetSquares[toSquare] : Square.Illegal;
-            if ((captureVictim != Piece.None) || Engine.Move.IsPawnMove(Move)) CurrentPosition.HalfMoveNumber = 0;
-            else CurrentPosition.HalfMoveNumber++;
+            if ((captureVictim != Piece.None) || Engine.Move.IsPawnMove(Move)) CurrentPosition.PlySinceCaptureOrPawnMove = 0;
+            else CurrentPosition.PlySinceCaptureOrPawnMove++;
             if (!CurrentPosition.WhiteMove) CurrentPosition.FullMoveNumber++;
             CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
             CurrentPosition.KingInCheck = Engine.Move.IsCheck(Move);
@@ -1424,7 +1428,7 @@ namespace ErikTheCoder.MadChess.Engine
             var currentPositionKey = CurrentPosition.Key;
             var positionCount = 0;
             // Examine positions since the last capture or pawn move.
-            var firstMove = Math.Max(_positionIndex - CurrentPosition.HalfMoveNumber, 0);
+            var firstMove = Math.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
             for (var positionIndex = _positionIndex; positionIndex >= firstMove; positionIndex -= 2) // Advance by two ply to retain same side to move.
             {
                 if (_positions[positionIndex].Key == currentPositionKey) positionCount++;
@@ -1439,7 +1443,7 @@ namespace ErikTheCoder.MadChess.Engine
             var currentPositionKey = CurrentPosition.Key;
             var positionCount = 0;
             // Examine positions since the last capture or pawn move.
-            var firstMove = Math.Max(_positionIndex - CurrentPosition.HalfMoveNumber, 0);
+            var firstMove = Math.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
             for (var positionIndex = firstMove; positionIndex <= _positionIndex; positionIndex += 2) // Advance by two ply to retain same side to move.
             {
                 if (_positions[positionIndex].Key == currentPositionKey) positionCount++;

@@ -19,6 +19,6 @@ namespace ErikTheCoder.MadChess.Engine
         public delegate bool IsRepeatPosition(int Repeats);
         public delegate void DisplayStats();
         public delegate void WriteMessageLine(string Message);
-        public delegate int GetStaticScore(Position Position);
+        public delegate (int StaticScore, bool DrawnEndgame) GetStaticScore(Position Position);
     }
 }

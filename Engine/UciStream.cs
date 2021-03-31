@@ -25,7 +25,7 @@ namespace ErikTheCoder.MadChess.Engine
         public const long NodesInfoInterval = 1_000_000;
         public const long NodesTimeInterval = 5_000;
         public Board Board;
-        private string[] _defaultHalfAndFullMove;
+        private string[] _defaultPlyAndFullMove;
         private const int _cacheSizeMegabytes = 128;
         private const int _minWinPercentScale = 400;
         private const int _maxWinPercentScale = 800;
@@ -94,7 +94,7 @@ namespace ErikTheCoder.MadChess.Engine
             _moveHistory = new MoveHistory();
             _evaluation = new Evaluation(_stats, Board.IsRepeatPosition, () => _debug, WriteMessageLine);
             _search = new Search(_stats, _cache, _killerMoves, _moveHistory, _evaluation, () => _debug, DisplayStats, WriteMessageLine);
-            _defaultHalfAndFullMove = new[] { "0", "1" };
+            _defaultPlyAndFullMove = new[] { "0", "1" };
             Board.SetPosition(Board.StartPositionFen);
         }
 
@@ -124,7 +124,7 @@ namespace ErikTheCoder.MadChess.Engine
                 _killerMoves = null;
                 _moveHistory = null;
                 _evaluation = null;
-                _defaultHalfAndFullMove = null;
+                _defaultPlyAndFullMove = null;
                 lock (_messageLock) { _stopwatch = null; }
                 _commandStopwatch = null;
                 lock (_asyncLock) { _asyncQueue = null; }
@@ -506,8 +506,8 @@ namespace ErikTheCoder.MadChess.Engine
                     specifiesMoves = true;
                     if (!char.IsNumber(Tokens[index - 1][0]))
                     {
-                        // Position does not specify half or full move number.
-                        Tokens.InsertRange(index, _defaultHalfAndFullMove);
+                        // Position does not specify ply or full move number.
+                        Tokens.InsertRange(index, _defaultPlyAndFullMove);
                         index += 2;
                     }
                     if (index == Tokens.Count - 1) Tokens.RemoveAt(Tokens.Count - 1);
@@ -519,8 +519,8 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 if (!char.IsNumber(Tokens[Tokens.Count - 1][0]))
                 {
-                    // Position does not specify half or full move number.
-                    Tokens.AddRange(_defaultHalfAndFullMove);
+                    // Position does not specify ply or full move number.
+                    Tokens.AddRange(_defaultPlyAndFullMove);
                     moveIndex += 2;
                 }
             }

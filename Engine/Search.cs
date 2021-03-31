@@ -537,11 +537,14 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             if (toHorizon <= 0) return GetQuietScore(Board, Depth, Depth, Board.AllSquaresMask, Alpha, Beta, _getStaticScore, true); // Search for a quiet position.
-            var drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
-            // ReSharper disable PossibleNullReferenceException
+            var drawnEndgame = false;
             if (Board.CurrentPosition.KingInCheck) Board.CurrentPosition.StaticScore = -StaticScore.Max;
+            // ReSharper disable once PossibleNullReferenceException
             else if (Board.PreviousPosition?.PlayedMove == Move.Null) Board.CurrentPosition.StaticScore = -Board.PreviousPosition.StaticScore;
-            else Board.CurrentPosition.StaticScore = drawnEndgame ? 0 : _evaluation.GetStaticScore(Board.CurrentPosition);
+            else
+            {
+                (Board.CurrentPosition.StaticScore, drawnEndgame) = _evaluation.GetStaticScore(Board.CurrentPosition);
+            }
             // ReSharper restore PossibleNullReferenceException
             if (IsPositionFutile(Board.CurrentPosition, Depth, Horizon, drawnEndgame, Alpha, Beta))
             {
@@ -708,7 +711,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         public int GetExchangeScore(Board Board, ulong Move)
         {
-            var scoreBeforeMove = _getExchangeMaterialScore(Board.CurrentPosition);
+            var (scoreBeforeMove, _) = _getExchangeMaterialScore(Board.CurrentPosition);
             Board.PlayMove(Move);
             var scoreAfterMove = -GetQuietScore(Board, 0, 0, Board.SquareMasks[Engine.Move.To(Move)], -StaticScore.Max, StaticScore.Max, _getExchangeMaterialScore, false);
             Board.UndoMove();
@@ -734,7 +737,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Search for a quiet position where no captures are possible.
             var fromHorizon = Depth - Horizon;
             _selectiveHorizon = Math.Max(Depth, _selectiveHorizon);
-            var drawnEndgame = Evaluation.IsDrawnEndgame(Board.CurrentPosition);
+            var drawnEndgame = false;
             Delegates.GetNextMove getNextMove;
             ulong moveGenerationToSquareMask;
             if (Board.CurrentPosition.KingInCheck)
@@ -758,7 +761,10 @@ namespace ErikTheCoder.MadChess.Engine
                 else moveGenerationToSquareMask = ToSquareMask;
                 // ReSharper disable PossibleNullReferenceException
                 if (Board.PreviousPosition?.PlayedMove == Move.Null) Board.CurrentPosition.StaticScore = -Board.PreviousPosition.StaticScore;
-                else Board.CurrentPosition.StaticScore = drawnEndgame ? 0 : GetStaticScore(Board.CurrentPosition);
+                else
+                {
+                    (Board.CurrentPosition.StaticScore, drawnEndgame) = GetStaticScore(Board.CurrentPosition);
+                }
                 // ReSharper restore PossibleNullReferenceException
                 if (Board.CurrentPosition.StaticScore >= Beta) return Beta; // Prevent worsening of position by making a bad capture.  Stand pat.
                 Alpha = Math.Max(Board.CurrentPosition.StaticScore, Alpha);

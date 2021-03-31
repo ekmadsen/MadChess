@@ -38,7 +38,7 @@ namespace ErikTheCoder.MadChess.Engine
         public bool WhiteMove;
         public uint Castling;
         public int EnPassantSquare;
-        public int HalfMoveNumber;
+        public int PlySinceCaptureOrPawnMove;
         public int FullMoveNumber;
         public bool KingInCheck;
         public int CurrentMoveIndex;
@@ -107,7 +107,7 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteMove = CopyFromPosition.WhiteMove;
             Castling = CopyFromPosition.Castling;
             EnPassantSquare = CopyFromPosition.EnPassantSquare;
-            HalfMoveNumber = CopyFromPosition.HalfMoveNumber;
+            PlySinceCaptureOrPawnMove = CopyFromPosition.PlySinceCaptureOrPawnMove;
             FullMoveNumber = CopyFromPosition.FullMoveNumber;
             PiecesSquaresKey = CopyFromPosition.PiecesSquaresKey;
         }
@@ -784,7 +784,7 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteMove = true;
             Castling = 0;
             EnPassantSquare = Square.Illegal;
-            HalfMoveNumber = 0;
+            PlySinceCaptureOrPawnMove = 0;
             FullMoveNumber = 0;
             KingInCheck = false;
             CurrentMoveIndex = 0;
@@ -836,7 +836,7 @@ namespace ErikTheCoder.MadChess.Engine
                     stringBuilder.Append(Piece.GetChar(piece));
                 }
             }
-            // Display side to move, castling rights, en passant square, half and full move numbers.
+            // Display side to move, castling rights, en passant square, ply, and full move number.
             stringBuilder.Append(" ");
             stringBuilder.Append(WhiteMove ? "w" : "b");
             stringBuilder.Append(" ");
@@ -844,7 +844,7 @@ namespace ErikTheCoder.MadChess.Engine
             stringBuilder.Append(" ");
             stringBuilder.Append(EnPassantSquare == Square.Illegal ? "-" : Board.SquareLocations[EnPassantSquare]);
             stringBuilder.Append(" ");
-            stringBuilder.Append(HalfMoveNumber);
+            stringBuilder.Append(PlySinceCaptureOrPawnMove);
             stringBuilder.Append(" ");
             stringBuilder.Append(FullMoveNumber);
             return stringBuilder.ToString();
