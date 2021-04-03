@@ -66,7 +66,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int WhiteMgMaterial => WhiteMgPawnMaterial + WhiteMgPieceMaterial;
 
 
-        private int WhiteMg => WhiteEgSimple + WhiteMgMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility + WhiteMgKingSafety + WhiteMgBishopPair;
+        private int WhiteMg => WhiteMgMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility + WhiteMgKingSafety + WhiteMgBishopPair;
 
 
         private int WhiteEgMaterial => WhiteEgPawnMaterial + WhiteEgPieceMaterial;
@@ -82,7 +82,7 @@ namespace ErikTheCoder.MadChess.Engine
         private int BlackMgMaterial => BlackMgPawnMaterial + BlackMgPieceMaterial;
 
 
-        private int BlackMg => BlackEgSimple + BlackMgMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns + BlackMgPieceMobility + BlackMgKingSafety + BlackMgBishopPair;
+        private int BlackMg => BlackMgMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns + BlackMgPieceMobility + BlackMgKingSafety + BlackMgBishopPair;
 
 
         private int BlackEgMaterial => BlackEgPawnMaterial + BlackEgPieceMaterial;
