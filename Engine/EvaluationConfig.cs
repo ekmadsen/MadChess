@@ -100,11 +100,9 @@ namespace ErikTheCoder.MadChess.Engine
         public int MgBishopPair = 21;
         public int EgBishopPair = 98;
         // Endgame Scaling
-        public int EgBishopAdvantagePer128 = 11;
+        public int EgBishopAdvantagePer128 = 14;
         public int EgOppBishopsPerPassedPawn = 24;
-        public int EgOppBishopsPassedPawnPer128 = 42;
-        public int EgOppBishopsPerPiece = 8;
-        public int EgQueenVrsNoQueenPerMinorPiece = 17;
+        public int EgOppBishopsPer128 = 42;
         public int EgWinningPerPawn = 7;
         // ReSharper restore FieldCanBeMadeReadOnly.Global
         // ReSharper restore ConvertToConstant.Global
@@ -189,9 +187,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Copy endgame scaling values.
             EgBishopAdvantagePer128 = CopyFromConfig.EgBishopAdvantagePer128;
             EgOppBishopsPerPassedPawn = CopyFromConfig.EgOppBishopsPerPassedPawn;
-            EgOppBishopsPassedPawnPer128 = CopyFromConfig.EgOppBishopsPassedPawnPer128;
-            EgOppBishopsPerPiece = CopyFromConfig.EgOppBishopsPerPiece;
-            EgQueenVrsNoQueenPerMinorPiece = CopyFromConfig.EgQueenVrsNoQueenPerMinorPiece;
+            EgOppBishopsPer128 = CopyFromConfig.EgOppBishopsPer128;
             EgWinningPerPawn = CopyFromConfig.EgWinningPerPawn;
         }
     }

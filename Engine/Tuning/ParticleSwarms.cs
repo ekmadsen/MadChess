@@ -165,10 +165,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new (nameof(EvaluationConfig.EgBishopPair), 50, 200),
                 // Endgame Scaling
                 new (nameof(EvaluationConfig.EgBishopAdvantagePer128), 0, 64),
-                new (nameof(EvaluationConfig.EgOppBishopsPerPassedPawn), 0, 32),
-                new (nameof(EvaluationConfig.EgOppBishopsPassedPawnPer128), 0, 64),
-                new (nameof(EvaluationConfig.EgOppBishopsPerPiece), 0, 32),
-                new (nameof(EvaluationConfig.EgQueenVrsNoQueenPerMinorPiece), 0, 32),
+                new (nameof(EvaluationConfig.EgOppBishopsPerPassedPawn), 0, 64),
+                new (nameof(EvaluationConfig.EgOppBishopsPer128), 0, 64),
                 new (nameof(EvaluationConfig.EgWinningPerPawn), 0, 32)
             };
         }
@@ -255,9 +253,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             // Endgame Scaling
             Parameters[nameof(EvaluationConfig.EgBishopAdvantagePer128)].Value = evaluationConfig.EgBishopAdvantagePer128;
             Parameters[nameof(EvaluationConfig.EgOppBishopsPerPassedPawn)].Value = evaluationConfig.EgOppBishopsPerPassedPawn;
-            Parameters[nameof(EvaluationConfig.EgOppBishopsPassedPawnPer128)].Value = evaluationConfig.EgOppBishopsPassedPawnPer128;
-            Parameters[nameof(EvaluationConfig.EgOppBishopsPerPiece)].Value = evaluationConfig.EgOppBishopsPerPiece;
-            Parameters[nameof(EvaluationConfig.EgQueenVrsNoQueenPerMinorPiece)].Value = evaluationConfig.EgQueenVrsNoQueenPerMinorPiece;
+            Parameters[nameof(EvaluationConfig.EgOppBishopsPer128)].Value = evaluationConfig.EgOppBishopsPer128;
             Parameters[nameof(EvaluationConfig.EgWinningPerPawn)].Value = evaluationConfig.EgWinningPerPawn;
         }
 

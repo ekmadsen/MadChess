@@ -152,9 +152,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             // Endgame Scaling
             Evaluation.Config.EgBishopAdvantagePer128 = Parameters[nameof(EvaluationConfig.EgBishopAdvantagePer128)].Value;
             Evaluation.Config.EgOppBishopsPerPassedPawn = Parameters[nameof(EvaluationConfig.EgOppBishopsPerPassedPawn)].Value;
-            Evaluation.Config.EgOppBishopsPassedPawnPer128 = Parameters[nameof(EvaluationConfig.EgOppBishopsPassedPawnPer128)].Value;
-            Evaluation.Config.EgOppBishopsPerPiece = Parameters[nameof(EvaluationConfig.EgOppBishopsPerPiece)].Value;
-            Evaluation.Config.EgQueenVrsNoQueenPerMinorPiece = Parameters[nameof(EvaluationConfig.EgQueenVrsNoQueenPerMinorPiece)].Value;
+            Evaluation.Config.EgOppBishopsPer128 = Parameters[nameof(EvaluationConfig.EgOppBishopsPer128)].Value;
             Evaluation.Config.EgWinningPerPawn = Parameters[nameof(EvaluationConfig.EgWinningPerPawn)].Value;
             // Calculate positional factors after updating evaluation config.
             Evaluation.CalculatePositionalFactors();
