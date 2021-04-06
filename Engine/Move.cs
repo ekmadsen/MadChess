@@ -200,7 +200,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Value is inverted.
             var storedPiece = (int)((Move & _captureAttackerMask) >> _captureAttackerShift);
-            return 12 - storedPiece;
+            return Piece.BlackKing - storedPiece;
         }
 
 
@@ -208,7 +208,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static void SetCaptureAttacker(ref ulong Move, int CaptureAttacker)
         {
             // Invert piece value so P x Q captures are given a higher priority than Q x Q.
-            var storedPiece = (ulong)(12 - CaptureAttacker);
+            var storedPiece = (ulong)(Piece.BlackKing - CaptureAttacker);
             // Clear
             Move &= _captureAttackerUnmask;
             // Set

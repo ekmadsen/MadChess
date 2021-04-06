@@ -51,17 +51,18 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             var parameters = CreateParameters();
             for (var index = 0; index < ParticleSwarms; index++)
             {
-                Add(new ParticleSwarm(pgnGames, parameters, ParticlesPerSwarm, WinPercentScale));
+                var particleSwarm = new ParticleSwarm(pgnGames, parameters, ParticlesPerSwarm, WinPercentScale);
+                Add(particleSwarm);
+                // Set parameter values of all particles in swarm to known best.
+                foreach (var particle in particleSwarm.Particles) SetDefaultParameters(particle.Parameters);
             }
-            // Set parameter values of first particle in first swarm to known best.
-            var firstParticleInFirstSwarm = this[0].Particles[0];
-            SetDefaultParameters(firstParticleInFirstSwarm.Parameters);
             var stats = new Stats();
             var cache = new Cache(1, stats, board.ValidateMove);
             var killerMoves = new KillerMoves(Search.MaxHorizon);
             var moveHistory = new MoveHistory();
             var evaluation = new Evaluation(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
             var search = new Search(stats, cache, killerMoves, moveHistory, evaluation, () => false, DisplayStats, WriteMessageLine);
+            var firstParticleInFirstSwarm = this[0].Particles[0];
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
             stopwatch.Stop();
@@ -161,7 +162,12 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new (nameof(EvaluationConfig.KingSafetyScalePer128), 0, 128),
                 // Minor Pieces
                 new (nameof(EvaluationConfig.MgBishopPair), 0, 50),
-                new (nameof(EvaluationConfig.EgBishopPair), 50, 200)
+                new (nameof(EvaluationConfig.EgBishopPair), 50, 200),
+                // Endgame Scaling
+                new (nameof(EvaluationConfig.EgBishopAdvantagePer128), 0, 64),
+                new (nameof(EvaluationConfig.EgOppBishopsPerPassedPawn), 0, 64),
+                new (nameof(EvaluationConfig.EgOppBishopsPer128), 0, 64),
+                new (nameof(EvaluationConfig.EgWinningPerPawn), 0, 32)
             };
         }
 
@@ -244,6 +250,11 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             // Minor Pieces
             Parameters[nameof(EvaluationConfig.MgBishopPair)].Value = evaluationConfig.MgBishopPair;
             Parameters[nameof(EvaluationConfig.EgBishopPair)].Value = evaluationConfig.EgBishopPair;
+            // Endgame Scaling
+            Parameters[nameof(EvaluationConfig.EgBishopAdvantagePer128)].Value = evaluationConfig.EgBishopAdvantagePer128;
+            Parameters[nameof(EvaluationConfig.EgOppBishopsPerPassedPawn)].Value = evaluationConfig.EgOppBishopsPerPassedPawn;
+            Parameters[nameof(EvaluationConfig.EgOppBishopsPer128)].Value = evaluationConfig.EgOppBishopsPer128;
+            Parameters[nameof(EvaluationConfig.EgWinningPerPawn)].Value = evaluationConfig.EgWinningPerPawn;
         }
 
 

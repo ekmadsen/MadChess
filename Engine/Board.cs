@@ -904,14 +904,14 @@ namespace ErikTheCoder.MadChess.Engine
                     square++;
                 }
             }
-            // Set side to move, castling rights, en passant square, half and full move counts.
+            // Set side to move, castling rights, en passant square, ply, and full move number.
             CurrentPosition.WhiteMove = fen[1].Equals("w");
             Castling.SetWhiteKingside(ref CurrentPosition.Castling, fen[2].IndexOf("K") > -1);
             Castling.SetWhiteQueenside(ref CurrentPosition.Castling, fen[2].IndexOf("Q") > -1);
             Castling.SetBlackKingside(ref CurrentPosition.Castling, fen[2].IndexOf("k") > -1);
             Castling.SetBlackQueenside(ref CurrentPosition.Castling, fen[2].IndexOf("q") > -1);
             CurrentPosition.EnPassantSquare = fen[3] == "-" ? Square.Illegal : GetSquare(fen[3]);
-            CurrentPosition.HalfMoveNumber = fen.Count == 6 ? int.Parse(fen[4]) : 0;
+            CurrentPosition.PlySinceCaptureOrPawnMove = fen.Count == 6 ? int.Parse(fen[4]) : 0;
             CurrentPosition.FullMoveNumber = fen.Count == 6 ? int.Parse(fen[5]) : 1;
             // Determine if king is in check and set position key.
             PlayNullMove();
@@ -941,6 +941,41 @@ namespace ErikTheCoder.MadChess.Engine
             if ((victim == Piece.WhiteKing) || (victim == Piece.BlackKing)) return false;  // Piece cannot attack king.
             var promotedPiece = Engine.Move.PromotedPiece(Move);
             if ((promotedPiece != Piece.None) && (CurrentPosition.WhiteMove != Piece.IsWhite(promotedPiece))) return false; // Promoted piece is wrong color.
+            var distance = SquareDistances[fromSquare][toSquare];
+            if (distance > 1)
+            {
+                // For sliding pieces, validate to square is reachable and not blocked.
+                ulong betweenSquares;
+                switch (attacker)
+                {
+                    case Piece.WhiteBishop:
+                        betweenSquares = DiagonalBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.WhiteRook:
+                        betweenSquares = RankFileBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.WhiteQueen:
+                        betweenSquares = DiagonalBetweenSquares[fromSquare][toSquare];
+                        if (betweenSquares == 0) betweenSquares = RankFileBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.BlackBishop:
+                        betweenSquares = DiagonalBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.BlackRook:
+                        betweenSquares = RankFileBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                    case Piece.BlackQueen:
+                        betweenSquares = DiagonalBetweenSquares[fromSquare][toSquare];
+                        if (betweenSquares == 0) betweenSquares = RankFileBetweenSquares[fromSquare][toSquare];
+                        if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
+                        break;
+                }
+            }
             int pawn;
             int king;
             int enPassantVictim;
@@ -960,7 +995,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if ((promotedPiece != Piece.None) && (attacker != pawn)) return false; // Only pawns can promote.
             if ((promotedPiece == pawn) || (promotedPiece == king)) return false; // Cannot promote pawn to pawn or king.
-            var castling = (attacker == king) && (SquareDistances[fromSquare][toSquare] == 2);
+            var castling = (attacker == king) && (distance == 2);
             if (castling)
             {
                 // ReSharper disable ConvertIfStatementToSwitchStatement
@@ -1013,7 +1048,7 @@ namespace ErikTheCoder.MadChess.Engine
                 Engine.Move.SetCaptureVictim(ref Move, enPassantVictim);
             }
             else Engine.Move.SetCaptureVictim(ref Move, victim);
-            Engine.Move.SetIsDoublePawnMove(ref Move, (attacker == pawn) && (SquareDistances[fromSquare][toSquare] == 2));
+            Engine.Move.SetIsDoublePawnMove(ref Move, (attacker == pawn) && (distance == 2));
             Engine.Move.SetIsPawnMove(ref Move, attacker == pawn);
             var pawnPromotion = Engine.Move.PromotedPiece(Move) != Piece.None;
             Engine.Move.SetIsQuiet(ref Move, !capture && !pawnPromotion && !castling);
@@ -1229,8 +1264,8 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Update en passant capture square, move counts, side to move, position key, and nodes.
             CurrentPosition.EnPassantSquare = Engine.Move.IsDoublePawnMove(Move) ? _enPassantTargetSquares[toSquare] : Square.Illegal;
-            if ((captureVictim != Piece.None) || Engine.Move.IsPawnMove(Move)) CurrentPosition.HalfMoveNumber = 0;
-            else CurrentPosition.HalfMoveNumber++;
+            if ((captureVictim != Piece.None) || Engine.Move.IsPawnMove(Move)) CurrentPosition.PlySinceCaptureOrPawnMove = 0;
+            else CurrentPosition.PlySinceCaptureOrPawnMove++;
             if (!CurrentPosition.WhiteMove) CurrentPosition.FullMoveNumber++;
             CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
             CurrentPosition.KingInCheck = Engine.Move.IsCheck(Move);
@@ -1389,7 +1424,7 @@ namespace ErikTheCoder.MadChess.Engine
             var currentPositionKey = CurrentPosition.Key;
             var positionCount = 0;
             // Examine positions since the last capture or pawn move.
-            var firstMove = Math.Max(_positionIndex - CurrentPosition.HalfMoveNumber, 0);
+            var firstMove = Math.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
             for (var positionIndex = _positionIndex; positionIndex >= firstMove; positionIndex -= 2) // Advance by two ply to retain same side to move.
             {
                 if (_positions[positionIndex].Key == currentPositionKey) positionCount++;
@@ -1404,7 +1439,7 @@ namespace ErikTheCoder.MadChess.Engine
             var currentPositionKey = CurrentPosition.Key;
             var positionCount = 0;
             // Examine positions since the last capture or pawn move.
-            var firstMove = Math.Max(_positionIndex - CurrentPosition.HalfMoveNumber, 0);
+            var firstMove = Math.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
             for (var positionIndex = firstMove; positionIndex <= _positionIndex; positionIndex += 2) // Advance by two ply to retain same side to move.
             {
                 if (_positions[positionIndex].Key == currentPositionKey) positionCount++;

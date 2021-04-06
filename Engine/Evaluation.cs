@@ -275,7 +275,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Only return true if position is drawn and no sequence of moves can make game winnable.
             if (_isRepeatPosition(DrawMoves)) return (true, true); // Draw by repetition of position.
-            if (Position.HalfMoveNumber >= 99) return (true, false); // Draw by fifty moves without a capture or pawn move.
+            if (Position.PlySinceCaptureOrPawnMove >= StaticScore.MaxPlyWithoutCaptureOrPawnMove) return (true, false); // Draw by 50 moves (100 ply) without a capture or pawn move.
             // Determine if insufficient material remains for checkmate.
             if (Bitwise.CountSetBits(Position.WhitePawns | Position.BlackPawns) == 0)
             {
@@ -294,147 +294,71 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsDrawnEndgame(Position Position)
-        {
-            if (Bitwise.CountSetBits(Position.WhitePawns | Position.BlackPawns) > 0) return false; // At least one pawn on board.
-            return IsDrawnEndgame(Position, true) || IsDrawnEndgame(Position, false);
-        }
-
-
-        private static bool IsDrawnEndgame(Position Position, bool WhiteIsSide1)
-        {
-            // Return true if position is drawn.
-            // Do not terminate search based on this method because a sequence of moves could make the game winnable.
-            int side1Knights;
-            int side1Bishops;
-            int side1Rooks;
-            int side1Queens;
-            int side2Knights;
-            int side2Bishops;
-            int side2Rooks;
-            int side2Queens;
-            if (WhiteIsSide1)
-            {
-                // White is side 1.
-                side1Knights = Bitwise.CountSetBits(Position.WhiteKnights);
-                side1Bishops = Bitwise.CountSetBits(Position.WhiteBishops);
-                side1Rooks = Bitwise.CountSetBits(Position.WhiteRooks);
-                side1Queens = Bitwise.CountSetBits(Position.WhiteQueens);
-                side2Knights = Bitwise.CountSetBits(Position.BlackKnights);
-                side2Bishops = Bitwise.CountSetBits(Position.BlackBishops);
-                side2Rooks = Bitwise.CountSetBits(Position.BlackRooks);
-                side2Queens = Bitwise.CountSetBits(Position.BlackQueens);
-            }
-            else
-            {
-                // Black is side 1.
-                side1Knights = Bitwise.CountSetBits(Position.BlackKnights);
-                side1Bishops = Bitwise.CountSetBits(Position.BlackBishops);
-                side1Rooks = Bitwise.CountSetBits(Position.BlackRooks);
-                side1Queens = Bitwise.CountSetBits(Position.BlackQueens);
-                side2Knights = Bitwise.CountSetBits(Position.WhiteKnights);
-                side2Bishops = Bitwise.CountSetBits(Position.WhiteBishops);
-                side2Rooks = Bitwise.CountSetBits(Position.WhiteRooks);
-                side2Queens = Bitwise.CountSetBits(Position.WhiteQueens);
-            }
-            var side1MinorPieces = side1Knights + side1Bishops;
-            var side1MajorPieces = side1Rooks + side1Queens;
-            var side2MinorPieces = side2Knights + side2Bishops;
-            var side2MajorPieces = side2Rooks + side2Queens;
-            var side1QueenOr2Rooks = ((side1Queens == 1) && (side1MajorPieces == 1) && (side1MinorPieces == 0)) || ((side1Rooks == 2) && (side1MajorPieces == 2) && (side1MinorPieces == 0));
-            var side2QueenOr2Rooks = ((side2Queens == 1) && (side2MajorPieces == 1) && (side2MinorPieces == 0)) || ((side2Rooks == 2) && (side2MajorPieces == 2) && (side2MinorPieces == 0));
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (side1QueenOr2Rooks && side2QueenOr2Rooks) return true; // Both sides have queen or two rooks.
-            if (side1QueenOr2Rooks)
-            {
-                // Side 1 has queen or two rooks.
-                if ((side2Rooks == 1) && (side2MajorPieces == 1))
-                {
-                    if ((side2Bishops == 1) && (side2Knights == 1)) return true; // Side 2 has rook, bishop, and knight.
-                    if (side2MinorPieces == 1) return true; // Side 2 has rook and minor piece.
-                }
-            }
-            if ((side1Rooks == 1) && (side1MajorPieces == 1) && (side1MinorPieces == 1))
-            {
-                // Side 1 has rook and minor piece.
-                switch (side2Rooks)
-                {
-                    case 1 when (side2MajorPieces == 1) && (side2MinorPieces == 1): // Side 2 has rook and minor piece.
-                    case 1 when (side2MajorPieces == 1) && (side2MinorPieces == 0): // Side 2 has rook.
-                        return true;
-                }
-            }
-            if ((side1Bishops == 1) && (side1Knights == 1) && (side1MajorPieces == 0))
-            {
-                // Side 1 has bishop and knight.
-                if ((side2Rooks == 1) && (side2MajorPieces == 1) && (side2MinorPieces == 0)) return true; // Side 2 has rook.
-            }
-            if ((side1Rooks == 1) && (side1MajorPieces == 1) && (side1MinorPieces == 0))
-            {
-                // Side 1 has rook.
-                if ((side2Rooks == 1) && (side2MajorPieces == 1) && (side2MinorPieces == 0)) return true; // Side 2 has rook.
-                if ((side2MinorPieces == 1) && (side2MajorPieces == 0)) return true; // Side 2 has minor piece.
-            }
-            if ((side1Knights == 2) && (side1MinorPieces == 2) && (side1MajorPieces == 0))
-            {
-                // Side 1 has two knights.
-                if ((side2MinorPieces <= 1) && (side2MajorPieces == 0)) return true; // Side 2 has one or zero minor pieces.
-            }
-            return false;
-        }
-
-
-        public int GetStaticScore(Position Position)
+        public (int StaticScore, bool DrawnEndgame) GetStaticScore(Position Position)
         {
             Debug.Assert(!Position.KingInCheck);
             _stats.Evaluations++;
             _staticScore.Reset();
-            if (!EvaluateSimpleEndgame(Position))
+            if (EvaluateSimpleEndgame(Position))
             {
-                // Not a simple endgame.
-                EvaluateMaterial(Position);
-                if (UnderstandsPieceLocation) EvaluatePieceLocation(Position);
-                if (UnderstandsPassedPawns) EvaluatePawns(Position);
-                EvaluatePieceMobilityKingSafety(Position);
-                if (!UnderstandsMobility)
-                {
-                    _staticScore.WhiteMgPieceMobility = 0;
-                    _staticScore.WhiteEgPieceMobility = 0;
-                    _staticScore.BlackMgPieceMobility = 0;
-                    _staticScore.BlackEgPieceMobility = 0;
-                }
-                if (!UnderstandsKingSafety)
-                {
-                    _staticScore.WhiteMgKingSafety = 0;
-                    _staticScore.WhiteEgKingSafety = 0;
-                    _staticScore.BlackMgKingSafety = 0;
-                    _staticScore.BlackEgKingSafety = 0;
-                }
-                EvaluateMinorPieces(Position);
+                if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
+                return Position.WhiteMove
+                    ? (_staticScore.WhiteEg - _staticScore.BlackEg, false)
+                    : (_staticScore.BlackEg - _staticScore.WhiteEg, false);
             }
+            // Not a simple endgame.
+            _staticScore.PlySinceCaptureOrPawnMove = Position.PlySinceCaptureOrPawnMove;
+            EvaluateMaterial(Position);
+            if (UnderstandsPieceLocation) EvaluatePieceLocation(Position);
+            if (UnderstandsPassedPawns) EvaluatePawns(Position);
+            EvaluatePieceMobilityKingSafety(Position);
+            if (!UnderstandsMobility)
+            {
+                _staticScore.WhiteMgPieceMobility = 0;
+                _staticScore.WhiteEgPieceMobility = 0;
+                _staticScore.BlackMgPieceMobility = 0;
+                _staticScore.BlackEgPieceMobility = 0;
+            }
+            if (!UnderstandsKingSafety)
+            {
+                _staticScore.WhiteMgKingSafety = 0;
+                _staticScore.WhiteEgKingSafety = 0;
+                _staticScore.BlackMgKingSafety = 0;
+                _staticScore.BlackEgKingSafety = 0;
+            }
+            EvaluateMinorPieces(Position);
+            DetermineEndgameScale(Position); // Scale down scores for difficult to win endgames.
+            if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
             var phase = DetermineGamePhase(Position);
-            return Position.WhiteMove ? _staticScore.TotalScore(phase) : -_staticScore.TotalScore(phase);
+            return Position.WhiteMove
+                ? (_staticScore.GetTotalScore(phase), false)
+                : (-_staticScore.GetTotalScore(phase), false);
         }
 
 
         private bool EvaluateSimpleEndgame(Position Position)
         {
             var whitePawns = Bitwise.CountSetBits(Position.WhitePawns);
+            var blackPawns = Bitwise.CountSetBits(Position.BlackPawns);
+            if ((whitePawns == 0) && (blackPawns == 0) && IsPawnlessDraw(Position))
+            {
+                // Game is pawnless draw.
+                _staticScore.EgScalePer128 = 0;
+                return true;
+            }
             var whiteKnights = Bitwise.CountSetBits(Position.WhiteKnights);
             var whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
             var whiteMinorPieces = whiteKnights + whiteBishops;
             var whiteMajorPieces = Bitwise.CountSetBits(Position.WhiteRooks | Position.WhiteQueens);
             var whitePawnsAndPieces = whitePawns + whiteMinorPieces + whiteMajorPieces;
-            var blackPawns = Bitwise.CountSetBits(Position.BlackPawns);
             var blackKnights = Bitwise.CountSetBits(Position.BlackKnights);
             var blackBishops = Bitwise.CountSetBits(Position.BlackBishops);
             var blackMinorPieces = blackKnights + blackBishops;
             var blackMajorPieces = Bitwise.CountSetBits(Position.BlackRooks | Position.BlackQueens);
             var blackPawnsAndPieces = blackPawns + blackMinorPieces + blackMajorPieces;
             if ((whitePawnsAndPieces > 0) && (blackPawnsAndPieces > 0)) return false; // Position is not a simple endgame.
-            var loneWhitePawn = (whitePawns == 1) && (whitePawnsAndPieces == 1) && (blackPawnsAndPieces == 0);
-            var loneBlackPawn = (blackPawns == 1) && (blackPawnsAndPieces == 1) && (whitePawnsAndPieces == 0);
+            var loneWhitePawn = (whitePawns == 1) && (whitePawnsAndPieces == 1);
+            var loneBlackPawn = (blackPawns == 1) && (blackPawnsAndPieces == 1);
             var whiteKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
             var blackKingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
             // ReSharper disable once SwitchStatementMissingSomeCases
@@ -442,22 +366,23 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Case 0 = Lone White King
                 case 0 when loneBlackPawn:
-                    return EvaluateKingVersusPawn(Position, false);
+                    EvaluateKingVersusPawn(Position, false);
+                    return true;
                 // ReSharper disable once SwitchStatementMissingSomeCases
                 case 0:
                     switch (blackPawns)
                     {
-                        case 0 when (blackKnights == 1) && (blackBishops == 1) && (blackMajorPieces == 0):
-                            // King Versus Knight and Bishop
+                        case 0 when (blackBishops == 1) && (blackKnights == 1) && (blackMajorPieces == 0):
+                            // K vrs KBN
                             var lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.BlackBishops)];
                             var distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[whiteKingSquare]
                                 : Board.DistanceToNearestDarkCorner[whiteKingSquare];
-                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.BlackEgSimple = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
-                        case 0 when (blackMinorPieces == 0) && (blackMajorPieces >= 1):
-                            // King Versus Major Pieces
-                            _staticScore.BlackSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[whiteKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                        case 0 when (blackMajorPieces == 1) && (blackMinorPieces == 0):
+                            // K vrs KQ or KR
+                            _staticScore.BlackEgSimple = Config.SimpleEndgame - Board.DistanceToNearestCorner[whiteKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
                     break;
@@ -467,22 +392,23 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // Case 0 = Lone Black King
                 case 0 when loneWhitePawn:
-                    return EvaluateKingVersusPawn(Position, true);
+                    EvaluateKingVersusPawn(Position, true);
+                    return true;
                 // ReSharper disable once SwitchStatementMissingSomeCases
                 case 0:
                     switch (whitePawns)
                     {
-                        case 0 when (whiteKnights == 1) && (whiteBishops == 1) && (whiteMajorPieces == 0):
-                            // King Versus Knight and Bishop
+                        case 0 when (whiteBishops == 1) && (whiteKnights == 1) && (whiteMajorPieces == 0):
+                            // K vrs KBN
                             var lightSquareBishop = Board.LightSquares[Bitwise.FindFirstSetBit(Position.WhiteBishops)];
                             var distanceToCorrectColorCorner = lightSquareBishop
                                 ? Board.DistanceToNearestLightCorner[blackKingSquare]
                                 : Board.DistanceToNearestDarkCorner[blackKingSquare];
-                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                            _staticScore.WhiteEgSimple = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
-                        case 0 when (whiteMinorPieces == 0) && (whiteMajorPieces >= 1):
-                            // King Versus Major Pieces
-                            _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame - Board.DistanceToNearestCorner[blackKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
+                        case 0 when (whiteMajorPieces == 1) && (whiteMinorPieces == 0):
+                            // K vrs KQ or KR
+                            _staticScore.WhiteEgSimple = Config.SimpleEndgame - Board.DistanceToNearestCorner[blackKingSquare] - Board.SquareDistances[whiteKingSquare][blackKingSquare];
                             return true;
                     }
                     break;
@@ -492,7 +418,67 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private bool EvaluateKingVersusPawn(Position Position, bool LoneWhitePawn)
+        private static bool IsPawnlessDraw(Position Position)
+        {
+            var whiteKnights = Bitwise.CountSetBits(Position.WhiteKnights);
+            var whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
+            var whiteRooks = Bitwise.CountSetBits(Position.WhiteRooks);
+            var whiteQueens = Bitwise.CountSetBits(Position.WhiteQueens);
+            var whiteMinorPieces = whiteKnights + whiteBishops;
+            var whiteMajorPieces = whiteRooks + whiteQueens;
+            var blackKnights = Bitwise.CountSetBits(Position.BlackKnights);
+            var blackBishops = Bitwise.CountSetBits(Position.BlackBishops);
+            var blackRooks = Bitwise.CountSetBits(Position.BlackRooks);
+            var blackQueens = Bitwise.CountSetBits(Position.BlackQueens);
+            var blackMinorPieces = blackKnights + blackBishops;
+            var blackMajorPieces = blackRooks + blackQueens;
+            var totalMajorPieces = whiteMajorPieces + blackMajorPieces;
+            switch (totalMajorPieces)
+            {
+                case 0:
+                    if ((whiteKnights == 2) && (whiteMinorPieces == 2) && (blackMinorPieces <= 1)) return true; // 2N vrs <= 1 Minor
+                    if ((blackKnights == 2) && (blackMinorPieces == 2) && (whiteMinorPieces <= 1)) return true; // 2N vrs <= 1 Minor
+                    break;
+                case 1:
+                    if ((whiteQueens == 1) && (whiteMinorPieces == 0))
+                    {
+                        if ((blackBishops == 2) && (blackMinorPieces == 2)) return true; // Q vrs 2B
+                        if ((blackKnights == 2) && (blackMinorPieces == 2)) return true; // Q vrs 2N
+                    }
+                    if ((blackQueens == 1) && (blackMinorPieces == 0))
+                    {
+                        if ((whiteBishops == 2) && (whiteMinorPieces == 2)) return true; // Q vrs 2B
+                        if ((whiteKnights == 2) && (whiteMinorPieces == 2)) return true; // Q vrs 2N
+                    }
+                    // Considering R vrs <= 2 Minors a draw increases evaluation error and causes engine to play weaker.
+                    //if ((whiteRooks == 1) && (whiteMinorPieces == 0) && (blackMinorPieces <= 2)) return true; // R vrs <= 2 Minors
+                    //if ((blackRooks == 1) && (blackMinorPieces == 0) && (whiteMinorPieces <= 2)) return true; // R vrs <= 2 Minors
+                    break;
+                case 2:
+                    if ((whiteQueens == 1) && (whiteMinorPieces == 0))
+                    {
+                        if ((blackQueens == 1) && (blackMinorPieces == 0)) return true; // Q vrs Q
+                        if ((blackRooks == 1) && (blackMinorPieces == 1)) return true; // Q vrs R + Minor
+                    }
+                    if ((blackQueens == 1) && (blackMinorPieces == 0) && (whiteRooks == 1) && (whiteMinorPieces == 1)) return true; // Q vrs R + Minor
+                    if ((whiteRooks == 1) && (whiteMinorPieces == 0) && (blackRooks == 1) && (blackMinorPieces <= 1)) return true; // R vrs R + <= 1 Minor
+                    if ((blackRooks == 1) && (blackMinorPieces == 0) && (whiteRooks == 1) && (whiteMinorPieces <= 1)) return true; // R vrs R + <= 1 Minor
+                    break;
+                case 3:
+                    if ((whiteQueens == 1) && (whiteMinorPieces == 0) && (blackRooks == 2) && (blackMinorPieces == 0)) return true; // Q vrs 2R
+                    if ((blackQueens == 1) && (blackMinorPieces == 0) && (whiteRooks == 2) && (whiteMinorPieces == 0)) return true; // Q vrs 2R
+                    if ((whiteRooks == 2) & (whiteMinorPieces == 0) && (blackRooks == 1) && (blackMinorPieces == 1)) return true; // 2R vrs R + Minor
+                    if ((blackRooks == 2) & (blackMinorPieces == 0) && (whiteRooks == 1) && (whiteMinorPieces == 1)) return true; // 2R vrs R + Minor
+                    break;
+                case 4:
+                    if ((whiteRooks == 2) && (whiteMinorPieces == 0) && (blackRooks == 2) && (blackMinorPieces == 0)) return true; // 2R vrs 2R
+                    break;
+            }
+            return false;
+        }
+
+
+        private void EvaluateKingVersusPawn(Position Position, bool LoneWhitePawn)
         {
             int winningKingRank;
             int winningKingFile;
@@ -534,7 +520,8 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     // Defending king is in front of pawn and on same file.
                     // Game is drawn.
-                    return true;
+                    _staticScore.EgScalePer128 = 0;
+                    return;
                 }
             }
             else
@@ -555,30 +542,32 @@ namespace ErikTheCoder.MadChess.Engine
                 if (winningKingOnKeySquare)
                 {
                     // Pawn promotes.
-                    if (LoneWhitePawn) _staticScore.WhiteSimpleEndgame = Config.SimpleEndgame + pawnRank;
-                    else _staticScore.BlackSimpleEndgame = Config.SimpleEndgame + pawnRank;
-                    return true;
+                    if (LoneWhitePawn) _staticScore.WhiteEgSimple = Config.SimpleEndgame + pawnRank;
+                    else _staticScore.BlackEgSimple = Config.SimpleEndgame + pawnRank;
+                    return;
                 }
             }
-            // Use regular evaluation.
-            return false;
+            // Pawn does not promote.
+            // Game is drawn.
+            _staticScore.EgScalePer128 = 0;
         }
 
-
+        
         private void EvaluateMaterial(Position Position)
         {
-            _staticScore.WhiteMgMaterial = Bitwise.CountSetBits(Position.WhitePawns) * MgPawnMaterial +
-                                         Bitwise.CountSetBits(Position.WhiteKnights) * Config.MgKnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.MgBishopMaterial +
-                                         Bitwise.CountSetBits(Position.WhiteRooks) * Config.MgRookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.MgQueenMaterial;
-            _staticScore.WhiteEgMaterial = Bitwise.CountSetBits(Position.WhitePawns) * Config.EgPawnMaterial +
-                                           Bitwise.CountSetBits(Position.WhiteKnights) * Config.EgKnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.EgBishopMaterial +
-                                           Bitwise.CountSetBits(Position.WhiteRooks) * Config.EgRookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.EgQueenMaterial;
-            _staticScore.BlackMgMaterial = Bitwise.CountSetBits(Position.BlackPawns) * MgPawnMaterial +
-                                           Bitwise.CountSetBits(Position.BlackKnights) * Config.MgKnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.MgBishopMaterial +
-                                           Bitwise.CountSetBits(Position.BlackRooks) * Config.MgRookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.MgQueenMaterial;
-            _staticScore.BlackEgMaterial = Bitwise.CountSetBits(Position.BlackPawns) * Config.EgPawnMaterial +
-                                           Bitwise.CountSetBits(Position.BlackKnights) * Config.EgKnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.EgBishopMaterial +
-                                           Bitwise.CountSetBits(Position.BlackRooks) * Config.EgRookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.EgQueenMaterial;
+            _staticScore.WhiteMgPawnMaterial = Bitwise.CountSetBits(Position.WhitePawns) * MgPawnMaterial;
+            _staticScore.WhiteMgPieceMaterial = Bitwise.CountSetBits(Position.WhiteKnights) * Config.MgKnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.MgBishopMaterial +
+                                                Bitwise.CountSetBits(Position.WhiteRooks) * Config.MgRookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.MgQueenMaterial;
+            _staticScore.WhiteEgPawnMaterial = Bitwise.CountSetBits(Position.WhitePawns) * Config.EgPawnMaterial;
+            _staticScore.WhiteEgPieceMaterial = Bitwise.CountSetBits(Position.WhiteKnights) * Config.EgKnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.EgBishopMaterial +
+                                                Bitwise.CountSetBits(Position.WhiteRooks) * Config.EgRookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.EgQueenMaterial;
+
+            _staticScore.BlackMgPawnMaterial = Bitwise.CountSetBits(Position.BlackPawns) * MgPawnMaterial;
+            _staticScore.BlackMgPieceMaterial = Bitwise.CountSetBits(Position.BlackKnights) * Config.MgKnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.MgBishopMaterial +
+                                                Bitwise.CountSetBits(Position.BlackRooks) * Config.MgRookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.MgQueenMaterial;
+            _staticScore.BlackEgPawnMaterial = Bitwise.CountSetBits(Position.BlackPawns) * Config.EgPawnMaterial;
+            _staticScore.BlackEgPieceMaterial = Bitwise.CountSetBits(Position.BlackKnights) * Config.EgKnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.EgBishopMaterial +
+                                                Bitwise.CountSetBits(Position.BlackRooks) * Config.EgRookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.EgQueenMaterial;
         }
 
 
@@ -649,7 +638,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static int GetExchangeMaterialScore(Position Position)
+        public static (int StaticScore, bool DrawnEndgame) GetExchangeMaterialScore(Position Position)
         {
             var whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * MgPawnMaterial +
                              Bitwise.CountSetBits(Position.WhiteKnights) * _knightExchangeMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * _bishopExchangeMaterial +
@@ -658,8 +647,8 @@ namespace ErikTheCoder.MadChess.Engine
                              Bitwise.CountSetBits(Position.BlackKnights) * _knightExchangeMaterial + Bitwise.CountSetBits(Position.BlackBishops) * _bishopExchangeMaterial +
                              Bitwise.CountSetBits(Position.BlackRooks) * _rookExchangeMaterial + Bitwise.CountSetBits(Position.BlackQueens) * _queenExchangeMaterial;
             return Position.WhiteMove
-                ? whiteScore - blackScore
-                : blackScore - whiteScore;
+                ? (whiteScore - blackScore, false)
+                : (blackScore - whiteScore, false);
         }
 
 
@@ -769,6 +758,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 if (IsPassedPawn(Position, pawnSquare, true))
                 {
+                    _staticScore.WhitePassedPawnCount++;
                     rank = Board.WhiteRanks[pawnSquare];
                     _staticScore.WhiteEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (IsFreePawn(Position, pawnSquare, true))
@@ -794,6 +784,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 if (IsPassedPawn(Position, pawnSquare, false))
                 {
+                    _staticScore.BlackPassedPawnCount++;
                     rank = Board.BlackRanks[pawnSquare];
                     _staticScore.BlackEgKingEscortedPassedPawns += (Board.SquareDistances[pawnSquare][enemyKingSquare] - Board.SquareDistances[pawnSquare][kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (IsFreePawn(Position, pawnSquare, false))
@@ -866,6 +857,8 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+
+        // TODO: Include stacked attacks on same square via x-rays.  For example, a rook behind a queen.
         private void EvaluatePieceMobilityKingSafety(Position Position)
         {
             var whiteKingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
@@ -1018,23 +1011,6 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void EvaluateMinorPieces(Position Position)
-        {
-            var whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
-            if (whiteBishops >= 2)
-            {
-                _staticScore.WhiteMgBishopPair += Config.MgBishopPair;
-                _staticScore.WhiteEgBishopPair += Config.EgBishopPair;
-            }
-            var blackBishops = Bitwise.CountSetBits(Position.BlackBishops);
-            if (blackBishops >= 2)
-            {
-                _staticScore.BlackMgBishopPair += Config.MgBishopPair;
-                _staticScore.BlackEgBishopPair += Config.EgBishopPair;
-            }
-        }
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static (int MiddlegameMobility, int EndgameMobility) GetPieceMobilityScore(ulong PieceDestinations, int[] MgPieceMobility, int[] EgPieceMobility)
         {
@@ -1051,6 +1027,71 @@ namespace ErikTheCoder.MadChess.Engine
             var attackedOuterRingSquares = Bitwise.CountSetBits(PieceDestinations & KingOuterRing);
             var attackedInnerRingSquares = Bitwise.CountSetBits(PieceDestinations & KingInnerRing);
             return (attackedOuterRingSquares * OuterRingAttackWeight) + (attackedInnerRingSquares * InnerRingAttackWeight);
+        }
+
+
+        private void EvaluateMinorPieces(Position Position)
+        {
+            // Bishop Pair
+            var whiteBishops = Bitwise.CountSetBits(Position.WhiteBishops);
+            if (whiteBishops >= 2)
+            {
+                _staticScore.WhiteMgBishopPair += Config.MgBishopPair;
+                _staticScore.WhiteEgBishopPair += Config.EgBishopPair;
+            }
+            var blackBishops = Bitwise.CountSetBits(Position.BlackBishops);
+            if (blackBishops >= 2)
+            {
+                _staticScore.BlackMgBishopPair += Config.MgBishopPair;
+                _staticScore.BlackEgBishopPair += Config.EgBishopPair;
+            }
+        }
+
+
+        private void DetermineEndgameScale(Position Position)
+        {
+            // Use middlegame material values because those are constant (endgame material values are tuned).
+            // Determine which color has a material advantage.
+            int winningPawnCount;
+            int winningPassedPawns;
+            int winningPieceMaterial;
+            int losingPieceMaterial;
+            if (_staticScore.WhiteEg >= _staticScore.BlackEg)
+            {
+                // White is winning the endgame.
+                winningPawnCount = Bitwise.CountSetBits(Position.WhitePawns);
+                winningPassedPawns = _staticScore.WhitePassedPawnCount;
+                winningPieceMaterial = _staticScore.WhiteMgPieceMaterial;
+                losingPieceMaterial = _staticScore.BlackMgPieceMaterial;
+            }
+            else
+            {
+                // Black is winning the endgame.
+                winningPawnCount = Bitwise.CountSetBits(Position.BlackPawns);
+                winningPassedPawns = _staticScore.BlackPassedPawnCount;
+                winningPieceMaterial = _staticScore.BlackMgPieceMaterial;
+                losingPieceMaterial = _staticScore.WhiteMgPieceMaterial;
+            }
+            var oppositeColoredBishops = (Bitwise.CountSetBits(Position.WhiteBishops) == 1) && (Bitwise.CountSetBits(Position.BlackBishops) == 1) &&
+                                         (Board.LightSquares[Bitwise.FindFirstSetBit(Position.WhiteBishops)] != Board.LightSquares[Bitwise.FindFirstSetBit(Position.BlackBishops)]);
+            var pieceMaterialDiff = winningPieceMaterial - losingPieceMaterial;
+            if ((winningPawnCount == 0) && (pieceMaterialDiff <= Config.MgBishopMaterial))
+            {
+                // Winning side has no pawns and is up by a bishop or less.
+                _staticScore.EgScalePer128 = winningPieceMaterial >= Config.MgRookMaterial
+                    ? Config.EgBishopAdvantagePer128 // Winning side has a rook or more.
+                    : 0; // Winning side has less than a rook.
+            }
+            else if (oppositeColoredBishops && (winningPieceMaterial == Config.MgBishopMaterial) && (losingPieceMaterial == Config.MgBishopMaterial))
+            {
+                // Sides have opposite colored bishops and no other pieces.
+                _staticScore.EgScalePer128 = (winningPassedPawns * Config.EgOppBishopsPerPassedPawn) + Config.EgOppBishopsPer128;
+            }
+            else
+            {
+                // Any Other Endgame
+                _staticScore.EgScalePer128 = (winningPawnCount * Config.EgWinningPerPawn) + 128;
+            }
         }
 
 

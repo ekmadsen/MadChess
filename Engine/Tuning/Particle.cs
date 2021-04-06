@@ -100,14 +100,14 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.MgBishopCorner = Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value;
             Evaluation.Config.EgBishopCorner = Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value;
             // Rooks
-            //Evaluation.Config.MgRookAdvancement = Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value;
+            Evaluation.Config.MgRookAdvancement = Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value;
             Evaluation.Config.EgRookAdvancement = Parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value;
             Evaluation.Config.MgRookCentrality = Parameters[nameof(EvaluationConfig.MgRookCentrality)].Value;
             Evaluation.Config.EgRookCentrality = Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value;
             Evaluation.Config.MgRookCorner = Parameters[nameof(EvaluationConfig.MgRookCorner)].Value;
             Evaluation.Config.EgRookCorner = Parameters[nameof(EvaluationConfig.EgRookCorner)].Value;
             // Queens
-            //Evaluation.Config.MgQueenAdvancement = Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value;
+            Evaluation.Config.MgQueenAdvancement = Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value;
             Evaluation.Config.EgQueenAdvancement = Parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value;
             Evaluation.Config.MgQueenCentrality = Parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value;
             Evaluation.Config.EgQueenCentrality = Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value;
@@ -136,7 +136,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.EgRookMobilityScale = Parameters[nameof(EvaluationConfig.EgRookMobilityScale)].Value;
             Evaluation.Config.MgQueenMobilityScale = Parameters[nameof(EvaluationConfig.MgQueenMobilityScale)].Value;
             Evaluation.Config.EgQueenMobilityScale = Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value;
-            Evaluation.CalculatePositionalFactors();
             // King Safety
             Evaluation.Config.KingSafetyPowerPer128 = Parameters[nameof(EvaluationConfig.KingSafetyPowerPer128)].Value;
             Evaluation.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value;
@@ -150,6 +149,13 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             // Minor Pieces
             Evaluation.Config.MgBishopPair = Parameters[nameof(EvaluationConfig.MgBishopPair)].Value;
             Evaluation.Config.EgBishopPair = Parameters[nameof(EvaluationConfig.EgBishopPair)].Value;
+            // Endgame Scaling
+            Evaluation.Config.EgBishopAdvantagePer128 = Parameters[nameof(EvaluationConfig.EgBishopAdvantagePer128)].Value;
+            Evaluation.Config.EgOppBishopsPerPassedPawn = Parameters[nameof(EvaluationConfig.EgOppBishopsPerPassedPawn)].Value;
+            Evaluation.Config.EgOppBishopsPer128 = Parameters[nameof(EvaluationConfig.EgOppBishopsPer128)].Value;
+            Evaluation.Config.EgWinningPerPawn = Parameters[nameof(EvaluationConfig.EgWinningPerPawn)].Value;
+            // Calculate positional factors after updating evaluation config.
+            Evaluation.CalculatePositionalFactors();
         }
         
 
