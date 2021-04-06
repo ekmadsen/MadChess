@@ -543,6 +543,7 @@ namespace ErikTheCoder.MadChess.Engine
             else if (Board.PreviousPosition?.PlayedMove == Move.Null) Board.CurrentPosition.StaticScore = -Board.PreviousPosition.StaticScore;
             else
             {
+                // Even if endgame is drawn, search moves for a swindle (opponent mistake that makes drawn game winnable).
                 (Board.CurrentPosition.StaticScore, drawnEndgame) = _evaluation.GetStaticScore(Board.CurrentPosition);
             }
             // ReSharper restore PossibleNullReferenceException
@@ -763,6 +764,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (Board.PreviousPosition?.PlayedMove == Move.Null) Board.CurrentPosition.StaticScore = -Board.PreviousPosition.StaticScore;
                 else
                 {
+                    // Even if endgame is drawn, search moves for a swindle (opponent mistake that makes drawn game winnable).
                     (Board.CurrentPosition.StaticScore, drawnEndgame) = GetStaticScore(Board.CurrentPosition);
                 }
                 // ReSharper restore PossibleNullReferenceException
