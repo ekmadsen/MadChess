@@ -301,12 +301,13 @@ namespace ErikTheCoder.MadChess.Engine
             _staticScore.Reset();
             if (EvaluateSimpleEndgame(Position))
             {
+                // Position is a simple endgame.
                 if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
                 return Position.WhiteMove
                     ? (_staticScore.WhiteEg - _staticScore.BlackEg, false)
                     : (_staticScore.BlackEg - _staticScore.WhiteEg, false);
             }
-            // Not a simple endgame.
+            // Position is not a simple endgame.
             _staticScore.PlySinceCaptureOrPawnMove = Position.PlySinceCaptureOrPawnMove;
             EvaluateMaterial(Position);
             if (UnderstandsPieceLocation) EvaluatePieceLocation(Position);
@@ -1050,8 +1051,8 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void DetermineEndgameScale(Position Position)
         {
-            // Use middlegame material values because those are constant (endgame material values are tuned).
-            // Determine which color has a material advantage.
+            // Use middlegame material values because they are constant (endgame material values are tuned).
+            // Determine which color has an advantage.
             int winningPawnCount;
             int winningPassedPawns;
             int winningPieceMaterial;
@@ -1089,7 +1090,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Any Other Endgame
+                // All Other Endgames
                 _staticScore.EgScalePer128 = (winningPawnCount * Config.EgWinningPerPawn) + 128;
             }
         }

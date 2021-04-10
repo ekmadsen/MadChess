@@ -93,12 +93,13 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         private int BlackEgScaled => (EgScalePer128 * BlackEg) / 128;
-        
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetTaperedScore(int Phase) => GetTaperedScore(WhiteMg - BlackMg, WhiteEgScaled - BlackEgScaled, Phase);
 
 
+        // Linearly interpolate between middlegame and endgame scores.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (Evaluation.MiddlegamePhase - Phase))) / Evaluation.MiddlegamePhase;
 
