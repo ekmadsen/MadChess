@@ -15,15 +15,15 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
     {
         public const double Influence = 1.50d;
         public readonly Particles Particles;
-        private const double _particleDeathPercent = 0.05d;
-        private readonly int _winPercentScale;
+        private const double _particleDeathFraction = 0.05d;
+        private readonly int _winScale;
         
 
-        public ParticleSwarm(PgnGames PgnGames, Parameters Parameters, int Particles, int WinPercentScale)
+        public ParticleSwarm(PgnGames PgnGames, Parameters Parameters, int Particles, int WinScale)
         {
             // Create particles at random locations.
             this.Particles = new Particles();
-            _winPercentScale = WinPercentScale;
+            _winScale = WinScale;
             for (var particle = 0; particle < Particles; particle++) this.Particles.Add(new Particle(PgnGames, Parameters.DuplicateWithRandomValues()));
         }
 
@@ -46,7 +46,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             for (var index = 0; index < Particles.Count; index++)
             {
                 var particle = Particles[index];
-                if (!ReferenceEquals(particle, bestParticle) && (SafeRandom.NextDouble() <= _particleDeathPercent))
+                if (!ReferenceEquals(particle, bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
                 {
                     // Recreate particle at random location.
                     particle = new Particle(particle.PgnGames, particle.Parameters.DuplicateWithRandomValues());
@@ -54,7 +54,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 }
                 particle.Move();
                 particle.ConfigureEvaluation(Evaluation);
-                particle.CalculateEvaluationError(Board, Search, _winPercentScale);
+                particle.CalculateEvaluationError(Board, Search, _winScale);
             }
         }
 

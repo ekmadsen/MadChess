@@ -13,7 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices; // Use LINQ only for Debug.Asserts.
 using System.Text;
-#if !RELEASENONPOPCOUNT
+#if POPCOUNT
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -25,7 +25,7 @@ namespace ErikTheCoder.MadChess.Engine
     {
         private const int _intBits = 32;
         private const int _longBits = 64;
-#if RELEASENONPOPCOUNT
+#if (!POPCOUNT)
         private const ulong _deBruijnSequence = 0x37E84A99DAE458F;
         private static readonly int[] _multiplyDeBruijnBitPosition;
 
@@ -216,7 +216,10 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-#if RELEASENONPOPCOUNT
+#if POPCOUNT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountSetBits(uint Value) => (int) Popcnt.PopCount(Value);
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(uint Value)
         {
@@ -229,13 +232,13 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert((count >= 0) && (count <= _intBits));
             return count;
         }
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(uint Value) => (int) Popcnt.PopCount(Value);
 #endif
 
 
-#if RELEASENONPOPCOUNT
+#if POPCOUNT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountSetBits(ulong Value) => (int) Popcnt.X64.PopCount(Value);
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(ulong Value)
         {
@@ -248,22 +251,19 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert((count >= 0) && (count <= _longBits));
             return count;
         }
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(ulong Value) => (int) Popcnt.X64.PopCount(Value);
 #endif
 
 
-#if RELEASENONPOPCOUNT
+#if POPCOUNT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FindFirstSetBit(ulong Value) => Value == 0 ? Square.Illegal : _longBits - (int) Lzcnt.X64.LeadingZeroCount(Value) - 1;
+#else
         // See https://stackoverflow.com/questions/37083402/fastest-way-to-get-last-significant-bit-position-in-a-ulong-c
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FindFirstSetBit(ulong Value)
         {
             return Value == 0 ? Square.Illegal : _multiplyDeBruijnBitPosition[((ulong)((long)Value & -(long)Value) * _deBruijnSequence) >> 58];
         }
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int FindFirstSetBit(ulong Value) => Value == 0 ? Square.Illegal : _longBits - (int) Lzcnt.X64.LeadingZeroCount(Value) - 1;
 #endif
 
 

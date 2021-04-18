@@ -26,7 +26,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int MgQueenMaterial = 975;
         public int EgQueenMaterial = 1455;
         // Incentivize engine to promote pawns.
-        // Also incentivize engine to eliminate enemy's last pawn in KQkp endgame (to trigger simple endgame scoring that pushes enemy king to a corner).
+        // Also incentivize engine to eliminate enemy's last pawn in K vrs KQ or KR endgames (to trigger simple endgame scoring that pushes enemy king to a corner).
         // Want to ensure simple endgame score > (queen material + position + mobility - enemy pawn material - enemy pawn position).
         public int UnstoppablePassedPawn => EgQueenMaterial - (2 * Evaluation.MgPawnMaterial); // TODO: Should this be - (2 * Evaluation.EgPawnMaterial)?
         public int SimpleEndgame => 2 * UnstoppablePassedPawn;
@@ -104,6 +104,13 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgOppBishopsPerPassedPawn = 24;
         public int EgOppBishopsPer128 = 42;
         public int EgWinningPerPawn = 7;
+        // Limit Strength
+        public bool LimitedStrength = false;
+        public int LsPieceLocationPer128 = 128;
+        public int LsPassedPawnsPer128 = 128;
+        public int LsPieceMobilityPer128 = 128;
+        public int LsKingSafetyPer128 = 128;
+        public int LsMinorPiecesPer128 = 128;
         // ReSharper restore FieldCanBeMadeReadOnly.Global
         // ReSharper restore ConvertToConstant.Global
 
@@ -189,6 +196,13 @@ namespace ErikTheCoder.MadChess.Engine
             EgOppBishopsPerPassedPawn = CopyFromConfig.EgOppBishopsPerPassedPawn;
             EgOppBishopsPer128 = CopyFromConfig.EgOppBishopsPer128;
             EgWinningPerPawn = CopyFromConfig.EgWinningPerPawn;
+            // Copy limit strength values.
+            LimitedStrength = CopyFromConfig.LimitedStrength;
+            LsPieceLocationPer128 = CopyFromConfig.LsPieceLocationPer128;
+            LsPassedPawnsPer128 = CopyFromConfig.PassedPawnPowerPer128;
+            LsPieceMobilityPer128 = CopyFromConfig.LsPieceMobilityPer128;
+            LsKingSafetyPer128 = CopyFromConfig.LsKingSafetyPer128;
+            LsMinorPiecesPer128 = CopyFromConfig.LsMinorPiecesPer128;
         }
     }
 }
