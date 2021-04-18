@@ -22,10 +22,11 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public const int MaxHorizon = 64;
         public const int MaxQuietDepth = 32;
-        public const int MinElo = 400;
-        public const int MaxElo = 2200;
+        public const int MinElo = 600;
+        public const int MaxElo = 2400;
         public AutoResetEvent Signal;
         public bool PvInfoUpdate;
+        public List<ulong> SpecifiedMoves;
         public TimeSpan? WhiteTimeRemaining;
         public TimeSpan? BlackTimeRemaining;
         public TimeSpan? WhiteTimeIncrement;
@@ -39,10 +40,6 @@ namespace ErikTheCoder.MadChess.Engine
         public bool CanAdjustMoveTime;
         public bool TruncatePrincipalVariation;
         public int MultiPv;
-        public int? NodesPerSecond;
-        public int MoveError;
-        public int BlunderError;
-        public int BlunderPercent;
         public bool Continue;
         private const int _minMovesRemaining = 8;
         private const int _piecesMovesPer128 = 160;
@@ -89,21 +86,30 @@ namespace ErikTheCoder.MadChess.Engine
         private int _selectiveHorizon;
         private ulong _rootMove;
         private int _rootMoveNumber;
-        private bool _limitStrength;
+        private bool _limitedStrength;
         private int _elo;
+        private int? _nodesPerSecond;
+        private int _moveError;
+        private int _blunderError;
+        private int _blunderPer128;
         private bool _disposed;
 
 
-        public bool LimitStrength
+        public bool LimitedStrength
         {
-            get => _limitStrength;
+            get => _limitedStrength;
             set
             {
-                _limitStrength = value;
-                if (_limitStrength && (_elo >= MinElo) && (_elo <= MaxElo))
+                _limitedStrength = value;
+                if (_limitedStrength)
                 {
-                    _evaluation.ConfigureStrength(_elo);
-                    ConfigureStrength();
+                    ConfigureLimitedStrength();
+                    _evaluation.ConfigureLimitedStrength(_elo);
+                }
+                else
+                {
+                    ConfigureFullStrength();
+                    _evaluation.ConfigureFullStrength();
                 }
             }
         }
@@ -114,20 +120,17 @@ namespace ErikTheCoder.MadChess.Engine
             get => _elo;
             set
             {
-                if ((value >= MinElo) && (value <= MaxElo))
+                _elo = value;
+                if (_limitedStrength)
                 {
-                    _elo = value;
-                    if (_limitStrength)
-                    {
-                        _evaluation.ConfigureStrength(_elo);
-                        ConfigureStrength();
-                    }
+                    ConfigureLimitedStrength();
+                    _evaluation.ConfigureLimitedStrength(_elo);
                 }
             }
         }
 
 
-        private bool CompetitivePlay => !LimitStrength && (MultiPv == 1);
+        private bool CompetitivePlay => !LimitedStrength && (MultiPv == 1);
 
 
         static Search()
@@ -161,6 +164,7 @@ namespace ErikTheCoder.MadChess.Engine
             Signal = new AutoResetEvent(false);
             _stopwatch = new Stopwatch();
             // Create search parameters.
+            SpecifiedMoves = new List<ulong>();
             // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
             _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
             // Create scored move arrays.
@@ -173,12 +177,10 @@ namespace ErikTheCoder.MadChess.Engine
             _possibleVariationLength = new int[MaxHorizon + 1];
             _principalVariations = new Dictionary<string, ulong[]>();
             _disposed = false;
-            // Set default parameters.
-            SetDefaultParameters();
+            // Set Multi PV, PV truncation, and search strength.
             MultiPv = 1;
             TruncatePrincipalVariation = true;
-            LimitStrength = false;
-            Elo = MinElo;
+            ConfigureFullStrength();
         }
 
 
@@ -201,6 +203,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (Disposing)
             {
                 // Release managed resources.
+                SpecifiedMoves = null;
                 WhiteTimeRemaining = null;
                 BlackTimeRemaining = null;
                 WhiteTimeIncrement = null;
@@ -247,52 +250,67 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void ConfigureStrength()
+        private void ConfigureLimitedStrength()
         {
-            // Set default parameters.
-            SetDefaultParameters();
-            // Limit search speed.
-            // Rating               400  600  800  1000  1200  1400   1600   1800    2000    2200
-            // Nodes Per Second     100  116  356  1396  4196 10100  20836  38516   65636  105076
-            var scale = 16d;
-            var power = 4;
-            var constant = 100;
-            var ratingClass = (double) (_elo - MinElo) / 200;
-            NodesPerSecond = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant);
-            // Allow errors on every move.
-            // Rating      400  600  800 1000 1200 1400 1600 1800 2000 2200
-            // Move Error   81   64   49   36   25   16    9    4    1    0
-            scale = 1d;
-            power = 2;
-            constant = 0;
-            ratingClass = (double) (MaxElo - _elo) / 200;
-            MoveError = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant);
-            // Allow occasional blunders.
-            // Rating         400  600  800  1000  1200  1400  1600  1800  2000  2200
-            // Blunder Error  835  665  515   385   275   185   115    65    35    25
-            // Blunder Pct     25   21   17    14    11     9     7     6     5     5
-            scale = 10d;
-            power = 2;
-            constant = 25;
-            BlunderError = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant);
-            scale = 0.25d;
-            power = 2;
-            constant = 5;
-            BlunderPercent = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant);
+            // Reset to full strength, then limit search capabilities.
+            var elo = _elo;
+            ConfigureFullStrength();
+            _limitedStrength = true;
+            _elo = elo;
+
+            // Limit search speed.  --------------------------------------------------------------------------+
+            var scale = 512d; //                                                                              |
+            var power = 4d; //                                                                                |
+            var constant = 100; //                                                                            |
+            var ratingClass = (double) (_elo - MinElo) / 200; //                                              |
+            _nodesPerSecond = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant); //           |
+            // Rating               600  800  1000   1200    1400    1600    1800     2000     2200     2400  |
+            // Nodes Per Second     100  612  8292  41572  131172  320100  663652  1229412  2097252  3359332  |
+            //                                                                                                |
+            // -----------------------------------------------------------------------------------------------+
+
+            // Enable errors on every move.  -------------------------------------------------------+
+            scale = 2d; //                                                                          |
+            power = 2d; //                                                                          |
+            constant = 10; //                                                                       |
+            ratingClass = (double) (MaxElo - _elo) / 200; //                                        |
+            _moveError = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant); //      |
+            // Rating          600  800  1000  1200  1400  1600  1800  2000  2200  2400             |
+            // Move Error      172  138   108    82    60    42    28    18    12    10             |
+            //                                                                                      |
+            // -------------------------------------------------------------------------------------+
+
+            // Enable occasional blunders.  --------------------------------------------------------+
+            scale = 8d; //                                                                          |
+            power = 2d; //                                                                          |
+            constant = 25; //                                                                       |
+            _blunderError = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant); //   |
+            scale = 0.33d; //                                                                       |
+            power = 2; //                                                                           |
+            constant = 5; //                                                                        |
+            _blunderPer128 = Evaluation.GetNonLinearBonus(ratingClass, scale, power, constant); //  |
+            // Rating          600  800  1000  1200  1400  1600  1800  2000  2200  2400             |    
+            // Blunder Error   673  537   417   313   225   153    57    41    33    25             |
+            // Blunder Per128   31   26    21    16    13    10     6     6     5     5             |
+            //                                                                                      |
+            // -------------------------------------------------------------------------------------+
+
             if (_debug())
             {
-                _writeMessageLine($"info string LimitStrength = {LimitStrength}, ELO = {Elo}.");
-                _writeMessageLine($"info string NPS = {NodesPerSecond}, MoveError = {MoveError}, BlunderError = {BlunderError}, BlunderPercent = {BlunderPercent}.");
+                _writeMessageLine($"info string LimitStrength = {LimitedStrength}, ELO = {Elo}.");
+                _writeMessageLine($"info string NPS = {_nodesPerSecond}, MoveError = {_moveError}, BlunderError = {_blunderError}, BlunderPer128 = {_blunderPer128}.");
             }
         }
 
 
-        private void SetDefaultParameters()
+        private void ConfigureFullStrength()
         {
-            NodesPerSecond = null;
-            MoveError = 0;
-            BlunderError = 0;
-            BlunderPercent = 0;
+            _elo = MinElo;
+            _limitedStrength = false;
+            _nodesPerSecond = null;
+            _moveError = 0;
+            _blunderError = 0;
+            _blunderPer128 = 0;
         }
 
 
@@ -304,6 +322,7 @@ namespace ErikTheCoder.MadChess.Engine
             for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
             {
                 var move = Board.CurrentPosition.Moves[moveIndex];
+                if (!ShouldSearchMove(move)) continue;
                 if (Board.IsMoveLegal(ref move))
                 {
                     // Move is legal.
@@ -313,7 +332,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             Board.CurrentPosition.MoveIndex = legalMoveIndex;
-            if (legalMoveIndex == 1)
+            if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0))
             {
                 // Only one legal move found.
                 _stopwatch.Stop();
@@ -330,10 +349,10 @@ namespace ErikTheCoder.MadChess.Engine
             }
             var principalVariations = Math.Min(MultiPv, legalMoveIndex);
             // Determine score error.
-            var scoreError = ((BlunderError > 0) && (SafeRandom.NextInt(0, 100) < BlunderPercent))
-                ? BlunderError // Blunder
+            var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 128) < _blunderPer128))
+                ? _blunderError // Blunder
                 : 0;
-            scoreError = Math.Max(scoreError, MoveError);
+            scoreError = Math.Max(scoreError, _moveError);
             // Determine move time.
             GetMoveTime(Board.CurrentPosition);
             Board.NodesExamineTime = UciStream.NodesTimeInterval;
@@ -364,7 +383,7 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     // Search with aspiration window.
                     // This speeds up Multi-PV searches (for analysis and UCI_LimitStrength) but slows down Single-PV searches (competitive play).
-                    if (LimitStrength)
+                    if (LimitedStrength)
                     {
                         alpha = _rootMoves[0].Score - scoreError - 1;
                         beta = _rootMoves[0].Score + _aspirationWindow;
@@ -411,6 +430,19 @@ namespace ErikTheCoder.MadChess.Engine
             _stopwatch.Stop();
             if (_debug()) _writeMessageLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
             return scoreError == 0 ? bestMove.Move : GetInferiorMove(Board.CurrentPosition, scoreError);
+        }
+
+
+        private bool ShouldSearchMove(ulong Move)
+        {
+            if (SpecifiedMoves.Count == 0) return true; // Search all moves.
+            // Search only specified moves.
+            for (var moveIndex = 0; moveIndex < SpecifiedMoves.Count; moveIndex++)
+            {
+                var specifiedMove = SpecifiedMoves[moveIndex];
+                if (Engine.Move.Equals(Move, specifiedMove)) return true;
+            }
+            return false;
         }
         
         
@@ -500,7 +532,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetDynamicScore(Board Board, int Depth, int Horizon, bool IsNullMoveAllowed, int Alpha, int Beta)
         {
-            if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
+            if ((Board.Nodes > Board.NodesExamineTime) || _nodesPerSecond.HasValue)
             {
                 ExamineTimeAndNodes(Board.Nodes);
                 var intervals = (int) (Board.Nodes / UciStream.NodesTimeInterval);
@@ -543,7 +575,7 @@ namespace ErikTheCoder.MadChess.Engine
             else if (Board.PreviousPosition?.PlayedMove == Move.Null) Board.CurrentPosition.StaticScore = -Board.PreviousPosition.StaticScore;
             else
             {
-                // Even if endgame is drawn, search moves for a swindle (opponent mistake that makes drawn game winnable).
+                // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
                 (Board.CurrentPosition.StaticScore, drawnEndgame) = _evaluation.GetStaticScore(Board.CurrentPosition);
             }
             // ReSharper restore PossibleNullReferenceException
@@ -726,7 +758,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta, Delegates.GetStaticScore GetStaticScore, bool ConsiderFutility)
         {
-            if ((Board.Nodes > Board.NodesExamineTime) || NodesPerSecond.HasValue)
+            if ((Board.Nodes > Board.NodesExamineTime) || _nodesPerSecond.HasValue)
             {
                 ExamineTimeAndNodes(Board.Nodes);
                 var intervals = Board.Nodes / UciStream.NodesTimeInterval;
@@ -764,7 +796,7 @@ namespace ErikTheCoder.MadChess.Engine
                 if (Board.PreviousPosition?.PlayedMove == Move.Null) Board.CurrentPosition.StaticScore = -Board.PreviousPosition.StaticScore;
                 else
                 {
-                    // Even if endgame is drawn, search moves for a swindle (opponent mistake that makes drawn game winnable).
+                    // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
                     (Board.CurrentPosition.StaticScore, drawnEndgame) = GetStaticScore(Board.CurrentPosition);
                 }
                 // ReSharper restore PossibleNullReferenceException
@@ -797,11 +829,11 @@ namespace ErikTheCoder.MadChess.Engine
         private void ExamineTimeAndNodes(long Nodes)
         {
             if (Nodes >= NodeLimit) Continue = false; // Have passed node limit.
-            if (NodesPerSecond.HasValue && (_originalHorizon > 1)) // Guarantee to search at least one ply.
+            if (_nodesPerSecond.HasValue && (_originalHorizon > 1)) // Guarantee to search at least one ply.
             {
                 // Slow search until it's less than specified nodes per second or until soft time limit is exceeded.
                 var nodesPerSecond = int.MaxValue;
-                while (nodesPerSecond > NodesPerSecond)
+                while (nodesPerSecond > _nodesPerSecond)
                 {
                     // Delay search but keep CPU busy to simulate "thinking".
                     nodesPerSecond = (int)(Nodes / _stopwatch.Elapsed.TotalSeconds);
@@ -1164,15 +1196,15 @@ namespace ErikTheCoder.MadChess.Engine
                     }
                     var pvLongAlgebraic = stringBuilder.ToString();
                     var score = _bestMoves[pv].Score;
+                    var multiPvPhrase = MultiPv > 1 ? $"multipv {pv + 1} " : null;
                     var scorePhrase = Math.Abs(score) >= StaticScore.Checkmate ? $"mate {Evaluation.GetMateMoveCount(score)}" : $"cp {score}";
-                    _writeMessageLine($"info multipv {pv + 1} depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
+                    _writeMessageLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
                                       $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
                 }
             }
             else
             {
-                _writeMessageLine($"info depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
-                                  $"time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
+                _writeMessageLine($"info depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
             }
             _writeMessageLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
             if (_debug()) _displayStats();
@@ -1200,6 +1232,7 @@ namespace ErikTheCoder.MadChess.Engine
         public void Reset()
         {
             _stopwatch.Restart();
+            SpecifiedMoves.Clear();
             // Reset move times and limits.
             WhiteTimeRemaining = null;
             BlackTimeRemaining = null;

@@ -20,7 +20,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         public readonly Parameters BestParameters;
         public double EvaluationError;
         public double BestEvaluationError;
-        private const double _maxInitialVelocityPercent = 0.10;
+        private const double _maxInitialVelocityFraction = 0.10;
         private const double _inertia = 0.75d;
         private const double _influence = 1.50d;
         private readonly double[] _velocities;
@@ -44,7 +44,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             for (var index = 0; index < Parameters.Count; index++)
             {
                 var parameter = Parameters[index];
-                var maxVelocity = _maxInitialVelocityPercent * (parameter.MaxValue - parameter.MinValue);
+                var maxVelocity = _maxInitialVelocityFraction * (parameter.MaxValue - parameter.MinValue);
                 // Allow positive or negative velocity.
                 _velocities[index] = (SafeRandom.NextDouble() * maxVelocity * 2) - maxVelocity;
             }
@@ -160,7 +160,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         
 
         // See http://talkchess.com/forum/viewtopic.php?t=50823&postdays=0&postorder=asc&highlight=texel+tuning&topic_view=flat&start=20.
-        public void CalculateEvaluationError(Board Board, Search Search, int WinPercentScale)
+        public void CalculateEvaluationError(Board Board, Search Search, int WinScale)
         {
             // Sum the square of evaluation error over all games.
             double evaluationError = 0;
@@ -179,9 +179,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     Search.PvInfoUpdate = false;
                     Search.Continue = true;
                     var quietScore = Search.GetQuietScore(Board, 1, 1, Board.AllSquaresMask, -StaticScore.Max, StaticScore.Max);
-                    // Convert quiet score to win percent.
-                    var winPercent = GetWinPercent(quietScore, WinPercentScale);
-                    // Compare win percent to game result.
+                    // Convert quiet score to win fraction and compare to game result.
+                    var winFraction = GetWinFraction(quietScore, WinScale);
                     // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
                     var result = game.Result switch
                     {
@@ -190,7 +189,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                         GameResult.BlackWon => (Board.CurrentPosition.WhiteMove ? 0 : 1d),
                         _ => throw new InvalidOperationException($"{game.Result} game result not supported.")
                     };
-                    evaluationError += Math.Pow(winPercent - result, 2);
+                    evaluationError += Math.Pow(winFraction - result, 2);
                 }
             }
             EvaluationError = evaluationError;
@@ -222,6 +221,6 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
         
 
-        private static double GetWinPercent(int Score, int WinPercentScale) => 1d / (1d + Math.Pow(10d, -1d * Score / WinPercentScale)); // Use a sigmoid function to map score to winning percent.
+        private static double GetWinFraction(int Score, int WinScale) => 1d / (1d + Math.Pow(10d, -1d * Score / WinScale)); // Use a sigmoid function to map score to win fraction.
     }
 }

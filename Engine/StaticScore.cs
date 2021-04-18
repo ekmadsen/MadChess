@@ -93,12 +93,13 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         private int BlackEgScaled => (EgScalePer128 * BlackEg) / 128;
-        
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetTaperedScore(int Phase) => GetTaperedScore(WhiteMg - BlackMg, WhiteEgScaled - BlackEgScaled, Phase);
 
 
+        // Linearly interpolate between middlegame and endgame scores.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (Evaluation.MiddlegamePhase - Phase))) / Evaluation.MiddlegamePhase;
 
@@ -179,9 +180,8 @@ namespace ErikTheCoder.MadChess.Engine
             AppendStaticScoreLine(stringBuilder, "Scale", 100, 100, egScale, egScale, Phase);
             AppendStaticScoreLine(stringBuilder, "Total", WhiteMg, BlackMg, WhiteEgScaled, BlackEgScaled, Phase);
             stringBuilder.AppendLine();
-            var middlegamePercent = (100 * Phase) / Evaluation.MiddlegamePhase;
             var totalScore = GetTotalScore(Phase) / 100d;
-            stringBuilder.AppendLine($"Middlegame   = {Phase} of {Evaluation.MiddlegamePhase} ({middlegamePercent}%)");
+            stringBuilder.AppendLine($"Middlegame   = {Phase} of {Evaluation.MiddlegamePhase}");
             stringBuilder.AppendLine($"50 Move Rule = {MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%");
             stringBuilder.AppendLine($"Total Score  = {totalScore:0.00}");
             return stringBuilder.ToString();

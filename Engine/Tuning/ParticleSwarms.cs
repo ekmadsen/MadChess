@@ -24,7 +24,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         private int _iterations;
 
 
-        public ParticleSwarms(string PgnFilename, int ParticleSwarms, int ParticlesPerSwarm, int WinPercentScale, Delegates.DisplayStats DisplayStats, Delegates.WriteMessageLine WriteMessageLine)
+        public ParticleSwarms(string PgnFilename, int ParticleSwarms, int ParticlesPerSwarm, int WinScale, Delegates.DisplayStats DisplayStats, Delegates.WriteMessageLine WriteMessageLine)
         {
             _displayStats = DisplayStats;
             _writeMessageLine = WriteMessageLine;
@@ -49,12 +49,12 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             WriteMessageLine("Creating data structures.");
             // Create parameters and particle swarms.
             var parameters = CreateParameters();
-            for (var index = 0; index < ParticleSwarms; index++)
+            for (var particleSwarmsIndex = 0; particleSwarmsIndex < ParticleSwarms; particleSwarmsIndex++)
             {
-                var particleSwarm = new ParticleSwarm(pgnGames, parameters, ParticlesPerSwarm, WinPercentScale);
+                var particleSwarm = new ParticleSwarm(pgnGames, parameters, ParticlesPerSwarm, WinScale);
                 Add(particleSwarm);
                 // Set parameter values of all particles in swarm to known best.
-                foreach (var particle in particleSwarm.Particles) SetDefaultParameters(particle.Parameters);
+                for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++) SetDefaultParameters(particleSwarm.Particles[particleIndex].Parameters);
             }
             var stats = new Stats();
             var cache = new Cache(1, stats, board.ValidateMove);
@@ -63,7 +63,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             var evaluation = new Evaluation(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
             var search = new Search(stats, cache, killerMoves, moveHistory, evaluation, () => false, DisplayStats, WriteMessageLine);
             var firstParticleInFirstSwarm = this[0].Particles[0];
-            firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinPercentScale);
+            firstParticleInFirstSwarm.CalculateEvaluationError(board, search, WinScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
             stopwatch.Stop();
             WriteMessageLine($"Created data structures in {stopwatch.Elapsed.TotalSeconds:0.000} seconds.");

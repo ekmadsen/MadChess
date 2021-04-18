@@ -12,8 +12,13 @@
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=InvertIf/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=InvocationIsSkipped/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=LoopCanBeConvertedToQuery/@EntryIndexedValue">DO_NOT_SHOW</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=MergeIntoLogicalPattern/@EntryIndexedValue">DO_NOT_SHOW</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=MergeIntoNegatedPattern/@EntryIndexedValue">DO_NOT_SHOW</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=MergeIntoPattern/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=ParameterTypeCanBeEnumerable_002EGlobal/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=ParameterTypeCanBeEnumerable_002ELocal/@EntryIndexedValue">DO_NOT_SHOW</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=ReplaceSliceWithRangeIndexer/@EntryIndexedValue">DO_NOT_SHOW</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=ReplaceSubstringWithRangeIndexer/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=StringCompareIsCultureSpecific_002E1/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=StringCompareIsCultureSpecific_002E2/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=StringCompareIsCultureSpecific_002E3/@EntryIndexedValue">DO_NOT_SHOW</s:String>
@@ -282,7 +287,7 @@
 	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=4FACACFFD686E146AB8FE8D117C6F7F3/RelativePath/@EntryValue"></s:String>
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File4FACACFFD686E146AB8FE8D117C6F7F3/@KeyIndexDefined">True</s:Boolean>
 	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File4FACACFFD686E146AB8FE8D117C6F7F3/RelativePriority/@EntryValue">1</s:Double>
-	<s:String x:Key="/Default/Environment/PerformanceGuide/SwitchBehaviour/=Antivirus/@EntryIndexedValue">DO_NOTHING</s:String>
+	
 	
 	
 	
@@ -321,6 +326,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=bitboard/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=bitboards/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=blundererror/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=blunderper/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=blunderpercent/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Bruijn/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=btime/@EntryIndexedValue">True</s:Boolean>
@@ -361,6 +367,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Queenside/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=readyok/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=rnbq/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=searchmoves/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=seldepth/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=setoption/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=shiftkillermoves/@EntryIndexedValue">True</s:Boolean>
@@ -374,6 +381,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=testpositions/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=threadpool/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=tunewinpercentscale/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=tunewinscale/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ucinewgame/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=uciok/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ulongs/@EntryIndexedValue">True</s:Boolean>

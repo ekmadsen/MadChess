@@ -19,6 +19,12 @@ namespace ErikTheCoder.MadChess.Engine
     // TODO: Refactor evaluation into color-agnostic methods using delegates.
     public sealed class Evaluation
     {
+        private const int _beginnerElo = 800;
+        private const int _noviceElo = 1000;
+        private const int _socialElo = 1200;
+        private const int _strongSocialElo = 1400;
+        private const int _clubElo = 1600;
+        private const int _strongClubElo = 1800;
         private readonly Stats _stats;
         private readonly EvaluationConfig _defaultConfig;
         private readonly Delegates.IsRepeatPosition _isRepeatPosition;
@@ -31,14 +37,11 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _bishopPhase = 10; // + 4 * 10 =  80
         private const int _rookPhase = 22; //   + 4 * 22 = 168
         private const int _queenPhase = 44; //  + 2 * 44 = 256
+        // Draw by Repetition
+        public int DrawMoves;
         // Material
         public const int MgPawnMaterial = 100;
         public readonly EvaluationConfig Config;
-        public int DrawMoves;
-        public bool UnderstandsPieceLocation;
-        public bool UnderstandsPassedPawns;
-        public bool UnderstandsMobility;
-        public bool UnderstandsKingSafety;
         private const int _knightExchangeMaterial = 300;
         private const int _bishopExchangeMaterial = 300;
         private const int _rookExchangeMaterial = 500;
@@ -72,7 +75,7 @@ namespace ErikTheCoder.MadChess.Engine
         // King Safety
         private readonly int[] _kingSafety;
 
-        
+
         public Evaluation(Stats Stats, Delegates.IsRepeatPosition IsRepeatPosition, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
         {
             _stats = Stats;
@@ -80,10 +83,10 @@ namespace ErikTheCoder.MadChess.Engine
             _debug = Debug;
             _writeMessageLine = WriteMessageLine;
             _staticScore = new StaticScore();
-            // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureStrength method overwriting defaults.
+            // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
             Config = new EvaluationConfig();
             _defaultConfig = new EvaluationConfig();
-            // Create arrays for quick lookup of positional factors.
+            // Create arrays for quick lookup of positional factors, then calculate positional factors.
             _mgPawnLocations = new int[64];
             _egPawnLocations = new int[64];
             _mgKnightLocations = new int[64];
@@ -108,9 +111,10 @@ namespace ErikTheCoder.MadChess.Engine
             _mgQueenMobility = new int[28];
             _egQueenMobility = new int[28];
             _kingSafety = new int[64];
-            // Calculate positional factors and set default positional understanding.
+            // Set number of repetitions considered a draw, calculate positional factors, and set evaluation strength.
+            DrawMoves = 2;
             CalculatePositionalFactors();
-            SetDefaultPositionalUnderstanding();
+            ConfigureFullStrength();
         }
 
 
@@ -170,9 +174,9 @@ namespace ErikTheCoder.MadChess.Engine
             var pieceMobilityPower = Config.PieceMobilityPowerPer128 / 128d;
             for (var moves = 0; moves <= maxMoves; moves++)
             {
-                var percentMaxMoves = (double)moves / maxMoves;
-                MgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, MgMobilityScale, pieceMobilityPower, -MgMobilityScale / 2);
-                EgPieceMobility[moves] = GetNonLinearBonus(percentMaxMoves, EgMobilityScale, pieceMobilityPower, -EgMobilityScale / 2);
+                var fractionOfMaxMoves = (double) moves / maxMoves;
+                MgPieceMobility[moves] = GetNonLinearBonus(fractionOfMaxMoves, MgMobilityScale, pieceMobilityPower, -MgMobilityScale / 2);
+                EgPieceMobility[moves] = GetNonLinearBonus(fractionOfMaxMoves, EgMobilityScale, pieceMobilityPower, -EgMobilityScale / 2);
             }
             // Adjust constant so piece mobility bonus for average number of moves is zero.
             var averageMoves = maxMoves / 2;
@@ -186,65 +190,46 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void SetDefaultPositionalUnderstanding()
+        public void ConfigureLimitedStrength(int Elo)
         {
-            DrawMoves = 2;
-            UnderstandsPieceLocation = true;
-            UnderstandsPassedPawns = true;
-            UnderstandsMobility = true;
-            UnderstandsKingSafety = true;
-        }
-
-
-        public void ConfigureStrength(int Elo)
-        {
-            // TODO: Interpolate positional understanding within rating classes.
-            // Set default positional understanding.
-            SetDefaultPositionalUnderstanding();
-            Config.Set(_defaultConfig);
-            // Limit material and positional understanding.
-            if (Elo < 800)
+            // Reset to full strength, then limit positional understanding.
+            ConfigureFullStrength();
+            Config.LimitedStrength = true;
+            if (Elo < _beginnerElo)
             {
-                // Beginner
                 // Undervalue rook and overvalue queen.
-                Config.MgRookMaterial = 300;
-                Config.EgRookMaterial = 300;
-                Config.MgQueenMaterial = 1200;
-                Config.EgQueenMaterial = 1200;
-            }
-            if (Elo < 1000)
-            {
-                // Novice
+                Config.MgRookMaterial = _defaultConfig.MgRookMaterial - 200;
+                Config.EgRookMaterial = _defaultConfig.EgRookMaterial - 200;
+                Config.MgQueenMaterial = _defaultConfig.MgQueenMaterial + 300;
+                Config.EgQueenMaterial = _defaultConfig.EgQueenMaterial + 300;
                 // Value knight and bishop equally.
                 Config.MgBishopMaterial = Config.MgKnightMaterial;
                 Config.EgBishopMaterial = Config.EgKnightMaterial;
-                // Misjudge danger of passed pawns.
-                UnderstandsPassedPawns = false;
+            }
+            if (Elo < _noviceElo)
+            {
                 // Misplace pieces.
-                UnderstandsPieceLocation = false;
+                Config.LsPieceLocationPer128 = GetLinearlyInterpolatedValue(0, 128, Elo, _beginnerElo, _noviceElo);
             }
-            if (Elo < 1200)
+            if (Elo < _socialElo)
             {
-                // Social
-                UnderstandsMobility = false;
+                // Misjudge danger of passed pawns.
+                Config.LsPassedPawnsPer128 = GetLinearlyInterpolatedValue(0, 128, Elo, _noviceElo, _socialElo);
             }
-            if (Elo < 1400)
+            if (Elo < _strongSocialElo)
             {
-                // Strong Social
-                UnderstandsKingSafety = false;
-                //UnderstandsThreats = false;
+                // Oblivious to attacking potential of mobile pieces.
+                Config.LsPieceMobilityPer128 = GetLinearlyInterpolatedValue(0, 128, Elo, _socialElo, _strongSocialElo);
             }
-            if (Elo < 1600)
+            if (Elo < _clubElo)
             {
-                // Club
-                //UnderstandsBishopPair = false;
-                //UnderstandsOutposts = false;
+                // Inattentive to defense of king.
+                Config.LsKingSafetyPer128 = GetLinearlyInterpolatedValue(0, 128, Elo, _strongSocialElo, _clubElo);
             }
-            if (Elo < 1800)
+            if (Elo < _strongClubElo)
             {
-                // Strong Club
-                //Understands7thRank = false;
-                //UnderstandsTrades = false;
+                // Inexpert use of minor pieces.
+                Config.LsMinorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, Elo, _clubElo, _strongClubElo);
             }
             if (_debug())
             {
@@ -258,17 +243,25 @@ namespace ErikTheCoder.MadChess.Engine
                 _writeMessageLine($"info string {nameof(Config.EgRookMaterial)} = {Config.EgRookMaterial}");
                 _writeMessageLine($"info string {nameof(Config.MgQueenMaterial)} = {Config.MgQueenMaterial}");
                 _writeMessageLine($"info string {nameof(Config.EgQueenMaterial)} = {Config.EgQueenMaterial}");
-                _writeMessageLine($"info string UnderstandsPieceLocation = {UnderstandsPieceLocation}");
-                _writeMessageLine($"info string UnderstandsPassedPawns = {UnderstandsPassedPawns}");
-                _writeMessageLine($"info string UnderstandsMobility = {UnderstandsMobility}");
-                _writeMessageLine($"info string UnderstandsKingSafety = {UnderstandsKingSafety}");
-                //_writeMessageLine($"info string UnderstandsThreats = {UnderstandsThreats}");
-                //_writeMessageLine($"info string UnderstandsBishopPair = {UnderstandsBishopPair}");
-                //_writeMessageLine($"info string UnderstandsOutposts = {UnderstandsOutposts}");
-                //_writeMessageLine($"info string Understands7thRank = {Understands7thRank}");
-                //_writeMessageLine($"info string UnderstandsTrades = {UnderstandsTrades}");
+                _writeMessageLine($"info string {nameof(Config.LsPieceLocationPer128)} = {Config.LsPieceLocationPer128}");
+                _writeMessageLine($"info string {nameof(Config.LsPassedPawnsPer128)} = {Config.LsPassedPawnsPer128}");
+                _writeMessageLine($"info string {nameof(Config.LsPieceMobilityPer128)} = {Config.LsPieceMobilityPer128}");
+                _writeMessageLine($"info string {nameof(Config.LsKingSafetyPer128)} = {Config.LsKingSafetyPer128}");
+                _writeMessageLine($"info string {nameof(Config.LsMinorPiecesPer128)} = {Config.LsMinorPiecesPer128}");
             }
         }
+
+
+        private static int GetLinearlyInterpolatedValue(int MinValue, int MaxValue, int CorrelatedValue, int MinCorrelatedValue, int MaxCorrelatedValue)
+        {
+            var correlatedRange = MaxCorrelatedValue - MinCorrelatedValue;
+            var fraction = (double) (Math.Max(CorrelatedValue, MinCorrelatedValue) - MinCorrelatedValue) / correlatedRange;
+            var valueRange = MaxValue - MinValue;
+            return (int) ((fraction * valueRange) + MinValue);
+        }
+
+
+        public void ConfigureFullStrength() => Config.Set(_defaultConfig);
 
 
         public (bool TerminalDraw, bool RepeatPosition) IsTerminalDraw(Position Position)
@@ -296,37 +289,26 @@ namespace ErikTheCoder.MadChess.Engine
 
         public (int StaticScore, bool DrawnEndgame) GetStaticScore(Position Position)
         {
+            // TODO: Handicap knowledge of checkmates and endgames when in limited strength mode.
             Debug.Assert(!Position.KingInCheck);
             _stats.Evaluations++;
             _staticScore.Reset();
             if (EvaluateSimpleEndgame(Position))
             {
+                // Position is a simple endgame.
                 if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
                 return Position.WhiteMove
                     ? (_staticScore.WhiteEg - _staticScore.BlackEg, false)
                     : (_staticScore.BlackEg - _staticScore.WhiteEg, false);
             }
-            // Not a simple endgame.
+            // Position is not a simple endgame.
             _staticScore.PlySinceCaptureOrPawnMove = Position.PlySinceCaptureOrPawnMove;
             EvaluateMaterial(Position);
-            if (UnderstandsPieceLocation) EvaluatePieceLocation(Position);
-            if (UnderstandsPassedPawns) EvaluatePawns(Position);
+            EvaluatePieceLocation(Position);
+            EvaluatePawns(Position);
             EvaluatePieceMobilityKingSafety(Position);
-            if (!UnderstandsMobility)
-            {
-                _staticScore.WhiteMgPieceMobility = 0;
-                _staticScore.WhiteEgPieceMobility = 0;
-                _staticScore.BlackMgPieceMobility = 0;
-                _staticScore.BlackEgPieceMobility = 0;
-            }
-            if (!UnderstandsKingSafety)
-            {
-                _staticScore.WhiteMgKingSafety = 0;
-                _staticScore.WhiteEgKingSafety = 0;
-                _staticScore.BlackMgKingSafety = 0;
-                _staticScore.BlackEgKingSafety = 0;
-            }
             EvaluateMinorPieces(Position);
+            if (Config.LimitedStrength) LimitStrength();
             DetermineEndgameScale(Position); // Scale down scores for difficult to win endgames.
             if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
             var phase = DetermineGamePhase(Position);
@@ -1048,10 +1030,46 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        private void LimitStrength()
+        {
+            // Limit understanding of piece location.
+            _staticScore.WhiteMgPieceLocation = (_staticScore.WhiteMgPieceLocation * Config.LsPieceLocationPer128) / 128;
+            _staticScore.WhiteEgPieceLocation = (_staticScore.WhiteEgPieceLocation * Config.LsPieceLocationPer128) / 128;
+            _staticScore.BlackMgPieceLocation = (_staticScore.BlackMgPieceLocation * Config.LsPieceLocationPer128) / 128;
+            _staticScore.BlackEgPieceLocation = (_staticScore.BlackEgPieceLocation * Config.LsPieceLocationPer128) / 128;
+            // Limit understanding of passed pawns.
+            _staticScore.WhiteMgPassedPawns = (_staticScore.WhiteMgPassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.WhiteEgPassedPawns = (_staticScore.WhiteEgPassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.WhiteEgFreePassedPawns = (_staticScore.WhiteEgFreePassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.WhiteEgKingEscortedPassedPawns = (_staticScore.WhiteEgKingEscortedPassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.WhiteUnstoppablePassedPawns = (_staticScore.WhiteUnstoppablePassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.BlackMgPassedPawns = (_staticScore.BlackMgPassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.BlackEgPassedPawns = (_staticScore.BlackEgPassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.BlackEgFreePassedPawns = (_staticScore.BlackEgFreePassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.BlackEgKingEscortedPassedPawns = (_staticScore.BlackEgKingEscortedPassedPawns * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.BlackUnstoppablePassedPawns = (_staticScore.BlackUnstoppablePassedPawns * Config.LsPassedPawnsPer128) / 128;
+            // Limit understanding of piece mobility.
+            _staticScore.WhiteMgPieceMobility = (_staticScore.WhiteMgPieceMobility * Config.LsPieceMobilityPer128) / 128;
+            _staticScore.WhiteEgPieceMobility = (_staticScore.WhiteEgPieceMobility * Config.LsPieceMobilityPer128) / 128;
+            _staticScore.BlackMgPieceMobility = (_staticScore.BlackMgPieceMobility * Config.LsPieceMobilityPer128) / 128;
+            _staticScore.BlackEgPieceMobility = (_staticScore.BlackEgPieceMobility * Config.LsPieceMobilityPer128) / 128;
+            // Limit understanding of king safety.
+            _staticScore.WhiteMgKingSafety = (_staticScore.WhiteMgKingSafety * Config.LsKingSafetyPer128) / 128;
+            _staticScore.WhiteEgKingSafety = (_staticScore.WhiteEgKingSafety * Config.LsKingSafetyPer128) / 128;
+            _staticScore.BlackMgKingSafety = (_staticScore.BlackMgKingSafety * Config.LsKingSafetyPer128) / 128;
+            _staticScore.BlackEgKingSafety = (_staticScore.BlackEgKingSafety * Config.LsKingSafetyPer128) / 128;
+            // Limit understanding of minor pieces.
+            _staticScore.WhiteMgBishopPair = (_staticScore.WhiteMgBishopPair * Config.LsMinorPiecesPer128) / 128;
+            _staticScore.WhiteEgBishopPair = (_staticScore.WhiteEgBishopPair * Config.LsMinorPiecesPer128) / 128;
+            _staticScore.BlackMgBishopPair = (_staticScore.BlackMgBishopPair * Config.LsMinorPiecesPer128) / 128;
+            _staticScore.BlackEgBishopPair = (_staticScore.BlackEgBishopPair * Config.LsMinorPiecesPer128) / 128;
+        }
+
+
         private void DetermineEndgameScale(Position Position)
         {
-            // Use middlegame material values because those are constant (endgame material values are tuned).
-            // Determine which color has a material advantage.
+            // Use middlegame material values because they are constant (endgame material values are tuned).
+            // Determine which color has an advantage.
             int winningPawnCount;
             int winningPassedPawns;
             int winningPieceMaterial;
@@ -1089,7 +1107,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             else
             {
-                // Any Other Endgame
+                // All Other Endgames
                 _staticScore.EgScalePer128 = (winningPawnCount * Config.EgWinningPerPawn) + 128;
             }
         }

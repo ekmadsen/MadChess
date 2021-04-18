@@ -27,8 +27,8 @@ namespace ErikTheCoder.MadChess.Engine
         public Board Board;
         private string[] _defaultPlyAndFullMove;
         private const int _cacheSizeMegabytes = 128;
-        private const int _minWinPercentScale = 400;
-        private const int _maxWinPercentScale = 800;
+        private const int _minWinScale = 400;
+        private const int _maxWinScale = 800;
         private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
         private Stats _stats;
         private Cache _cache;
@@ -224,7 +224,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Do not convert to lowercase because this invalidates FEN strings (where case differentiates white and black pieces).
             if (tokens.Count == 0) return;
             // Determine whether to dispatch command on main thread or async thread.
-            switch (tokens[0].ToLowerInvariant())
+            switch (tokens[0].ToLower())
             {
                 case "go":
                     DispatchOnMainThread(tokens);
@@ -240,7 +240,7 @@ namespace ErikTheCoder.MadChess.Engine
         private void DispatchOnMainThread(List<string> Tokens)
         {
             var writeMessageLine = true;
-            switch (Tokens[0].ToLowerInvariant())
+            switch (Tokens[0].ToLower())
             {
                 // Standard Commands
                 case "uci":
@@ -311,8 +311,8 @@ namespace ErikTheCoder.MadChess.Engine
                 case "tune":
                     Tune(Tokens);
                     break;
-                case "tunewinpercentscale":
-                    TuneWinPercentScale(Tokens);
+                case "tunewinscale":
+                    TuneWinScale(Tokens);
                     break;
                 case "?":
                 case "help":
@@ -354,7 +354,7 @@ namespace ErikTheCoder.MadChess.Engine
                     if ((tokens != null) && (tokens.Count > 0))
                     {
                         // Process command.
-                        switch (tokens[0].ToLowerInvariant())
+                        switch (tokens[0].ToLower())
                         {
                             case "go":
                                 GoAsync();
@@ -376,7 +376,17 @@ namespace ErikTheCoder.MadChess.Engine
         private void Uci()
         {
             // Display engine name, author, and standard commands.
-            WriteMessageLine("id name MadChess 3.0");
+            // ReSharper disable once ConvertToConstant.Local
+            var version = "3.0";
+#if CPU64
+            version = $"{version} x64";
+#else
+            version = $"{version} x86";
+#endif
+#if (CPU64 && !POPCOUNT)
+            version = $"{version} Non-PopCount";
+#endif
+            WriteMessageLine($"id name MadChess {version}");
             WriteMessageLine("id author Erik Madsen");
             WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
             WriteMessageLine("option name Debug type check default false");
@@ -386,13 +396,6 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine("option name UCI_AnalyseMode type check default false");
             WriteMessageLine("option name Analyze type check default false");
             WriteMessageLine($"option name MultiPV type spin default 1 min 1 max {Engine.Position.MaxMoves}");
-            WriteMessageLine("option name PieceLocation type check default true");
-            WriteMessageLine("option name PassedPawns type check default true");
-            WriteMessageLine("option name Mobility type check default true");
-            WriteMessageLine("option name NPS type spin default 0 min 0 max 1000000");
-            WriteMessageLine("option name MoveError type spin default 0 min 0 max 1000");
-            WriteMessageLine("option name BlunderError type spin default 0 min 0 max 1000");
-            WriteMessageLine("option name BlunderPercent type spin default 0 min 0 max 100");
             WriteMessageLine("option name UCI_LimitStrength type check default false");
             WriteMessageLine("option name LimitStrength type check default false");
             WriteMessageLine($"option name UCI_Elo type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
@@ -405,7 +408,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             var optionName = Tokens[2];
             var optionValue = Tokens.Count > 4 ? Tokens[4] : string.Empty;
-            switch (optionName.ToLowerInvariant())
+            switch (optionName.ToLower())
             {
                 case "debug":
                     _debug = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
@@ -437,38 +440,13 @@ namespace ErikTheCoder.MadChess.Engine
                         _evaluation.DrawMoves = 2;
                     }
                     break;
-                case "piecelocation":
-                    _evaluation.UnderstandsPieceLocation = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
-                    break;
-                case "passedpawns":
-                    _evaluation.UnderstandsPassedPawns = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
-                    break;
-                case "mobility":
-                    _evaluation.UnderstandsMobility = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
-                    break;
-                case "kingsafety":
-                    _evaluation.UnderstandsKingSafety = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
-                    break;
                 case "multipv":
                     Stop();
                     _search.MultiPv = int.Parse(optionValue);
                     break;
-                case "nps":
-                    if (optionValue == "0") _search.NodesPerSecond = null;
-                    else _search.NodesPerSecond = int.Parse(optionValue);
-                    break;
-                case "moveerror":
-                    _search.MoveError = int.Parse(optionValue);
-                    break;
-                case "blundererror":
-                    _search.BlunderError = int.Parse(optionValue);
-                    break;
-                case "blunderpercent":
-                    _search.BlunderPercent = int.Parse(optionValue);
-                    break;
                 case "uci_limitstrength":
                 case "limitstrength":
-                    _search.LimitStrength = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    _search.LimitedStrength = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     break;
                 case "uci_elo":
                 case "elo":
@@ -500,7 +478,7 @@ namespace ErikTheCoder.MadChess.Engine
             var moveIndex = Tokens.Count;
             for (var index = 2; index < Tokens.Count; index++)
             {
-                if (Tokens[index].ToLowerInvariant() == "moves")
+                if (Tokens[index].ToLower() == "moves")
                 {
                     // Position specifies moves.
                     specifiesMoves = true;
@@ -553,8 +531,16 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 var token = Tokens[tokenIndex];
                 // ReSharper disable once SwitchStatementMissingSomeCases
-                switch (token.ToLowerInvariant())
+                switch (token.ToLower())
                 {
+                    case "searchmoves":
+                        // Assume all remaining tokens are moves.
+                        for (var moveIndex = tokenIndex + 1; moveIndex < Tokens.Count; moveIndex++)
+                        {
+                            var move = Move.ParseLongAlgebraic(Tokens[moveIndex], Board.CurrentPosition.WhiteMove);
+                            _search.SpecifiedMoves.Add(move);
+                        }
+                        break;
                     case "wtime":
                         _search.WhiteTimeRemaining = TimeSpan.FromMilliseconds(int.Parse(Tokens[tokenIndex + 1]));
                         break;
@@ -811,8 +797,8 @@ namespace ErikTheCoder.MadChess.Engine
                     var moves = CountMoves(0, horizon);
                     var correct = moves == expectedMoves;
                     if (correct) correctPositions++;
-                    var percent = (100d * correctPositions) / positions;
-                    WriteMessageLine($"{positions,6}  {fen,75}  {horizon,5:0}  {expectedMoves,11:n0}  {moves,11:n0}  {correct,7}  {percent,5:0.0}");
+                    var correctFraction = (100d * correctPositions) / positions;
+                    WriteMessageLine($"{positions,6}  {fen,75}  {horizon,5:0}  {expectedMoves,11:n0}  {moves,11:n0}  {correct,7}  {correctFraction,5:0.0}");
                 }
             }
             _commandStopwatch.Stop();
@@ -935,9 +921,9 @@ namespace ErikTheCoder.MadChess.Engine
                             throw new Exception(positionSolution + " position solution not supported.");
                     }
                     if (correct) correctPositions++;
-                    var percent = (100d * correctPositions) / positions;
+                    var correctFraction = (100d * correctPositions) / positions;
                     var solution = positionSolution == PositionSolution.BestMoves ? "Best" : "Avoid";
-                    WriteMessageLine($"{positions,6}  {fen,75}  {solution,8}  {string.Join(" ", expectedMovesLongAlgebraic),16}  {Move.ToLongAlgebraic(bestMove),5}  {correct,7}  {percent,5:0.0}");
+                    WriteMessageLine($"{positions,6}  {fen,75}  {solution,8}  {string.Join(" ", expectedMovesLongAlgebraic),16}  {Move.ToLongAlgebraic(bestMove),5}  {correct,7}  {correctFraction,5:0.0}");
                 }
             }
             _commandStopwatch.Stop();
@@ -953,14 +939,14 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void DisplayStats()
         {
-            var nullMoveCutoffPercent = (100d * _stats.NullMoveCutoffs) / _stats.NullMoves;
+            var nullMoveCutoffFraction = (100d * _stats.NullMoveCutoffs) / _stats.NullMoves;
             var betaCutoffMoveNumber = (double) _stats.BetaCutoffMoveNumber / _stats.BetaCutoffs;
-            var betaCutoffFirstMovePercent = (100d * _stats.BetaCutoffFirstMove) / _stats.BetaCutoffs;
-            var cacheHitPercent = (100d * _stats.CacheHits) / _stats.CacheProbes;
-            var scoreCutoffPercent = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
-            var bestMoveHitPercent = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
-            WriteMessageLine($"info string Cache Hit = {cacheHitPercent:0.00}% Score Cutoff = {scoreCutoffPercent:0.00}% Best Move Hit = {bestMoveHitPercent:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
-            WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffPercent:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMovePercent: 0.00}%");
+            var betaCutoffFirstMoveFraction = (100d * _stats.BetaCutoffFirstMove) / _stats.BetaCutoffs;
+            var cacheHitFraction = (100d * _stats.CacheHits) / _stats.CacheProbes;
+            var scoreCutoffFraction = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
+            var bestMoveHitFraction = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
+            WriteMessageLine($"info string Cache Hit = {cacheHitFraction:0.00}% Score Cutoff = {scoreCutoffFraction:0.00}% Best Move Hit = {bestMoveHitFraction:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
+            WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffFraction:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMoveFraction: 0.00}%");
             WriteMessageLine($"info string Evals = {_stats.Evaluations:n0}");
         }
 
@@ -994,8 +980,8 @@ namespace ErikTheCoder.MadChess.Engine
                     var score = _search.GetExchangeScore(Board, move);
                     var correct = score == expectedScore;
                     if (correct) correctPositions++;
-                    var percent = (100d * correctPositions) / positions;
-                    WriteMessageLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),5}  {expectedScore,14}  {score,5}  {correct,7}  {percent,5:0.0}");
+                    var correctFraction = (100d * correctPositions) / positions;
+                    WriteMessageLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),5}  {expectedScore,14}  {score,5}  {correct,7}  {correctFraction,5:0.0}");
                 }
             }
             _commandStopwatch.Stop();
@@ -1014,9 +1000,9 @@ namespace ErikTheCoder.MadChess.Engine
             var pgnFilename = Tokens[1].Trim();
             var particleSwarmsCount = int.Parse(Tokens[2].Trim());
             var particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            var winPercentScale = int.Parse(Tokens[4].Trim()); // Use 665 for Gm2600EloGoodGames.pgn.
+            var winScale = int.Parse(Tokens[4].Trim()); // Use 665 for Gm2600EloGoodGames.pgn.
             var iterations = int.Parse(Tokens[5].Trim());
-            var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winPercentScale, DisplayStats, WriteMessageLine);
+            var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
             particleSwarms.Optimize(iterations);
             _commandStopwatch.Stop();
             WriteMessageLine();
@@ -1024,7 +1010,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void TuneWinPercentScale(IList<string> Tokens)
+        private void TuneWinScale(IList<string> Tokens)
         {
             var pgnFilename = Tokens[1].Trim();
             // Load games.
@@ -1041,16 +1027,16 @@ namespace ErikTheCoder.MadChess.Engine
             }
             var positionsPerSecond = (int)(positions / _commandStopwatch.Elapsed.TotalSeconds);
             WriteMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
-            WriteMessageLine("Tuning win percent scale.");
+            WriteMessageLine("Tuning win scale.");
             WriteMessageLine();
-            // Calculate evaluation error of all win percent scales.
+            // Calculate evaluation error of all win scales.
             var parameters = ParticleSwarms.CreateParameters();
-            const int scales = _maxWinPercentScale - _minWinPercentScale + 1;
+            const int scales = _maxWinScale - _minWinScale + 1;
             var tasks = new Task[scales];
             var evaluationErrors = new double[scales];
             for (var index = 0; index < scales; index++)
             {
-                var winPercentScale = _minWinPercentScale + index;
+                var winScale = _minWinScale + index;
                 var particle = new Particle(pgnGames, parameters);
                 var board = new Board(WriteMessageLine);
                 var stats = new Stats();
@@ -1059,35 +1045,35 @@ namespace ErikTheCoder.MadChess.Engine
                 var moveHistory = new MoveHistory();
                 var evaluation = new Evaluation(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
                 var search = new Search(stats, cache, killerMoves, moveHistory, evaluation, () => false, DisplayStats, WriteMessageLine);
-                tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winPercentScale));
+                tasks[index] = Task.Run(() => CalculateEvaluationError(particle, board, search, evaluationErrors, winScale));
             }
-            // Wait for particles to calculate evaluation error of all win percent scales.
+            // Wait for particles to calculate evaluation error of all win scales.
             Task.WaitAll(tasks);
-            // Find best win percent scale.
-            var bestWinPercentScale = _minWinPercentScale;
+            // Find best win scale.
+            var bestWinScale = _minWinScale;
             var bestEvaluationError = double.MaxValue;
             for (var index = 0; index < scales; index++)
             {
-                var winPercentScale = _minWinPercentScale + index;
+                var winScale = _minWinScale + index;
                 var evaluationError = evaluationErrors[index];
                 if (evaluationError < bestEvaluationError)
                 {
-                    bestWinPercentScale = winPercentScale;
+                    bestWinScale = winScale;
                     bestEvaluationError = evaluationError;
                 }
             }
             WriteMessageLine();
-            WriteMessageLine($"Best win percent scale = {bestWinPercentScale}.");
+            WriteMessageLine($"Best win scale = {bestWinScale}.");
             _commandStopwatch.Stop();
-            WriteMessageLine($"Completed tuning of win percent scale in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
+            WriteMessageLine($"Completed tuning of win scale in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
         }
 
 
-        private void CalculateEvaluationError(Particle Particle, Board ParticleBoard, Search ParticleSearch, double[] EvaluationErrors, int WinPercentScale)
+        private void CalculateEvaluationError(Particle Particle, Board ParticleBoard, Search ParticleSearch, double[] EvaluationErrors, int WinScale)
         {
-            var index = WinPercentScale - _minWinPercentScale;
-            Particle.CalculateEvaluationError(ParticleBoard, ParticleSearch, WinPercentScale);
-            WriteMessageLine($"Win Percent Scale = {WinPercentScale:0000}, Evaluation Error = {Particle.EvaluationError:0.000}");
+            var index = WinScale - _minWinScale;
+            Particle.CalculateEvaluationError(ParticleBoard, ParticleSearch, WinScale);
+            WriteMessageLine($"Win Scale = {WinScale:0000}, Evaluation Error = {Particle.EvaluationError:0.000}");
             EvaluationErrors[index] = Particle.EvaluationError;
         }
 
@@ -1130,12 +1116,12 @@ namespace ErikTheCoder.MadChess.Engine
             WriteMessageLine("analyzeexchangepositions [filename]   Determine material score after exchanging pieces on destination square of given move.");
             WriteMessageLine("                                      Pawn = 100, Knight and Bishop = 300, Rook = 500, Queen = 900.");
             WriteMessageLine();
-            WriteMessageLine("tune [pgn] [ps] [pps] [wps] [i]       Tune evaluation parameters using a particle swarm algorithm.");
+            WriteMessageLine("tune [pgn] [ps] [pps] [ws] [i]        Tune evaluation parameters using a particle swarm algorithm.");
             WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");
-            WriteMessageLine("                                      wps = Win Percent Scale, i = Iterations.");
+            WriteMessageLine("                                      ws = Win Scale, i = Iterations.");
             WriteMessageLine();
-            WriteMessageLine("tunewinpercentscale [pgn]             Compute a scaling constant used in the sigmoid function of the tuning algorithm.");
-            WriteMessageLine("                                      The sigmoid function maps evaluation score to expected winning percentage.");
+            WriteMessageLine("tunewinscale [pgn]                    Compute a scaling constant used in the sigmoid function of the tuning algorithm.");
+            WriteMessageLine("                                      The sigmoid function maps evaluation score to expected win fraction.");
         }
 
 

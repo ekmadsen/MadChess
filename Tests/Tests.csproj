@@ -15,15 +15,35 @@
 		<TargetFramework>net5.0</TargetFramework>
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Library</OutputType>
-		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<PackageId>MadChess.Tests</PackageId>
-		<Configurations>Debug;Release;ReleaseNonPopcount</Configurations>
+		<Configurations>Release64;Release64NonPopCount;Release32;Debug</Configurations>
+		<Platforms>x64;x86</Platforms>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release64'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64;POPCOUNT</DefineConstants>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release64NonPopCount'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64</DefineConstants>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release32'">
+		<PlatformTarget>x86</PlatformTarget>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64;POPCOUNT;DEBUG</DefineConstants>
+		<Optimize>false</Optimize>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
-	  <PackageReference Include="NUnit" Version="3.13.1" />
-	  <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+		<PackageReference Include="NUnit" Version="3.13.1" />
+		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 	</ItemGroup>
 
 	<ItemGroup>

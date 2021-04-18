@@ -16,20 +16,39 @@
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Exe</OutputType>
 		<PackageId>MadChess.Engine</PackageId>
-		<Configurations>Debug;Release;ReleaseNonPopcount</Configurations>
+		<Configurations>Release64;Release64NonPopCount;Release32;Debug</Configurations>
+		<Platforms>x64;x86</Platforms>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)'=='Release64'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64;POPCOUNT</DefineConstants>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release64NonPopCount'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64</DefineConstants>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release32'">
+		<PlatformTarget>x86</PlatformTarget>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64;POPCOUNT;DEBUG</DefineConstants>
+		<Optimize>false</Optimize>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="ErikTheCoder.Utilities" Version="1.0.13" />
-		<PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
+		<PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
 	</ItemGroup>
 
-
 	<ItemGroup>
-	  <None Update="MadChess.Engine.bmp">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="MadChess.Engine.bmp">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>
