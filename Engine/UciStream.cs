@@ -377,7 +377,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             // Display engine name, author, and standard commands.
             // ReSharper disable once ConvertToConstant.Local
-            var version = "3.0";
+            var version = "3.1";
 #if CPU64
             version = $"{version} x64";
 #else
@@ -946,7 +946,7 @@ namespace ErikTheCoder.MadChess.Engine
             var scoreCutoffFraction = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
             var bestMoveHitFraction = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
             WriteMessageLine($"info string Cache Hit = {cacheHitFraction:0.00}% Score Cutoff = {scoreCutoffFraction:0.00}% Best Move Hit = {bestMoveHitFraction:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
-            WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffFraction:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMoveFraction: 0.00}%");
+            WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffFraction:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMoveFraction:0.00}%");
             WriteMessageLine($"info string Evals = {_stats.Evaluations:n0}");
         }
 
@@ -1000,7 +1000,7 @@ namespace ErikTheCoder.MadChess.Engine
             var pgnFilename = Tokens[1].Trim();
             var particleSwarmsCount = int.Parse(Tokens[2].Trim());
             var particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            var winScale = int.Parse(Tokens[4].Trim()); // Use 665 for Gm2600EloGoodGames.pgn.
+            var winScale = int.Parse(Tokens[4].Trim()); // Use 565 for StrongEngineLightningTourny.pgn.
             var iterations = int.Parse(Tokens[5].Trim());
             var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
             particleSwarms.Optimize(iterations);
@@ -1017,7 +1017,7 @@ namespace ErikTheCoder.MadChess.Engine
             _commandStopwatch.Restart();
             WriteMessageLine("Loading games.");
             var pgnGames = new PgnGames();
-            pgnGames.Load(Board, pgnFilename);
+            pgnGames.Load(Board, pgnFilename, WriteMessageLine);
             // Count positions.
             long positions = 0;
             for (var index = 0; index < pgnGames.Count; index++)

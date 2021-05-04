@@ -569,6 +569,14 @@ namespace ErikTheCoder.MadChess.Engine
                     if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
                     else fromRank = Board.WhiteRanks[Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
                 }
+                else if (length == 5)
+                {
+                    // Piece Move with From Square Specified
+                    var square = standardAlgebraicNoCheck.Substring(3, 2);
+                    toSquare = Board.GetSquare(square);
+                    fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
+                    fromRank = Board.WhiteRanks[Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
+                }
                 else throw new Exception($"{StandardAlgebraic} move not supported.");
             }
             Board.CurrentPosition.GenerateMoves();

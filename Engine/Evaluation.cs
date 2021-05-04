@@ -87,18 +87,140 @@ namespace ErikTheCoder.MadChess.Engine
             Config = new EvaluationConfig();
             _defaultConfig = new EvaluationConfig();
             // Create arrays for quick lookup of positional factors, then calculate positional factors.
-            _mgPawnLocations = new int[64];
-            _egPawnLocations = new int[64];
-            _mgKnightLocations = new int[64];
-            _egKnightLocations = new int[64];
-            _mgBishopLocations = new int[64];
-            _egBishopLocations = new int[64];
-            _mgRookLocations = new int[64];
-            _egRookLocations = new int[64];
-            _mgQueenLocations = new int[64];
-            _egQueenLocations = new int[64];
-            _mgKingLocations = new int[64];
-            _egKingLocations = new int[64];
+
+            // TODO: Calculate and tune piece location values from a formula.
+            _mgPawnLocations = new[]
+            {
+                +000, +000, +000, +000, +000, +000, +000, +000,
+                -004, +023, +016, +031, +033, +022, +027, -013,
+                -009, +018, +011, +026, +028, +017, +022, -018,
+                -014, +013, +006, +021, +023, +012, +017, -023,
+                -027, -002, -005, +012, +017, +006, +010, -025,
+                -026, -004, -004, -010, +003, +003, +033, -012,
+                -035, -001, -020, -023, -015, +024, +038, -022,
+                +000, +000, +000, +000, +000, +000, +000, +000
+            };
+            _egPawnLocations = new[]
+            {
+                +000, +000, +000, +000, +000, +000, +000, +000,
+                +052, +044, +033, +025, +018, +024, +037, +037,
+                +042, +034, +023, +015, +008, +014, +027, +027,
+                +032, +024, +013, +005, -002, +004, +017, +017,
+                +013, +009, -003, -007, -007, -008, +003, -001,
+                +004, +007, -006, +001, +000, -005, -001, -008,
+                +013, +008, +008, +010, +013, +000, +002, -007,
+                +000, +000, +000, +000, +000, +000, +000, +000
+            };
+            _mgKnightLocations = new[]
+            {
+                -167, -089, -034, -049, +061, -097, -015, -107,
+                -073, -041, +072, +036, +023, +062, +007, -017,
+                -047, +060, +037, +065, +084, +129, +073, +044,
+                -009, +017, +019, +053, +037, +069, +018, +022,
+                -013, +004, +016, +013, +028, +019, +021, -008,
+                -023, -009, +012, +010, +019, +017, +025, -016,
+                -029, -053, -012, -003, -001, +018, -014, -019,
+                -105, -021, -058, -033, -017, -028, -019, -023
+            };
+            _egKnightLocations = new[]
+            {
+                -058, -038, -013, -028, -031, -027, -063, -099,
+                -025, -008, -025, -002, -009, -025, -024, -052,
+                -024, -020, +010, +009, -001, -009, -019, -041,
+                -017, +003, +022, +022, +022, +011, +008, -018,
+                -018, -006, +016, +025, +016, +017, +004, -018,
+                -023, -003, -001, +015, +010, -003, -020, -022,
+                -042, -020, -010, -005, -002, -020, -023, -044,
+                -029, -051, -023, -015, -022, -018, -050, -064
+            };
+            _mgBishopLocations = new[]
+            {
+                -029, +004, -082, -037, -025, -042, +007, -008,
+                -026, +016, -018, -013, +030, +059, +018, -047,
+                -016, +037, +043, +040, +035, +050, +037, -002,
+                -004, +005, +019, +050, +037, +037, +007, -002,
+                -006, +013, +013, +026, +034, +012, +010, +004,
+                +000, +015, +015, +015, +014, +027, +018, +010,
+                +004, +015, +016, +000, +007, +021, +033, +001,
+                -033, -003, -014, -021, -013, -012, -039, -021
+            };
+            _egBishopLocations = new[]
+            {
+                -014, -021, -011, -008, -007, -009, -017, -024,
+                -008, -004, +007, -012, -003, -013, -004, -014,
+                +002, -008, +000, -001, -002, +006, +000, +004,
+                -003, +009, +012, +009, +014, +010, +003, +002,
+                -006, +003, +013, +019, +007, +010, -003, -009,
+                -012, -003, +008, +010, +013, +003, -007, -015,
+                -014, -018, -007, -001, +004, -009, -015, -027,
+                -023, -009, -023, -005, -009, -016, -005, -017
+            };
+            _mgRookLocations = new[]
+            {
+                +032, +042, +032, +051, +063, +009, +031, +043,
+                +027, +032, +058, +062, +080, +067, +026, +044,
+                -005, +019, +026, +036, +017, +045, +061, +016,
+                -024, -011, +007, +026, +024, +035, -008, -020,
+                -036, -026, -012, -001, +009, -007, +006, -023,
+                -045, -025, -016, -017, +003, +000, -005, -033,
+                -044, -016, -020, -009, -001, +011, -006, -071,
+                -019, -013, +001, +017, +016, +007, -037, -026
+            };
+            _egRookLocations = new[]
+            {
+                +013, +010, +018, +015, +012, +012, +008, +005,
+                +011, +013, +013, +011, -003, +003, +008, +003,
+                +007, +007, +007, +005, +004, -003, -005, -003,
+                +004, +003, +013, +001, +002, +001, -001, +002,
+                +003, +005, +008, +004, -005, -006, -008, -011,
+                -004, +000, -005, -001, -007, -012, -008, -016,
+                -006, -006, +000, +002, -009, -009, -011, -003,
+                -009, +002, +003, -001, -005, -013, +004, -020
+            };
+            _mgQueenLocations = new[]
+            {
+                -028, +000, +029, +012, +059, +044, +043, +045,
+                -024, -039, -005, +001, -016, +057, +028, +054,
+                -013, -017, +007, +008, +029, +056, +047, +057,
+                -027, -027, -016, -016, -001, +017, -002, +001,
+                -009, -026, -009, -010, -002, -004, +003, -003,
+                -014, +002, -011, -002, -005, +002, +014, +005,
+                -035, -008, +011, +002, +008, +015, -003, +001,
+                -001, -018, -009, +010, -015, -025, -031, -050
+            };
+            _egQueenLocations = new[]
+            {
+                -009, +022, +022, +027, +027, +019, +010, +020,
+                -017, +020, +032, +041, +058, +025, +030, +000,
+                -020, +006, +009, +049, +047, +035, +019, +009,
+                +003, +022, +024, +045, +057, +040, +057, +036,
+                -018, +028, +019, +047, +031, +034, +039, +023,
+                -016, -027, +015, +006, +009, +017, +010, +005,
+                -022, -023, -030, -016, -016, -023, -036, -032,
+                -033, -028, -022, -043, -005, -032, -020, -041
+            };
+            _mgKingLocations = new[]
+            {
+                -065, +023, +016, -015, -056, -034, +002, +013,
+                +029, -001, -020, -007, -008, -004, -038, -029,
+                -009, +024, +002, -016, -020, +006, +022, -022,
+                -017, -020, -012, -027, -030, -025, -014, -036,
+                -049, -001, -027, -039, -046, -044, -033, -051,
+                -014, -014, -022, -046, -044, -030, -015, -027,
+                +001, +007, -008, -064, -043, -016, +009, +008,
+                -015, +036, +012, -054, +008, -028, +024, +014
+            };
+            _egKingLocations = new[]
+            {
+                -074, -035, -018, -018, -011, +015, +004, -017,
+                -012, +017, +014, +017, +017, +038, +023, +011,
+                +010, +017, +023, +015, +020, +045, +044, +013,
+                -008, +022, +024, +027, +026, +033, +026, +003,
+                -018, -004, +021, +024, +027, +023, +009, -011,
+                -019, -003, +011, +021, +023, +016, +007, -009,
+                -027, -011, +004, +013, +014, +004, -005, -017,
+                -053, -034, -021, -011, -028, -014, -024, -043
+            };
             _mgPassedPawns = new int[8];
             _egPassedPawns = new int[8];
             _egFreePassedPawns = new int[8];
@@ -120,27 +242,27 @@ namespace ErikTheCoder.MadChess.Engine
 
         public void CalculatePositionalFactors()
         {
-            // Calculate piece location values.
-            for (var square = 0; square < 64; square++)
-            {
-                var rank = Board.WhiteRanks[square];
-                var file = Board.Files[square];
-                var squareCentrality = 3 - Board.DistanceToCentralSquares[square];
-                var fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
-                var nearCorner = 3 - Board.DistanceToNearestCorner[square];
-                _mgPawnLocations[square] = rank * Config.MgPawnAdvancement + squareCentrality * Config.MgPawnCentrality;
-                _egPawnLocations[square] = rank * Config.EgPawnAdvancement + squareCentrality * Config.EgPawnCentrality;
-                _mgKnightLocations[square] = rank * Config.MgKnightAdvancement + squareCentrality * Config.MgKnightCentrality + nearCorner * Config.MgKnightCorner;
-                _egKnightLocations[square] = rank * Config.EgKnightAdvancement + squareCentrality * Config.EgKnightCentrality + nearCorner * Config.EgKnightCorner;
-                _mgBishopLocations[square] = rank * Config.MgBishopAdvancement + squareCentrality * Config.MgBishopCentrality + nearCorner * Config.MgBishopCorner;
-                _egBishopLocations[square] = rank * Config.EgBishopAdvancement + squareCentrality * Config.EgBishopCentrality + nearCorner * Config.EgBishopCorner;
-                _mgRookLocations[square] = rank * Config.MgRookAdvancement + fileCentrality * Config.MgRookCentrality + nearCorner * Config.MgRookCorner;
-                _egRookLocations[square] = rank * Config.EgRookAdvancement + squareCentrality * Config.EgRookCentrality + nearCorner * Config.EgRookCorner;
-                _mgQueenLocations[square] = rank * Config.MgQueenAdvancement + squareCentrality * Config.MgQueenCentrality + nearCorner * Config.MgQueenCorner;
-                _egQueenLocations[square] = rank * Config.EgQueenAdvancement + squareCentrality * Config.EgQueenCentrality + nearCorner * Config.EgQueenCorner;
-                _mgKingLocations[square] = rank * Config.MgKingAdvancement + squareCentrality * Config.MgKingCentrality + nearCorner * Config.MgKingCorner;
-                _egKingLocations[square] = rank * Config.EgKingAdvancement + squareCentrality * Config.EgKingCentrality + nearCorner * Config.EgKingCorner;
-            }
+            //// Calculate piece location values.
+            //for (var square = 0; square < 64; square++)
+            //{
+            //    var rank = Board.WhiteRanks[square];
+            //    var file = Board.Files[square];
+            //    var squareCentrality = 3 - Board.DistanceToCentralSquares[square];
+            //    var fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
+            //    var nearCorner = 3 - Board.DistanceToNearestCorner[square];
+            //    _mgPawnLocations[square] = rank * Config.MgPawnAdvancement + squareCentrality * Config.MgPawnCentrality;
+            //    _egPawnLocations[square] = rank * Config.EgPawnAdvancement + squareCentrality * Config.EgPawnCentrality;
+            //    _mgKnightLocations[square] = rank * Config.MgKnightAdvancement + squareCentrality * Config.MgKnightCentrality + nearCorner * Config.MgKnightCorner;
+            //    _egKnightLocations[square] = rank * Config.EgKnightAdvancement + squareCentrality * Config.EgKnightCentrality + nearCorner * Config.EgKnightCorner;
+            //    _mgBishopLocations[square] = rank * Config.MgBishopAdvancement + squareCentrality * Config.MgBishopCentrality + nearCorner * Config.MgBishopCorner;
+            //    _egBishopLocations[square] = rank * Config.EgBishopAdvancement + squareCentrality * Config.EgBishopCentrality + nearCorner * Config.EgBishopCorner;
+            //    _mgRookLocations[square] = rank * Config.MgRookAdvancement + fileCentrality * Config.MgRookCentrality + nearCorner * Config.MgRookCorner;
+            //    _egRookLocations[square] = rank * Config.EgRookAdvancement + squareCentrality * Config.EgRookCentrality + nearCorner * Config.EgRookCorner;
+            //    _mgQueenLocations[square] = rank * Config.MgQueenAdvancement + squareCentrality * Config.MgQueenCentrality + nearCorner * Config.MgQueenCorner;
+            //    _egQueenLocations[square] = rank * Config.EgQueenAdvancement + squareCentrality * Config.EgQueenCentrality + nearCorner * Config.EgQueenCorner;
+            //    _mgKingLocations[square] = rank * Config.MgKingAdvancement + squareCentrality * Config.MgKingCentrality + nearCorner * Config.MgKingCorner;
+            //    _egKingLocations[square] = rank * Config.EgKingAdvancement + squareCentrality * Config.EgKingCentrality + nearCorner * Config.EgKingCorner;
+            //}
             // Calculate passed pawn values.
             var passedPawnPower = Config.PassedPawnPowerPer128 / 128d;
             var mgScale = Config.MgPassedPawnScalePer128 / 128d;

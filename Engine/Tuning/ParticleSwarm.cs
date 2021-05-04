@@ -46,7 +46,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             for (var index = 0; index < Particles.Count; index++)
             {
                 var particle = Particles[index];
-                if (!ReferenceEquals(particle, bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
+                if ((particle != bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
                 {
                     // Recreate particle at random location.
                     particle = new Particle(particle.PgnGames, particle.Parameters.DuplicateWithRandomValues());

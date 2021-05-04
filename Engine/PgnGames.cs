@@ -18,7 +18,7 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class PgnGames : List<PgnGame>
     {
-        public void Load(Board Board, string Filename)
+        public void Load(Board Board, string Filename, Delegates.WriteMessageLine WriteMessageLine)
         {
             using (var pgnReader = File.OpenText(Filename))
             {
@@ -29,6 +29,7 @@ namespace ErikTheCoder.MadChess.Engine
                     pgnGame = GetNextGame(Board, pgnReader, gameNumber);
                     if ((pgnGame != null) && (pgnGame.Result != GameResult.Unknown)) Add(pgnGame);
                     gameNumber++;
+                    if ((gameNumber % 1000) == 0) WriteMessageLine($"Loaded {gameNumber:n0} games.");
                 } while (pgnGame != null);
             }
             GC.Collect();
@@ -73,7 +74,11 @@ namespace ErikTheCoder.MadChess.Engine
                                 _ => GameResult.Unknown
                             };
                         }
-                        else if (line.EndsWith("1-0") || line.EndsWith("1/2-1/2") || line.EndsWith("0-1") || line.EndsWith("*")) return new PgnGame(Board, GameNumber, result, stringBuilder.ToString()); // Found end of game.
+                        else if (line.EndsWith("1-0") || line.EndsWith("1/2-1/2") || line.EndsWith("0-1") || line.EndsWith("*"))
+                        {
+                            // Found end of game.
+                            return new PgnGame(Board, GameNumber, result, stringBuilder.ToString());
+                        }
                     }
                 }
             }

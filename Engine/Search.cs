@@ -752,7 +752,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
         
         
-        public int GetQuietScore(Board Board, int Depth, int Horizon, ulong ToSquareMask, int Alpha, int Beta) => GetQuietScore(Board, Depth, Horizon, ToSquareMask, Alpha, Beta, _getStaticScore, true);
+        public int GetQuietScore(Board Board, int Depth, int Horizon, int Alpha, int Beta) => GetQuietScore(Board, Depth, Horizon, Board.AllSquaresMask, Alpha, Beta, _getStaticScore, true);
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]

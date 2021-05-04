@@ -32,7 +32,7 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong[] FileMasks;
         public static readonly ulong[] RankMasks;
         public static readonly ulong AllSquaresMask;
-        public static readonly ulong EdgeSquareMask;
+        public static readonly ulong EdgeSquaresMask;
         public static readonly ulong WhiteCastleQEmptySquaresMask;
         public static readonly ulong WhiteCastleKEmptySquaresMask;
         public static readonly ulong BlackCastleQEmptySquaresMask;
@@ -219,7 +219,7 @@ namespace ErikTheCoder.MadChess.Engine
                 }
             }
             AllSquaresMask = Bitwise.CreateULongMask(0, 63);
-            EdgeSquareMask = FileMasks[0] | RankMasks[7] | FileMasks[7] | RankMasks[0];
+            EdgeSquaresMask = FileMasks[0] | RankMasks[7] | FileMasks[7] | RankMasks[0];
             // Create castling masks.
             WhiteCastleQEmptySquaresMask = Bitwise.CreateULongMask(new[] {Square.b1, Square.c1, Square.d1});
             _whiteCastleQAttackedSquareMask = Bitwise.CreateULongMask(Square.d1);
