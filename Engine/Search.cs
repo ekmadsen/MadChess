@@ -355,7 +355,7 @@ namespace ErikTheCoder.MadChess.Engine
             scoreError = Math.Max(scoreError, _moveError);
             // Determine move time.
             GetMoveTime(Board.CurrentPosition);
-            Board.NodesExamineTime = UciStream.NodesTimeInterval;
+            Board.NodesExamineTime = _nodesPerSecond.HasValue ? 1 : UciStream.NodesTimeInterval;
             // Iteratively deepen search.
             _originalHorizon = 0;
             var bestMove = new ScoredMove(Move.Null, -StaticScore.Max);
@@ -536,7 +536,9 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 ExamineTimeAndNodes(Board.Nodes);
                 var intervals = (int) (Board.Nodes / UciStream.NodesTimeInterval);
-                Board.NodesExamineTime = UciStream.NodesTimeInterval * (intervals + 1);
+                Board.NodesExamineTime = _nodesPerSecond.HasValue
+                    ? Board.Nodes + 1
+                    : UciStream.NodesTimeInterval * (intervals + 1);
             }
             if (!Continue && (_bestMoves[0].Move != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
             var (terminalDraw, repeatPosition) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
@@ -761,8 +763,9 @@ namespace ErikTheCoder.MadChess.Engine
             if ((Board.Nodes > Board.NodesExamineTime) || _nodesPerSecond.HasValue)
             {
                 ExamineTimeAndNodes(Board.Nodes);
-                var intervals = Board.Nodes / UciStream.NodesTimeInterval;
-                Board.NodesExamineTime = UciStream.NodesTimeInterval * (intervals + 1);
+                var intervals = Board.Nodes / UciStream.NodesTimeInterval; Board.NodesExamineTime = _nodesPerSecond.HasValue
+                    ? Board.Nodes + 1
+                    : UciStream.NodesTimeInterval * (intervals + 1);
             }
             if (!Continue && (_bestMoves[0].Move != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
             var (terminalDraw, _) = _evaluation.IsTerminalDraw(Board.CurrentPosition);
@@ -1171,8 +1174,9 @@ namespace ErikTheCoder.MadChess.Engine
             }
             _cache.SetPosition(cachedPosition);
         }
-        
 
+
+        // TODO: Resolve bug involving illegal PVs.  See http://talkchess.com/forum3/viewtopic.php?p=892120#p892120.
         private void UpdateStatus(Board Board, bool IncludePrincipalVariation)
         {
             var milliseconds = _stopwatch.Elapsed.TotalMilliseconds;
