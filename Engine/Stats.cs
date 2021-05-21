@@ -14,7 +14,7 @@ namespace ErikTheCoder.MadChess.Engine
     {
         public long NullMoves;
         public long NullMoveCutoffs;
-        public long BetaCutoffs;
+        public long MovesCausingBetaCutoff;
         public long BetaCutoffMoveNumber;
         public long BetaCutoffFirstMove;
         public long Evaluations;
@@ -30,7 +30,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             NullMoves = 0;
             NullMoveCutoffs = 0;
-            BetaCutoffs = 0;
+            MovesCausingBetaCutoff = 0;
             BetaCutoffMoveNumber = 0;
             BetaCutoffFirstMove = 0;
             Evaluations = 0;

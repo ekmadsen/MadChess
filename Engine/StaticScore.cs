@@ -16,7 +16,7 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class StaticScore
     {
-        public const int Max = 9999;
+        public const int Max = 999_999;
         public const int Checkmate = Max - Search.MaxHorizon;
         public const int Interrupted = Max - Search.MaxHorizon - 1;
         public const int NotCached = Max - Search.MaxHorizon - 2;

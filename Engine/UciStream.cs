@@ -730,8 +730,8 @@ namespace ErikTheCoder.MadChess.Engine
             var lastMoveIndex = Board.CurrentPosition.MoveIndex - 1;
             _search.PrioritizeMoves(Board.CurrentPosition, Board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
             Search.SortMovesByPriority(Board.CurrentPosition.Moves, lastMoveIndex);
-            WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer  History              Priority");
-            WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  =======  ====================");
+            WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer   History              Priority");
+            WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  ========  ====================");
             var stringBuilder = new StringBuilder();
             var legalMoveNumber = 0;
             for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
@@ -748,7 +748,7 @@ namespace ErikTheCoder.MadChess.Engine
                 var promotedPiece = Move.PromotedPiece(move) == Piece.None ? string.Empty : Piece.GetName(Move.PromotedPiece(move));
                 stringBuilder.Append(promotedPiece.PadLeft(7));
                 stringBuilder.Append(Move.Killer(move).ToString().PadLeft(8));
-                stringBuilder.Append(Move.History(move).ToString().PadLeft(9));
+                stringBuilder.Append(Move.History(move).ToString().PadLeft(10));
                 stringBuilder.Append(move.ToString().PadLeft(22));
                 WriteMessageLine(stringBuilder.ToString());
             }
@@ -940,8 +940,8 @@ namespace ErikTheCoder.MadChess.Engine
         private void DisplayStats()
         {
             var nullMoveCutoffFraction = (100d * _stats.NullMoveCutoffs) / _stats.NullMoves;
-            var betaCutoffMoveNumber = (double) _stats.BetaCutoffMoveNumber / _stats.BetaCutoffs;
-            var betaCutoffFirstMoveFraction = (100d * _stats.BetaCutoffFirstMove) / _stats.BetaCutoffs;
+            var betaCutoffMoveNumber = (double) _stats.BetaCutoffMoveNumber / _stats.MovesCausingBetaCutoff;
+            var betaCutoffFirstMoveFraction = (100d * _stats.BetaCutoffFirstMove) / _stats.MovesCausingBetaCutoff;
             var cacheHitFraction = (100d * _stats.CacheHits) / _stats.CacheProbes;
             var scoreCutoffFraction = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
             var bestMoveHitFraction = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
@@ -1000,7 +1000,7 @@ namespace ErikTheCoder.MadChess.Engine
             var pgnFilename = Tokens[1].Trim();
             var particleSwarmsCount = int.Parse(Tokens[2].Trim());
             var particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            var winScale = int.Parse(Tokens[4].Trim()); // Use 581 for ComputerGamesBulletStrongerThanMadChess.pgn.
+            var winScale = int.Parse(Tokens[4].Trim()); // Use 609 for ComputerGamesBulletStrongerThanMadChess.pgn.
             var iterations = int.Parse(Tokens[5].Trim());
             var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
             particleSwarms.Optimize(iterations);

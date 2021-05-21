@@ -16,8 +16,13 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class MoveHistory
     {
-        public const int MaxValue = 67_108_863; // History has 48 - 22 + 1 = 27 bits.  2 Pow 27 = 134_217_728.  Value may be positive or negative.
-        private const int _agePer256 = 244;
+        // History has 48 - 22 + 1 = 27 bits.
+        // Eliminate one bit to prevent overflow caused by zero (adds one distinct value to range).
+        // 2 Pow 26 = 67_108_864.
+        // Value may be positive or negative, so max value is 67_108_864 / 2.
+        public const int MaxValue = 33_554_432;
+        private const int _multiplier = 1024;
+        private const int _divisor = MaxValue / _multiplier;
         private readonly int[][] _moveHistory;
 
 
@@ -44,19 +49,13 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UpdateValue(Position Position, ulong Move, int Increment)
         {
+            // Update value with decay.  Idea from Ethereal chess engine.
+            // This function approaches an asymptotic limit of +/- MaxValue.
             var piece = Position.GetPiece(Engine.Move.From(Move));
             var toSquare = Engine.Move.To(Move);
-            var value = _moveHistory[piece][toSquare] + Increment;
-            _moveHistory[piece][toSquare] = Math.Max(Math.Min(value, MaxValue), -MaxValue);
-        }
-
-
-        public void Age()
-        {
-            for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
-            {
-                for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = (_agePer256 * _moveHistory[piece][toSquare]) / 256;
-            }
+            var value = _moveHistory[piece][toSquare];
+            value += (Increment * _multiplier) - ((value * Math.Abs(Increment)) / _divisor);
+            _moveHistory[piece][toSquare] = value;
         }
 
 

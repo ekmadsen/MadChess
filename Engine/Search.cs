@@ -54,15 +54,14 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullStaticScoreReduction = 200;
         private const int _nullStaticScoreMaxReduction = 3;
         private const int _estimateBestMoveReduction = 2;
-        private const int _historyPriorMovePer128 = 256;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
         private static MoveScoreComparer _moveScoreComparer;
         private static Delegates.GetStaticScore _getExchangeMaterialScore;
-        private static int[] _futilityMargins;
-        private static int[] _lateMovePruning;
         private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
+        private static int[] _futilityMargins;
+        private int[] _lateMovePruning;
         private int[] _lateMoveReductions;
         private ScoredMove[] _rootMoves;
         private ScoredMove[] _bestMoves;
@@ -139,10 +138,6 @@ namespace ErikTheCoder.MadChess.Engine
             _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
             _moveScoreComparer = new MoveScoreComparer();
             _getExchangeMaterialScore = Evaluation.GetExchangeMaterialScore;
-            // _futilityMargins and _lateMovePruning should be the same length.
-            // To Horizon =            000  001  002  003  004  005
-            _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
-            _lateMovePruning = new[] { 999, 003, 007, 013, 021, 031 };
         }
 
 
@@ -165,6 +160,10 @@ namespace ErikTheCoder.MadChess.Engine
             _stopwatch = new Stopwatch();
             // Create search parameters.
             SpecifiedMoves = new List<ulong>();
+            // To Horizon =            000  001  002  003  004  005
+            _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
+            _lateMovePruning = new[] { 999, 003, 007, 013, 021, 031 };
+            System.Diagnostics.Debug.Assert(_futilityMargins.Length == _lateMovePruning.Length);
             // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
             _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
             // Create scored move arrays.
@@ -220,7 +219,6 @@ namespace ErikTheCoder.MadChess.Engine
                 _futilityMargins = null;
                 _lateMovePruning = null;
                 _lateMoveReductions = null;
-                _lateMovePruning = null;
                 _rootMoves = null;
                 _bestMoves = null;
                 _bestMovePlies = null;
@@ -370,7 +368,6 @@ namespace ErikTheCoder.MadChess.Engine
                 {
                     while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
                 }
-                _moveHistory.Age();
                 int alpha;
                 int beta;
                 if (CompetitivePlay || (_originalHorizon < _aspirationMinHorizon))
@@ -556,7 +553,6 @@ namespace ErikTheCoder.MadChess.Engine
                 if (cachedScore != StaticScore.NotCached)
                 {
                     // Score is cached.
-                    _stats.CacheScoreCutoff++;
                     if (cachedScore >= Beta)
                     {
                         bestMove = _cache.GetBestMove(cachedPosition.Data);
@@ -567,6 +563,7 @@ namespace ErikTheCoder.MadChess.Engine
                             _moveHistory.UpdateValue(Board.CurrentPosition, bestMove, historyIncrement);
                         }
                     }
+                    _stats.CacheScoreCutoff++;
                     return cachedScore;
                 }
             }
@@ -597,8 +594,8 @@ namespace ErikTheCoder.MadChess.Engine
                     // Enemy is unable to capitalize on position even if player forfeits right to move.
                     // While forfeiting right to move is illegal, this indicates position is strong.
                     // Position is not the result of best play by both players.
-                    _stats.NullMoveCutoffs++;
                     UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, Move.Null, Beta, Alpha, Beta);
+                    _stats.NullMoveCutoffs++;
                     return Beta;
                 }
             }
@@ -678,9 +675,6 @@ namespace ErikTheCoder.MadChess.Engine
                 if (score >= Beta)
                 {
                     // Position is not the result of best play by both players.
-                    _stats.BetaCutoffs++;
-                    if (legalMoveNumber == 1) _stats.BetaCutoffFirstMove++;
-                    _stats.BetaCutoffMoveNumber += legalMoveNumber;
                     if (Move.IsQuiet(move))
                     {
                         // Update move heuristics.
@@ -694,12 +688,15 @@ namespace ErikTheCoder.MadChess.Engine
                             if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                             {
                                 // Update history of prior quiet move that failed to produce cutoff.
-                                _moveHistory.UpdateValue(Board.CurrentPosition, priorMove, (-historyIncrement * _historyPriorMovePer128) / 128);
+                                _moveHistory.UpdateValue(Board.CurrentPosition, priorMove, -historyIncrement);
                             }
                             moveIndex--;
                         }
                     }
                     UpdateBestMoveCache(Board.CurrentPosition, Depth, Horizon, move, score, Alpha, Beta);
+                    _stats.MovesCausingBetaCutoff++;
+                    _stats.BetaCutoffMoveNumber += legalMoveNumber;
+                    if (legalMoveNumber == 1) _stats.BetaCutoffFirstMove++;
                     return Beta;
                 }
                 var rootMoveWithinWindow = (Depth == 0) && (score > Alpha) && (score < Beta);
@@ -787,7 +784,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // King is not in check.  Search only captures.
                 getNextMove = _getNextCapture;
-                if (fromHorizon > _quietSearchMaxFromHorizon)
+                if ((fromHorizon > _quietSearchMaxFromHorizon) && !Board.PreviousPosition.KingInCheck)
                 {
                     var lastMoveToSquare = Move.To(Board.PreviousPosition.PlayedMove);
                     moveGenerationToSquareMask = lastMoveToSquare == Square.Illegal
@@ -1041,7 +1038,7 @@ namespace ErikTheCoder.MadChess.Engine
             var blackPawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce move with lone king on board.
             if (!Engine.Move.IsQuiet(Move)) return Horizon;
-            // Reduce search horizon based on quiet move number and distance to search horizon.
+            // Reduce search horizon.
             var quietMoveIndex = Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1);
             return Horizon - _lateMoveReductions[quietMoveIndex];
         }
@@ -1176,7 +1173,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        // TODO: Resolve bug involving illegal PVs.  See http://talkchess.com/forum3/viewtopic.php?p=892120#p892120.
+        // TODO: Resolve issue involving illegal PVs.  See http://talkchess.com/forum3/viewtopic.php?p=892120#p892120.
         private void UpdateStatus(Board Board, bool IncludePrincipalVariation)
         {
             var milliseconds = _stopwatch.Elapsed.TotalMilliseconds;
