@@ -18,7 +18,6 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public static class CachedPositionData
     {
-        private const int _scorePadding = 16_384;
         private static readonly int _toHorizonShift;
         private static readonly ulong _toHorizonMask;
         private static readonly ulong _toHorizonUnmask;
@@ -142,14 +141,14 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Score(ulong CachedPositionData) => (int)((CachedPositionData & _scoreMask) >> _scoreShift) - _scorePadding; // Cached score is a positive number.
+        public static int Score(ulong CachedPositionData) => (int)((CachedPositionData & _scoreMask) >> _scoreShift) - StaticScore.Max; // Cached score is a positive number.
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetScore(ref ulong CachedPositionData, int Score)
         {
             // Ensure cached score is a positive number.
-            var score = Score + _scorePadding;
+            var score = Score + StaticScore.Max;
             // Clear
             CachedPositionData &= _scoreUnmask;
             // Set

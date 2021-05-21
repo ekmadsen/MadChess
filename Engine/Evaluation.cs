@@ -40,7 +40,7 @@ namespace ErikTheCoder.MadChess.Engine
         // Draw by Repetition
         public int DrawMoves;
         // Material
-        public const int MgPawnMaterial = 100;
+        public const int PawnMaterial = 100;
         public readonly EvaluationConfig Config;
         private const int _knightExchangeMaterial = 300;
         private const int _bishopExchangeMaterial = 300;
@@ -87,6 +87,18 @@ namespace ErikTheCoder.MadChess.Engine
             Config = new EvaluationConfig();
             _defaultConfig = new EvaluationConfig();
             // Create arrays for quick lookup of positional factors, then calculate positional factors.
+            _mgPawnLocations = new int[64];
+            _egPawnLocations = new int[64];
+            _mgKnightLocations = new int[64];
+            _egKnightLocations = new int[64];
+            _mgBishopLocations = new int[64];
+            _egBishopLocations = new int[64];
+            _mgRookLocations = new int[64];
+            _egRookLocations = new int[64];
+            _mgQueenLocations = new int[64];
+            _egQueenLocations = new int[64];
+            _mgKingLocations = new int[64];
+            _egKingLocations = new int[64];// Create arrays for quick lookup of positional factors, then calculate positional factors.
             _mgPawnLocations = new int[64];
             _egPawnLocations = new int[64];
             _mgKnightLocations = new int[64];
@@ -233,8 +245,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
             if (_debug())
             {
-                _writeMessageLine($"info string {nameof(MgPawnMaterial)} = {MgPawnMaterial}");
-                _writeMessageLine($"info string {nameof(Config.EgPawnMaterial)} = {Config.EgPawnMaterial}");
+                _writeMessageLine($"info string {nameof(PawnMaterial)} = {PawnMaterial}");
                 _writeMessageLine($"info string {nameof(Config.MgKnightMaterial)} = {Config.MgKnightMaterial}");
                 _writeMessageLine($"info string {nameof(Config.EgKnightMaterial)} = {Config.EgKnightMaterial}");
                 _writeMessageLine($"info string {nameof(Config.MgBishopMaterial)} = {Config.MgBishopMaterial}");
@@ -537,17 +548,15 @@ namespace ErikTheCoder.MadChess.Engine
         
         private void EvaluateMaterial(Position Position)
         {
-            _staticScore.WhiteMgPawnMaterial = Bitwise.CountSetBits(Position.WhitePawns) * MgPawnMaterial;
+            _staticScore.WhitePawnMaterial = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial;
             _staticScore.WhiteMgPieceMaterial = Bitwise.CountSetBits(Position.WhiteKnights) * Config.MgKnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.MgBishopMaterial +
                                                 Bitwise.CountSetBits(Position.WhiteRooks) * Config.MgRookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.MgQueenMaterial;
-            _staticScore.WhiteEgPawnMaterial = Bitwise.CountSetBits(Position.WhitePawns) * Config.EgPawnMaterial;
             _staticScore.WhiteEgPieceMaterial = Bitwise.CountSetBits(Position.WhiteKnights) * Config.EgKnightMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * Config.EgBishopMaterial +
                                                 Bitwise.CountSetBits(Position.WhiteRooks) * Config.EgRookMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * Config.EgQueenMaterial;
 
-            _staticScore.BlackMgPawnMaterial = Bitwise.CountSetBits(Position.BlackPawns) * MgPawnMaterial;
+            _staticScore.BlackPawnMaterial = Bitwise.CountSetBits(Position.BlackPawns) * PawnMaterial;
             _staticScore.BlackMgPieceMaterial = Bitwise.CountSetBits(Position.BlackKnights) * Config.MgKnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.MgBishopMaterial +
                                                 Bitwise.CountSetBits(Position.BlackRooks) * Config.MgRookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.MgQueenMaterial;
-            _staticScore.BlackEgPawnMaterial = Bitwise.CountSetBits(Position.BlackPawns) * Config.EgPawnMaterial;
             _staticScore.BlackEgPieceMaterial = Bitwise.CountSetBits(Position.BlackKnights) * Config.EgKnightMaterial + Bitwise.CountSetBits(Position.BlackBishops) * Config.EgBishopMaterial +
                                                 Bitwise.CountSetBits(Position.BlackRooks) * Config.EgRookMaterial + Bitwise.CountSetBits(Position.BlackQueens) * Config.EgQueenMaterial;
         }
@@ -565,9 +574,7 @@ namespace ErikTheCoder.MadChess.Engine
                     egMaterial = 0;
                     break;
                 case Engine.Piece.WhitePawn:
-                    mgMaterial = MgPawnMaterial;
-                    egMaterial = Config.EgPawnMaterial;
-                    break;
+                    return PawnMaterial;
                 case Engine.Piece.WhiteKnight:
                     mgMaterial = Config.MgKnightMaterial;
                     egMaterial = Config.EgKnightMaterial;
@@ -589,9 +596,7 @@ namespace ErikTheCoder.MadChess.Engine
                     egMaterial = 0;
                     break;
                 case Engine.Piece.BlackPawn:
-                    mgMaterial = MgPawnMaterial;
-                    egMaterial = Config.EgPawnMaterial;
-                    break;
+                    return PawnMaterial;
                 case Engine.Piece.BlackKnight:
                     mgMaterial = Config.MgKnightMaterial;
                     egMaterial = Config.EgKnightMaterial;
@@ -622,10 +627,10 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static (int StaticScore, bool DrawnEndgame) GetExchangeMaterialScore(Position Position)
         {
-            var whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * MgPawnMaterial +
+            var whiteScore = Bitwise.CountSetBits(Position.WhitePawns) * PawnMaterial +
                              Bitwise.CountSetBits(Position.WhiteKnights) * _knightExchangeMaterial + Bitwise.CountSetBits(Position.WhiteBishops) * _bishopExchangeMaterial +
                              Bitwise.CountSetBits(Position.WhiteRooks) * _rookExchangeMaterial + Bitwise.CountSetBits(Position.WhiteQueens) * _queenExchangeMaterial;
-            var blackScore = Bitwise.CountSetBits(Position.BlackPawns) * MgPawnMaterial +
+            var blackScore = Bitwise.CountSetBits(Position.BlackPawns) * PawnMaterial +
                              Bitwise.CountSetBits(Position.BlackKnights) * _knightExchangeMaterial + Bitwise.CountSetBits(Position.BlackBishops) * _bishopExchangeMaterial +
                              Bitwise.CountSetBits(Position.BlackRooks) * _rookExchangeMaterial + Bitwise.CountSetBits(Position.BlackQueens) * _queenExchangeMaterial;
             return Position.WhiteMove
@@ -1148,8 +1153,7 @@ namespace ErikTheCoder.MadChess.Engine
             // Material
             stringBuilder.AppendLine("Material");
             stringBuilder.AppendLine("===========");
-            stringBuilder.AppendLine($"MG Pawn:    {MgPawnMaterial}");
-            stringBuilder.AppendLine($"EG Pawn:    {Config.EgPawnMaterial}");
+            stringBuilder.AppendLine($"Pawn:       {PawnMaterial}");
             stringBuilder.AppendLine($"MG Knight:  {Config.MgKnightMaterial}");
             stringBuilder.AppendLine($"EG Knight:  {Config.EgKnightMaterial}");
             stringBuilder.AppendLine($"MG Bishop:  {Config.MgBishopMaterial}");

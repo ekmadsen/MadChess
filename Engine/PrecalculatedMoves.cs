@@ -280,9 +280,9 @@ namespace ErikTheCoder.MadChess.Engine
 
         public static ulong GetRelevantOccupancy(int Square, bool FileRankSlidingPiece)
         {
-            if ((Board.SquareMasks[Square] & Board.EdgeSquareMask) == 0) return ~Board.EdgeSquareMask;
+            if ((Board.SquareMasks[Square] & Board.EdgeSquaresMask) == 0) return ~Board.EdgeSquaresMask;
             // Square is on edge of board.
-            if (!FileRankSlidingPiece) return ~Board.EdgeSquareMask;
+            if (!FileRankSlidingPiece) return ~Board.EdgeSquaresMask;
             // Piece can slide along file or rank.
             ulong occupancy;
             var file = Board.Files[Square];

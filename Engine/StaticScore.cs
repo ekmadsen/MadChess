@@ -16,14 +16,13 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class StaticScore
     {
-        public const int Max = 9999;
+        public const int Max = 999_999;
         public const int Checkmate = Max - Search.MaxHorizon;
         public const int Interrupted = Max - Search.MaxHorizon - 1;
         public const int NotCached = Max - Search.MaxHorizon - 2;
         public const int MaxPlyWithoutCaptureOrPawnMove = 100;
         public int WhiteEgSimple;
-        public int WhiteMgPawnMaterial;
-        public int WhiteEgPawnMaterial;
+        public int WhitePawnMaterial;
         public int WhiteMgPieceMaterial;
         public int WhiteEgPieceMaterial;
         public int WhiteMgPieceLocation;
@@ -41,8 +40,7 @@ namespace ErikTheCoder.MadChess.Engine
         public int WhiteMgBishopPair;
         public int WhiteEgBishopPair;
         public int BlackEgSimple;
-        public int BlackMgPawnMaterial;
-        public int BlackEgPawnMaterial;
+        public int BlackPawnMaterial;
         public int BlackMgPieceMaterial;
         public int BlackEgPieceMaterial;
         public int BlackMgPieceLocation;
@@ -63,33 +61,33 @@ namespace ErikTheCoder.MadChess.Engine
         public int EgScalePer128;
 
 
-        private int WhiteMgMaterial => WhiteMgPawnMaterial + WhiteMgPieceMaterial;
+        private int WhiteMgMaterial => WhitePawnMaterial + WhiteMgPieceMaterial;
 
 
         private int WhiteMg => WhiteMgMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility + WhiteMgKingSafety + WhiteMgBishopPair;
 
 
-        private int WhiteEgMaterial => WhiteEgPawnMaterial + WhiteEgPieceMaterial;
+        private int WhiteEgMaterial => WhitePawnMaterial + WhiteEgPieceMaterial;
 
 
         public int WhiteEg => WhiteEgSimple + WhiteEgMaterial + WhiteEgPieceLocation + WhiteEgPassedPawns + WhiteEgFreePassedPawns + WhiteEgKingEscortedPassedPawns + WhiteUnstoppablePassedPawns +
-                               WhiteEgPieceMobility + WhiteEgKingSafety + WhiteEgBishopPair;
+                              WhiteEgPieceMobility + WhiteEgKingSafety + WhiteEgBishopPair;
 
 
         private int WhiteEgScaled => (EgScalePer128 * WhiteEg) / 128;
 
 
-        private int BlackMgMaterial => BlackMgPawnMaterial + BlackMgPieceMaterial;
+        private int BlackMgMaterial => BlackPawnMaterial + BlackMgPieceMaterial;
 
 
         private int BlackMg => BlackMgMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns + BlackMgPieceMobility + BlackMgKingSafety + BlackMgBishopPair;
 
 
-        private int BlackEgMaterial => BlackEgPawnMaterial + BlackEgPieceMaterial;
+        private int BlackEgMaterial => BlackPawnMaterial + BlackEgPieceMaterial;
 
 
         public int BlackEg => BlackEgSimple + BlackEgMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns +
-                               BlackEgPieceMobility + BlackEgKingSafety + BlackEgBishopPair;
+                              BlackEgPieceMobility + BlackEgKingSafety + BlackEgBishopPair;
 
 
         private int BlackEgScaled => (EgScalePer128 * BlackEg) / 128;
@@ -116,8 +114,7 @@ namespace ErikTheCoder.MadChess.Engine
         public void Reset()
         {
             WhiteEgSimple = 0;
-            WhiteMgPawnMaterial = 0;
-            WhiteEgPawnMaterial = 0;
+            WhitePawnMaterial = 0;
             WhiteMgPieceMaterial = 0;
             WhiteEgPieceMaterial = 0;
             WhiteMgPieceLocation = 0;
@@ -135,8 +132,7 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteMgBishopPair = 0;
             WhiteEgBishopPair = 0;
             BlackEgSimple = 0;
-            BlackMgPawnMaterial = 0;
-            BlackEgPawnMaterial = 0;
+            BlackPawnMaterial = 0;
             BlackMgPieceMaterial = 0;
             BlackEgPieceMaterial = 0;
             BlackMgPieceLocation = 0;
@@ -180,9 +176,10 @@ namespace ErikTheCoder.MadChess.Engine
             AppendStaticScoreLine(stringBuilder, "Scale", 100, 100, egScale, egScale, Phase);
             AppendStaticScoreLine(stringBuilder, "Total", WhiteMg, BlackMg, WhiteEgScaled, BlackEgScaled, Phase);
             stringBuilder.AppendLine();
+            var phaseFraction = (100 * Phase) / Evaluation.MiddlegamePhase;
             var totalScore = GetTotalScore(Phase) / 100d;
-            stringBuilder.AppendLine($"Middlegame   = {Phase} of {Evaluation.MiddlegamePhase}");
-            stringBuilder.AppendLine($"50 Move Rule = {MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%");
+            stringBuilder.AppendLine($"Middlegame   = {Phase} of {Evaluation.MiddlegamePhase} ({phaseFraction}%)");
+            stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
             stringBuilder.AppendLine($"Total Score  = {totalScore:0.00}");
             return stringBuilder.ToString();
         }
