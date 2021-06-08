@@ -16,11 +16,11 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class MoveHistory
     {
-        // History has 48 - 22 + 1 = 27 bits.
+        // History has 48 - 21 + 1 = 28 bits.
         // Eliminate one bit to prevent overflow caused by zero (adds one distinct value to range).
-        // 2 Pow 26 = 67_108_864.
-        // Value may be positive or negative, so max value is 67_108_864 / 2.
-        public const int MaxValue = 33_554_432;
+        // 2 Pow 27 = 134_217_728.
+        // Value may be positive or negative, so max value is 134_217_728 / 2.
+        public const int MaxValue = 67_108_864;
         private const int _multiplier = 1024;
         private const int _divisor = MaxValue / _multiplier;
         private readonly int[][] _moveHistory;

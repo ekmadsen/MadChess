@@ -1042,16 +1042,10 @@ namespace ErikTheCoder.MadChess.Engine
             Engine.Move.SetIsKingMove(ref Move, attacker == king);
             var enPassantCapture = (attacker == pawn) && (toSquare == CurrentPosition.EnPassantSquare);
             Engine.Move.SetIsEnPassantCapture(ref Move, enPassantCapture);
-            if (enPassantCapture)
-            {
-                capture = true;
-                Engine.Move.SetCaptureVictim(ref Move, enPassantVictim);
-            }
+            if (enPassantCapture) Engine.Move.SetCaptureVictim(ref Move, enPassantVictim);
             else Engine.Move.SetCaptureVictim(ref Move, victim);
             Engine.Move.SetIsDoublePawnMove(ref Move, (attacker == pawn) && (distance == 2));
             Engine.Move.SetIsPawnMove(ref Move, attacker == pawn);
-            var pawnPromotion = Engine.Move.PromotedPiece(Move) != Piece.None;
-            Engine.Move.SetIsQuiet(ref Move, !capture && !pawnPromotion && !castling);
             return true;
         }
 
@@ -1101,9 +1095,8 @@ namespace ErikTheCoder.MadChess.Engine
             CurrentPosition.WhiteMove = !CurrentPosition.WhiteMove;
             CurrentPosition.KingInCheck = kingInCheck;
             CurrentPosition.EnPassantSquare = enPassantSquare;
-            // Set check and quiet move properties and undo move.
+            // Set check property and undo move.
             Engine.Move.SetIsCheck(ref Move, check);
-            if (check) Engine.Move.SetIsQuiet(ref Move, false);
             UndoMove();
             return true;
         }
