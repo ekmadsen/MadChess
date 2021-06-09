@@ -53,11 +53,11 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _nullStaticScoreReduction = 200;
         private const int _nullStaticScoreMaxReduction = 3;
-        private const int _estimateBestMoveReduction = 2;
+        private const int _iidMinToHorizon = 6;
         private const int _singularMoveMinToHorizon = 7;
         private const int _singularMoveMaxInsufficientDraft = 3;
         private const int _singularMoveReductionPer128 = 64;
-        private const int _singularMoveBetaReduction = 4;
+        private const int _singularMoveMargin = 2;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -605,11 +605,11 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Get best move.
             bestMove = _cache.GetBestMove(cachedPosition.Data);
-            if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon > _estimateBestMoveReduction))
+            if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon >= _iidMinToHorizon))
             {
                 // Cached position in a principal variation does not specify a best move.
-                // Estimate best move by searching at reduced depth.
-                GetDynamicScore(Board, Depth, Horizon - _estimateBestMoveReduction, false, Alpha, Beta);
+                // Find best move via Internal Iterative Deepening.
+                GetDynamicScore(Board, Depth, Horizon - 1, false, Alpha, Beta);
                 cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
                 bestMove = _cache.GetBestMove(cachedPosition.Data);
             }
@@ -1057,10 +1057,11 @@ namespace ErikTheCoder.MadChess.Engine
             var toHorizon = Horizon - Depth;
             if ((Depth == 0) || (toHorizon < _singularMoveMinToHorizon)) return false;
             var score = CachedPositionData.Score(CachedPosition.Data);
+            if ((score == StaticScore.NotCached) || (Math.Abs(score) >= StaticScore.Checkmate)) return false;
             var scorePrecision = CachedPositionData.ScorePrecision(CachedPosition.Data);
-            if ((score == StaticScore.NotCached) || (scorePrecision != ScorePrecision.LowerBound) || (Math.Abs(score) >= StaticScore.Checkmate)) return false;
+            if (CachedPositionData.ScorePrecision(CachedPosition.Data) != ScorePrecision.LowerBound) return false;
             if (CachedPositionData.ToHorizon(CachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientDraft)) return false;
-            var beta = score - (toHorizon * _singularMoveBetaReduction);
+            var beta = score - (_singularMoveMargin * toHorizon);
             var searchHorizon = Depth + ((toHorizon * _singularMoveReductionPer128) / 128);
             score = GetDynamicScore(Board, Depth, searchHorizon, false, beta - 1, beta, Move);
             return score < beta;
