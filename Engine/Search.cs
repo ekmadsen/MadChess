@@ -53,11 +53,11 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _nullStaticScoreReduction = 200;
         private const int _nullStaticScoreMaxReduction = 3;
-        private const int _iidMinToHorizon = 6;
-        private const int _singularMoveMinToHorizon = 7;
+        private const int _iidReduction = 2;
+        private const int _singularMoveMinToHorizon = 9;
         private const int _singularMoveMaxInsufficientDraft = 3;
         private const int _singularMoveReductionPer128 = 64;
-        private const int _singularMoveMargin = 2;
+        private const int _singularMoveMargin = 4;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -605,11 +605,11 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Get best move.
             bestMove = _cache.GetBestMove(cachedPosition.Data);
-            if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon >= _iidMinToHorizon))
+            if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon > _iidReduction))
             {
                 // Cached position in a principal variation does not specify a best move.
                 // Find best move via Internal Iterative Deepening.
-                GetDynamicScore(Board, Depth, Horizon - 1, false, Alpha, Beta);
+                GetDynamicScore(Board, Depth, Horizon - _iidReduction, false, Alpha, Beta);
                 cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
                 bestMove = _cache.GetBestMove(cachedPosition.Data);
             }
@@ -647,7 +647,7 @@ namespace ErikTheCoder.MadChess.Engine
                     else continue; // Skip illegal move.
                     Board.CurrentPosition.Moves[moveIndex] = move;
                 }
-                if (move == ExcludedMove) continue;
+                if (Move.Equals(move, ExcludedMove)) continue;
                 if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
                 var searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, cachedPosition, quietMoveNumber, drawnEndgame);
@@ -1058,7 +1058,6 @@ namespace ErikTheCoder.MadChess.Engine
             if ((Depth == 0) || (toHorizon < _singularMoveMinToHorizon)) return false;
             var score = CachedPositionData.Score(CachedPosition.Data);
             if ((score == StaticScore.NotCached) || (Math.Abs(score) >= StaticScore.Checkmate)) return false;
-            var scorePrecision = CachedPositionData.ScorePrecision(CachedPosition.Data);
             if (CachedPositionData.ScorePrecision(CachedPosition.Data) != ScorePrecision.LowerBound) return false;
             if (CachedPositionData.ToHorizon(CachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientDraft)) return false;
             var beta = score - (_singularMoveMargin * toHorizon);
