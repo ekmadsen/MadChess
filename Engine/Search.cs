@@ -54,7 +54,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullStaticScoreReduction = 200;
         private const int _nullStaticScoreMaxReduction = 3;
         private const int _iidReduction = 2;
-        private const int _singularMoveMinToHorizon = 9;
+        private const int _singularMoveMinToHorizon = 7;
         private const int _singularMoveMaxInsufficientDraft = 3;
         private const int _singularMoveReductionPer128 = 64;
         private const int _singularMoveMargin = 4;
