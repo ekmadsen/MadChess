@@ -1028,7 +1028,14 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private int GetSearchHorizon(Board Board, int Depth, int Horizon, ulong Move, CachedPosition CachedPosition, int QuietMoveNumber, bool DrawnEndgame)
         {
-            if (Engine.Move.IsBest(Move) && IsBestMoveSingular(Board, Depth, Horizon, Move, CachedPosition)) return Horizon + 1; // Extend singular move.
+            if (Engine.Move.IsBest(Move) && IsBestMoveSingular(Board, Depth, Horizon, Move, CachedPosition))
+            {
+                // The best move (from the cache) is singular.  That is, it's the only good move in the position.
+                // Evaluation of the current position relies on the accuracy of the singular move's score.
+                // If the engine misjudges the singular move, the position could deteriorate because no alternative (strong) moves exist.
+                // To increase confidence in the singular move's score, search it one ply deeper.
+                return Horizon + 1;
+            }
             if ((Depth == 0) && !CompetitivePlay) return Horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
             var capture = Engine.Move.CaptureVictim(Move) != Piece.None;
             if (capture) return Horizon; // Do not reduce capture.
@@ -1054,6 +1061,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool IsBestMoveSingular(Board Board, int Depth, int Horizon, ulong Move, CachedPosition CachedPosition)
         {
+            // Determine if the best move that had failed high in recent searches is best by a significant margin.
             var toHorizon = Horizon - Depth;
             if ((Depth == 0) || (toHorizon < _singularMoveMinToHorizon)) return false;
             var score = CachedPositionData.Score(CachedPosition.Data);
