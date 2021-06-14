@@ -57,7 +57,7 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _singularMoveMinToHorizon = 7;
         private const int _singularMoveMaxInsufficientDraft = 3;
         private const int _singularMoveReductionPer128 = 64;
-        private const int _singularMoveMargin = 4;
+        private const int _singularMoveMargin = 2;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
