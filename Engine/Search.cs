@@ -1061,7 +1061,7 @@ namespace ErikTheCoder.MadChess.Engine
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool IsBestMoveSingular(Board Board, int Depth, int Horizon, ulong Move, CachedPosition CachedPosition)
         {
-            // Determine if the best move that had failed high in recent searches is best by a significant margin.
+            // Determine if best move that had failed high in recent searches is best by a significant margin.
             var toHorizon = Horizon - Depth;
             if ((Depth == 0) || (toHorizon < _singularMoveMinToHorizon)) return false;
             var score = CachedPositionData.Score(CachedPosition.Data);
