@@ -57,9 +57,6 @@ namespace ErikTheCoder.MadChess.Engine
         private static readonly int _doublePawnMoveShift;
         private static readonly ulong _doublePawnMoveMask;
         private static readonly ulong _doublePawnMoveUnmask;
-        private static readonly int _quietShift;
-        private static readonly ulong _quietMask;
-        private static readonly ulong _quietUnmask;
         private static readonly int _fromShift;
         private static readonly ulong _fromMask;
         private static readonly ulong _fromUnmask;
@@ -72,7 +69,7 @@ namespace ErikTheCoder.MadChess.Engine
 
         // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
         // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-        // B|CapV   |CapA   |Promo  |Kil|History                                              |!|O|K|E|2|P|C|Q|From         |To
+        // B|CapV   |CapA   |Promo  |Kil|History                                                |!|O|K|E|2|P|C|From         |To
 
         // B =     Best Move
         // CapV =  Capture Victim
@@ -86,7 +83,6 @@ namespace ErikTheCoder.MadChess.Engine
         // 2 =     Double Pawn Move
         // P =     Pawn Move
         // C =     Check
-        // Q =     Quiet (not capture, pawn promotion, castling, or check)
         // From =  From (one extra bit for illegal square)
         // To =    To (one extra bit for illegal square)
 
@@ -109,33 +105,30 @@ namespace ErikTheCoder.MadChess.Engine
             _killerShift = 49;
             _killerMask = Bitwise.CreateULongMask(49, 50);
             _killerUnmask = Bitwise.CreateULongUnmask(49, 50);
-            _historyShift = 22;
-            _historyMask = Bitwise.CreateULongMask(22, 48);
-            _historyUnmask = Bitwise.CreateULongUnmask(22, 48);
-            _playedShift = 21;
-            _playedMask = Bitwise.CreateULongMask(21);
-            _playedUnmask = Bitwise.CreateULongUnmask(21);
-            _castlingShift = 20;
-            _castlingMask = Bitwise.CreateULongMask(20);
-            _castlingUnmask = Bitwise.CreateULongUnmask(20);
-            _kingMoveShift = 19;
-            _kingMoveMask = Bitwise.CreateULongMask(19);
-            _kingMoveUnmask = Bitwise.CreateULongUnmask(19);
-            _enPassantShift = 18;
-            _enPassantMask = Bitwise.CreateULongMask(18);
-            _enPassantUnmask = Bitwise.CreateULongUnmask(18);
-            _doublePawnMoveShift = 17;
-            _doublePawnMoveMask = Bitwise.CreateULongMask(17);
-            _doublePawnMoveUnmask = Bitwise.CreateULongUnmask(17);
-            _pawnMoveShift = 16;
-            _pawnMoveMask = Bitwise.CreateULongMask(16);
-            _pawnMoveUnmask = Bitwise.CreateULongUnmask(16);
-            _checkShift = 15;
-            _checkMask = Bitwise.CreateULongMask(15);
-            _checkUnmask = Bitwise.CreateULongUnmask(15);
-            _quietShift = 14;
-            _quietMask = Bitwise.CreateULongMask(14);
-            _quietUnmask = Bitwise.CreateULongUnmask(14);
+            _historyShift = 21;
+            _historyMask = Bitwise.CreateULongMask(21, 48);
+            _historyUnmask = Bitwise.CreateULongUnmask(21, 48);
+            _playedShift = 20;
+            _playedMask = Bitwise.CreateULongMask(20);
+            _playedUnmask = Bitwise.CreateULongUnmask(20);
+            _castlingShift = 19;
+            _castlingMask = Bitwise.CreateULongMask(19);
+            _castlingUnmask = Bitwise.CreateULongUnmask(19);
+            _kingMoveShift = 18;
+            _kingMoveMask = Bitwise.CreateULongMask(18);
+            _kingMoveUnmask = Bitwise.CreateULongUnmask(18);
+            _enPassantShift = 17;
+            _enPassantMask = Bitwise.CreateULongMask(17);
+            _enPassantUnmask = Bitwise.CreateULongUnmask(17);
+            _doublePawnMoveShift = 16;
+            _doublePawnMoveMask = Bitwise.CreateULongMask(16);
+            _doublePawnMoveUnmask = Bitwise.CreateULongUnmask(16);
+            _pawnMoveShift = 15;
+            _pawnMoveMask = Bitwise.CreateULongMask(15);
+            _pawnMoveUnmask = Bitwise.CreateULongUnmask(15);
+            _checkShift = 14;
+            _checkMask = Bitwise.CreateULongMask(14);
+            _checkUnmask = Bitwise.CreateULongUnmask(14);
             _fromShift = 7;
             _fromMask = Bitwise.CreateULongMask(7, 13);
             _fromUnmask = Bitwise.CreateULongUnmask(7, 13);
@@ -156,7 +149,6 @@ namespace ErikTheCoder.MadChess.Engine
             SetIsDoublePawnMove(ref Null, false);
             SetIsPawnMove(ref Null, false);
             SetIsCheck(ref Null, false);
-            SetIsQuiet(ref Null, false);
             SetFrom(ref Null, Square.Illegal);
             SetTo(ref Null, Square.Illegal);
         }
@@ -388,20 +380,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsQuiet(ulong Move) => (Move & _quietMask) >> _quietShift > 0;
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsQuiet(ref ulong Move, bool IsQuiet)
-        {
-            var isQuiet = IsQuiet ? 1ul : 0;
-            // Clear
-            Move &= _quietUnmask;
-            // Set
-            Move |= (isQuiet << _quietShift) & _quietMask;
-            // Validate move.
-            Debug.Assert(Engine.Move.IsQuiet(Move) == IsQuiet);
-        }
+        public static bool IsQuiet(ulong Move) => (Move & (_captureVictimMask | _promotedPieceMask)) == 0; // Not a capture or pawn promotion.
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

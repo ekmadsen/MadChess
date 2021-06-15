@@ -53,7 +53,11 @@ namespace ErikTheCoder.MadChess.Engine
         private const int _nullMoveReduction = 3;
         private const int _nullStaticScoreReduction = 200;
         private const int _nullStaticScoreMaxReduction = 3;
-        private const int _estimateBestMoveReduction = 2;
+        private const int _iidReduction = 2;
+        private const int _singularMoveMinToHorizon = 7;
+        private const int _singularMoveMaxInsufficientDraft = 3;
+        private const int _singularMoveReductionPer128 = 64;
+        private const int _singularMoveMargin = 2;
         private const int _quietSearchMaxFromHorizon = 3;
         private static MovePriorityComparer _movePriorityComparer;
         private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -527,7 +531,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private int GetDynamicScore(Board Board, int Depth, int Horizon, bool IsNullMoveAllowed, int Alpha, int Beta)
+        private int GetDynamicScore(Board Board, int Depth, int Horizon, bool IsNullMoveAllowed, int Alpha, int Beta, ulong ExcludedMove = 0)
         {
             if ((Board.Nodes > Board.NodesExamineTime) || _nodesPerSecond.HasValue)
             {
@@ -601,11 +605,11 @@ namespace ErikTheCoder.MadChess.Engine
             }
             // Get best move.
             bestMove = _cache.GetBestMove(cachedPosition.Data);
-            if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon > _estimateBestMoveReduction))
+            if ((bestMove == Move.Null) && ((Beta - Alpha) > 1) && (toHorizon > _iidReduction))
             {
                 // Cached position in a principal variation does not specify a best move.
-                // Estimate best move by searching at reduced depth.
-                GetDynamicScore(Board, Depth, Horizon - _estimateBestMoveReduction, false, Alpha, Beta);
+                // Find best move via Internal Iterative Deepening.
+                GetDynamicScore(Board, Depth, Horizon - _iidReduction, false, Alpha, Beta);
                 cachedPosition = _cache.GetPosition(Board.CurrentPosition.Key);
                 bestMove = _cache.GetBestMove(cachedPosition.Data);
             }
@@ -643,9 +647,10 @@ namespace ErikTheCoder.MadChess.Engine
                     else continue; // Skip illegal move.
                     Board.CurrentPosition.Moves[moveIndex] = move;
                 }
+                if (Move.Equals(move, ExcludedMove)) continue;
                 if (IsMoveFutile(Board, Depth, Horizon, move, legalMoveNumber, quietMoveNumber, drawnEndgame, Alpha, Beta)) continue; // Move is futile.  Skip move.
                 if (Move.IsQuiet(move)) quietMoveNumber++;
-                var searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, quietMoveNumber, drawnEndgame);
+                var searchHorizon = GetSearchHorizon(Board, Depth, Horizon, move, cachedPosition, quietMoveNumber, drawnEndgame);
                 var moveBeta = (legalMoveNumber == 1) || ((MultiPv > 1) && (Depth == 0))
                     ? Beta // Search with full alpha / beta window.
                     : bestScore + 1; // Search with zero alpha / beta window.
@@ -1021,12 +1026,20 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private int GetSearchHorizon(Board Board, int Depth, int Horizon, ulong Move, int QuietMoveNumber, bool IsDrawnEndgame)
+        private int GetSearchHorizon(Board Board, int Depth, int Horizon, ulong Move, CachedPosition CachedPosition, int QuietMoveNumber, bool DrawnEndgame)
         {
+            if (Engine.Move.IsBest(Move) && IsBestMoveSingular(Board, Depth, Horizon, Move, CachedPosition))
+            {
+                // The best move (from the cache) is singular.  That is, it's the only good move in the position.
+                // Evaluation of the current position relies on the accuracy of the singular move's score.
+                // If the engine misjudges the singular move, the position could deteriorate because no alternative (strong) moves exist.
+                // To increase confidence in the singular move's score, search it one ply deeper.
+                return Horizon + 1;
+            }
             if ((Depth == 0) && !CompetitivePlay) return Horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
             var capture = Engine.Move.CaptureVictim(Move) != Piece.None;
             if (capture) return Horizon; // Do not reduce capture.
-            if (IsDrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, or move when king is in check.
+            if (DrawnEndgame || Engine.Move.IsCheck(Move) || Board.CurrentPosition.KingInCheck) return Horizon; // Do not reduce move in drawn endgame, checking move, or move when king is in check.
             if ((Engine.Move.Killer(Move) > 0) || (Engine.Move.PromotedPiece(Move) != Piece.None) || Engine.Move.IsCastling(Move)) return Horizon; // Do not reduce killer move, pawn promotion, or castling.
             if (Engine.Move.IsPawnMove(Move))
             {
@@ -1038,9 +1051,27 @@ namespace ErikTheCoder.MadChess.Engine
             var blackPawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyBlack) - 1;
             if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return Horizon; // Do not reduce move with lone king on board.
             if (!Engine.Move.IsQuiet(Move)) return Horizon;
-            // Reduce search horizon.
+            // Reduce search horizon of late move.
             var quietMoveIndex = Math.Min(QuietMoveNumber, _lateMoveReductions.Length - 1);
             return Horizon - _lateMoveReductions[quietMoveIndex];
+        }
+
+
+        // Idea from Stockfish chess engine.
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        private bool IsBestMoveSingular(Board Board, int Depth, int Horizon, ulong Move, CachedPosition CachedPosition)
+        {
+            // Determine if best move that had failed high in recent searches is best by a significant margin.
+            var toHorizon = Horizon - Depth;
+            if ((Depth == 0) || (toHorizon < _singularMoveMinToHorizon)) return false;
+            var score = CachedPositionData.Score(CachedPosition.Data);
+            if ((score == StaticScore.NotCached) || (Math.Abs(score) >= StaticScore.Checkmate)) return false;
+            if (CachedPositionData.ScorePrecision(CachedPosition.Data) != ScorePrecision.LowerBound) return false;
+            if (CachedPositionData.ToHorizon(CachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientDraft)) return false;
+            var beta = score - (_singularMoveMargin * toHorizon);
+            var searchHorizon = Depth + ((toHorizon * _singularMoveReductionPer128) / 128);
+            score = GetDynamicScore(Board, Depth, searchHorizon, false, beta - 1, beta, Move);
+            return score < beta;
         }
 
 
