@@ -32,7 +32,7 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly Delegates.WriteMessageLine _writeMessageLine;
         private readonly StaticScore _staticScore;
         // Game Phase (constants selected such that starting material = 256)
-        public const int MiddlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + 2 * _queenPhase;
+        public const int MiddlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + (2 * _queenPhase);
         private const int _knightPhase = 10; //   4 * 10 =  40
         private const int _bishopPhase = 10; // + 4 * 10 =  80
         private const int _rookPhase = 22; //   + 4 * 22 = 168
@@ -791,54 +791,9 @@ namespace ErikTheCoder.MadChess.Engine
             }
         }
 
-        // TODO: Fix passed pawn eval.
-        // position fen 8/r5p1/4Q3/2N4k/PP6/2KP1P2/2P3PP/R7 w - - 3
-        //
-        // staticscore
-        //                              |         Middlegame        |          Endgame          |           Total           |
-        // Evaluation Term              |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |
-        // =============================+===========================+===========================+===========================+
-        // Simple Endgame                   0.00     0.00     0.00      0.00     0.00     0.00      0.00     0.00     0.00
-        // Material                        24.75     6.00    18.75     32.75     8.55    24.20     29.68     7.57    22.11
-        // Piece Location                  -0.56    -0.42    -0.14      2.97     0.63     2.34      1.61     0.22     1.39
-        // Passed Pawns                     0.12     0.00     0.12      0.29     0.00     0.29      0.22     0.00     0.22
-        // Free Passed Pawns                0.00     0.00     0.00      0.81     0.00     0.81      0.49     0.00     0.49
-        // King Escorted Passed Pawns       0.00     0.00     0.00      2.04     0.00     2.04      1.25     0.00     1.25
-        // Unstoppable Passed Pawns         0.00     0.00     0.00      0.00     0.00     0.00      0.00     0.00     0.00
-        // Piece Mobility                   0.31     0.06     0.25      0.61     0.10     0.51      0.49     0.08     0.41
-        // King Safety                     -0.01    -1.42     1.41     -0.01    -0.71     0.70     -0.01    -0.98     0.97
-        // Bishop Pair                      0.00     0.00     0.00      0.00     0.00     0.00      0.00     0.00     0.00
-        // =============================+===========================+===========================+===========================+
-        // Subtotal                        24.61     4.22    20.39     39.46     8.57    30.89     33.77     6.90    26.87
-        // Scale                            1.00     1.00     0.00      2.47     2.47     0.00      1.90     1.90     0.00
-        // Total                           24.61     4.22    20.39     97.72    21.22    76.50     69.73    14.71    55.02
-        // 
-        // Middlegame   = 98 of 256 (38%)
-        // 50 Move Rule = 0 (100%)
-        // Total Score  = 55.02
-        // 
-        // 
-        // showboard
-        //   ----+---+---+---+---+---+---+---+
-        // 8 |   |   |   |   |   |   |   |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 7 | r |   |   |   |   |   | p |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 6 |   |   |   |   | Q |   |   |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 5 |   |   | N |   |   |   |   | k |
-        //   ----+---+---+---+---+---+---+---+
-        // 4 | P | P |   |   |   |   |   |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 3 |   |   | K | P |   | P |   |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 2 |   |   | P |   |   |   | P | P |
-        //   ----+---+---+---+---+---+---+---+
-        // 1 | R |   |   |   |   |   |   |   |
-        //  ----+---+---+---+---+---+---+---+
-        //    a   b   c   d   e   f   g   h
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsPassedPawn(Position Position, int Square, bool White)
+        public static bool IsPassedPawn(Position Position, int Square, bool White)
         {
             Debug.Assert(Position.GetPiece(Square) == (White ? Piece.WhitePawn : Piece.BlackPawn));
             return White

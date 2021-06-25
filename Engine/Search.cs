@@ -1032,7 +1032,7 @@ namespace ErikTheCoder.MadChess.Engine
             {
                 // The best move (from the cache) is singular.  That is, it's the only good move in the position.
                 // Evaluation of the current position relies on the accuracy of the singular move's score.
-                // If the engine misjudges the singular move, the position could deteriorate because no alternative (strong) moves exist.
+                // If the engine misjudges the singular move, the position could deteriorate because no alternative strong moves exist.
                 // To increase confidence in the singular move's score, search it one ply deeper.
                 return Horizon + 1;
             }
@@ -1044,7 +1044,12 @@ namespace ErikTheCoder.MadChess.Engine
             if (Engine.Move.IsPawnMove(Move))
             {
                 var rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.To(Move)] : Board.BlackRanks[Engine.Move.To(Move)];
-                if (rank >= 6) return Horizon; // Do not reduce pawn push.
+                if (rank >= 6)
+                {
+                    var square = Engine.Move.From(Move);
+                    if ((Depth > 0) && Evaluation.IsPassedPawn(Board.CurrentPosition, square, Board.CurrentPosition.WhiteMove)) return Horizon + 1; // Extend search horizon of passed pawn push.
+                    return Horizon; // Do not reduce pawn push.
+                }
             }
             // Count pawns and pieces (but don't include kings).
             var whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;
