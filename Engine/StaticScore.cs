@@ -36,7 +36,6 @@ namespace ErikTheCoder.MadChess.Engine
         public int WhiteMgPieceMobility;
         public int WhiteEgPieceMobility;
         public int WhiteMgKingSafety;
-        public int WhiteEgKingSafety;
         public int WhiteMgBishopPair;
         public int WhiteEgBishopPair;
         public int BlackEgSimple;
@@ -54,7 +53,6 @@ namespace ErikTheCoder.MadChess.Engine
         public int BlackMgPieceMobility;
         public int BlackEgPieceMobility;
         public int BlackMgKingSafety;
-        public int BlackEgKingSafety;
         public int BlackMgBishopPair;
         public int BlackEgBishopPair;
         public int PlySinceCaptureOrPawnMove;
@@ -71,7 +69,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         public int WhiteEg => WhiteEgSimple + WhiteEgMaterial + WhiteEgPieceLocation + WhiteEgPassedPawns + WhiteEgFreePassedPawns + WhiteEgKingEscortedPassedPawns + WhiteUnstoppablePassedPawns +
-                              WhiteEgPieceMobility + WhiteEgKingSafety + WhiteEgBishopPair;
+                              WhiteEgPieceMobility + WhiteEgBishopPair;
 
 
         private int WhiteEgScaled => (EgScalePer128 * WhiteEg) / 128;
@@ -87,7 +85,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         public int BlackEg => BlackEgSimple + BlackEgMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns +
-                              BlackEgPieceMobility + BlackEgKingSafety + BlackEgBishopPair;
+                              BlackEgPieceMobility + BlackEgBishopPair;
 
 
         private int BlackEgScaled => (EgScalePer128 * BlackEg) / 128;
@@ -128,7 +126,6 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteMgPieceMobility = 0;
             WhiteEgPieceMobility = 0;
             WhiteMgKingSafety = 0;
-            WhiteEgKingSafety = 0;
             WhiteMgBishopPair = 0;
             WhiteEgBishopPair = 0;
             BlackEgSimple = 0;
@@ -146,7 +143,6 @@ namespace ErikTheCoder.MadChess.Engine
             BlackMgPieceMobility = 0;
             BlackEgPieceMobility = 0;
             BlackMgKingSafety = 0;
-            BlackEgKingSafety = 0;
             BlackMgBishopPair = 0;
             BlackEgBishopPair = 0;
             PlySinceCaptureOrPawnMove = 0;
@@ -169,7 +165,7 @@ namespace ErikTheCoder.MadChess.Engine
             AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, WhiteEgKingEscortedPassedPawns, BlackEgKingEscortedPassedPawns, Phase);
             AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, Phase);
             AppendStaticScoreLine(stringBuilder, "Piece Mobility", WhiteMgPieceMobility, BlackMgPieceMobility, WhiteEgPieceMobility, BlackEgPieceMobility, Phase);
-            AppendStaticScoreLine(stringBuilder, "King Safety", WhiteMgKingSafety, BlackMgKingSafety, WhiteEgKingSafety, BlackEgKingSafety, Phase);
+            AppendStaticScoreLine(stringBuilder, "King Safety", WhiteMgKingSafety, BlackMgKingSafety, 0, 0, Phase);
             AppendStaticScoreLine(stringBuilder, "Bishop Pair", WhiteMgBishopPair, BlackMgBishopPair, WhiteEgBishopPair, BlackEgBishopPair, Phase);
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
             AppendStaticScoreLine(stringBuilder, "Subtotal", WhiteMg, BlackMg, WhiteEg, BlackEg, Phase);

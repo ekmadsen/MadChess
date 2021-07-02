@@ -449,8 +449,8 @@ namespace ErikTheCoder.MadChess.Engine
         
         private void GetMoveTime(Position Position)
         {
-            // No need to calculate move time if go command specified move time or horizon limit.
-            if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon)) return;
+            // No need to calculate move time if go command specified move time, horizon limit, or nodes..
+            if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon) || (NodeLimit != long.MaxValue)) return;
             // Retrieve time remaining increment.
             TimeSpan timeRemaining;
             TimeSpan timeIncrement;
@@ -833,7 +833,12 @@ namespace ErikTheCoder.MadChess.Engine
 
         private void ExamineTimeAndNodes(long Nodes)
         {
-            if (Nodes >= NodeLimit) Continue = false; // Have passed node limit.
+            if (Nodes >= NodeLimit)
+            {
+                // Have passed node limit.
+                Continue = false;
+                return;
+            }
             if (_nodesPerSecond.HasValue && (_originalHorizon > 1)) // Guarantee to search at least one ply.
             {
                 // Slow search until it's less than specified nodes per second or until soft time limit is exceeded.
@@ -1011,7 +1016,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (Engine.Move.IsPawnMove(Move))
             {
                 var rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.To(Move)] : Board.BlackRanks[Engine.Move.To(Move)];
-                if (rank >= 6) return false; // Pawn push is not futile.
+                if (rank >= 6) return false; // Pawn push to 7th rank is not futile.
             }
             // Count pawns and pieces (but don't include kings).
             var whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;
@@ -1044,12 +1049,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (Engine.Move.IsPawnMove(Move))
             {
                 var rank = Board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Engine.Move.To(Move)] : Board.BlackRanks[Engine.Move.To(Move)];
-                if (rank >= 6)
-                {
-                    var square = Engine.Move.From(Move);
-                    if ((Depth > 0) && Evaluation.IsPassedPawn(Board.CurrentPosition, square, Board.CurrentPosition.WhiteMove)) return Horizon + 1; // Extend search horizon of passed pawn push.
-                    return Horizon; // Do not reduce pawn push.
-                }
+                if (rank >= 6) return Horizon; // Do not reduce pawn push to 7th rank.
             }
             // Count pawns and pieces (but don't include kings).
             var whitePawnsAndPieces = Bitwise.CountSetBits(Board.CurrentPosition.OccupancyWhite) - 1;

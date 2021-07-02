@@ -54,6 +54,8 @@ namespace ErikTheCoder.MadChess.Engine
         public static readonly ulong[] BlackPawnAttackMasks;
         public static readonly ulong[] InnerRingMasks;
         public static readonly ulong[] OuterRingMasks;
+        public static readonly ulong[] WhitePawnShieldMasks;
+        public static readonly ulong[] BlackPawnShieldMasks;
         public static readonly PrecalculatedMoves PrecalculatedMoves;
         public static readonly ulong[][] RankFileBetweenSquares;
         public static readonly ulong[][] DiagonalBetweenSquares;
@@ -322,8 +324,10 @@ namespace ErikTheCoder.MadChess.Engine
             WhiteFreePawnMasks = CreateWhiteFreePawnMasks();
             BlackPassedPawnMasks = CreateBlackPassedPawnMasks();
             BlackFreePawnMasks = CreateBlackFreePawnMasks();
-            // Create ring masks.
+            // Create ring and pawn shield masks.
             (InnerRingMasks, OuterRingMasks) = CreateRingMasks();
+            WhitePawnShieldMasks = CreateWhitePawnShieldMasks();
+            BlackPawnShieldMasks = CreateBlackPawnShieldMasks();
         }
 
 
@@ -661,7 +665,7 @@ namespace ErikTheCoder.MadChess.Engine
             var innerRingMasks = new ulong[64];
             var outerRingMasks = new ulong[64];
             Direction[] innerRingDirections = { Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest };
-            Direction[] outerRingDirections = {Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1};
+            Direction[] outerRingDirections = { Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1 };
             for (var square = 0; square < 64; square++)
             {
                 // Create inner ring mask.
@@ -695,6 +699,44 @@ namespace ErikTheCoder.MadChess.Engine
                 outerRingMasks[square] = mask;
             }
             return (innerRingMasks, outerRingMasks);
+        }
+
+
+        private static ulong[] CreateWhitePawnShieldMasks()
+        {
+            var pawnShieldMasks = new ulong[64];
+            Direction[] directions = { Direction.NorthWest, Direction.North, Direction.NorthEast };
+            for (var square = 0; square < 64; square++)
+            {
+                var mask = 0ul;
+                for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+                {
+                    var direction = directions[directionIndex];
+                    var otherSquare = _neighborSquares[square][(int)direction];
+                    if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
+                }
+                pawnShieldMasks[square] = mask;
+            }
+            return pawnShieldMasks;
+        }
+
+
+        private static ulong[] CreateBlackPawnShieldMasks()
+        {
+            var pawnShieldMasks = new ulong[64];
+            Direction[] directions = { Direction.SouthWest, Direction.South, Direction.SouthEast };
+            for (var square = 0; square < 64; square++)
+            {
+                var mask = 0ul;
+                for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+                {
+                    var direction = directions[directionIndex];
+                    var otherSquare = _neighborSquares[square][(int)direction];
+                    if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
+                }
+                pawnShieldMasks[square] = mask;
+            }
+            return pawnShieldMasks;
         }
 
 
