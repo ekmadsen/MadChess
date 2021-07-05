@@ -32,7 +32,7 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly Delegates.WriteMessageLine _writeMessageLine;
         private readonly StaticScore _staticScore;
         // Game Phase (constants selected such that starting material = 256)
-        public const int MiddlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + 2 * _queenPhase;
+        public const int MiddlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + (2 * _queenPhase);
         private const int _knightPhase = 10; //   4 * 10 =  40
         private const int _bishopPhase = 10; // + 4 * 10 =  80
         private const int _rookPhase = 22; //   + 4 * 22 = 168
@@ -73,7 +73,7 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly int[] _mgQueenMobility;
         private readonly int[] _egQueenMobility;
         // King Safety
-        private readonly int[] _kingSafety;
+        private readonly int[] _mgKingSafety;
 
 
         public Evaluation(Stats Stats, Delegates.IsRepeatPosition IsRepeatPosition, Delegates.Debug Debug, Delegates.WriteMessageLine WriteMessageLine)
@@ -122,7 +122,7 @@ namespace ErikTheCoder.MadChess.Engine
             _egRookMobility = new int[15];
             _mgQueenMobility = new int[28];
             _egQueenMobility = new int[28];
-            _kingSafety = new int[64];
+            _mgKingSafety = new int[64];
             // Set number of repetitions considered a draw, calculate positional factors, and set evaluation strength.
             DrawMoves = 2;
             CalculatePositionalFactors();
@@ -170,12 +170,9 @@ namespace ErikTheCoder.MadChess.Engine
             CalculatePieceMobility(_mgRookMobility, _egRookMobility, Config.MgRookMobilityScale, Config.EgRookMobilityScale);
             CalculatePieceMobility(_mgQueenMobility, _egQueenMobility, Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
             // Calculate king safety values.
-            var kingSafetyPower = Config.KingSafetyPowerPer128 / 128d;
-            for (var index = 0; index < _kingSafety.Length; index++)
-            {
-                var scale = -Config.KingSafetyScalePer128 / 128d;
-                _kingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
-            }
+            var kingSafetyPower = Config.MgKingSafetyPowerPer128 / 128d;
+            var scale = -Config.MgKingSafetyScalePer128 / 128d;
+            for (var index = 0; index < _mgKingSafety.Length; index++) _mgKingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
         }
 
 
@@ -791,52 +788,7 @@ namespace ErikTheCoder.MadChess.Engine
             }
         }
 
-        // TODO: Fix passed pawn eval.
-        // position fen 8/r5p1/4Q3/2N4k/PP6/2KP1P2/2P3PP/R7 w - - 3
-        //
-        // staticscore
-        //                              |         Middlegame        |          Endgame          |           Total           |
-        // Evaluation Term              |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |
-        // =============================+===========================+===========================+===========================+
-        // Simple Endgame                   0.00     0.00     0.00      0.00     0.00     0.00      0.00     0.00     0.00
-        // Material                        24.75     6.00    18.75     32.75     8.55    24.20     29.68     7.57    22.11
-        // Piece Location                  -0.56    -0.42    -0.14      2.97     0.63     2.34      1.61     0.22     1.39
-        // Passed Pawns                     0.12     0.00     0.12      0.29     0.00     0.29      0.22     0.00     0.22
-        // Free Passed Pawns                0.00     0.00     0.00      0.81     0.00     0.81      0.49     0.00     0.49
-        // King Escorted Passed Pawns       0.00     0.00     0.00      2.04     0.00     2.04      1.25     0.00     1.25
-        // Unstoppable Passed Pawns         0.00     0.00     0.00      0.00     0.00     0.00      0.00     0.00     0.00
-        // Piece Mobility                   0.31     0.06     0.25      0.61     0.10     0.51      0.49     0.08     0.41
-        // King Safety                     -0.01    -1.42     1.41     -0.01    -0.71     0.70     -0.01    -0.98     0.97
-        // Bishop Pair                      0.00     0.00     0.00      0.00     0.00     0.00      0.00     0.00     0.00
-        // =============================+===========================+===========================+===========================+
-        // Subtotal                        24.61     4.22    20.39     39.46     8.57    30.89     33.77     6.90    26.87
-        // Scale                            1.00     1.00     0.00      2.47     2.47     0.00      1.90     1.90     0.00
-        // Total                           24.61     4.22    20.39     97.72    21.22    76.50     69.73    14.71    55.02
-        // 
-        // Middlegame   = 98 of 256 (38%)
-        // 50 Move Rule = 0 (100%)
-        // Total Score  = 55.02
-        // 
-        // 
-        // showboard
-        //   ----+---+---+---+---+---+---+---+
-        // 8 |   |   |   |   |   |   |   |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 7 | r |   |   |   |   |   | p |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 6 |   |   |   |   | Q |   |   |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 5 |   |   | N |   |   |   |   | k |
-        //   ----+---+---+---+---+---+---+---+
-        // 4 | P | P |   |   |   |   |   |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 3 |   |   | K | P |   | P |   |   |
-        //   ----+---+---+---+---+---+---+---+
-        // 2 |   |   | P |   |   |   | P | P |
-        //   ----+---+---+---+---+---+---+---+
-        // 1 | R |   |   |   |   |   |   |   |
-        //  ----+---+---+---+---+---+---+---+
-        //    a   b   c   d   e   f   g   h
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsPassedPawn(Position Position, int Square, bool White)
         {
@@ -905,9 +857,7 @@ namespace ErikTheCoder.MadChess.Engine
             int egPieceMobilityScore;
             int kingSafetyIndexIncrementPer8;
             var whiteMgKingSafetyIndexPer8 = 0;
-            var whiteEgKingSafetyIndexPer8 = 0;
             var blackMgKingSafetyIndexPer8 = 0;
-            var blackEgKingSafetyIndexPer8 = 0;
             // White Knights
             var pieces = Position.WhiteKnights;
             while ((square = Bitwise.FindFirstSetBit(pieces)) != Square.Illegal)
@@ -916,9 +866,8 @@ namespace ErikTheCoder.MadChess.Engine
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
-                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, blackKingOuterRing, blackKingInnerRing, Config.KingSafetyMinorAttackOuterRingPer8, Config.KingSafetyMinorAttackInnerRingPer8);
+                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, blackKingOuterRing, blackKingInnerRing, Config.MgKingSafetyMinorAttackOuterRingPer8, Config.MgKingSafetyMinorAttackInnerRingPer8);
                 blackMgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                blackEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
             // Black Knights
@@ -929,9 +878,8 @@ namespace ErikTheCoder.MadChess.Engine
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgKnightMobility, _egKnightMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
-                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, whiteKingOuterRing, whiteKingInnerRing, Config.KingSafetyMinorAttackOuterRingPer8, Config.KingSafetyMinorAttackInnerRingPer8);
+                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, whiteKingOuterRing, whiteKingInnerRing, Config.MgKingSafetyMinorAttackOuterRingPer8, Config.MgKingSafetyMinorAttackInnerRingPer8);
                 whiteMgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                whiteEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
             // White Bishops
@@ -942,9 +890,8 @@ namespace ErikTheCoder.MadChess.Engine
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
-                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, blackKingOuterRing, blackKingInnerRing, Config.KingSafetyMinorAttackOuterRingPer8, Config.KingSafetyMinorAttackInnerRingPer8);
+                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, blackKingOuterRing, blackKingInnerRing, Config.MgKingSafetyMinorAttackOuterRingPer8, Config.MgKingSafetyMinorAttackInnerRingPer8);
                 blackMgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                blackEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
             // Black Bishops
@@ -955,9 +902,8 @@ namespace ErikTheCoder.MadChess.Engine
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgBishopMobility, _egBishopMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
-                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, whiteKingOuterRing, whiteKingInnerRing, Config.KingSafetyMinorAttackOuterRingPer8, Config.KingSafetyMinorAttackInnerRingPer8);
+                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, whiteKingOuterRing, whiteKingInnerRing, Config.MgKingSafetyMinorAttackOuterRingPer8, Config.MgKingSafetyMinorAttackInnerRingPer8);
                 whiteMgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                whiteEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
             // White Rooks
@@ -968,9 +914,8 @@ namespace ErikTheCoder.MadChess.Engine
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
-                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, blackKingOuterRing, blackKingInnerRing, Config.KingSafetyRookAttackOuterRingPer8, Config.KingSafetyRookAttackInnerRingPer8);
+                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, blackKingOuterRing, blackKingInnerRing, Config.MgKingSafetyRookAttackOuterRingPer8, Config.MgKingSafetyRookAttackInnerRingPer8);
                 blackMgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                blackEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
             // Black Rooks
@@ -981,9 +926,8 @@ namespace ErikTheCoder.MadChess.Engine
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgRookMobility, _egRookMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
-                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, whiteKingOuterRing, whiteKingInnerRing, Config.KingSafetyRookAttackOuterRingPer8, Config.KingSafetyRookAttackInnerRingPer8);
+                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, whiteKingOuterRing, whiteKingInnerRing, Config.MgKingSafetyRookAttackOuterRingPer8, Config.MgKingSafetyRookAttackInnerRingPer8);
                 whiteMgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                whiteEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
             // White Queens
@@ -994,9 +938,8 @@ namespace ErikTheCoder.MadChess.Engine
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.WhiteMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.WhiteEgPieceMobility += egPieceMobilityScore;
-                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, blackKingOuterRing, blackKingInnerRing, Config.KingSafetyQueenAttackOuterRingPer8, Config.KingSafetyQueenAttackInnerRingPer8);
+                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, blackKingOuterRing, blackKingInnerRing, Config.MgKingSafetyQueenAttackOuterRingPer8, Config.MgKingSafetyQueenAttackInnerRingPer8);
                 blackMgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                blackEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
             // Black Queens
@@ -1007,14 +950,12 @@ namespace ErikTheCoder.MadChess.Engine
                 (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgQueenMobility, _egQueenMobility);
                 _staticScore.BlackMgPieceMobility += mgPieceMobilityScore;
                 _staticScore.BlackEgPieceMobility += egPieceMobilityScore;
-                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, whiteKingOuterRing, whiteKingInnerRing, Config.KingSafetyQueenAttackOuterRingPer8, Config.KingSafetyQueenAttackInnerRingPer8);
+                kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, whiteKingOuterRing, whiteKingInnerRing, Config.MgKingSafetyQueenAttackOuterRingPer8, Config.MgKingSafetyQueenAttackInnerRingPer8);
                 whiteMgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                whiteEgKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
                 Bitwise.ClearBit(ref pieces, square);
             }
             // Evaluate white king near semi-open file.
-            var kingSquare = Bitwise.FindFirstSetBit(Position.WhiteKing);
-            var kingFile = Board.Files[kingSquare];
+            var kingFile = Board.Files[whiteKingSquare];
             var leftFileMask = kingFile > 0 ? Board.FileMasks[kingFile - 1] : 0;
             var kingFileMask = Board.FileMasks[kingFile];
             var rightFileMask = kingFile < 7 ? Board.FileMasks[kingFile + 1] : 0;
@@ -1024,8 +965,7 @@ namespace ErikTheCoder.MadChess.Engine
             var semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
             whiteMgKingSafetyIndexPer8 += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
             // Evaluate black king near semi-open file.
-            kingSquare = Bitwise.FindFirstSetBit(Position.BlackKing);
-            kingFile = Board.Files[kingSquare];
+            kingFile = Board.Files[blackKingSquare];
             rightFileMask = kingFile > 0 ? Board.FileMasks[kingFile - 1] : 0;
             kingFileMask = Board.FileMasks[kingFile];
             leftFileMask = kingFile < 7 ? Board.FileMasks[kingFile + 1] : 0;
@@ -1034,12 +974,17 @@ namespace ErikTheCoder.MadChess.Engine
             rightFileSemiOpen = (rightFileMask > 0) && ((Position.BlackPawns & rightFileMask) == 0) ? 1 : 0;
             semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
             blackMgKingSafetyIndexPer8 += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
+            // Evaluate white pawn shield.
+            const int maxPawnsInShield = 3;
+            var missingPawns = maxPawnsInShield - Bitwise.CountSetBits(Position.WhitePawns & Board.WhitePawnShieldMasks[whiteKingSquare]);
+            whiteMgKingSafetyIndexPer8 += missingPawns * Config.MgKingSafetyPawnShieldPer8;
+            // Evaluate black pawn shield.
+            missingPawns = maxPawnsInShield - Bitwise.CountSetBits(Position.BlackPawns & Board.BlackPawnShieldMasks[blackKingSquare]);
+            blackMgKingSafetyIndexPer8 += missingPawns * Config.MgKingSafetyPawnShieldPer8;
             // Lookup king safety score in array.
-            var maxIndex = _kingSafety.Length - 1;
-            _staticScore.WhiteMgKingSafety = _kingSafety[Math.Min(whiteMgKingSafetyIndexPer8 / 8, maxIndex)];
-            _staticScore.WhiteEgKingSafety = _kingSafety[Math.Min(whiteEgKingSafetyIndexPer8 / 8, maxIndex)];
-            _staticScore.BlackMgKingSafety = _kingSafety[Math.Min(blackMgKingSafetyIndexPer8 / 8, maxIndex)];
-            _staticScore.BlackEgKingSafety = _kingSafety[Math.Min(blackEgKingSafetyIndexPer8 / 8, maxIndex)];
+            var maxIndex = _mgKingSafety.Length - 1;
+            _staticScore.WhiteMgKingSafety = _mgKingSafety[Math.Min(whiteMgKingSafetyIndexPer8 / 8, maxIndex)];
+            _staticScore.BlackMgKingSafety = _mgKingSafety[Math.Min(blackMgKingSafetyIndexPer8 / 8, maxIndex)];
         }
 
 
@@ -1105,9 +1050,7 @@ namespace ErikTheCoder.MadChess.Engine
             _staticScore.BlackEgPieceMobility = (_staticScore.BlackEgPieceMobility * Config.LsPieceMobilityPer128) / 128;
             // Limit understanding of king safety.
             _staticScore.WhiteMgKingSafety = (_staticScore.WhiteMgKingSafety * Config.LsKingSafetyPer128) / 128;
-            _staticScore.WhiteEgKingSafety = (_staticScore.WhiteEgKingSafety * Config.LsKingSafetyPer128) / 128;
             _staticScore.BlackMgKingSafety = (_staticScore.BlackMgKingSafety * Config.LsKingSafetyPer128) / 128;
-            _staticScore.BlackEgKingSafety = (_staticScore.BlackEgKingSafety * Config.LsKingSafetyPer128) / 128;
             // Limit understanding of minor pieces.
             _staticScore.WhiteMgBishopPair = (_staticScore.WhiteMgBishopPair * Config.LsMinorPiecesPer128) / 128;
             _staticScore.WhiteEgBishopPair = (_staticScore.WhiteEgBishopPair * Config.LsMinorPiecesPer128) / 128;
@@ -1292,17 +1235,17 @@ namespace ErikTheCoder.MadChess.Engine
             ShowParameterArray(_egQueenMobility, stringBuilder);
             stringBuilder.AppendLine();
             // King Safety
-            stringBuilder.AppendLine($"King Safety MgKingSafetySemiOpenFilePer8:        {Config.MgKingSafetySemiOpenFilePer8:000}");
-            stringBuilder.AppendLine($"King Safety KingSafetyMinorAttackOuterRingPer8:  {Config.KingSafetyMinorAttackOuterRingPer8:000}");
-            stringBuilder.AppendLine($"King Safety KingSafetyMinorAttackInnerRingPer8:  {Config.KingSafetyMinorAttackInnerRingPer8:000}");
-            stringBuilder.AppendLine($"King Safety KingSafetyRookAttackOuterRingPer8:   {Config.KingSafetyRookAttackOuterRingPer8:000}");
-            stringBuilder.AppendLine($"King Safety KingSafetyRookAttackInnerRingPer8:   {Config.KingSafetyRookAttackInnerRingPer8:000}");
-            stringBuilder.AppendLine($"King Safety KingSafetyQueenAttackOuterRingPer8:  {Config.KingSafetyQueenAttackOuterRingPer8:000}");
-            stringBuilder.AppendLine($"King Safety KingSafetyQueenAttackInnerRingPer8:  {Config.KingSafetyQueenAttackInnerRingPer8:000}");
-            stringBuilder.AppendLine($"King Safety KingSafetyScalePer128:               {Config.KingSafetyScalePer128:000}");
+            stringBuilder.AppendLine($"King Safety MinorAttackOuterRingPer8:  {Config.MgKingSafetyMinorAttackOuterRingPer8:000}");
+            stringBuilder.AppendLine($"King Safety MinorAttackInnerRingPer8:  {Config.MgKingSafetyMinorAttackInnerRingPer8:000}");
+            stringBuilder.AppendLine($"King Safety RookAttackOuterRingPer8:   {Config.MgKingSafetyRookAttackOuterRingPer8:000}");
+            stringBuilder.AppendLine($"King Safety RookAttackInnerRingPer8:   {Config.MgKingSafetyRookAttackInnerRingPer8:000}");
+            stringBuilder.AppendLine($"King Safety QueenAttackOuterRingPer8:  {Config.MgKingSafetyQueenAttackOuterRingPer8:000}");
+            stringBuilder.AppendLine($"King Safety QueenAttackInnerRingPer8:  {Config.MgKingSafetyQueenAttackInnerRingPer8:000}");
+            stringBuilder.AppendLine($"King Safety SemiOpenFilePer8:          {Config.MgKingSafetySemiOpenFilePer8:000}");
+            stringBuilder.AppendLine($"King Safety PawnShieldPer8:            {Config.MgKingSafetyPawnShieldPer8:000}");
             stringBuilder.AppendLine();
-            stringBuilder.Append("King Safety:  ");
-            ShowParameterArray(_kingSafety, stringBuilder);
+            stringBuilder.Append("Middlegame King Safety:  ");
+            ShowParameterArray(_mgKingSafety, stringBuilder);
             return stringBuilder.ToString();
         }
 

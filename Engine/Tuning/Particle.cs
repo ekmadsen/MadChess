@@ -136,15 +136,16 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             Evaluation.Config.MgQueenMobilityScale = Parameters[nameof(EvaluationConfig.MgQueenMobilityScale)].Value;
             Evaluation.Config.EgQueenMobilityScale = Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value;
             // King Safety
-            Evaluation.Config.KingSafetyPowerPer128 = Parameters[nameof(EvaluationConfig.KingSafetyPowerPer128)].Value;
+            Evaluation.Config.MgKingSafetyPowerPer128 = Parameters[nameof(EvaluationConfig.MgKingSafetyPowerPer128)].Value;
+            Evaluation.Config.MgKingSafetyScalePer128 = Parameters[nameof(EvaluationConfig.MgKingSafetyScalePer128)].Value;
+            Evaluation.Config.MgKingSafetyMinorAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyMinorAttackOuterRingPer8)].Value;
+            Evaluation.Config.MgKingSafetyMinorAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyMinorAttackInnerRingPer8)].Value;
+            Evaluation.Config.MgKingSafetyRookAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyRookAttackOuterRingPer8)].Value;
+            Evaluation.Config.MgKingSafetyRookAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyRookAttackInnerRingPer8)].Value;
+            Evaluation.Config.MgKingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value;
+            Evaluation.Config.MgKingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value;
             Evaluation.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value;
-            Evaluation.Config.KingSafetyMinorAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackOuterRingPer8)].Value;
-            Evaluation.Config.KingSafetyMinorAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyMinorAttackInnerRingPer8)].Value;
-            Evaluation.Config.KingSafetyRookAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyRookAttackOuterRingPer8)].Value;
-            Evaluation.Config.KingSafetyRookAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyRookAttackInnerRingPer8)].Value;
-            Evaluation.Config.KingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackOuterRingPer8)].Value;
-            Evaluation.Config.KingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.KingSafetyQueenAttackInnerRingPer8)].Value;
-            Evaluation.Config.KingSafetyScalePer128 = Parameters[nameof(EvaluationConfig.KingSafetyScalePer128)].Value;
+            Evaluation.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyPawnShieldPer8)].Value;
             // Minor Pieces
             Evaluation.Config.MgBishopPair = Parameters[nameof(EvaluationConfig.MgBishopPair)].Value;
             Evaluation.Config.EgBishopPair = Parameters[nameof(EvaluationConfig.EgBishopPair)].Value;

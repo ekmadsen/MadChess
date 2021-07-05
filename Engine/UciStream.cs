@@ -1000,7 +1000,7 @@ namespace ErikTheCoder.MadChess.Engine
             var pgnFilename = Tokens[1].Trim();
             var particleSwarmsCount = int.Parse(Tokens[2].Trim());
             var particlesPerSwarm = int.Parse(Tokens[3].Trim());
-            var winScale = int.Parse(Tokens[4].Trim()); // Use 609 for ComputerGamesBulletStrongerThanMadChess.pgn.
+            var winScale = int.Parse(Tokens[4].Trim()); // Use 622 for ComputerGamesBulletStrongerThanMadChess.pgn.
             var iterations = int.Parse(Tokens[5].Trim());
             var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
             particleSwarms.Optimize(iterations);
