@@ -92,18 +92,18 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetTaperedScore(int Phase) => GetTaperedScore(WhiteMg - BlackMg, WhiteEgScaled - BlackEgScaled, Phase);
+        private int GetTaperedScore(int phase) => GetTaperedScore(WhiteMg - BlackMg, WhiteEgScaled - BlackEgScaled, phase);
 
 
         // Linearly interpolate between middlegame and endgame scores.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetTaperedScore(int MiddlegameScore, int EndgameScore, int Phase) => ((MiddlegameScore * Phase) + (EndgameScore * (Evaluation.MiddlegamePhase - Phase))) / Evaluation.MiddlegamePhase;
+        public static int GetTaperedScore(int middlegameScore, int endgameScore, int phase) => ((middlegameScore * phase) + (endgameScore * (Evaluation.MiddlegamePhase - phase))) / Evaluation.MiddlegamePhase;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetTotalScore(int Phase)
+        public int GetTotalScore(int phase)
         {
-            var taperedScore = GetTaperedScore(Phase);
+            var taperedScore = GetTaperedScore(phase);
             // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
             return (taperedScore * (MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / MaxPlyWithoutCaptureOrPawnMove;
         }
@@ -150,52 +150,52 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public string ToString(int Phase)
+        public string ToString(int phase)
         {
             var egScale = (100 * EgScalePer128) / 128;
             var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("                             |         Middlegame        |          Endgame          |           Total           |");
-            stringBuilder.AppendLine("Evaluation Term              |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |");
+            stringBuilder.AppendLine("Evaluation Param             |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |");
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
-            AppendStaticScoreLine(stringBuilder, "Simple Endgame", WhiteEgSimple, BlackEgSimple, WhiteEgSimple, BlackEgSimple, Phase);
-            AppendStaticScoreLine(stringBuilder, "Material", WhiteMgMaterial, BlackMgMaterial, WhiteEgMaterial, BlackEgMaterial, Phase);
-            AppendStaticScoreLine(stringBuilder, "Piece Location", WhiteMgPieceLocation, BlackMgPieceLocation, WhiteEgPieceLocation, BlackEgPieceLocation, Phase);
-            AppendStaticScoreLine(stringBuilder, "Passed Pawns", WhiteMgPassedPawns, BlackMgPassedPawns, WhiteEgPassedPawns, BlackEgPassedPawns, Phase);
-            AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, WhiteEgFreePassedPawns, BlackEgFreePassedPawns, Phase);
-            AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, WhiteEgKingEscortedPassedPawns, BlackEgKingEscortedPassedPawns, Phase);
-            AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, Phase);
-            AppendStaticScoreLine(stringBuilder, "Piece Mobility", WhiteMgPieceMobility, BlackMgPieceMobility, WhiteEgPieceMobility, BlackEgPieceMobility, Phase);
-            AppendStaticScoreLine(stringBuilder, "King Safety", WhiteMgKingSafety, BlackMgKingSafety, 0, 0, Phase);
-            AppendStaticScoreLine(stringBuilder, "Bishop Pair", WhiteMgBishopPair, BlackMgBishopPair, WhiteEgBishopPair, BlackEgBishopPair, Phase);
+            AppendStaticScoreLine(stringBuilder, "Simple Endgame", WhiteEgSimple, BlackEgSimple, WhiteEgSimple, BlackEgSimple, phase);
+            AppendStaticScoreLine(stringBuilder, "Material", WhiteMgMaterial, BlackMgMaterial, WhiteEgMaterial, BlackEgMaterial, phase);
+            AppendStaticScoreLine(stringBuilder, "Piece Location", WhiteMgPieceLocation, BlackMgPieceLocation, WhiteEgPieceLocation, BlackEgPieceLocation, phase);
+            AppendStaticScoreLine(stringBuilder, "Passed Pawns", WhiteMgPassedPawns, BlackMgPassedPawns, WhiteEgPassedPawns, BlackEgPassedPawns, phase);
+            AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, WhiteEgFreePassedPawns, BlackEgFreePassedPawns, phase);
+            AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, WhiteEgKingEscortedPassedPawns, BlackEgKingEscortedPassedPawns, phase);
+            AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, phase);
+            AppendStaticScoreLine(stringBuilder, "Piece Mobility", WhiteMgPieceMobility, BlackMgPieceMobility, WhiteEgPieceMobility, BlackEgPieceMobility, phase);
+            AppendStaticScoreLine(stringBuilder, "King Safety", WhiteMgKingSafety, BlackMgKingSafety, 0, 0, phase);
+            AppendStaticScoreLine(stringBuilder, "Bishop Pair", WhiteMgBishopPair, BlackMgBishopPair, WhiteEgBishopPair, BlackEgBishopPair, phase);
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
-            AppendStaticScoreLine(stringBuilder, "Subtotal", WhiteMg, BlackMg, WhiteEg, BlackEg, Phase);
-            AppendStaticScoreLine(stringBuilder, "Scale", 100, 100, egScale, egScale, Phase);
-            AppendStaticScoreLine(stringBuilder, "Total", WhiteMg, BlackMg, WhiteEgScaled, BlackEgScaled, Phase);
+            AppendStaticScoreLine(stringBuilder, "Subtotal", WhiteMg, BlackMg, WhiteEg, BlackEg, phase);
+            AppendStaticScoreLine(stringBuilder, "Scale", 100, 100, egScale, egScale, phase);
+            AppendStaticScoreLine(stringBuilder, "Total", WhiteMg, BlackMg, WhiteEgScaled, BlackEgScaled, phase);
             stringBuilder.AppendLine();
-            var phaseFraction = (100 * Phase) / Evaluation.MiddlegamePhase;
-            var totalScore = GetTotalScore(Phase) / 100d;
-            stringBuilder.AppendLine($"Middlegame   = {Phase} of {Evaluation.MiddlegamePhase} ({phaseFraction}%)");
+            var phaseFraction = (100 * phase) / Evaluation.MiddlegamePhase;
+            var totalScore = GetTotalScore(phase) / 100d;
+            stringBuilder.AppendLine($"Middlegame   = {phase} of {Evaluation.MiddlegamePhase} ({phaseFraction}%)");
             stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
             stringBuilder.AppendLine($"Total Score  = {totalScore:0.00}");
             return stringBuilder.ToString();
         }
 
 
-        private static void AppendStaticScoreLine(StringBuilder StringBuilder, string EvaluationTerm, int WhiteMg, int BlackMg, int WhiteEg, int BlackEg, int Phase)
+        private static void AppendStaticScoreLine(StringBuilder stringBuilder, string evalParam, int whiteMg, int blackMg, int whiteEg, int blackEg, int phase)
         {
-            var evaluationTerm = EvaluationTerm.PadRight(27);
-            var mgWhite = (WhiteMg / 100d).ToString("0.00").PadLeft(7);
-            var mgBlack = (BlackMg / 100d).ToString("0.00").PadLeft(7);
-            var mgDiff = ((WhiteMg - BlackMg) / 100d).ToString("0.00").PadLeft(7);
-            var egWhite = (WhiteEg / 100d).ToString("0.00").PadLeft(7);
-            var egBlack = (BlackEg / 100d).ToString("0.00").PadLeft(7);
-            var egDiff = ((WhiteEg - BlackEg) / 100d).ToString("0.00").PadLeft(7);
-            var white = GetTaperedScore(WhiteMg, WhiteEg, Phase);
-            var black = GetTaperedScore(BlackMg, BlackEg, Phase);
+            var paddedEvalParam = evalParam.PadRight(27);
+            var mgWhite = (whiteMg / 100d).ToString("0.00").PadLeft(7);
+            var mgBlack = (blackMg / 100d).ToString("0.00").PadLeft(7);
+            var mgDiff = ((whiteMg - blackMg) / 100d).ToString("0.00").PadLeft(7);
+            var egWhite = (whiteEg / 100d).ToString("0.00").PadLeft(7);
+            var egBlack = (blackEg / 100d).ToString("0.00").PadLeft(7);
+            var egDiff = ((whiteEg - blackEg) / 100d).ToString("0.00").PadLeft(7);
+            var white = GetTaperedScore(whiteMg, whiteEg, phase);
+            var black = GetTaperedScore(blackMg, blackEg, phase);
             var totalWhite = (white / 100d).ToString("0.00").PadLeft(7);
             var totalBlack = (black / 100d).ToString("0.00").PadLeft(7);
             var totalDiff = ((white - black) / 100d).ToString("0.00").PadLeft(7);
-            StringBuilder.AppendLine($"{evaluationTerm}   {mgWhite}  {mgBlack}  {mgDiff}   {egWhite}  {egBlack}  {egDiff}   {totalWhite}  {totalBlack}  {totalDiff}");
+            stringBuilder.AppendLine($"{paddedEvalParam}   {mgWhite}  {mgBlack}  {mgDiff}   {egWhite}  {egBlack}  {egDiff}   {totalWhite}  {totalBlack}  {totalDiff}");
         }
     }
 }

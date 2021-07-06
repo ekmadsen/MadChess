@@ -60,99 +60,99 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsPossible(uint Castling) => Castling > 0;
+        public static bool IsPossible(uint castling) => castling > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool WhiteKingside(uint Castling) => (Castling & _whiteKingsideMask) > 0;
+        public static bool WhiteKingside(uint castling) => (castling & _whiteKingsideMask) > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetWhiteKingside(ref uint Castling, bool WhiteKingside)
+        public static void SetWhiteKingside(ref uint castling, bool whiteKingside)
         {
-            var whiteKingSide = WhiteKingside ? 1u : 0;
+            var whiteKingSide = whiteKingside ? 1u : 0;
             // Clear.
-            Castling &= _whiteKingsideUnmask;
+            castling &= _whiteKingsideUnmask;
             // Set.
-            Castling |= (whiteKingSide << _whiteKingsideShift) & _whiteKingsideMask;
+            castling |= (whiteKingSide << _whiteKingsideShift) & _whiteKingsideMask;
             // Validate move.
-            Debug.Assert(Engine.Castling.WhiteKingside(Castling) == WhiteKingside);
+            Debug.Assert(WhiteKingside(castling) == whiteKingside);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool WhiteQueenside(uint Castling) => (Castling & _whiteQueensideMask) > 0;
+        public static bool WhiteQueenside(uint castling) => (castling & _whiteQueensideMask) > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetWhiteQueenside(ref uint Castling, bool WhiteQueenside)
+        public static void SetWhiteQueenside(ref uint castling, bool whiteQueenside)
         {
-            var whiteQueenside = WhiteQueenside ? 1u : 0;
+            var value = whiteQueenside ? 1u : 0;
             // Clear.
-            Castling &= _whiteQueensideUnmask;
+            castling &= _whiteQueensideUnmask;
             // Set.
-            Castling |= (whiteQueenside << _whiteQueensideShift) & _whiteQueensideMask;
+            castling |= (value << _whiteQueensideShift) & _whiteQueensideMask;
             // Validate move.
-            Debug.Assert(Engine.Castling.WhiteQueenside(Castling) == WhiteQueenside);
+            Debug.Assert(WhiteQueenside(castling) == whiteQueenside);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool BlackKingside(uint Castling) => (Castling & _blackKingsideMask) > 0;
+        public static bool BlackKingside(uint castling) => (castling & _blackKingsideMask) > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBlackKingside(ref uint Castling, bool BlackKingside)
+        public static void SetBlackKingside(ref uint castling, bool blackKingside)
         {
-            var blackKingSide = BlackKingside ? 1u : 0;
+            var blackKingSide = blackKingside ? 1u : 0;
             // Clear.
-            Castling &= _blackKingsideUnmask;
+            castling &= _blackKingsideUnmask;
             // Set.
-            Castling |= (blackKingSide << _blackKingsideShift) & _blackKingsideMask;
+            castling |= (blackKingSide << _blackKingsideShift) & _blackKingsideMask;
             // Validate move.
-            Debug.Assert(Engine.Castling.BlackKingside(Castling) == BlackKingside);
+            Debug.Assert(BlackKingside(castling) == blackKingside);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool BlackQueenside(uint Castling) => (Castling & _blackQueensideMask) > 0;
+        public static bool BlackQueenside(uint castling) => (castling & _blackQueensideMask) > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBlackQueenside(ref uint Castling, bool BlackQueenside)
+        public static void SetBlackQueenside(ref uint castling, bool blackQueenside)
         {
-            var blackQueenside = BlackQueenside ? 1u : 0;
+            var value = blackQueenside ? 1u : 0;
             // Clear.
-            Castling &= _blackQueensideUnmask;
+            castling &= _blackQueensideUnmask;
             // Set.
-            Castling |= blackQueenside & _blackQueensideMask;
+            castling |= value & _blackQueensideMask;
             // Validate move.
-            Debug.Assert(Engine.Castling.BlackQueenside(Castling) == BlackQueenside);
+            Debug.Assert(BlackQueenside(castling) == blackQueenside);
         }
 
 
-        public static string ToString(uint Castling)
+        public static string ToString(uint castling)
         {
             var stringBuilder = new StringBuilder();
             var anyCastlingRights = false;
-            if (WhiteKingside(Castling))
+            if (WhiteKingside(castling))
             {
-                stringBuilder.Append("K");
+                stringBuilder.Append('K');
                 anyCastlingRights = true;
             }
-            if (WhiteQueenside(Castling))
+            if (WhiteQueenside(castling))
             {
-                stringBuilder.Append("Q");
+                stringBuilder.Append('Q');
                 anyCastlingRights = true;
             }
-            if (BlackKingside(Castling))
+            if (BlackKingside(castling))
             {
-                stringBuilder.Append("k");
+                stringBuilder.Append('k');
                 anyCastlingRights = true;
             }
-            if (BlackQueenside(Castling))
+            if (BlackQueenside(castling))
             {
-                stringBuilder.Append("q");
+                stringBuilder.Append('q');
                 anyCastlingRights = true;
             }
             if (!anyCastlingRights) stringBuilder.Append("-");

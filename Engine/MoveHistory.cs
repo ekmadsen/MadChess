@@ -38,23 +38,23 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetValue(Position Position, ulong Move)
+        public int GetValue(Position position, ulong move)
         {
-            var piece = Position.GetPiece(Engine.Move.From(Move));
-            var toSquare = Engine.Move.To(Move);
+            var piece = position.GetPiece(Move.From(move));
+            var toSquare = Move.To(move);
             return _moveHistory[piece][toSquare];
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void UpdateValue(Position Position, ulong Move, int Increment)
+        public void UpdateValue(Position position, ulong move, int increment)
         {
             // Update value with decay.  Idea from Ethereal chess engine.
             // This function approaches an asymptotic limit of +/- MaxValue.
-            var piece = Position.GetPiece(Engine.Move.From(Move));
-            var toSquare = Engine.Move.To(Move);
+            var piece = position.GetPiece(Move.From(move));
+            var toSquare = Move.To(move);
             var value = _moveHistory[piece][toSquare];
-            value += (Increment * _multiplier) - ((value * Math.Abs(Increment)) / _divisor);
+            value += (increment * _multiplier) - ((value * Math.Abs(increment)) / _divisor);
             _moveHistory[piece][toSquare] = value;
         }
 

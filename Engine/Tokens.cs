@@ -15,31 +15,31 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public static class Tokens
     {
-        public static List<string> Parse(string Command, char Separator, char Tokenizer)
+        public static List<string> Parse(string command, char separator, char tokenizer)
         {
             var tokens = new List<string>();
             var startIndex = 0;
             var inToken = false;
-            for (var index = 0; index < Command.Length; index++)
+            for (var index = 0; index < command.Length; index++)
             {
                 string token;
-                var character = Command[index];
-                if (index == Command.Length - 1)
+                var character = command[index];
+                if (index == command.Length - 1)
                 {
                     // Add last token.
-                    token = Command.Substring(startIndex, index - startIndex + 1);
-                    tokens.Add(token.TrimEnd(Tokenizer));
+                    token = command.Substring(startIndex, index - startIndex + 1);
+                    tokens.Add(token.TrimEnd(tokenizer));
                     break;
                 }
-                if (character == Separator)
+                if (character == separator)
                 {
                     if (inToken) continue;
                     // Add token.
-                    token = Command.Substring(startIndex, index - startIndex);
-                    tokens.Add(token.TrimEnd(Tokenizer));
+                    token = command.Substring(startIndex, index - startIndex);
+                    tokens.Add(token.TrimEnd(tokenizer));
                     startIndex = index + 1;
                 }
-                else if (character == Tokenizer)
+                else if (character == tokenizer)
                 {
                     if (inToken) inToken = false;
                     else

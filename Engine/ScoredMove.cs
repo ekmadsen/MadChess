@@ -16,10 +16,10 @@ namespace ErikTheCoder.MadChess.Engine
         public int Score;
 
 
-        public ScoredMove(ulong Move, int Score)
+        public ScoredMove(ulong move, int score)
         {
-            this.Move = Move;
-            this.Score = Score;
+            Move = move;
+            Score = score;
         }
     }
 }

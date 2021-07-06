@@ -155,277 +155,277 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsBest(ulong Move) => (Move & _bestMask) >> _bestShift > 0;
+        public static bool IsBest(ulong move) => (move & _bestMask) >> _bestShift > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsBest(ref ulong Move, bool IsBest)
+        public static void SetIsBest(ref ulong move, bool isBest)
         {
-            var isBest = IsBest ? 1ul : 0;
+            var value = isBest ? 1ul : 0;
             // Clear
-            Move &= _bestUnmask;
+            move &= _bestUnmask;
             // Set
-            Move |= (isBest << _bestShift) & _bestMask;
+            move |= (value << _bestShift) & _bestMask;
             // Validate move.
-            Debug.Assert(Engine.Move.IsBest(Move) == IsBest);
+            Debug.Assert(IsBest(move) == isBest);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CaptureVictim(ulong Move) => (int)((Move & _captureVictimMask) >> _captureVictimShift);
+        public static int CaptureVictim(ulong move) => (int)((move & _captureVictimMask) >> _captureVictimShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetCaptureVictim(ref ulong Move, int CaptureVictim)
+        public static void SetCaptureVictim(ref ulong move, int captureVictim)
         {
             // Clear
-            Move &= _captureVictimUnmask;
+            move &= _captureVictimUnmask;
             // Set
-            Move |= ((ulong)CaptureVictim << _captureVictimShift) & _captureVictimMask;
+            move |= ((ulong)captureVictim << _captureVictimShift) & _captureVictimMask;
             // Validate move.
-            Debug.Assert(Engine.Move.CaptureVictim(Move) == CaptureVictim);
+            Debug.Assert(CaptureVictim(move) == captureVictim);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CaptureAttacker(ulong Move)
+        public static int CaptureAttacker(ulong move)
         {
             // Value is inverted.
-            var storedPiece = (int)((Move & _captureAttackerMask) >> _captureAttackerShift);
+            var storedPiece = (int)((move & _captureAttackerMask) >> _captureAttackerShift);
             return Piece.BlackKing - storedPiece;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetCaptureAttacker(ref ulong Move, int CaptureAttacker)
+        public static void SetCaptureAttacker(ref ulong move, int captureAttacker)
         {
             // Invert piece value so P x Q captures are given a higher priority than Q x Q.
-            var storedPiece = (ulong)(Piece.BlackKing - CaptureAttacker);
+            var storedPiece = (ulong)(Piece.BlackKing - captureAttacker);
             // Clear
-            Move &= _captureAttackerUnmask;
+            move &= _captureAttackerUnmask;
             // Set
-            Move |= (storedPiece << _captureAttackerShift) & _captureAttackerMask;
+            move |= (storedPiece << _captureAttackerShift) & _captureAttackerMask;
             // Validate move.
-            Debug.Assert(Engine.Move.CaptureAttacker(Move) == CaptureAttacker);
+            Debug.Assert(CaptureAttacker(move) == captureAttacker);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PromotedPiece(ulong Move) => (int)((Move & _promotedPieceMask) >> _promotedPieceShift);
+        public static int PromotedPiece(ulong move) => (int)((move & _promotedPieceMask) >> _promotedPieceShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetPromotedPiece(ref ulong Move, int PromotedPiece)
+        public static void SetPromotedPiece(ref ulong move, int promotedPiece)
         {
             // Clear
-            Move &= _promotedPieceUnmask;
+            move &= _promotedPieceUnmask;
             // Set
-            Move |= ((ulong)PromotedPiece << _promotedPieceShift) & _promotedPieceMask;
+            move |= ((ulong)promotedPiece << _promotedPieceShift) & _promotedPieceMask;
             // Validate move.
-            Debug.Assert(Engine.Move.PromotedPiece(Move) == PromotedPiece);
+            Debug.Assert(PromotedPiece(move) == promotedPiece);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Killer(ulong Move) => (int)((Move & _killerMask) >> _killerShift);
+        public static int Killer(ulong move) => (int)((move & _killerMask) >> _killerShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetKiller(ref ulong Move, int Killer)
+        public static void SetKiller(ref ulong move, int killer)
         {
             // Clear
-            Move &= _killerUnmask;
+            move &= _killerUnmask;
             // Set
-            Move |= ((ulong)Killer << _killerShift) & _killerMask;
+            move |= ((ulong)killer << _killerShift) & _killerMask;
             // Validate move.
-            Debug.Assert(Engine.Move.Killer(Move) == Killer);
+            Debug.Assert(Killer(move) == killer);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int History(ulong Move) => (int)((Move & _historyMask) >> _historyShift) - MoveHistory.MaxValue;
+        public static int History(ulong move) => (int)((move & _historyMask) >> _historyShift) - MoveHistory.MaxValue;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetHistory(ref ulong Move, int History)
+        public static void SetHistory(ref ulong move, int history)
         {
             // Ensure history is >= 0 before shifting into ulong.
-            var history = History + MoveHistory.MaxValue;
+            var value = history + MoveHistory.MaxValue;
             // Clear
-            Move &= _historyUnmask;
+            move &= _historyUnmask;
             // Set
-            Move |= ((ulong)history << _historyShift) & _historyMask;
+            move |= ((ulong)value << _historyShift) & _historyMask;
             // Validate move.
-            Debug.Assert(Engine.Move.History(Move) == History);
+            Debug.Assert(History(move) == history);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Played(ulong Move) => (Move & _playedMask) >> _playedShift > 0;
+        public static bool Played(ulong move) => (move & _playedMask) >> _playedShift > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetPlayed(ref ulong Move, bool Played)
+        public static void SetPlayed(ref ulong move, bool played)
         {
-            var played = Played ? 1ul : 0;
+            var value = played ? 1ul : 0;
             // Clear
-            Move &= _playedUnmask;
+            move &= _playedUnmask;
             // Set
-            Move |= (played << _playedShift) & _playedMask;
+            move |= (value << _playedShift) & _playedMask;
             // Validate move.
-            Debug.Assert(Engine.Move.Played(Move) == Played);
+            Debug.Assert(Played(move) == played);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsCastling(ulong Move) => (Move & _castlingMask) >> _castlingShift > 0;
+        public static bool IsCastling(ulong move) => (move & _castlingMask) >> _castlingShift > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsCastling(ref ulong Move, bool IsCastling)
+        public static void SetIsCastling(ref ulong move, bool isCastling)
         {
-            var isCastling = IsCastling ? 1ul : 0;
+            var value = isCastling ? 1ul : 0;
             // Clear
-            Move &= _castlingUnmask;
+            move &= _castlingUnmask;
             // Set
-            Move |= (isCastling << _castlingShift) & _castlingMask;
+            move |= (value << _castlingShift) & _castlingMask;
             // Validate move.
-            Debug.Assert(Engine.Move.IsCastling(Move) == IsCastling);
+            Debug.Assert(IsCastling(move) == isCastling);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsKingMove(ulong Move) => (Move & _kingMoveMask) >> _kingMoveShift > 0;
+        public static bool IsKingMove(ulong move) => (move & _kingMoveMask) >> _kingMoveShift > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsKingMove(ref ulong Move, bool IsKingMove)
+        public static void SetIsKingMove(ref ulong move, bool isKingMove)
         {
-            var isKingMove = IsKingMove ? 1ul : 0;
+            var value = isKingMove ? 1ul : 0;
             // Clear
-            Move &= _kingMoveUnmask;
+            move &= _kingMoveUnmask;
             // Set
-            Move |= (isKingMove << _kingMoveShift) & _kingMoveMask;
+            move |= (value << _kingMoveShift) & _kingMoveMask;
             // Validate move.
-            Debug.Assert(Engine.Move.IsKingMove(Move) == IsKingMove);
+            Debug.Assert(IsKingMove(move) == isKingMove);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsEnPassantCapture(ulong Move) => (Move & _enPassantMask) >> _enPassantShift > 0;
+        public static bool IsEnPassantCapture(ulong move) => (move & _enPassantMask) >> _enPassantShift > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsEnPassantCapture(ref ulong Move, bool IsEnPassantCapture)
+        public static void SetIsEnPassantCapture(ref ulong move, bool isEnPassantCapture)
         {
-            var isEnPassantCapture = IsEnPassantCapture ? 1ul : 0;
+            var value = isEnPassantCapture ? 1ul : 0;
             // Clear
-            Move &= _enPassantUnmask;
+            move &= _enPassantUnmask;
             // Set
-            Move |= (isEnPassantCapture << _enPassantShift) & _enPassantMask;
+            move |= (value << _enPassantShift) & _enPassantMask;
             // Validate move.
-            Debug.Assert(Engine.Move.IsEnPassantCapture(Move) == IsEnPassantCapture);
+            Debug.Assert(IsEnPassantCapture(move) == isEnPassantCapture);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsPawnMove(ulong Move) => (Move & _pawnMoveMask) >> _pawnMoveShift > 0;
+        public static bool IsPawnMove(ulong move) => (move & _pawnMoveMask) >> _pawnMoveShift > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsPawnMove(ref ulong Move, bool IsPawnMove)
+        public static void SetIsPawnMove(ref ulong move, bool isPawnMove)
         {
-            var isPawnMove = IsPawnMove ? 1ul : 0;
+            var value = isPawnMove ? 1ul : 0;
             // Clear
-            Move &= _pawnMoveUnmask;
+            move &= _pawnMoveUnmask;
             // Set
-            Move |= (isPawnMove << _pawnMoveShift) & _pawnMoveMask;
+            move |= (value << _pawnMoveShift) & _pawnMoveMask;
             // Validate move.
-            Debug.Assert(Engine.Move.IsPawnMove(Move) == IsPawnMove);
+            Debug.Assert(IsPawnMove(move) == isPawnMove);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsCheck(ulong Move) => (Move & _checkMask) >> _checkShift > 0;
+        public static bool IsCheck(ulong move) => (move & _checkMask) >> _checkShift > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsCheck(ref ulong Move, bool IsCheck)
+        public static void SetIsCheck(ref ulong move, bool isCheck)
         {
-            var isCheck = IsCheck ? 1ul : 0;
+            var value = isCheck ? 1ul : 0;
             // Clear
-            Move &= _checkUnmask;
+            move &= _checkUnmask;
             // Set
-            Move |= (isCheck << _checkShift) & _checkMask;
+            move |= (value << _checkShift) & _checkMask;
             // Validate move.
-            Debug.Assert(Engine.Move.IsCheck(Move) == IsCheck);
+            Debug.Assert(IsCheck(move) == isCheck);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsDoublePawnMove(ulong Move) => (Move & _doublePawnMoveMask) >> _doublePawnMoveShift > 0;
+        public static bool IsDoublePawnMove(ulong move) => (move & _doublePawnMoveMask) >> _doublePawnMoveShift > 0;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsDoublePawnMove(ref ulong Move, bool IsDoublePawnMove)
+        public static void SetIsDoublePawnMove(ref ulong move, bool isDoublePawnMove)
         {
-            var isDoublePawnMove = IsDoublePawnMove ? 1ul : 0;
+            var value = isDoublePawnMove ? 1ul : 0;
             // Clear
-            Move &= _doublePawnMoveUnmask;
+            move &= _doublePawnMoveUnmask;
             // Set
-            Move |= (isDoublePawnMove << _doublePawnMoveShift) & _doublePawnMoveMask;
+            move |= (value << _doublePawnMoveShift) & _doublePawnMoveMask;
             // Validate move.
-            Debug.Assert(Engine.Move.IsDoublePawnMove(Move) == IsDoublePawnMove);
+            Debug.Assert(IsDoublePawnMove(move) == isDoublePawnMove);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsQuiet(ulong Move) => (Move & (_captureVictimMask | _promotedPieceMask)) == 0; // Not a capture or pawn promotion.
+        public static bool IsQuiet(ulong move) => (move & (_captureVictimMask | _promotedPieceMask)) == 0; // Not a capture or pawn promotion.
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int From(ulong Move) => (int)((Move & _fromMask) >> _fromShift);
+        public static int From(ulong move) => (int)((move & _fromMask) >> _fromShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetFrom(ref ulong Move, int From)
+        public static void SetFrom(ref ulong move, int from)
         {
             // Clear
-            Move &= _fromUnmask;
+            move &= _fromUnmask;
             // Set
-            Move |= ((ulong)From << _fromShift) & _fromMask;
+            move |= ((ulong)from << _fromShift) & _fromMask;
             // Validate move.
-            Debug.Assert(Engine.Move.From(Move) == From);
+            Debug.Assert(From(move) == from);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int To(ulong Move) => (int)(Move & _toMask);
+        public static int To(ulong move) => (int)(move & _toMask);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetTo(ref ulong Move, int To)
+        public static void SetTo(ref ulong move, int to)
         {
             // Clear
-            Move &= _toUnmask;
+            move &= _toUnmask;
             // Set
-            Move |= (ulong)To & _toMask;
+            move |= (ulong)to & _toMask;
             // Validate move.
-            Debug.Assert(Engine.Move.To(Move) == To);
+            Debug.Assert(To(move) == to);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Equals(ulong Move1, ulong Move2) => (From(Move1) == From(Move2)) && (To(Move1) == To(Move2)) && (PromotedPiece(Move1) == PromotedPiece(Move2));
+        public static bool Equals(ulong move1, ulong move2) => (From(move1) == From(move2)) && (To(move1) == To(move2)) && (PromotedPiece(move1) == PromotedPiece(move2));
 
 
-        public static ulong ParseLongAlgebraic(string LongAlgebraic, bool WhiteMove)
+        public static ulong ParseLongAlgebraic(string longAlgebraic, bool whiteMove)
         {
-            var fromSquare = Board.GetSquare(LongAlgebraic.Substring(0, 2));
-            var toSquare = Board.GetSquare(LongAlgebraic.Substring(2, 2));
+            var fromSquare = Board.GetSquare(longAlgebraic.Substring(0, 2));
+            var toSquare = Board.GetSquare(longAlgebraic.Substring(2, 2));
             // Set case of promoted piece character based on side to move.
-            var promotedPiece = LongAlgebraic.Length == 5
-                ? Piece.ParseChar(WhiteMove ? char.ToUpper(LongAlgebraic[4]) : char.ToLower(LongAlgebraic[4]))
+            var promotedPiece = longAlgebraic.Length == 5
+                ? Piece.ParseChar(whiteMove ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
                 : Piece.None;
             var move = Null;
             SetFrom(ref move, fromSquare);
@@ -435,43 +435,43 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static ulong ParseStandardAlgebraic(Board Board, string StandardAlgebraic)
+        public static ulong ParseStandardAlgebraic(Board board, string standardAlgebraic)
         {
             var move = Null;
             // Remove check and checkmate symbols.
-            var standardAlgebraicNoCheck = StandardAlgebraic.TrimEnd("+#".ToCharArray());
+            var standardAlgebraicNoCheck = standardAlgebraic.TrimEnd("+#".ToCharArray());
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (standardAlgebraicNoCheck)
             {
                 case "O-O-O":
                 case "0-0-0":
-                    if (Board.CurrentPosition.WhiteMove)
+                    if (board.CurrentPosition.WhiteMove)
                     {
                         // White Castle Queenside
                         SetFrom(ref move, Square.e1);
                         SetTo(ref move, Square.c1);
-                        if (!Board.ValidateMove(ref move)) throw new Exception($"Move {StandardAlgebraic} is illegal in position {Board.CurrentPosition.ToFen()}.");
+                        if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                         return move;
                     }
                     // Black Castle Queenside
                     SetFrom(ref move, Square.e8);
                     SetTo(ref move, Square.c8);
-                    if (!Board.ValidateMove(ref move)) throw new Exception($"Move {StandardAlgebraic} is illegal in position {Board.CurrentPosition.ToFen()}.");
+                    if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                     return move;
                 case "O-O":
                 case "0-0":
-                    if (Board.CurrentPosition.WhiteMove)
+                    if (board.CurrentPosition.WhiteMove)
                     {
                         // White Castle Kingside
                         SetFrom(ref move, Square.e1);
                         SetTo(ref move, Square.g1);
-                        if (!Board.ValidateMove(ref move)) throw new Exception($"Move {StandardAlgebraic} is illegal in position {Board.CurrentPosition.ToFen()}.");
+                        if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                         return move;
                     }
                     // Black Castle Kingside
                     SetFrom(ref move, Square.e8);
                     SetTo(ref move, Square.g8);
-                    if (!Board.ValidateMove(ref move)) throw new Exception($"Move {StandardAlgebraic} is illegal in position {Board.CurrentPosition.ToFen()}.");
+                    if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                     return move;
             }
             var length = standardAlgebraicNoCheck.Length;
@@ -483,7 +483,7 @@ namespace ErikTheCoder.MadChess.Engine
             if (char.IsLower(standardAlgebraicNoCheck, 0))
             {
                 // Pawn Move
-                piece = Board.CurrentPosition.WhiteMove ? Piece.WhitePawn : Piece.BlackPawn;
+                piece = board.CurrentPosition.WhiteMove ? Piece.WhitePawn : Piece.BlackPawn;
                 fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[0]}1")];
                 switch (length)
                 {
@@ -498,25 +498,25 @@ namespace ErikTheCoder.MadChess.Engine
                     case 4 when standardAlgebraicNoCheck[2] == '=':
                         // Pawn promotion.  Set case of promoted piece character based on side to move.
                         toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(0, 2));
-                        promotedPiece = Piece.ParseChar(Board.CurrentPosition.WhiteMove
+                        promotedPiece = Piece.ParseChar(board.CurrentPosition.WhiteMove
                             ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                             : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                         break;
                     case 6:
                         // Pawn promotion with capture.  Set case of promoted piece character based on side to move.
                         toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(2, 2));
-                        promotedPiece = Piece.ParseChar(Board.CurrentPosition.WhiteMove
+                        promotedPiece = Piece.ParseChar(board.CurrentPosition.WhiteMove
                             ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                             : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                         break;
                     default:
-                        throw new Exception($"Move {StandardAlgebraic} is illegal in position {Board.CurrentPosition.ToFen()}.");
+                        throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                 }
             }
             else
             {
                 // Piece Move
-                piece = Piece.ParseChar(Board.CurrentPosition.WhiteMove
+                piece = Piece.ParseChar(board.CurrentPosition.WhiteMove
                     ? char.ToUpper(standardAlgebraicNoCheck[0])
                     : char.ToLower(standardAlgebraicNoCheck[0]));
                 // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -564,14 +564,14 @@ namespace ErikTheCoder.MadChess.Engine
                     fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
                     fromRank = Board.WhiteRanks[Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
                 }
-                else throw new Exception($"{StandardAlgebraic} move not supported.");
+                else throw new Exception($"{standardAlgebraic} move not supported.");
             }
-            Board.CurrentPosition.GenerateMoves();
-            for (var moveIndex = 0; moveIndex < Board.CurrentPosition.MoveIndex; moveIndex++)
+            board.CurrentPosition.GenerateMoves();
+            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
             {
-                move = Board.CurrentPosition.Moves[moveIndex];
-                if (!Board.IsMoveLegal(ref move)) continue; // Skip illegal move.
-                var movePiece = Board.CurrentPosition.GetPiece(From(move));
+                move = board.CurrentPosition.Moves[moveIndex];
+                if (!board.IsMoveLegal(ref move)) continue; // Skip illegal move.
+                var movePiece = board.CurrentPosition.GetPiece(From(move));
                 if (movePiece != piece) continue; // Wrong Piece
                 var moveToSquare = To(move);
                 if (moveToSquare != toSquare) continue; // Wrong Square
@@ -590,52 +590,52 @@ namespace ErikTheCoder.MadChess.Engine
                     var moveFromRank = Board.WhiteRanks[From(move)];
                     if (moveFromRank != fromRank) continue; // Wrong Rank
                 }
-                if (!Board.ValidateMove(ref move)) throw new Exception($"Move {StandardAlgebraic} is illegal in position {Board.CurrentPosition.ToFen()}.");
+                if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                 return move;
             }
-            throw new Exception($"Failed to parse {StandardAlgebraic} standard algebraic notation move.");
+            throw new Exception($"Failed to parse {standardAlgebraic} standard algebraic notation move.");
         }
 
 
-        public static bool IsValid(ulong Move)
+        public static bool IsValid(ulong move)
         {
-            Debug.Assert(CaptureVictim(Move) >= Piece.None, $"CaptureVictim(Move) = {CaptureVictim(Move)}, Piece.None = {Piece.None}");
-            Debug.Assert(CaptureVictim(Move) < Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(Move)}, Piece.BlackKing = {Piece.BlackKing}");
-            Debug.Assert(CaptureVictim(Move) != Piece.WhiteKing, $"CaptureVictim(Move) = {CaptureVictim(Move)}, Piece.WhiteKing = {Piece.WhiteKing}");
-            Debug.Assert(CaptureVictim(Move) != Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(Move)}, Piece.BlackKing = {Piece.BlackKing}");
-            Debug.Assert(CaptureAttacker(Move) >= Piece.None, $"CaptureAttacker(Move) = {CaptureAttacker(Move)}, Piece.None = {Piece.None}");
-            Debug.Assert(CaptureAttacker(Move) <= Piece.BlackKing, $"CaptureAttacker(Move) = {CaptureAttacker(Move)}, Piece.BlackKing = {Piece.BlackKing}");
-            Debug.Assert(PromotedPiece(Move) >= Piece.None, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.None = {Piece.None}");
-            Debug.Assert(PromotedPiece(Move) < Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.BlackKing = {Piece.BlackKing}");
-            Debug.Assert(PromotedPiece(Move) != Piece.WhitePawn, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.WhitePawn = {Piece.WhitePawn}");
-            Debug.Assert(PromotedPiece(Move) != Piece.BlackPawn, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.BlackPawn = {Piece.BlackPawn}");
-            Debug.Assert(PromotedPiece(Move) != Piece.WhiteKing, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.WhiteKing = {Piece.WhiteKing}");
-            Debug.Assert(PromotedPiece(Move) != Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(Move)}, Piece.BlackKing = {Piece.BlackKing}");
-            Debug.Assert(Killer(Move) >= 0, $"Killer(Move) = {Killer(Move)}");
-            Debug.Assert(Killer(Move) <= 2, $"Killer(Move) = {Killer(Move)}");
-            Debug.Assert(From(Move) >= Square.a8, $"From(Move) = {From(Move)}");
-            Debug.Assert(From(Move) <= Square.Illegal, $"From(Move) = {From(Move)}");
-            Debug.Assert(To(Move) >= Square.a8, $"To(Move) = {To(Move)}");
-            Debug.Assert(To(Move) <= Square.Illegal, $"To(Move) = {To(Move)}");
+            Debug.Assert(CaptureVictim(move) >= Piece.None, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.None = {Piece.None}");
+            Debug.Assert(CaptureVictim(move) < Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(CaptureVictim(move) != Piece.WhiteKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.WhiteKing = {Piece.WhiteKing}");
+            Debug.Assert(CaptureVictim(move) != Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(CaptureAttacker(move) >= Piece.None, $"CaptureAttacker(Move) = {CaptureAttacker(move)}, Piece.None = {Piece.None}");
+            Debug.Assert(CaptureAttacker(move) <= Piece.BlackKing, $"CaptureAttacker(Move) = {CaptureAttacker(move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(PromotedPiece(move) >= Piece.None, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.None = {Piece.None}");
+            Debug.Assert(PromotedPiece(move) < Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(PromotedPiece(move) != Piece.WhitePawn, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.WhitePawn = {Piece.WhitePawn}");
+            Debug.Assert(PromotedPiece(move) != Piece.BlackPawn, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackPawn = {Piece.BlackPawn}");
+            Debug.Assert(PromotedPiece(move) != Piece.WhiteKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.WhiteKing = {Piece.WhiteKing}");
+            Debug.Assert(PromotedPiece(move) != Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Piece.BlackKing}");
+            Debug.Assert(Killer(move) >= 0, $"Killer(Move) = {Killer(move)}");
+            Debug.Assert(Killer(move) <= 2, $"Killer(Move) = {Killer(move)}");
+            Debug.Assert(From(move) >= Square.a8, $"From(Move) = {From(move)}");
+            Debug.Assert(From(move) <= Square.Illegal, $"From(Move) = {From(move)}");
+            Debug.Assert(To(move) >= Square.a8, $"To(Move) = {To(move)}");
+            Debug.Assert(To(move) <= Square.Illegal, $"To(Move) = {To(move)}");
             return true;
         }
 
 
-        public static string ToLongAlgebraic(ulong Move)
+        public static string ToLongAlgebraic(ulong move)
         {
-            if (Move == Null) return "Null";
-            var fromSquare = From(Move);
-            var toSquare = To(Move);
-            var promotedPiece = PromotedPiece(Move);
+            if (move == Null) return "Null";
+            var fromSquare = From(move);
+            var toSquare = To(move);
+            var promotedPiece = PromotedPiece(move);
             return $"{Board.SquareLocations[fromSquare]}{Board.SquareLocations[toSquare]}{(promotedPiece == Piece.None ? string.Empty : Piece.GetChar(promotedPiece).ToString().ToLower())}";
         }
 
 
-        public static string ToString(ulong Move)
+        public static string ToString(ulong move)
         {
-            return $"{ToLongAlgebraic(Move)} (B = {IsBest(Move)}, CapV = {Piece.GetChar(CaptureVictim(Move))}, CapA = {Piece.GetChar(CaptureAttacker(Move))}, Promo = {Piece.GetChar(PromotedPiece(Move))}, Kil = {Killer(Move)}, " +
-                   $"! = {Played(Move)},  O = {IsCastling(Move)}, K = {IsKingMove(Move)}, E = {IsEnPassantCapture(Move)}, 2 = {IsDoublePawnMove(Move)}, P = {IsPawnMove(Move)}, C = {IsCheck(Move)}, Q = {IsQuiet(Move)} " +
-                $"From = {From(Move)}, To = {To(Move)}";
+            return $"{ToLongAlgebraic(move)} (B = {IsBest(move)}, CapV = {Piece.GetChar(CaptureVictim(move))}, CapA = {Piece.GetChar(CaptureAttacker(move))}, Promo = {Piece.GetChar(PromotedPiece(move))}, Kil = {Killer(move)}, " +
+                   $"! = {Played(move)},  O = {IsCastling(move)}, K = {IsKingMove(move)}, E = {IsEnPassantCapture(move)}, 2 = {IsDoublePawnMove(move)}, P = {IsPawnMove(move)}, C = {IsCheck(move)}, Q = {IsQuiet(move)} " +
+                $"From = {From(move)}, To = {To(move)}";
         }
     }
 }

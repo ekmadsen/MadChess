@@ -18,17 +18,17 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         public int Value;
 
 
-        public Parameter(string Name, int MinValue, int MaxValue) : this(Name, MinValue, MaxValue, SafeRandom.NextInt(MinValue, MaxValue + 1)) // Assign random initial value.
+        public Parameter(string name, int minValue, int maxValue) : this(name, minValue, maxValue, SafeRandom.NextInt(minValue, maxValue + 1)) // Assign random initial value.
         {
         }
 
 
-        private Parameter(string Name, int MinValue, int MaxValue, int Value)
+        private Parameter(string name, int minValue, int maxValue, int value)
         {
-            this.Name = Name;
-            this.MinValue = MinValue;
-            this.MaxValue = MaxValue;
-            this.Value = Value;
+            Name = name;
+            MinValue = minValue;
+            MaxValue = maxValue;
+            Value = value;
         }
 
 

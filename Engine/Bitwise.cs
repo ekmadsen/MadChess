@@ -49,176 +49,176 @@ namespace ErikTheCoder.MadChess.Engine
 
         // ReSharper disable UnusedMember.Global
         // ReSharper disable once MemberCanBePrivate.Global
-        public static uint CreateUIntMask(int Index)
+        public static uint CreateUIntMask(int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _intBits));
-            return 1u << Index;
+            Debug.Assert((index >= 0) && (index < _intBits));
+            return 1u << index;
         }
 
 
-        public static uint CreateUIntMask(int LeastSignificantBit, int MostSignificantBit)
+        public static uint CreateUIntMask(int leastSignificantBit, int mostSignificantBit)
         {
-            Debug.Assert((LeastSignificantBit >= 0) && (LeastSignificantBit < _intBits));
-            Debug.Assert((MostSignificantBit >= 0) && (MostSignificantBit < _intBits));
-            Debug.Assert(LeastSignificantBit <= MostSignificantBit);
+            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < _intBits));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _intBits));
+            Debug.Assert(leastSignificantBit <= mostSignificantBit);
             var mask = 0u;
-            for (var index = LeastSignificantBit; index <= MostSignificantBit; index++) SetBit(ref mask, index);
+            for (var index = leastSignificantBit; index <= mostSignificantBit; index++) SetBit(ref mask, index);
             return mask;
         }
 
 
         // ReSharper disable once MemberCanBePrivate.Global
-        public static uint CreateUIntMask(int[] Indices)
+        public static uint CreateUIntMask(int[] indices)
         {
             var mask = 0u;
-            for (var index = 0; index < Indices.Length; index++) SetBit(ref mask, Indices[index]);
-            Debug.Assert(Indices.All(Index => (Index >= 0) && (Index < _intBits)));
+            for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
+            Debug.Assert(indices.All(index => (index >= 0) && (index < _intBits)));
             return mask;
         }
 
 
-        public static ulong CreateULongMask(int Index)
+        public static ulong CreateULongMask(int index)
         {
-            Debug.Assert(Index >= 0 && Index < _longBits);
-            return 1ul << Index;
+            Debug.Assert(index >= 0 && index < _longBits);
+            return 1ul << index;
         }
 
 
-        public static ulong CreateULongMask(int LeastSignificantBit, int MostSignificantBit)
+        public static ulong CreateULongMask(int leastSignificantBit, int mostSignificantBit)
         {
-            Debug.Assert((LeastSignificantBit) >= 0 && (LeastSignificantBit < _longBits));
-            Debug.Assert((MostSignificantBit >= 0) && (MostSignificantBit < _longBits));
-            Debug.Assert(LeastSignificantBit <= MostSignificantBit);
+            Debug.Assert((leastSignificantBit) >= 0 && (leastSignificantBit < _longBits));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _longBits));
+            Debug.Assert(leastSignificantBit <= mostSignificantBit);
             var mask = 0ul;
-            for (var index = LeastSignificantBit; index <= MostSignificantBit; index++) SetBit(ref mask, index);
+            for (var index = leastSignificantBit; index <= mostSignificantBit; index++) SetBit(ref mask, index);
             return mask;
         }
 
 
-        public static ulong CreateULongMask(int[] Indices)
+        public static ulong CreateULongMask(int[] indices)
         {
             var mask = 0ul;
-            for (var index = 0; index < Indices.Length; index++) SetBit(ref mask, Indices[index]);
-            Debug.Assert(Indices.All(Index => (Index >= 0) && (Index < _longBits)));
+            for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
+            Debug.Assert(indices.All(index => (index >= 0) && (index < _longBits)));
             return mask;
         }
 
 
-        public static uint CreateUIntUnmask(int Index)
+        public static uint CreateUIntUnmask(int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _intBits));
-            return ~CreateUIntMask(Index);
+            Debug.Assert((index >= 0) && (index < _intBits));
+            return ~CreateUIntMask(index);
         }
 
 
-        public static uint CreateUIntUnmask(int LeastSignificantBit, int MostSignificantBit)
+        public static uint CreateUIntUnmask(int leastSignificantBit, int mostSignificantBit)
         {
-            Debug.Assert((LeastSignificantBit >= 0) && (LeastSignificantBit < _intBits));
-            Debug.Assert((MostSignificantBit >= 0) && (MostSignificantBit < _intBits));
-            Debug.Assert(LeastSignificantBit <= MostSignificantBit);
-            return ~CreateUIntMask(LeastSignificantBit, MostSignificantBit);
+            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < _intBits));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _intBits));
+            Debug.Assert(leastSignificantBit <= mostSignificantBit);
+            return ~CreateUIntMask(leastSignificantBit, mostSignificantBit);
         }
 
 
-        public static uint CreateUIntUnMask(int[] Indices)
+        public static uint CreateUIntUnMask(int[] indices)
         {
-            Debug.Assert(Indices.All(Index => (Index >= 0) && (Index < _intBits)));
-            return ~CreateUIntMask(Indices);
+            Debug.Assert(indices.All(index => (index >= 0) && (index < _intBits)));
+            return ~CreateUIntMask(indices);
         }
 
 
-        public static ulong CreateULongUnmask(int Index)
+        public static ulong CreateULongUnmask(int index)
         {
-            Debug.Assert(Index >= 0 && Index < _longBits);
-            return ~CreateULongMask(Index);
+            Debug.Assert(index >= 0 && index < _longBits);
+            return ~CreateULongMask(index);
         }
 
 
-        public static ulong CreateULongUnmask(int LeastSignificantBit, int MostSignificantBit)
+        public static ulong CreateULongUnmask(int leastSignificantBit, int mostSignificantBit)
         {
-            Debug.Assert((LeastSignificantBit >= 0) && (LeastSignificantBit < _longBits));
-            Debug.Assert((MostSignificantBit >= 0) && (MostSignificantBit < _longBits));
-            Debug.Assert(LeastSignificantBit <= MostSignificantBit);
-            return ~CreateULongMask(LeastSignificantBit, MostSignificantBit);
+            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < _longBits));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _longBits));
+            Debug.Assert(leastSignificantBit <= mostSignificantBit);
+            return ~CreateULongMask(leastSignificantBit, mostSignificantBit);
         }
 
 
-        public static ulong CreateULongUnMask(int[] Indices)
+        public static ulong CreateULongUnMask(int[] indices)
         {
-            Debug.Assert(Indices.All(Index => (Index >= 0) && (Index < _longBits)));
-            return ~CreateULongMask(Indices);
+            Debug.Assert(indices.All(index => (index >= 0) && (index < _longBits)));
+            return ~CreateULongMask(indices);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable once MemberCanBePrivate.Global
-        public static void SetBit(ref uint Value, int Index)
+        public static void SetBit(ref uint value, int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _intBits));
-            Value |= 1u << Index;
+            Debug.Assert((index >= 0) && (index < _intBits));
+            value |= 1u << index;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBit(ref ulong Value, int Index)
+        public static void SetBit(ref ulong value, int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _longBits));
-            Value |= 1ul << Index;
+            Debug.Assert((index >= 0) && (index < _longBits));
+            value |= 1ul << index;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ClearBit(ref uint Value, int Index)
+        public static void ClearBit(ref uint value, int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _intBits));
-            Value &= ~(1u << Index);
+            Debug.Assert((index >= 0) && (index < _intBits));
+            value &= ~(1u << index);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ClearBit(ref ulong Value, int Index)
+        public static void ClearBit(ref ulong value, int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _longBits));
-            Value &= ~(1ul << Index);
+            Debug.Assert((index >= 0) && (index < _longBits));
+            value &= ~(1ul << index);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ToggleBit(ref uint Value, int Index)
+        public static void ToggleBit(ref uint value, int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _intBits));
-            Value ^= 1u << Index;
+            Debug.Assert((index >= 0) && (index < _intBits));
+            value ^= 1u << index;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ToggleBit(ref ulong Value, int Index)
+        public static void ToggleBit(ref ulong value, int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _longBits));
-            Value ^= 1ul << Index;
+            Debug.Assert((index >= 0) && (index < _longBits));
+            value ^= 1ul << index;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable once MemberCanBePrivate.Global
-        public static bool IsBitSet(uint Value, int Index)
+        public static bool IsBitSet(uint value, int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _intBits));
-            return (Value & (1u << Index)) > 0;
+            Debug.Assert((index >= 0) && (index < _intBits));
+            return (value & (1u << index)) > 0;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsBitSet(ulong Value, int Index)
+        public static bool IsBitSet(ulong value, int index)
         {
-            Debug.Assert((Index >= 0) && (Index < _longBits));
-            return (Value & (1ul << Index)) > 0;
+            Debug.Assert((index >= 0) && (index < _longBits));
+            return (value & (1ul << index)) > 0;
         }
 
 
 #if POPCOUNT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(uint Value) => (int) Popcnt.PopCount(Value);
+        public static int CountSetBits(uint value) => (int) Popcnt.PopCount(value);
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(uint Value)
@@ -237,7 +237,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 #if POPCOUNT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(ulong Value) => (int) Popcnt.X64.PopCount(Value);
+        public static int CountSetBits(ulong value) => (int) Popcnt.X64.PopCount(value);
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(ulong Value)
@@ -256,7 +256,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 #if POPCOUNT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int FindFirstSetBit(ulong Value) => Value == 0 ? Square.Illegal : _longBits - (int) Lzcnt.X64.LeadingZeroCount(Value) - 1;
+        public static int FindFirstSetBit(ulong value) => value == 0 ? Square.Illegal : _longBits - (int) Lzcnt.X64.LeadingZeroCount(value) - 1;
 #else
         // See https://stackoverflow.com/questions/37083402/fastest-way-to-get-last-significant-bit-position-in-a-ulong-c
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -267,31 +267,31 @@ namespace ErikTheCoder.MadChess.Engine
 #endif
 
 
-        public static IEnumerable<ulong> GetAllPermutations(ulong Mask)
+        public static IEnumerable<ulong> GetAllPermutations(ulong mask)
         {
             var setBits = new List<int>();
-            for (var index = 0; index < 64; index++) if (IsBitSet(Mask, index)) setBits.Add(index);
+            for (var index = 0; index < 64; index++) if (IsBitSet(mask, index)) setBits.Add(index);
             return GetAllPermutations(setBits, 0, 0);
         }
 
 
-        private static IEnumerable<ulong> GetAllPermutations(List<int> SetBits, int Index, ulong Value)
+        private static IEnumerable<ulong> GetAllPermutations(List<int> setBits, int index, ulong value)
         {
-            SetBit(ref Value, SetBits[Index]);
-            yield return Value;
-            var index = Index + 1;
-            if (index < SetBits.Count)
+            SetBit(ref value, setBits[index]);
+            yield return value;
+            var index2 = index + 1;
+            if (index2 < setBits.Count)
             {
-                using (var occupancyPermutations = GetAllPermutations(SetBits, index, Value).GetEnumerator())
+                using (var occupancyPermutations = GetAllPermutations(setBits, index2, value).GetEnumerator())
                 {
                     while (occupancyPermutations.MoveNext()) yield return occupancyPermutations.Current;
                 }
             }
-            ClearBit(ref Value, SetBits[Index]);
-            yield return Value;
-            if (index < SetBits.Count)
+            ClearBit(ref value, setBits[index]);
+            yield return value;
+            if (index2 < setBits.Count)
             {
-                using (var occupancyPermutations = GetAllPermutations(SetBits, index, Value).GetEnumerator())
+                using (var occupancyPermutations = GetAllPermutations(setBits, index2, value).GetEnumerator())
                 {
                     while (occupancyPermutations.MoveNext()) yield return occupancyPermutations.Current;
                 }
@@ -299,24 +299,24 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public static string ToString(uint Value)
+        public static string ToString(uint value)
         {
             var stringBuilder = new StringBuilder();
             for (var index = _intBits - 1; index >= 0; index--)
             {
-                stringBuilder.Append(IsBitSet(Value, index) ? '1' : '0');
+                stringBuilder.Append(IsBitSet(value, index) ? '1' : '0');
                 if ((index <= _intBits && index > 0) && (index % 8 == 0)) stringBuilder.Append('_');
             }
             return stringBuilder.ToString();
         }
 
 
-        public static string ToString(ulong Value)
+        public static string ToString(ulong value)
         {
             var stringBuilder = new StringBuilder();
             for (var index = _longBits - 1; index >= 0; index--)
             {
-                stringBuilder.Append(IsBitSet(Value, index) ? '1' : '0');
+                stringBuilder.Append(IsBitSet(value, index) ? '1' : '0');
                 if ((index <= _longBits && index > 0) && (index % 8 == 0)) stringBuilder.Append('_');
             }
             return stringBuilder.ToString();

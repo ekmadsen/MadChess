@@ -16,10 +16,10 @@ namespace ErikTheCoder.MadChess.Engine
         public int ToSquare;
 
 
-        public KillerMove(int Piece, int ToSquare)
+        public KillerMove(int piece, int toSquare)
         {
-            this.Piece = Piece;
-            this.ToSquare = ToSquare;
+            Piece = piece;
+            ToSquare = toSquare;
         }
     }
 }

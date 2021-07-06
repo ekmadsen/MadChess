@@ -16,10 +16,10 @@ namespace ErikTheCoder.MadChess.Engine
         public ulong Data;
 
 
-        public CachedPosition(ulong Key, ulong Data)
+        public CachedPosition(ulong key, ulong data)
         {
-            this.Key = Key;
-            this.Data = Data;
+            Key = key;
+            Data = data;
         }
     }
 }

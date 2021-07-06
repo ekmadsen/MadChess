@@ -31,10 +31,10 @@ namespace ErikTheCoder.MadChess.Engine
         public const int BlackKing = 12;
 
         
-        public static char GetChar(int Piece)
+        public static char GetChar(int piece)
         {
             // Sequence cases in order of integer value to improve performance of switch statement.
-            return Piece switch
+            return piece switch
             {
                 None => ' ',
                 WhitePawn => 'P',
@@ -49,15 +49,15 @@ namespace ErikTheCoder.MadChess.Engine
                 BlackRook => 'r',
                 BlackQueen => 'q',
                 BlackKing => 'k',
-                _ => throw new ArgumentException($"{Piece} piece not supported.")
+                _ => throw new ArgumentException($"{piece} piece not supported.")
             };
         }
 
 
-        public static string GetName(int Piece)
+        public static string GetName(int piece)
         {
             // Sequence cases in order of integer value to improve performance of switch statement.
-            return Piece switch
+            return piece switch
             {
                 None => string.Empty,
                 WhitePawn => "Pawn",
@@ -72,18 +72,18 @@ namespace ErikTheCoder.MadChess.Engine
                 BlackRook => "Rook",
                 BlackQueen => "Queen",
                 BlackKing => "King",
-                _ => throw new ArgumentException($"{Piece} piece not supported.")
+                _ => throw new ArgumentException($"{piece} piece not supported.")
             };
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsWhite(int Piece) => Piece <= WhiteKing;
+        public static bool IsWhite(int piece) => piece <= WhiteKing;
 
 
-        public static int ParseChar(char Character)
+        public static int ParseChar(char character)
         {
-            return Character switch
+            return character switch
             {
                 'P' => WhitePawn,
                 'N' => WhiteKnight,
@@ -97,7 +97,7 @@ namespace ErikTheCoder.MadChess.Engine
                 'r' => BlackRook,
                 'q' => BlackQueen,
                 'k' => BlackKing,
-                _ => throw new ArgumentException($"{Character} character not supported.")
+                _ => throw new ArgumentException($"{character} character not supported.")
             };
         }
     }
