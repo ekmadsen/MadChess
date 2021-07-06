@@ -23,7 +23,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         public Parameters() => _namesToIndices = new Dictionary<string, int>();
 
 
-        public Parameter this[string Name] => this[_namesToIndices[Name]];
+        public Parameter this[string name] => this[_namesToIndices[name]];
 
 
         public Parameters DuplicateWithSameValues()
@@ -42,16 +42,16 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
 
 
-        public void CopyValuesTo(Parameters Parameters)
+        public void CopyValuesTo(Parameters parameters)
         {
-            for (var index = 0; index < Count; index++) Parameters[index].Value = this[index].Value;
+            for (var index = 0; index < Count; index++) parameters[index].Value = this[index].Value;
         }
 
 
-        protected override void InsertItem(int Index, Parameter Parameter)
+        protected override void InsertItem(int index, Parameter parameter)
         {
-            base.InsertItem(Index, Parameter);
-            _namesToIndices[Parameter?.Name ?? string.Empty] = Index;
+            base.InsertItem(index, parameter);
+            _namesToIndices[parameter?.Name ?? string.Empty] = index;
         }
     }
 }

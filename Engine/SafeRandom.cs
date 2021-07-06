@@ -29,11 +29,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
 
-        public static int NextInt(int InclusiveMin, int ExclusiveMax)
+        public static int NextInt(int inclusiveMin, int exclusiveMax)
         {
             lock (_lock)
             {
-                return _random.Next(InclusiveMin, ExclusiveMax);
+                return _random.Next(inclusiveMin, exclusiveMax);
             }
         }
 

@@ -18,32 +18,32 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class PgnGames : List<PgnGame>
     {
-        public void Load(Board Board, string Filename, Delegates.WriteMessageLine WriteMessageLine)
+        public void Load(Board board, string filename, Delegates.WriteMessageLine writeMessageLine)
         {
-            using (var pgnReader = File.OpenText(Filename))
+            using (var pgnReader = File.OpenText(filename))
             {
                 var gameNumber = 1;
                 PgnGame pgnGame;
                 do
                 {
-                    pgnGame = GetNextGame(Board, pgnReader, gameNumber);
+                    pgnGame = GetNextGame(board, pgnReader, gameNumber);
                     if ((pgnGame != null) && (pgnGame.Result != GameResult.Unknown)) Add(pgnGame);
                     gameNumber++;
-                    if ((gameNumber % 1000) == 0) WriteMessageLine($"Loaded {gameNumber:n0} games.");
+                    if ((gameNumber % 1000) == 0) writeMessageLine($"Loaded {gameNumber:n0} games.");
                 } while (pgnGame != null);
             }
             GC.Collect();
         }
 
 
-        private static PgnGame GetNextGame(Board Board, StreamReader PgnReader, int GameNumber)
+        private static PgnGame GetNextGame(Board board, StreamReader pgnReader, int gameNumber)
         {
             const string eventTag = "[Event ";
             const string resultTag = "[Result ";
             const string fenTag = "[FEN ";
-            while (!PgnReader.EndOfStream)
+            while (!pgnReader.EndOfStream)
             {
-                var line = PgnReader.ReadLine();
+                var line = pgnReader.ReadLine();
                 if (line == null) continue;
                 line = line.Trim();
                 if (line.StartsWith(eventTag))
@@ -52,9 +52,9 @@ namespace ErikTheCoder.MadChess.Engine
                     var result = GameResult.Unknown;
                     var stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine(line);
-                    while (!PgnReader.EndOfStream)
+                    while (!pgnReader.EndOfStream)
                     {
-                        line = PgnReader.ReadLine();
+                        line = pgnReader.ReadLine();
                         if (line == null) continue;
                         line = line.Trim();
                         if (line.StartsWith(fenTag)) break; // Skip games that start from non-standard positions.
@@ -77,7 +77,7 @@ namespace ErikTheCoder.MadChess.Engine
                         else if (line.EndsWith("1-0") || line.EndsWith("1/2-1/2") || line.EndsWith("0-1") || line.EndsWith("*"))
                         {
                             // Found end of game.
-                            return new PgnGame(Board, GameNumber, result, stringBuilder.ToString());
+                            return new PgnGame(board, gameNumber, result, stringBuilder.ToString());
                         }
                     }
                 }

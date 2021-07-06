@@ -30,14 +30,14 @@ namespace ErikTheCoder.MadChess.Engine
         private List<string> _longAlgebraicMoves;
         
 
-        public PgnGame(Board Board, int Number, GameResult Result, string Notation)
+        public PgnGame(Board board, int number, GameResult result, string notation)
         {
-            this.Number = Number;
-            this.Result = Result;
-            _notation = Notation;
+            Number = number;
+            Result = result;
+            _notation = notation;
             _buffer = new char[1];
             ParseStandardAlgebraicMoves();
-            UpdateMoves(Board);
+            UpdateMoves(board);
         }
 
 
@@ -103,29 +103,29 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void UpdateMoves(Board Board)
+        private void UpdateMoves(Board board)
         {
             _longAlgebraicMoves = new List<string>(_standardAlgebraicMoves.Count);
             Moves = new List<ulong>(_standardAlgebraicMoves.Count);
-            Board.SetPosition(Board.StartPositionFen);
+            board.SetPosition(Board.StartPositionFen);
             for (var moveIndex = 0; moveIndex < _standardAlgebraicMoves.Count; moveIndex++)
             {
                 var standardAlgebraicMove = _standardAlgebraicMoves[moveIndex];
                 ulong move;
                 try 
                 {
-                    move = Move.ParseStandardAlgebraic(Board, standardAlgebraicMove);
+                    move = Move.ParseStandardAlgebraic(board, standardAlgebraicMove);
                 }
                 catch (Exception exception)
                 {
-                    throw new Exception($"Error updating {standardAlgebraicMove} move in game {Number}.{Environment.NewLine}{Board.CurrentPosition}", exception);
+                    throw new Exception($"Error updating {standardAlgebraicMove} move in game {Number}.{Environment.NewLine}{board.CurrentPosition}", exception);
                 }
                 var longAlgebraicMove = Move.ToLongAlgebraic(move);
                 // Determine if move is legal.
-                if (!Board.IsMoveLegal(ref move)) throw new Exception($"Move {longAlgebraicMove} is illegal in position {Board.CurrentPosition.ToFen()}."); // Move is illegal.
+                if (!board.IsMoveLegal(ref move)) throw new Exception($"Move {longAlgebraicMove} is illegal in position {board.CurrentPosition.ToFen()}."); // Move is illegal.
                 _longAlgebraicMoves.Add(longAlgebraicMove);
                 Moves.Add(move);
-                Board.PlayMove(move);
+                board.PlayMove(move);
             }
             _cleanNotation = null;
             _standardAlgebraicMoves = null;
@@ -133,15 +133,15 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void ReadToSectionEnd(TextReader StringReader, char OpeningChar, char ClosingChar)
+        private void ReadToSectionEnd(TextReader stringReader, char openingChar, char closingChar)
         {
             var sections = 1;
             do
             {
-                var charsRead = StringReader.Read(_buffer, 0, 1);
+                var charsRead = stringReader.Read(_buffer, 0, 1);
                 if (charsRead == 0) break;
-                if (_buffer[0] == OpeningChar) sections++;
-                else if (_buffer[0] == ClosingChar)
+                if (_buffer[0] == openingChar) sections++;
+                else if (_buffer[0] == closingChar)
                 {
                     sections--;
                     if (sections == 0) break;

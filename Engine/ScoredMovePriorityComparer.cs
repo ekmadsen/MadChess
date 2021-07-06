@@ -17,11 +17,11 @@ namespace ErikTheCoder.MadChess.Engine
     public sealed class ScoredMovePriorityComparer : IComparer<ScoredMove>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Compare(ScoredMove Move1, ScoredMove Move2)
+        public int Compare(ScoredMove move1, ScoredMove move2)
         {
             // Sort moves by priority descending.
-            if (Move2.Move > Move1.Move) return 1;
-            return Move2.Move < Move1.Move ? -1 : 0;
+            if (move2.Move > move1.Move) return 1;
+            return move2.Move < move1.Move ? -1 : 0;
         }
     }
 }

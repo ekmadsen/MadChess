@@ -19,12 +19,12 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         private readonly int _winScale;
         
 
-        public ParticleSwarm(PgnGames PgnGames, Parameters Parameters, int Particles, int WinScale)
+        public ParticleSwarm(PgnGames pgnGames, Parameters parameters, int particles, int winScale)
         {
             // Create particles at random locations.
-            this.Particles = new Particles();
-            _winScale = WinScale;
-            for (var particle = 0; particle < Particles; particle++) this.Particles.Add(new Particle(PgnGames, Parameters.DuplicateWithRandomValues()));
+            Particles = new Particles();
+            _winScale = winScale;
+            for (var particle = 0; particle < particles; particle++) Particles.Add(new Particle(pgnGames, parameters.DuplicateWithRandomValues()));
         }
 
 
@@ -40,7 +40,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
 
 
-        public void Iterate(Board Board, Search Search, Evaluation Evaluation)
+        public void Iterate(Board board, Search search, Evaluation evaluation)
         {
             var bestParticle = GetBestParticle();
             for (var index = 0; index < Particles.Count; index++)
@@ -53,19 +53,19 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     Particles[index] = particle;
                 }
                 particle.Move();
-                particle.ConfigureEvaluation(Evaluation);
-                particle.CalculateEvaluationError(Board, Search, _winScale);
+                particle.ConfigureEvaluation(evaluation);
+                particle.CalculateEvaluationError(board, search, _winScale);
             }
         }
 
 
-        public void UpdateVelocity(Particle GloballyBestParticle)
+        public void UpdateVelocity(Particle globallyBestParticle)
         {
             var bestSwarmParticle = GetBestParticle();
             for (var index = 0; index < Particles.Count; index++)
             {
                 var particle = Particles[index];
-                particle.UpdateVelocity(bestSwarmParticle, GloballyBestParticle);
+                particle.UpdateVelocity(bestSwarmParticle, globallyBestParticle);
             }
         }
     }

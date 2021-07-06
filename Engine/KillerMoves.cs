@@ -18,50 +18,50 @@ namespace ErikTheCoder.MadChess.Engine
         private readonly KillerMove[][] _killerMoves;
 
 
-        public KillerMoves(int MaxDepth)
+        public KillerMoves(int maxDepth)
         {
-            _killerMoves = new KillerMove[MaxDepth + 1][];
-            for (var depth = 0; depth <= MaxDepth; depth++) _killerMoves[depth] = new[] {new KillerMove(Piece.None, Square.Illegal), new KillerMove(Piece.None, Square.Illegal)};
+            _killerMoves = new KillerMove[maxDepth + 1][];
+            for (var depth = 0; depth <= maxDepth; depth++) _killerMoves[depth] = new[] {new KillerMove(Piece.None, Square.Illegal), new KillerMove(Piece.None, Square.Illegal)};
         }
 
 
-        public int GetValue(Position Position, int Depth, ulong Move)
+        public int GetValue(Position position, int depth, ulong move)
         {
-            if (Equals(Position, _killerMoves[Depth][0], Move)) return 2;
-            return Equals(Position, _killerMoves[Depth][1], Move) ? 1 : 0;
+            if (Equals(position, _killerMoves[depth][0], move)) return 2;
+            return Equals(position, _killerMoves[depth][1], move) ? 1 : 0;
         }
 
 
-        public void UpdateValue(Position Position, int Depth, ulong Move)
+        public void UpdateValue(Position position, int depth, ulong move)
         {
-            if (Equals(Position, _killerMoves[Depth][0], Move)) return; // Move already is the best killer move.
+            if (Equals(position, _killerMoves[depth][0], move)) return; // Move already is the best killer move.
             // Shift killer move.
-            _killerMoves[Depth][1].Piece = _killerMoves[Depth][0].Piece;
-            _killerMoves[Depth][1].ToSquare = _killerMoves[Depth][0].ToSquare;
+            _killerMoves[depth][1].Piece = _killerMoves[depth][0].Piece;
+            _killerMoves[depth][1].ToSquare = _killerMoves[depth][0].ToSquare;
             // Update killer move.
-            _killerMoves[Depth][0].Piece = Position.GetPiece(Engine.Move.From(Move));
-            _killerMoves[Depth][0].ToSquare = Engine.Move.To(Move);
+            _killerMoves[depth][0].Piece = position.GetPiece(Move.From(move));
+            _killerMoves[depth][0].ToSquare = Move.To(move);
         }
 
 
-        public void Shift(int Depth)
+        public void Shift(int depth)
         {
             // Shift killer moves closer to root position.
-            var lastDepth = _killerMoves.Length - Depth - 1;
-            for (var depth = 0; depth <= lastDepth; depth++)
+            var lastDepth = _killerMoves.Length - depth - 1;
+            for (var depthIndex = 0; depthIndex <= lastDepth; depthIndex++)
             {
-                _killerMoves[depth][0].Piece = _killerMoves[depth + Depth][0].Piece;
-                _killerMoves[depth][0].ToSquare = _killerMoves[depth + Depth][0].ToSquare;
-                _killerMoves[depth][1].Piece = _killerMoves[depth + Depth][1].Piece;
-                _killerMoves[depth][1].ToSquare = _killerMoves[depth + Depth][1].ToSquare;
+                _killerMoves[depthIndex][0].Piece = _killerMoves[depthIndex + depth][0].Piece;
+                _killerMoves[depthIndex][0].ToSquare = _killerMoves[depthIndex + depth][0].ToSquare;
+                _killerMoves[depthIndex][1].Piece = _killerMoves[depthIndex + depth][1].Piece;
+                _killerMoves[depthIndex][1].ToSquare = _killerMoves[depthIndex + depth][1].ToSquare;
             }
             // Reset killer moves far from root position.
-            for (var depth = lastDepth + 1; depth < _killerMoves.Length; depth++)
+            for (var depthIndex = lastDepth + 1; depthIndex < _killerMoves.Length; depthIndex++)
             {
-                _killerMoves[depth][0].Piece = Piece.None;
-                _killerMoves[depth][0].ToSquare = Square.Illegal;
-                _killerMoves[depth][1].Piece = Piece.None;
-                _killerMoves[depth][1].ToSquare = Square.Illegal;
+                _killerMoves[depthIndex][0].Piece = Piece.None;
+                _killerMoves[depthIndex][0].ToSquare = Square.Illegal;
+                _killerMoves[depthIndex][1].Piece = Piece.None;
+                _killerMoves[depthIndex][1].ToSquare = Square.Illegal;
             }
         }
 
@@ -80,6 +80,6 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool Equals(Position Position, KillerMove KillerMove, ulong Move) => (KillerMove.Piece == Position.GetPiece(Engine.Move.From(Move))) && (KillerMove.ToSquare == Engine.Move.To(Move));
+        private static bool Equals(Position position, KillerMove killerMove, ulong move) => (killerMove.Piece == position.GetPiece(Move.From(move))) && (killerMove.ToSquare == Move.To(move));
     }
 }
