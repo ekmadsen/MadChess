@@ -559,7 +559,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetMaterialScore(Position position, int piece)
+        public int GetMaterialScore(Position position, Piece piece)
         {
             int mgMaterial;
             int egMaterial;

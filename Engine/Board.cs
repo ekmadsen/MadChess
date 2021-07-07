@@ -340,10 +340,10 @@ namespace ErikTheCoder.MadChess.Engine
             // Create Zobrist position keys.
             _piecesSquaresInitialKey = SafeRandom.NextULong();
             _pieceSquareKeys = new ulong[13][];
-            for (var piece = 0; piece < 13; piece++)
+            for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
             {
-                _pieceSquareKeys[piece] = new ulong[64];
-                for (var square = 0; square < 64; square++) _pieceSquareKeys[piece][square] = SafeRandom.NextULong();
+                _pieceSquareKeys[(int)piece] = new ulong[64];
+                for (var square = 0; square < 64; square++) _pieceSquareKeys[(int)piece][square] = SafeRandom.NextULong();
             }
             _sideToMoveKeys = new[] { SafeRandom.NextULong(), SafeRandom.NextULong() };
             _castlingKeys = new ulong[16];
@@ -942,7 +942,7 @@ namespace ErikTheCoder.MadChess.Engine
                         var emptySquares = int.Parse(piece.ToString());
                         square += emptySquares - 1;
                     }
-                    else AddPiece(Piece.ParseChar(piece), square);
+                    else AddPiece(PieceHelper.ParseChar(piece), square);
                     square++;
                 }
             }
@@ -976,18 +976,19 @@ namespace ErikTheCoder.MadChess.Engine
             var toSquare = Move.To(move);
             var attacker = CurrentPosition.GetPiece(fromSquare);
             if (attacker == Piece.None) return false; // No piece on from square.
-            var attackerWhite = Piece.IsWhite(attacker);
+            var attackerWhite = PieceHelper.IsWhite(attacker);
             if (CurrentPosition.WhiteMove != attackerWhite) return false; // Piece is wrong color.
             var victim = CurrentPosition.GetPiece(toSquare);
-            if ((victim != Piece.None) && (attackerWhite == Piece.IsWhite(victim))) return false; // Piece cannot attack its own color.
+            if ((victim != Piece.None) && (attackerWhite == PieceHelper.IsWhite(victim))) return false; // Piece cannot attack its own color.
             if ((victim == Piece.WhiteKing) || (victim == Piece.BlackKing)) return false;  // Piece cannot attack king.
             var promotedPiece = Move.PromotedPiece(move);
-            if ((promotedPiece != Piece.None) && (CurrentPosition.WhiteMove != Piece.IsWhite(promotedPiece))) return false; // Promoted piece is wrong color.
+            if ((promotedPiece != Piece.None) && (CurrentPosition.WhiteMove != PieceHelper.IsWhite(promotedPiece))) return false; // Promoted piece is wrong color.
             var distance = SquareDistances[fromSquare][toSquare];
             if (distance > 1)
             {
                 // For sliding pieces, validate to square is reachable and not blocked.
                 ulong betweenSquares;
+                // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
                 switch (attacker)
                 {
                     case Piece.WhiteBishop:
@@ -1017,10 +1018,11 @@ namespace ErikTheCoder.MadChess.Engine
                         if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
                         break;
                 }
+                // ReSharper restore SwitchStatementMissingSomeEnumCasesNoDefault
             }
-            int pawn;
-            int king;
-            int enPassantVictim;
+            Piece pawn;
+            Piece king;
+            Piece enPassantVictim;
             if (CurrentPosition.WhiteMove)
             {
                 // White Move
@@ -1233,7 +1235,7 @@ namespace ErikTheCoder.MadChess.Engine
             var fromSquare = Move.From(move);
             var toSquare = Move.To(move);
             var piece = CurrentPosition.GetPiece(fromSquare);
-            int captureVictim;
+            Piece captureVictim;
             if (Move.IsCastling(move))
             {
                 // Castle
@@ -1315,12 +1317,12 @@ namespace ErikTheCoder.MadChess.Engine
             var fromSquare = Move.From(move);
             var toSquare = Move.To(move);
             var piece = CurrentPosition.GetPiece(fromSquare);
-            int pawn;
-            int king;
+            Piece pawn;
+            Piece king;
             int toRank;
             // EnPassantVictim variable only used in Debug builds.
             // ReSharper disable RedundantAssignment
-            int enPassantVictim;
+            Piece enPassantVictim;
             if (CurrentPosition.WhiteMove)
             {
                 // White Move
@@ -1359,7 +1361,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-        private bool AssertKingIsNotCaptured(int captureVictim, ulong move)
+        private bool AssertKingIsNotCaptured(Piece captureVictim, ulong move)
         {
             if ((captureVictim == Piece.WhiteKing) || (captureVictim == Piece.BlackKing))
             {
@@ -1374,7 +1376,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void Castle(int piece, int toSquare)
+        private void Castle(Piece piece, int toSquare)
         {
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (piece == Piece.WhiteKing)
@@ -1422,7 +1424,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void EnPassantCapture(int piece, int fromSquare)
+        private void EnPassantCapture(Piece piece, int fromSquare)
         {
             // Move pawn and remove captured pawn.
             RemovePiece(_enPassantVictimSquares[CurrentPosition.EnPassantSquare]);
@@ -1496,11 +1498,12 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        private void AddPiece(int piece, int square)
+        private void AddPiece(Piece piece, int square)
         {
             Debug.Assert(piece != Piece.None);
             // Update piece, color, and both color bitboards.
             var squareMask = SquareMasks[square];
+            // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
             switch (piece)
             {
                 case Piece.WhitePawn:
@@ -1552,16 +1555,18 @@ namespace ErikTheCoder.MadChess.Engine
                     CurrentPosition.OccupancyBlack |= squareMask;
                     break;
             }
+            // ReSharper restore SwitchStatementMissingSomeEnumCasesNoDefault
             CurrentPosition.Occupancy |= squareMask;
             UpdatePiecesSquaresKey(piece, square);
         }
 
 
-        private int RemovePiece(int square)
+        private Piece RemovePiece(int square)
         {
             var squareUnmask = _squareUnmasks[square];
             var piece = CurrentPosition.GetPiece(square);
             // Update piece, color, and both color bitboards.
+            // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             switch (piece)
             {
                 case Piece.None:
@@ -1615,6 +1620,7 @@ namespace ErikTheCoder.MadChess.Engine
                     CurrentPosition.OccupancyBlack &= squareUnmask;
                     break;
             }
+            // ReSharper restore SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             CurrentPosition.Occupancy &= squareUnmask;
             UpdatePiecesSquaresKey(piece, square);
             return piece;
@@ -1622,9 +1628,9 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdatePiecesSquaresKey(int piece, int square)
+        private void UpdatePiecesSquaresKey(Piece piece, int square)
         {
-            CurrentPosition.PiecesSquaresKey ^= _pieceSquareKeys[piece][square];
+            CurrentPosition.PiecesSquaresKey ^= _pieceSquareKeys[(int)piece][square];
             Debug.Assert(AssertPiecesSquaresKeyIntegrity());
         }
 
@@ -1646,7 +1652,7 @@ namespace ErikTheCoder.MadChess.Engine
             for (var square = 0; square < 64; square++)
             {
                 var piece = CurrentPosition.GetPiece(square);
-                if (piece != Piece.None) fullyUpdatedPiecesSquaresKey ^= _pieceSquareKeys[piece][square];
+                if (piece != Piece.None) fullyUpdatedPiecesSquaresKey ^= _pieceSquareKeys[(int)piece][square];
             }
             return fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey;
         }

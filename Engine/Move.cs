@@ -172,11 +172,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CaptureVictim(ulong move) => (int)((move & _captureVictimMask) >> _captureVictimShift);
+        public static Piece CaptureVictim(ulong move) => (Piece)((move & _captureVictimMask) >> _captureVictimShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetCaptureVictim(ref ulong move, int captureVictim)
+        public static void SetCaptureVictim(ref ulong move, Piece captureVictim)
         {
             // Clear
             move &= _captureVictimUnmask;
@@ -188,7 +188,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CaptureAttacker(ulong move)
+        public static Piece CaptureAttacker(ulong move)
         {
             // Value is inverted.
             var storedPiece = (int)((move & _captureAttackerMask) >> _captureAttackerShift);
@@ -197,7 +197,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetCaptureAttacker(ref ulong move, int captureAttacker)
+        public static void SetCaptureAttacker(ref ulong move, Piece captureAttacker)
         {
             // Invert piece value so P x Q captures are given a higher priority than Q x Q.
             var storedPiece = (ulong)(Piece.BlackKing - captureAttacker);
@@ -211,11 +211,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PromotedPiece(ulong move) => (int)((move & _promotedPieceMask) >> _promotedPieceShift);
+        public static Piece PromotedPiece(ulong move) => (Piece)((move & _promotedPieceMask) >> _promotedPieceShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetPromotedPiece(ref ulong move, int promotedPiece)
+        public static void SetPromotedPiece(ref ulong move, Piece promotedPiece)
         {
             // Clear
             move &= _promotedPieceUnmask;
@@ -425,7 +425,7 @@ namespace ErikTheCoder.MadChess.Engine
             var toSquare = Board.GetSquare(longAlgebraic.Substring(2, 2));
             // Set case of promoted piece character based on side to move.
             var promotedPiece = longAlgebraic.Length == 5
-                ? Piece.ParseChar(whiteMove ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
+                ? PieceHelper.ParseChar(whiteMove ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
                 : Piece.None;
             var move = Null;
             SetFrom(ref move, fromSquare);
@@ -478,7 +478,7 @@ namespace ErikTheCoder.MadChess.Engine
             var fromFile = -1;
             var fromRank = -1;
             var promotedPiece = Piece.None;
-            int piece;
+            Piece piece;
             int toSquare;
             if (char.IsLower(standardAlgebraicNoCheck, 0))
             {
@@ -498,14 +498,14 @@ namespace ErikTheCoder.MadChess.Engine
                     case 4 when standardAlgebraicNoCheck[2] == '=':
                         // Pawn promotion.  Set case of promoted piece character based on side to move.
                         toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(0, 2));
-                        promotedPiece = Piece.ParseChar(board.CurrentPosition.WhiteMove
+                        promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
                             ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                             : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                         break;
                     case 6:
                         // Pawn promotion with capture.  Set case of promoted piece character based on side to move.
                         toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(2, 2));
-                        promotedPiece = Piece.ParseChar(board.CurrentPosition.WhiteMove
+                        promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
                             ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                             : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                         break;
@@ -516,7 +516,7 @@ namespace ErikTheCoder.MadChess.Engine
             else
             {
                 // Piece Move
-                piece = Piece.ParseChar(board.CurrentPosition.WhiteMove
+                piece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
                     ? char.ToUpper(standardAlgebraicNoCheck[0])
                     : char.ToLower(standardAlgebraicNoCheck[0]));
                 // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -627,13 +627,13 @@ namespace ErikTheCoder.MadChess.Engine
             var fromSquare = From(move);
             var toSquare = To(move);
             var promotedPiece = PromotedPiece(move);
-            return $"{Board.SquareLocations[fromSquare]}{Board.SquareLocations[toSquare]}{(promotedPiece == Piece.None ? string.Empty : Piece.GetChar(promotedPiece).ToString().ToLower())}";
+            return $"{Board.SquareLocations[fromSquare]}{Board.SquareLocations[toSquare]}{(promotedPiece == Piece.None ? string.Empty : PieceHelper.GetChar(promotedPiece).ToString().ToLower())}";
         }
 
 
         public static string ToString(ulong move)
         {
-            return $"{ToLongAlgebraic(move)} (B = {IsBest(move)}, CapV = {Piece.GetChar(CaptureVictim(move))}, CapA = {Piece.GetChar(CaptureAttacker(move))}, Promo = {Piece.GetChar(PromotedPiece(move))}, Kil = {Killer(move)}, " +
+            return $"{ToLongAlgebraic(move)} (B = {IsBest(move)}, CapV = {PieceHelper.GetChar(CaptureVictim(move))}, CapA = {PieceHelper.GetChar(CaptureAttacker(move))}, Promo = {PieceHelper.GetChar(PromotedPiece(move))}, Kil = {Killer(move)}, " +
                    $"! = {Played(move)},  O = {IsCastling(move)}, K = {IsKingMove(move)}, E = {IsEnPassantCapture(move)}, 2 = {IsDoublePawnMove(move)}, P = {IsPawnMove(move)}, C = {IsCheck(move)}, Q = {IsQuiet(move)} " +
                 $"From = {From(move)}, To = {To(move)}";
         }

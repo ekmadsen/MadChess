@@ -207,7 +207,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public void FindMagicMultipliers(int piece, Delegates.WriteMessageLine writeMessageLine = null)
+        public void FindMagicMultipliers(Piece piece, Delegates.WriteMessageLine writeMessageLine = null)
         {
             Direction[] directions;
             ulong[] unoccupiedMoveMasks;
@@ -215,6 +215,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong[] magicMultipliers;
             int[] shifts;
             ulong[][] moveMasks;
+            // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             switch (piece)
             {
                 case Piece.WhiteBishop:
@@ -238,6 +239,7 @@ namespace ErikTheCoder.MadChess.Engine
                 default:
                     throw new ArgumentException($"{piece} piece not supported.");
             }
+            // ReSharper restore SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             // Generate moves mask on each square.
             var occupancyToMovesMask = new Dictionary<ulong, ulong>();
             var uniqueMovesMasks = new HashSet<ulong>();
@@ -273,7 +275,7 @@ namespace ErikTheCoder.MadChess.Engine
                 var magicMultiplier = magicMultipliers[square];
                 if (magicMultiplier == 0) (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
                 else (magicMultipliers[square], moveMasks[square]) = FindMagicMultiplier(occupancyToMovesMask, shift, magicMultiplier);
-                writeMessageLine?.Invoke($"{Board.SquareLocations[square],6}  {Piece.GetName(piece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[square],16:X16}");
+                writeMessageLine?.Invoke($"{Board.SquareLocations[square],6}  {PieceHelper.GetName(piece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[square],16:X16}");
             }
         }
 

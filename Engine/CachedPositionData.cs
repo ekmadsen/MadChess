@@ -125,11 +125,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int BestMovePromotedPiece(ulong cachedPositionData) => (int)((cachedPositionData & _bestMovePromotedPieceMask) >> _bestMovePromotedPieceShift);
+        public static Piece BestMovePromotedPiece(ulong cachedPositionData) => (Piece)((cachedPositionData & _bestMovePromotedPieceMask) >> _bestMovePromotedPieceShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBestMovePromotedPiece(ref ulong cachedPositionData, int bestMovePromotedPiece)
+        public static void SetBestMovePromotedPiece(ref ulong cachedPositionData, Piece bestMovePromotedPiece)
         {
             // Clear
             cachedPositionData &= _bestMovePromotedPieceUnmask;

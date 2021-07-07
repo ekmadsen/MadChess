@@ -59,7 +59,7 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
-        public int GetPiece(int square)
+        public Piece GetPiece(int square)
         {
             var squareMask = Board.SquareMasks[square];
             if ((Occupancy & squareMask) == 0) return Piece.None;
@@ -150,12 +150,12 @@ namespace ErikTheCoder.MadChess.Engine
             ulong enemyOccupiedSquares;
             var unoccupiedSquares = ~Occupancy;
             int[] ranks;
-            int attacker;
-            int queen;
-            int rook;
-            int bishop;
-            int knight;
-            int enPassantVictim;
+            Piece attacker;
+            Piece queen;
+            Piece rook;
+            Piece bishop;
+            Piece knight;
+            Piece enPassantVictim;
             if (WhiteMove)
             {
                 // White Move
@@ -352,7 +352,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong knights;
             ulong unOrEnemyOccupiedSquares;
             ulong enemyOccupiedSquares;
-            int attacker;
+            Piece attacker;
             if (WhiteMove)
             {
                 // White Move
@@ -402,7 +402,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong bishops;
             ulong unOrEnemyOccupiedSquares;
             ulong enemyOccupiedSquares;
-            int attacker;
+            Piece attacker;
             if (WhiteMove)
             {
                 // White Move
@@ -454,7 +454,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong rooks;
             ulong unOrEnemyOccupiedSquares;
             ulong enemyOccupiedSquares;
-            int attacker;
+            Piece attacker;
             if (WhiteMove)
             {
                 // White Move
@@ -506,7 +506,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong queens;
             ulong unOrEnemyOccupiedSquares;
             ulong enemyOccupiedSquares;
-            int attacker;
+            Piece attacker;
             if (WhiteMove)
             {
                 // White Move
@@ -559,7 +559,7 @@ namespace ErikTheCoder.MadChess.Engine
             ulong king;
             ulong unOrEnemyOccupiedSquares;
             ulong enemyOccupiedSquares;
-            int attacker;
+            Piece attacker;
             bool castleQueenside;
             ulong castleQueensideMask;
             bool castleKingside;
@@ -815,7 +815,7 @@ namespace ErikTheCoder.MadChess.Engine
                         stringBuilder.Append(unoccupiedSquares);
                         unoccupiedSquares = 0;
                     }
-                    stringBuilder.Append(Piece.GetChar(piece));
+                    stringBuilder.Append(PieceHelper.GetChar(piece));
                 }
             }
             // Display side to move, castling rights, en passant square, ply, and full move number.
@@ -865,7 +865,7 @@ namespace ErikTheCoder.MadChess.Engine
                     stringBuilder.Append("| ");
                     var piece = GetPiece(square);
                     if (piece == Piece.None) stringBuilder.Append(" ");
-                    else stringBuilder.Append(Piece.GetChar(piece));
+                    else stringBuilder.Append(PieceHelper.GetChar(piece));
                     stringBuilder.Append(" ");
                     square++;
                 }

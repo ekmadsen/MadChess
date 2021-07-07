@@ -28,11 +28,11 @@ namespace ErikTheCoder.MadChess.Engine
 
         public MoveHistory()
         {
-            _moveHistory = new int[Piece.BlackKing + 1][];
+            _moveHistory = new int[(int)Piece.BlackKing + 1][];
             for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
             {
-                _moveHistory[piece] = new int[64];
-                for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = 0;
+                _moveHistory[(int)piece] = new int[64];
+                for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[(int)piece][toSquare] = 0;
             }
         }
 
@@ -42,7 +42,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             var piece = position.GetPiece(Move.From(move));
             var toSquare = Move.To(move);
-            return _moveHistory[piece][toSquare];
+            return _moveHistory[(int)piece][toSquare];
         }
 
 
@@ -53,9 +53,9 @@ namespace ErikTheCoder.MadChess.Engine
             // This function approaches an asymptotic limit of +/- MaxValue.
             var piece = position.GetPiece(Move.From(move));
             var toSquare = Move.To(move);
-            var value = _moveHistory[piece][toSquare];
+            var value = _moveHistory[(int)piece][toSquare];
             value += (increment * _multiplier) - ((value * Math.Abs(increment)) / _divisor);
-            _moveHistory[piece][toSquare] = value;
+            _moveHistory[(int)piece][toSquare] = value;
         }
 
 
@@ -63,7 +63,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
             {
-                for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[piece][toSquare] = 0;
+                for (var toSquare = 0; toSquare < 64; toSquare++) _moveHistory[(int)piece][toSquare] = 0;
             }
         }
     }
