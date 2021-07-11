@@ -172,11 +172,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CaptureVictim(ulong move) => (int)((move & _captureVictimMask) >> _captureVictimShift);
+        public static Piece CaptureVictim(ulong move) => (Piece)((move & _captureVictimMask) >> _captureVictimShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetCaptureVictim(ref ulong move, int captureVictim)
+        public static void SetCaptureVictim(ref ulong move, Piece captureVictim)
         {
             // Clear
             move &= _captureVictimUnmask;
@@ -188,7 +188,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CaptureAttacker(ulong move)
+        public static Piece CaptureAttacker(ulong move)
         {
             // Value is inverted.
             var storedPiece = (int)((move & _captureAttackerMask) >> _captureAttackerShift);
@@ -197,7 +197,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetCaptureAttacker(ref ulong move, int captureAttacker)
+        public static void SetCaptureAttacker(ref ulong move, Piece captureAttacker)
         {
             // Invert piece value so P x Q captures are given a higher priority than Q x Q.
             var storedPiece = (ulong)(Piece.BlackKing - captureAttacker);
@@ -211,11 +211,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PromotedPiece(ulong move) => (int)((move & _promotedPieceMask) >> _promotedPieceShift);
+        public static Piece PromotedPiece(ulong move) => (Piece)((move & _promotedPieceMask) >> _promotedPieceShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetPromotedPiece(ref ulong move, int promotedPiece)
+        public static void SetPromotedPiece(ref ulong move, Piece promotedPiece)
         {
             // Clear
             move &= _promotedPieceUnmask;
@@ -384,11 +384,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int From(ulong move) => (int)((move & _fromMask) >> _fromShift);
+        public static Square From(ulong move) => (Square)((move & _fromMask) >> _fromShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetFrom(ref ulong move, int from)
+        public static void SetFrom(ref ulong move, Square from)
         {
             // Clear
             move &= _fromUnmask;
@@ -400,11 +400,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int To(ulong move) => (int)(move & _toMask);
+        public static Square To(ulong move) => (Square)(move & _toMask);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetTo(ref ulong move, int to)
+        public static void SetTo(ref ulong move, Square to)
         {
             // Clear
             move &= _toUnmask;
@@ -425,7 +425,7 @@ namespace ErikTheCoder.MadChess.Engine
             var toSquare = Board.GetSquare(longAlgebraic.Substring(2, 2));
             // Set case of promoted piece character based on side to move.
             var promotedPiece = longAlgebraic.Length == 5
-                ? Piece.ParseChar(whiteMove ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
+                ? PieceHelper.ParseChar(whiteMove ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
                 : Piece.None;
             var move = Null;
             SetFrom(ref move, fromSquare);
@@ -448,14 +448,14 @@ namespace ErikTheCoder.MadChess.Engine
                     if (board.CurrentPosition.WhiteMove)
                     {
                         // White Castle Queenside
-                        SetFrom(ref move, Square.e1);
-                        SetTo(ref move, Square.c1);
+                        SetFrom(ref move, Square.E1);
+                        SetTo(ref move, Square.C1);
                         if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                         return move;
                     }
                     // Black Castle Queenside
-                    SetFrom(ref move, Square.e8);
-                    SetTo(ref move, Square.c8);
+                    SetFrom(ref move, Square.E8);
+                    SetTo(ref move, Square.C8);
                     if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                     return move;
                 case "O-O":
@@ -463,14 +463,14 @@ namespace ErikTheCoder.MadChess.Engine
                     if (board.CurrentPosition.WhiteMove)
                     {
                         // White Castle Kingside
-                        SetFrom(ref move, Square.e1);
-                        SetTo(ref move, Square.g1);
+                        SetFrom(ref move, Square.E1);
+                        SetTo(ref move, Square.G1);
                         if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                         return move;
                     }
                     // Black Castle Kingside
-                    SetFrom(ref move, Square.e8);
-                    SetTo(ref move, Square.g8);
+                    SetFrom(ref move, Square.E8);
+                    SetTo(ref move, Square.G8);
                     if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                     return move;
             }
@@ -478,13 +478,13 @@ namespace ErikTheCoder.MadChess.Engine
             var fromFile = -1;
             var fromRank = -1;
             var promotedPiece = Piece.None;
-            int piece;
-            int toSquare;
+            Piece piece;
+            Square toSquare;
             if (char.IsLower(standardAlgebraicNoCheck, 0))
             {
                 // Pawn Move
                 piece = board.CurrentPosition.WhiteMove ? Piece.WhitePawn : Piece.BlackPawn;
-                fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[0]}1")];
+                fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[0]}1")];
                 switch (length)
                 {
                     case 2:
@@ -498,14 +498,14 @@ namespace ErikTheCoder.MadChess.Engine
                     case 4 when standardAlgebraicNoCheck[2] == '=':
                         // Pawn promotion.  Set case of promoted piece character based on side to move.
                         toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(0, 2));
-                        promotedPiece = Piece.ParseChar(board.CurrentPosition.WhiteMove
+                        promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
                             ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                             : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                         break;
                     case 6:
                         // Pawn promotion with capture.  Set case of promoted piece character based on side to move.
                         toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(2, 2));
-                        promotedPiece = Piece.ParseChar(board.CurrentPosition.WhiteMove
+                        promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
                             ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                             : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                         break;
@@ -516,7 +516,7 @@ namespace ErikTheCoder.MadChess.Engine
             else
             {
                 // Piece Move
-                piece = Piece.ParseChar(board.CurrentPosition.WhiteMove
+                piece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
                     ? char.ToUpper(standardAlgebraicNoCheck[0])
                     : char.ToLower(standardAlgebraicNoCheck[0]));
                 // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -531,16 +531,16 @@ namespace ErikTheCoder.MadChess.Engine
                     // Piece Capture with Disambiguation
                     var square = standardAlgebraicNoCheck.Substring(3, 2);
                     toSquare = Board.GetSquare(square);
-                    if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
-                    else fromRank = Board.WhiteRanks[Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
+                    if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
+                    else fromRank = Board.WhiteRanks[(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
                 }
                 else if ((length > 3) && (standardAlgebraicNoCheck[3] == 'x'))
                 {
                     // Piece Capture with From Square Specified
                     var square = standardAlgebraicNoCheck.Substring(4, 2);
                     toSquare = Board.GetSquare(square);
-                    fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
-                    fromRank = Board.WhiteRanks[Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
+                    fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
+                    fromRank = Board.WhiteRanks[(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
                 }
                 else if (length == 3)
                 {
@@ -553,16 +553,16 @@ namespace ErikTheCoder.MadChess.Engine
                     // Piece Move with Disambiguation
                     var square = standardAlgebraicNoCheck.Substring(2, 2);
                     toSquare = Board.GetSquare(square);
-                    if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
-                    else fromRank = Board.WhiteRanks[Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
+                    if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
+                    else fromRank = Board.WhiteRanks[(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
                 }
                 else if (length == 5)
                 {
                     // Piece Move with From Square Specified
                     var square = standardAlgebraicNoCheck.Substring(3, 2);
                     toSquare = Board.GetSquare(square);
-                    fromFile = Board.Files[Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
-                    fromRank = Board.WhiteRanks[Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
+                    fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
+                    fromRank = Board.WhiteRanks[(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
                 }
                 else throw new Exception($"{standardAlgebraic} move not supported.");
             }
@@ -580,14 +580,14 @@ namespace ErikTheCoder.MadChess.Engine
                 if (fromFile >= 0)
                 {
                     // Piece disambiguated by file.
-                    var moveFromFile = Board.Files[From(move)];
+                    var moveFromFile = Board.Files[(int)From(move)];
                     if (moveFromFile != fromFile) continue; // Wrong File
                 }
                 if (fromRank >= 0)
                 {
                     // Piece disambiguated by rank.
                     // Use white ranks regardless of side to move.
-                    var moveFromRank = Board.WhiteRanks[From(move)];
+                    var moveFromRank = Board.WhiteRanks[(int)From(move)];
                     if (moveFromRank != fromRank) continue; // Wrong Rank
                 }
                 if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
@@ -613,9 +613,9 @@ namespace ErikTheCoder.MadChess.Engine
             Debug.Assert(PromotedPiece(move) != Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Piece.BlackKing}");
             Debug.Assert(Killer(move) >= 0, $"Killer(Move) = {Killer(move)}");
             Debug.Assert(Killer(move) <= 2, $"Killer(Move) = {Killer(move)}");
-            Debug.Assert(From(move) >= Square.a8, $"From(Move) = {From(move)}");
+            Debug.Assert(From(move) >= Square.A8, $"From(Move) = {From(move)}");
             Debug.Assert(From(move) <= Square.Illegal, $"From(Move) = {From(move)}");
-            Debug.Assert(To(move) >= Square.a8, $"To(Move) = {To(move)}");
+            Debug.Assert(To(move) >= Square.A8, $"To(Move) = {To(move)}");
             Debug.Assert(To(move) <= Square.Illegal, $"To(Move) = {To(move)}");
             return true;
         }
@@ -627,13 +627,13 @@ namespace ErikTheCoder.MadChess.Engine
             var fromSquare = From(move);
             var toSquare = To(move);
             var promotedPiece = PromotedPiece(move);
-            return $"{Board.SquareLocations[fromSquare]}{Board.SquareLocations[toSquare]}{(promotedPiece == Piece.None ? string.Empty : Piece.GetChar(promotedPiece).ToString().ToLower())}";
+            return $"{Board.SquareLocations[(int)fromSquare]}{Board.SquareLocations[(int)toSquare]}{(promotedPiece == Piece.None ? string.Empty : PieceHelper.GetChar(promotedPiece).ToString().ToLower())}";
         }
 
 
         public static string ToString(ulong move)
         {
-            return $"{ToLongAlgebraic(move)} (B = {IsBest(move)}, CapV = {Piece.GetChar(CaptureVictim(move))}, CapA = {Piece.GetChar(CaptureAttacker(move))}, Promo = {Piece.GetChar(PromotedPiece(move))}, Kil = {Killer(move)}, " +
+            return $"{ToLongAlgebraic(move)} (B = {IsBest(move)}, CapV = {PieceHelper.GetChar(CaptureVictim(move))}, CapA = {PieceHelper.GetChar(CaptureAttacker(move))}, Promo = {PieceHelper.GetChar(PromotedPiece(move))}, Kil = {Killer(move)}, " +
                    $"! = {Played(move)},  O = {IsCastling(move)}, K = {IsKingMove(move)}, E = {IsEnPassantCapture(move)}, 2 = {IsDoublePawnMove(move)}, P = {IsPawnMove(move)}, C = {IsCheck(move)}, Q = {IsQuiet(move)} " +
                 $"From = {From(move)}, To = {To(move)}";
         }

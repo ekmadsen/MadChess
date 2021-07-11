@@ -12,11 +12,11 @@ namespace ErikTheCoder.MadChess.Engine
 {
     public sealed class KillerMove
     {
-        public int Piece;
-        public int ToSquare;
+        public Piece Piece;
+        public Square ToSquare;
 
 
-        public KillerMove(int piece, int toSquare)
+        public KillerMove(Piece piece, Square toSquare)
         {
             Piece = piece;
             ToSquare = toSquare;
