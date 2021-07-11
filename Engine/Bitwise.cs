@@ -14,7 +14,7 @@ using System.Linq;
 using System.Runtime.CompilerServices; // Use LINQ only for Debug.Asserts.
 using System.Text;
 #if POPCOUNT
-using System.Runtime.Intrinsics.X86;
+using System.Numerics;
 #endif
 
 
@@ -84,6 +84,9 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        public static ulong CreateULongMask(Square square) => 1ul << (int)square;
+
+
         public static ulong CreateULongMask(int leastSignificantBit, int mostSignificantBit)
         {
             Debug.Assert((leastSignificantBit) >= 0 && (leastSignificantBit < _longBits));
@@ -100,6 +103,14 @@ namespace ErikTheCoder.MadChess.Engine
             var mask = 0ul;
             for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
             Debug.Assert(indices.All(index => (index >= 0) && (index < _longBits)));
+            return mask;
+        }
+
+
+        public static ulong CreateULongMask(Square[] squares)
+        {
+            var mask = 0ul;
+            for (var index = 0; index < squares.Length; index++) SetBit(ref mask, squares[index]);
             return mask;
         }
 
@@ -134,19 +145,15 @@ namespace ErikTheCoder.MadChess.Engine
         }
 
 
+        public static ulong CreateULongUnmask(Square square) => ~CreateULongMask(square);
+
+
         public static ulong CreateULongUnmask(int leastSignificantBit, int mostSignificantBit)
         {
             Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < _longBits));
             Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _longBits));
             Debug.Assert(leastSignificantBit <= mostSignificantBit);
             return ~CreateULongMask(leastSignificantBit, mostSignificantBit);
-        }
-
-
-        public static ulong CreateULongUnMask(int[] indices)
-        {
-            Debug.Assert(indices.All(index => (index >= 0) && (index < _longBits)));
-            return ~CreateULongMask(indices);
         }
 
 
@@ -160,11 +167,15 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBit(ref ulong value, int index)
+        private static void SetBit(ref ulong value, int index)
         {
             Debug.Assert((index >= 0) && (index < _longBits));
             value |= 1ul << index;
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SetBit(ref ulong value, Square square) => value |= 1ul << (int)square;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -176,11 +187,13 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ClearBit(ref ulong value, int index)
+        private static void ClearBit(ref ulong value, int index)
         {
             Debug.Assert((index >= 0) && (index < _longBits));
             value &= ~(1ul << index);
         }
+
+        public static void ClearBit(ref ulong value, Square square) => value &= ~(1ul << (int)square);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -209,16 +222,20 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsBitSet(ulong value, int index)
+        private static bool IsBitSet(ulong value, int index)
         {
             Debug.Assert((index >= 0) && (index < _longBits));
             return (value & (1ul << index)) > 0;
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsBitSet(ulong value, Square square) => (value & (1ul << (int)square)) > 0;
+
+
 #if POPCOUNT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(uint value) => (int) Popcnt.PopCount(value);
+        public static int CountSetBits(uint value) => BitOperations.PopCount(value);
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(uint Value)
@@ -237,7 +254,7 @@ namespace ErikTheCoder.MadChess.Engine
 
 #if POPCOUNT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(ulong value) => (int) Popcnt.X64.PopCount(value);
+        public static int CountSetBits(ulong value) => BitOperations.PopCount(value);
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountSetBits(ulong Value)
@@ -256,13 +273,13 @@ namespace ErikTheCoder.MadChess.Engine
 
 #if POPCOUNT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int FindFirstSetBit(ulong value) => value == 0 ? Square.Illegal : _longBits - (int) Lzcnt.X64.LeadingZeroCount(value) - 1;
+        public static Square FirstSetSquare(ulong value) => value == 0 ? Square.Illegal : (Square)BitOperations.TrailingZeroCount(value);
 #else
         // See https://stackoverflow.com/questions/37083402/fastest-way-to-get-last-significant-bit-position-in-a-ulong-c
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int FindFirstSetBit(ulong Value)
+        public static Square FirstSetSquare(ulong Value)
         {
-            return Value == 0 ? Square.Illegal : _multiplyDeBruijnBitPosition[((ulong)((long)Value & -(long)Value) * _deBruijnSequence) >> 58];
+            return Value == 0 ? Square.Illegal : (Square)_multiplyDeBruijnBitPosition[((ulong)((long)Value & -(long)Value) * _deBruijnSequence) >> 58];
         }
 #endif
 

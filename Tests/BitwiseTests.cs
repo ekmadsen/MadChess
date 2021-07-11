@@ -34,18 +34,18 @@ namespace ErikTheCoder.MadChess.Tests
             // King on e8.
             var uciStream = new UciStream();
             var square = "e8";
-            var mask = Board.InnerRingMasks[Board.GetSquare(square)];
+            var mask = Board.InnerRingMasks[(int)Board.GetSquare(square)];
             uciStream.WriteMessageLine($"King on {square} inner ring mask = ");
             uciStream.WriteMessageLine(Position.ToString(mask));
-            mask = Board.OuterRingMasks[Board.GetSquare(square)];
+            mask = Board.OuterRingMasks[(int)Board.GetSquare(square)];
             uciStream.WriteMessageLine($"King on {square} outer ring mask = ");
             uciStream.WriteMessageLine(Position.ToString(mask));
             // King on c3.
             square = "c3";
-            mask = Board.InnerRingMasks[Board.GetSquare(square)];
+            mask = Board.InnerRingMasks[(int)Board.GetSquare(square)];
             uciStream.WriteMessageLine($"King on {square} inner ring mask = ");
             uciStream.WriteMessageLine(Position.ToString(mask));
-            mask = Board.OuterRingMasks[Board.GetSquare(square)];
+            mask = Board.OuterRingMasks[(int)Board.GetSquare(square)];
             uciStream.WriteMessageLine($"King on {square} outer ring mask = ");
             uciStream.WriteMessageLine(Position.ToString(mask));
         }

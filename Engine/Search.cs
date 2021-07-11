@@ -750,7 +750,7 @@ namespace ErikTheCoder.MadChess.Engine
         {
             var (scoreBeforeMove, _) = _getExchangeMaterialScore(board.CurrentPosition);
             board.PlayMove(move);
-            var scoreAfterMove = -GetQuietScore(board, 0, 0, Board.SquareMasks[Move.To(move)], -StaticScore.Max, StaticScore.Max, _getExchangeMaterialScore, false);
+            var scoreAfterMove = -GetQuietScore(board, 0, 0, Board.SquareMasks[(int)Move.To(move)], -StaticScore.Max, StaticScore.Max, _getExchangeMaterialScore, false);
             board.UndoMove();
             return scoreAfterMove - scoreBeforeMove;
         }
@@ -794,7 +794,7 @@ namespace ErikTheCoder.MadChess.Engine
                     var lastMoveToSquare = Move.To(board.PreviousPosition.PlayedMove);
                     moveGenerationToSquareMask = lastMoveToSquare == Square.Illegal
                         ? toSquareMask
-                        : Board.SquareMasks[lastMoveToSquare]; // Search only recaptures.
+                        : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
                 }
                 else moveGenerationToSquareMask = toSquareMask;
                 // ReSharper disable PossibleNullReferenceException
@@ -1015,7 +1015,7 @@ namespace ErikTheCoder.MadChess.Engine
             if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return false; // Killer move, pawn promotion, or castling is not futile.
             if (Move.IsPawnMove(move))
             {
-                var rank = board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Move.To(move)] : Board.BlackRanks[Move.To(move)];
+                var rank = board.CurrentPosition.WhiteMove ? Board.WhiteRanks[(int)Move.To(move)] : Board.BlackRanks[(int)Move.To(move)];
                 if (rank >= 6) return false; // Pawn push to 7th rank is not futile.
             }
             // Count pawns and pieces (but don't include kings).
@@ -1048,7 +1048,7 @@ namespace ErikTheCoder.MadChess.Engine
             if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return horizon; // Do not reduce killer move, pawn promotion, or castling.
             if (Move.IsPawnMove(move))
             {
-                var rank = board.CurrentPosition.WhiteMove ? Board.WhiteRanks[Move.To(move)] : Board.BlackRanks[Move.To(move)];
+                var rank = board.CurrentPosition.WhiteMove ? Board.WhiteRanks[(int)Move.To(move)] : Board.BlackRanks[(int)Move.To(move)];
                 if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
             }
             // Count pawns and pieces (but don't include kings).

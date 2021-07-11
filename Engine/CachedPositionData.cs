@@ -93,11 +93,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int BestMoveFrom(ulong cachedPositionData) => (int)((cachedPositionData & _bestMoveFromMask) >> _bestMoveFromShift);
+        public static Square BestMoveFrom(ulong cachedPositionData) => (Square)((cachedPositionData & _bestMoveFromMask) >> _bestMoveFromShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBestMoveFrom(ref ulong cachedPositionData, int bestMoveFrom)
+        public static void SetBestMoveFrom(ref ulong cachedPositionData, Square bestMoveFrom)
         {
             // Clear
             cachedPositionData &= _bestMoveFromUnmask;
@@ -109,11 +109,11 @@ namespace ErikTheCoder.MadChess.Engine
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int BestMoveTo(ulong cachedPositionData) => (int)((cachedPositionData & _bestMoveToMask) >> _bestMoveToShift);
+        public static Square BestMoveTo(ulong cachedPositionData) => (Square)((cachedPositionData & _bestMoveToMask) >> _bestMoveToShift);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetBestMoveTo(ref ulong cachedPositionData, int bestMoveTo)
+        public static void SetBestMoveTo(ref ulong cachedPositionData, Square bestMoveTo)
         {
             // Clear
             cachedPositionData &= _bestMoveToUnmask;
