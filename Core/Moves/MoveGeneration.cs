@@ -8,12 +8,12 @@
 // +------------------------------------------------------------------------------+
 
 
-using System.Collections.Generic;
-
-
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Core.Moves
 {
-    public sealed class Particles : List<Particle>
+    public enum MoveGeneration
     {
+        AllMoves,
+        OnlyCaptures,
+        OnlyNonCaptures
     }
 }

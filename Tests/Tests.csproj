@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<AssemblyTitle>MadChess.Tests</AssemblyTitle>
-		<AssemblyName>ErikTheCoder.MadChess.Tests</AssemblyName>
+		<AssemblyName>MadChess.Tests</AssemblyName>
 		<Version>3.0</Version>
 		<Authors>Erik Madsen</Authors>
 		<Description>Tests for a UCI chess engine.</Description>
@@ -47,7 +47,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Engine\Engine.csproj" />
+		<ProjectReference Include="..\Core\Core.csproj" />
 	</ItemGroup>
 
 </Project>

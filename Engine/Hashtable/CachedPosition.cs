@@ -8,12 +8,18 @@
 // +------------------------------------------------------------------------------+
 
 
-using System.Collections.Generic;
-
-
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Hashtable
 {
-    public sealed class Particles : List<Particle>
+    public struct CachedPosition
     {
+        public ulong Key;
+        public ulong Data;
+
+
+        public CachedPosition(ulong key, ulong data)
+        {
+            Key = key;
+            Data = data;
+        }
     }
 }

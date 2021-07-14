@@ -9,11 +9,20 @@
 
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Intelligence
 {
-    public sealed class Particles : List<Particle>
+    public sealed class MovePriorityComparer : IComparer<ulong>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Compare(ulong move1, ulong move2)
+        {
+            // Sort moves by priority descending.
+            if (move2 > move1) return 1;
+            return move2 < move1 ? -1 : 0;
+        }
     }
 }
+

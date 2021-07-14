@@ -8,12 +8,13 @@
 // +------------------------------------------------------------------------------+
 
 
-using System.Collections.Generic;
-
-
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Core.Game
 {
-    public sealed class Particles : List<Particle>
+    public enum GameResult
     {
+        Unknown,
+        WhiteWon,
+        Draw,
+        BlackWon
     }
 }

@@ -1,6 +1,6 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2021.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -11,6 +11,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Engine.Evaluation;
+using ErikTheCoder.MadChess.Engine.Hashtable;
+using ErikTheCoder.MadChess.Engine.Heuristics;
+using ErikTheCoder.MadChess.Engine.Intelligence;
+using ErikTheCoder.MadChess.Engine.Uci;
 
 
 namespace ErikTheCoder.MadChess.Engine.Tuning
@@ -19,12 +25,12 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
     {
         public const double Influence = 0.375d;
         private readonly Delegates.DisplayStats _displayStats;
-        private readonly Delegates.WriteMessageLine _writeMessageLine;
+        private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
         private readonly double _originalEvaluationError;
         private int _iterations;
 
 
-        public ParticleSwarms(string pgnFilename, int particleSwarms, int particlesPerSwarm, int winScale, Delegates.DisplayStats displayStats, Delegates.WriteMessageLine writeMessageLine)
+        public ParticleSwarms(string pgnFilename, int particleSwarms, int particlesPerSwarm, int winScale, Delegates.DisplayStats displayStats, Core.Delegates.WriteMessageLine writeMessageLine)
         {
             _displayStats = displayStats;
             _writeMessageLine = writeMessageLine;
@@ -32,7 +38,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             writeMessageLine("Loading games.");
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-            var board = new Board(writeMessageLine);
+            var board = new Board(writeMessageLine, UciStream.NodesInfoInterval);
             var pgnGames = new PgnGames();
             pgnGames.Load(board, pgnFilename, writeMessageLine);
             stopwatch.Stop();
@@ -60,8 +66,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             var cache = new Cache(1, stats, board.ValidateMove);
             var killerMoves = new KillerMoves(Search.MaxHorizon);
             var moveHistory = new MoveHistory();
-            var evaluation = new Evaluation(stats, board.IsRepeatPosition, () => false, writeMessageLine);
-            var search = new Search(stats, cache, killerMoves, moveHistory, evaluation, () => false, displayStats, writeMessageLine);
+            var eval = new Eval(stats, board.IsRepeatPosition, () => false, writeMessageLine);
+            var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, displayStats, writeMessageLine);
             var firstParticleInFirstSwarm = this[0].Particles[0];
             firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
             _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
@@ -84,176 +90,176 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
 
         public static Parameters CreateParameters()
         {
-            var evaluationConfig = new EvaluationConfig();
+            var evalConfig = new EvalConfig();
             return new Parameters
             {
                 // Endgame Material
-                new(nameof(EvaluationConfig.EgKnightMaterial), evaluationConfig.MgKnightMaterial, evaluationConfig.MgKnightMaterial + 200),
-                new(nameof(EvaluationConfig.EgBishopMaterial), evaluationConfig.MgBishopMaterial, evaluationConfig.MgBishopMaterial + 300),
-                new(nameof(EvaluationConfig.EgRookMaterial), evaluationConfig.MgRookMaterial, evaluationConfig.MgRookMaterial + 400),
-                new(nameof(EvaluationConfig.EgQueenMaterial), evaluationConfig.MgQueenMaterial, evaluationConfig.MgQueenMaterial + 600), 
+                new(nameof(evalConfig.EgKnightMaterial), evalConfig.MgKnightMaterial, evalConfig.MgKnightMaterial + 200),
+                new(nameof(evalConfig.EgBishopMaterial), evalConfig.MgBishopMaterial, evalConfig.MgBishopMaterial + 300),
+                new(nameof(evalConfig.EgRookMaterial), evalConfig.MgRookMaterial, evalConfig.MgRookMaterial + 400),
+                new(nameof(evalConfig.EgQueenMaterial), evalConfig.MgQueenMaterial, evalConfig.MgQueenMaterial + 600), 
                 // Pawn Location
-                new(nameof(EvaluationConfig.MgPawnAdvancement), 0, 25),
-                new(nameof(EvaluationConfig.EgPawnAdvancement), 0, 25),
-                new(nameof(EvaluationConfig.MgPawnCentrality), 0, 25),
-                new(nameof(EvaluationConfig.EgPawnCentrality), -25, 25),
+                new(nameof(evalConfig.MgPawnAdvancement), 0, 25),
+                new(nameof(evalConfig.EgPawnAdvancement), 0, 25),
+                new(nameof(evalConfig.MgPawnCentrality), 0, 25),
+                new(nameof(evalConfig.EgPawnCentrality), -25, 25),
                 // Knight Location
-                new(nameof(EvaluationConfig.MgKnightAdvancement), -25, 25),
-                new(nameof(EvaluationConfig.EgKnightAdvancement), 0, 50),
-                new(nameof(EvaluationConfig.MgKnightCentrality), 0, 25),
-                new(nameof(EvaluationConfig.EgKnightCentrality), 0, 50),
-                new(nameof(EvaluationConfig.MgKnightCorner), -25, 0),
-                new(nameof(EvaluationConfig.EgKnightCorner), -50, 0),
+                new(nameof(evalConfig.MgKnightAdvancement), -25, 25),
+                new(nameof(evalConfig.EgKnightAdvancement), 0, 50),
+                new(nameof(evalConfig.MgKnightCentrality), 0, 25),
+                new(nameof(evalConfig.EgKnightCentrality), 0, 50),
+                new(nameof(evalConfig.MgKnightCorner), -25, 0),
+                new(nameof(evalConfig.EgKnightCorner), -50, 0),
                 // Bishop Location
-                new(nameof(EvaluationConfig.MgBishopAdvancement), -25, 25),
-                new(nameof(EvaluationConfig.EgBishopAdvancement), 0, 50),
-                new(nameof(EvaluationConfig.MgBishopCentrality), 0, 25),
-                new(nameof(EvaluationConfig.EgBishopCentrality), 0, 25),
-                new(nameof(EvaluationConfig.MgBishopCorner), -25, 0),
-                new(nameof(EvaluationConfig.EgBishopCorner), -50, 0),
+                new(nameof(evalConfig.MgBishopAdvancement), -25, 25),
+                new(nameof(evalConfig.EgBishopAdvancement), 0, 50),
+                new(nameof(evalConfig.MgBishopCentrality), 0, 25),
+                new(nameof(evalConfig.EgBishopCentrality), 0, 25),
+                new(nameof(evalConfig.MgBishopCorner), -25, 0),
+                new(nameof(evalConfig.EgBishopCorner), -50, 0),
                 // Rook Location
-                new(nameof(EvaluationConfig.MgRookAdvancement), -25, 25),
-                new(nameof(EvaluationConfig.EgRookAdvancement), 0, 50),
-                new(nameof(EvaluationConfig.MgRookCentrality), 0, 25),
-                new(nameof(EvaluationConfig.EgRookCentrality), -25, 25),
-                new(nameof(EvaluationConfig.MgRookCorner), -25, 0),
-                new(nameof(EvaluationConfig.EgRookCorner), -25, 25),
+                new(nameof(evalConfig.MgRookAdvancement), -25, 25),
+                new(nameof(evalConfig.EgRookAdvancement), 0, 50),
+                new(nameof(evalConfig.MgRookCentrality), 0, 25),
+                new(nameof(evalConfig.EgRookCentrality), -25, 25),
+                new(nameof(evalConfig.MgRookCorner), -25, 0),
+                new(nameof(evalConfig.EgRookCorner), -25, 25),
                 // Queen Location
-                new(nameof(EvaluationConfig.MgQueenAdvancement), -25, 25),
-                new(nameof(EvaluationConfig.EgQueenAdvancement), 0, 50),
-                new(nameof(EvaluationConfig.MgQueenCentrality), 0, 25),
-                new(nameof(EvaluationConfig.EgQueenCentrality), -25, 25),
-                new(nameof(EvaluationConfig.MgQueenCorner), -25, 0),
-                new(nameof(EvaluationConfig.EgQueenCorner), -25, 25),
+                new(nameof(evalConfig.MgQueenAdvancement), -25, 25),
+                new(nameof(evalConfig.EgQueenAdvancement), 0, 50),
+                new(nameof(evalConfig.MgQueenCentrality), 0, 25),
+                new(nameof(evalConfig.EgQueenCentrality), -25, 25),
+                new(nameof(evalConfig.MgQueenCorner), -25, 0),
+                new(nameof(evalConfig.EgQueenCorner), -25, 25),
                 // King Location
-                new(nameof(EvaluationConfig.MgKingAdvancement), -50, 0),
-                new(nameof(EvaluationConfig.EgKingAdvancement), 0, 50),
-                new(nameof(EvaluationConfig.MgKingCentrality), -50, 0),
-                new(nameof(EvaluationConfig.EgKingCentrality), 0, 50),
-                new(nameof(EvaluationConfig.MgKingCorner), 0, 50),
-                new(nameof(EvaluationConfig.EgKingCorner), -50, 0),
+                new(nameof(evalConfig.MgKingAdvancement), -50, 0),
+                new(nameof(evalConfig.EgKingAdvancement), 0, 50),
+                new(nameof(evalConfig.MgKingCentrality), -50, 0),
+                new(nameof(evalConfig.EgKingCentrality), 0, 50),
+                new(nameof(evalConfig.MgKingCorner), 0, 50),
+                new(nameof(evalConfig.EgKingCorner), -50, 0),
                 // Passed Pawns
-                new(nameof(EvaluationConfig.PassedPawnPowerPer128), 192, 320),
-                new(nameof(EvaluationConfig.MgPassedPawnScalePer128), 0, 256),
-                new(nameof(EvaluationConfig.EgPassedPawnScalePer128), 256, 768),
-                new(nameof(EvaluationConfig.EgFreePassedPawnScalePer128), 512, 1280),
-                new(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 32),
+                new(nameof(evalConfig.PassedPawnPowerPer128), 192, 320),
+                new(nameof(evalConfig.MgPassedPawnScalePer128), 0, 256),
+                new(nameof(evalConfig.EgPassedPawnScalePer128), 256, 768),
+                new(nameof(evalConfig.EgFreePassedPawnScalePer128), 512, 1280),
+                new(nameof(evalConfig.EgKingEscortedPassedPawn), 0, 32),
                 // Piece Mobility
-                new(nameof(EvaluationConfig.PieceMobilityPowerPer128), 32, 96),
-                new(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 128),
-                new(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 256),
-                new(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 128),
-                new(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 512),
-                new(nameof(EvaluationConfig.MgRookMobilityScale), 0, 256),
-                new(nameof(EvaluationConfig.EgRookMobilityScale), 0, 512),
-                new(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 256),
-                new(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 1024),
+                new(nameof(evalConfig.PieceMobilityPowerPer128), 32, 96),
+                new(nameof(evalConfig.MgKnightMobilityScale), 0, 128),
+                new(nameof(evalConfig.EgKnightMobilityScale), 0, 256),
+                new(nameof(evalConfig.MgBishopMobilityScale), 0, 128),
+                new(nameof(evalConfig.EgBishopMobilityScale), 0, 512),
+                new(nameof(evalConfig.MgRookMobilityScale), 0, 256),
+                new(nameof(evalConfig.EgRookMobilityScale), 0, 512),
+                new(nameof(evalConfig.MgQueenMobilityScale), 0, 256),
+                new(nameof(evalConfig.EgQueenMobilityScale), 0, 1024),
                 // King Safety
-                new(nameof(EvaluationConfig.MgKingSafetyPowerPer128), 192, 320),
-                new(nameof(EvaluationConfig.MgKingSafetyScalePer128), 0, 128),
-                new(nameof(EvaluationConfig.MgKingSafetyMinorAttackOuterRingPer8), 0, 64),
-                new(nameof(EvaluationConfig.MgKingSafetyMinorAttackInnerRingPer8), 0, 64),
-                new(nameof(EvaluationConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 64),
-                new(nameof(EvaluationConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 64),
-                new(nameof(EvaluationConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 64),
-                new(nameof(EvaluationConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
-                new(nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
-                new(nameof(EvaluationConfig.MgKingSafetyPawnShieldPer8), 0, 64),
+                new(nameof(evalConfig.MgKingSafetyPowerPer128), 192, 320),
+                new(nameof(evalConfig.MgKingSafetyScalePer128), 0, 128),
+                new(nameof(evalConfig.MgKingSafetyMinorAttackOuterRingPer8), 0, 64),
+                new(nameof(evalConfig.MgKingSafetyMinorAttackInnerRingPer8), 0, 64),
+                new(nameof(evalConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 64),
+                new(nameof(evalConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 64),
+                new(nameof(evalConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 64),
+                new(nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
+                new(nameof(evalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
+                new(nameof(evalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
                 // Minor Pieces
-                new(nameof(EvaluationConfig.MgBishopPair), 0, 50),
-                new(nameof(EvaluationConfig.EgBishopPair), 50, 200),
+                new(nameof(evalConfig.MgBishopPair), 0, 50),
+                new(nameof(evalConfig.EgBishopPair), 50, 200),
                 // Endgame Scaling
-                new(nameof(EvaluationConfig.EgBishopAdvantagePer128), 0, 64),
-                new(nameof(EvaluationConfig.EgOppBishopsPerPassedPawn), 0, 64),
-                new(nameof(EvaluationConfig.EgOppBishopsPer128), 0, 64),
-                new(nameof(EvaluationConfig.EgWinningPerPawn), 0, 32)
+                new(nameof(evalConfig.EgBishopAdvantagePer128), 0, 64),
+                new(nameof(evalConfig.EgOppBishopsPerPassedPawn), 0, 64),
+                new(nameof(evalConfig.EgOppBishopsPer128), 0, 64),
+                new(nameof(evalConfig.EgWinningPerPawn), 0, 32)
             };
         }
 
 
         private static void SetDefaultParameters(Parameters parameters)
         {
-            var evaluationConfig = new EvaluationConfig();
+            var evalConfig = new EvalConfig();
             // Endgame Material
-            parameters[nameof(EvaluationConfig.EgKnightMaterial)].Value = evaluationConfig.EgKnightMaterial;
-            parameters[nameof(EvaluationConfig.EgBishopMaterial)].Value = evaluationConfig.EgBishopMaterial;
-            parameters[nameof(EvaluationConfig.EgRookMaterial)].Value = evaluationConfig.EgRookMaterial;
-            parameters[nameof(EvaluationConfig.EgQueenMaterial)].Value = evaluationConfig.EgQueenMaterial;
+            parameters[nameof(evalConfig.EgKnightMaterial)].Value = evalConfig.EgKnightMaterial;
+            parameters[nameof(evalConfig.EgBishopMaterial)].Value = evalConfig.EgBishopMaterial;
+            parameters[nameof(evalConfig.EgRookMaterial)].Value = evalConfig.EgRookMaterial;
+            parameters[nameof(evalConfig.EgQueenMaterial)].Value = evalConfig.EgQueenMaterial;
             // Pawn Location
-            parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value = evaluationConfig.MgPawnAdvancement;
-            parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value = evaluationConfig.EgPawnAdvancement;
-            parameters[nameof(EvaluationConfig.MgPawnCentrality)].Value = evaluationConfig.MgPawnCentrality;
-            parameters[nameof(EvaluationConfig.EgPawnCentrality)].Value = evaluationConfig.EgPawnCentrality;
+            parameters[nameof(evalConfig.MgPawnAdvancement)].Value = evalConfig.MgPawnAdvancement;
+            parameters[nameof(evalConfig.EgPawnAdvancement)].Value = evalConfig.EgPawnAdvancement;
+            parameters[nameof(evalConfig.MgPawnCentrality)].Value = evalConfig.MgPawnCentrality;
+            parameters[nameof(evalConfig.EgPawnCentrality)].Value = evalConfig.EgPawnCentrality;
             // Knight Location
-            parameters[nameof(EvaluationConfig.MgKnightAdvancement)].Value = evaluationConfig.MgKnightAdvancement;
-            parameters[nameof(EvaluationConfig.EgKnightAdvancement)].Value = evaluationConfig.EgKnightAdvancement;
-            parameters[nameof(EvaluationConfig.MgKnightCentrality)].Value = evaluationConfig.MgKnightCentrality;
-            parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value = evaluationConfig.EgKnightCentrality;
-            parameters[nameof(EvaluationConfig.MgKnightCorner)].Value = evaluationConfig.MgKnightCorner;
-            parameters[nameof(EvaluationConfig.EgKnightCorner)].Value = evaluationConfig.EgKnightCorner;
+            parameters[nameof(evalConfig.MgKnightAdvancement)].Value = evalConfig.MgKnightAdvancement;
+            parameters[nameof(evalConfig.EgKnightAdvancement)].Value = evalConfig.EgKnightAdvancement;
+            parameters[nameof(evalConfig.MgKnightCentrality)].Value = evalConfig.MgKnightCentrality;
+            parameters[nameof(evalConfig.EgKnightCentrality)].Value = evalConfig.EgKnightCentrality;
+            parameters[nameof(evalConfig.MgKnightCorner)].Value = evalConfig.MgKnightCorner;
+            parameters[nameof(evalConfig.EgKnightCorner)].Value = evalConfig.EgKnightCorner;
             // Bishop Location
-            parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value = evaluationConfig.MgBishopAdvancement;
-            parameters[nameof(EvaluationConfig.EgBishopAdvancement)].Value = evaluationConfig.EgBishopAdvancement;
-            parameters[nameof(EvaluationConfig.MgBishopCentrality)].Value = evaluationConfig.MgBishopCentrality;
-            parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value = evaluationConfig.EgBishopCentrality;
-            parameters[nameof(EvaluationConfig.MgBishopCorner)].Value = evaluationConfig.MgBishopCorner;
-            parameters[nameof(EvaluationConfig.EgBishopCorner)].Value = evaluationConfig.EgBishopCorner;
+            parameters[nameof(evalConfig.MgBishopAdvancement)].Value = evalConfig.MgBishopAdvancement;
+            parameters[nameof(evalConfig.EgBishopAdvancement)].Value = evalConfig.EgBishopAdvancement;
+            parameters[nameof(evalConfig.MgBishopCentrality)].Value = evalConfig.MgBishopCentrality;
+            parameters[nameof(evalConfig.EgBishopCentrality)].Value = evalConfig.EgBishopCentrality;
+            parameters[nameof(evalConfig.MgBishopCorner)].Value = evalConfig.MgBishopCorner;
+            parameters[nameof(evalConfig.EgBishopCorner)].Value = evalConfig.EgBishopCorner;
             // Rook Location
-            parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value = evaluationConfig.MgRookAdvancement;
-            parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value = evaluationConfig.EgRookAdvancement;
-            parameters[nameof(EvaluationConfig.MgRookCentrality)].Value = evaluationConfig.MgRookCentrality;
-            parameters[nameof(EvaluationConfig.EgRookCentrality)].Value = evaluationConfig.EgRookCentrality;
-            parameters[nameof(EvaluationConfig.MgRookCorner)].Value = evaluationConfig.MgRookCorner;
-            parameters[nameof(EvaluationConfig.EgRookCorner)].Value = evaluationConfig.EgRookCorner;
+            parameters[nameof(evalConfig.MgRookAdvancement)].Value = evalConfig.MgRookAdvancement;
+            parameters[nameof(evalConfig.EgRookAdvancement)].Value = evalConfig.EgRookAdvancement;
+            parameters[nameof(evalConfig.MgRookCentrality)].Value = evalConfig.MgRookCentrality;
+            parameters[nameof(evalConfig.EgRookCentrality)].Value = evalConfig.EgRookCentrality;
+            parameters[nameof(evalConfig.MgRookCorner)].Value = evalConfig.MgRookCorner;
+            parameters[nameof(evalConfig.EgRookCorner)].Value = evalConfig.EgRookCorner;
             // Queen Location
-            parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value = evaluationConfig.MgQueenAdvancement;
-            parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value = evaluationConfig.EgQueenAdvancement;
-            parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value = evaluationConfig.MgQueenCentrality;
-            parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value = evaluationConfig.EgQueenCentrality;
-            parameters[nameof(EvaluationConfig.MgQueenCorner)].Value = evaluationConfig.MgQueenCorner;
-            parameters[nameof(EvaluationConfig.EgQueenCorner)].Value = evaluationConfig.EgQueenCorner;
+            parameters[nameof(evalConfig.MgQueenAdvancement)].Value = evalConfig.MgQueenAdvancement;
+            parameters[nameof(evalConfig.EgQueenAdvancement)].Value = evalConfig.EgQueenAdvancement;
+            parameters[nameof(evalConfig.MgQueenCentrality)].Value = evalConfig.MgQueenCentrality;
+            parameters[nameof(evalConfig.EgQueenCentrality)].Value = evalConfig.EgQueenCentrality;
+            parameters[nameof(evalConfig.MgQueenCorner)].Value = evalConfig.MgQueenCorner;
+            parameters[nameof(evalConfig.EgQueenCorner)].Value = evalConfig.EgQueenCorner;
             // King Location
-            parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value = evaluationConfig.MgKingAdvancement;
-            parameters[nameof(EvaluationConfig.EgKingAdvancement)].Value = evaluationConfig.EgKingAdvancement;
-            parameters[nameof(EvaluationConfig.MgKingCentrality)].Value = evaluationConfig.MgKingCentrality;
-            parameters[nameof(EvaluationConfig.EgKingCentrality)].Value = evaluationConfig.EgKingCentrality;
-            parameters[nameof(EvaluationConfig.MgKingCorner)].Value = evaluationConfig.MgKingCorner;
-            parameters[nameof(EvaluationConfig.EgKingCorner)].Value = evaluationConfig.EgKingCorner;
+            parameters[nameof(evalConfig.MgKingAdvancement)].Value = evalConfig.MgKingAdvancement;
+            parameters[nameof(evalConfig.EgKingAdvancement)].Value = evalConfig.EgKingAdvancement;
+            parameters[nameof(evalConfig.MgKingCentrality)].Value = evalConfig.MgKingCentrality;
+            parameters[nameof(evalConfig.EgKingCentrality)].Value = evalConfig.EgKingCentrality;
+            parameters[nameof(evalConfig.MgKingCorner)].Value = evalConfig.MgKingCorner;
+            parameters[nameof(evalConfig.EgKingCorner)].Value = evalConfig.EgKingCorner;
             // Passed Pawns
-            parameters[nameof(EvaluationConfig.PassedPawnPowerPer128)].Value = evaluationConfig.PassedPawnPowerPer128;
-            parameters[nameof(EvaluationConfig.MgPassedPawnScalePer128)].Value = evaluationConfig.MgPassedPawnScalePer128;
-            parameters[nameof(EvaluationConfig.EgPassedPawnScalePer128)].Value = evaluationConfig.EgPassedPawnScalePer128;
-            parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePer128)].Value = evaluationConfig.EgFreePassedPawnScalePer128;
-            parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value = evaluationConfig.EgKingEscortedPassedPawn;
+            parameters[nameof(evalConfig.PassedPawnPowerPer128)].Value = evalConfig.PassedPawnPowerPer128;
+            parameters[nameof(evalConfig.MgPassedPawnScalePer128)].Value = evalConfig.MgPassedPawnScalePer128;
+            parameters[nameof(evalConfig.EgPassedPawnScalePer128)].Value = evalConfig.EgPassedPawnScalePer128;
+            parameters[nameof(evalConfig.EgFreePassedPawnScalePer128)].Value = evalConfig.EgFreePassedPawnScalePer128;
+            parameters[nameof(evalConfig.EgKingEscortedPassedPawn)].Value = evalConfig.EgKingEscortedPassedPawn;
             // Piece Mobility
-            parameters[nameof(EvaluationConfig.PieceMobilityPowerPer128)].Value = evaluationConfig.PieceMobilityPowerPer128;
-            parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value = evaluationConfig.MgKnightMobilityScale;
-            parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value = evaluationConfig.EgKnightMobilityScale;
-            parameters[nameof(EvaluationConfig.MgBishopMobilityScale)].Value = evaluationConfig.MgBishopMobilityScale;
-            parameters[nameof(EvaluationConfig.EgBishopMobilityScale)].Value = evaluationConfig.EgBishopMobilityScale;
-            parameters[nameof(EvaluationConfig.MgRookMobilityScale)].Value = evaluationConfig.MgRookMobilityScale;
-            parameters[nameof(EvaluationConfig.EgRookMobilityScale)].Value = evaluationConfig.EgRookMobilityScale;
-            parameters[nameof(EvaluationConfig.MgQueenMobilityScale)].Value = evaluationConfig.MgQueenMobilityScale;
-            parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value = evaluationConfig.EgQueenMobilityScale;
+            parameters[nameof(evalConfig.PieceMobilityPowerPer128)].Value = evalConfig.PieceMobilityPowerPer128;
+            parameters[nameof(evalConfig.MgKnightMobilityScale)].Value = evalConfig.MgKnightMobilityScale;
+            parameters[nameof(evalConfig.EgKnightMobilityScale)].Value = evalConfig.EgKnightMobilityScale;
+            parameters[nameof(evalConfig.MgBishopMobilityScale)].Value = evalConfig.MgBishopMobilityScale;
+            parameters[nameof(evalConfig.EgBishopMobilityScale)].Value = evalConfig.EgBishopMobilityScale;
+            parameters[nameof(evalConfig.MgRookMobilityScale)].Value = evalConfig.MgRookMobilityScale;
+            parameters[nameof(evalConfig.EgRookMobilityScale)].Value = evalConfig.EgRookMobilityScale;
+            parameters[nameof(evalConfig.MgQueenMobilityScale)].Value = evalConfig.MgQueenMobilityScale;
+            parameters[nameof(evalConfig.EgQueenMobilityScale)].Value = evalConfig.EgQueenMobilityScale;
             // King Safety
-            parameters[nameof(EvaluationConfig.MgKingSafetyPowerPer128)].Value = evaluationConfig.MgKingSafetyPowerPer128;
-            parameters[nameof(EvaluationConfig.MgKingSafetyScalePer128)].Value = evaluationConfig.MgKingSafetyScalePer128;
-            parameters[nameof(EvaluationConfig.MgKingSafetyMinorAttackOuterRingPer8)].Value = evaluationConfig.MgKingSafetyMinorAttackOuterRingPer8;
-            parameters[nameof(EvaluationConfig.MgKingSafetyMinorAttackInnerRingPer8)].Value = evaluationConfig.MgKingSafetyMinorAttackInnerRingPer8;
-            parameters[nameof(EvaluationConfig.MgKingSafetyRookAttackOuterRingPer8)].Value = evaluationConfig.MgKingSafetyRookAttackOuterRingPer8;
-            parameters[nameof(EvaluationConfig.MgKingSafetyRookAttackInnerRingPer8)].Value = evaluationConfig.MgKingSafetyRookAttackInnerRingPer8;
-            parameters[nameof(EvaluationConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value = evaluationConfig.MgKingSafetyQueenAttackOuterRingPer8;
-            parameters[nameof(EvaluationConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evaluationConfig.MgKingSafetyQueenAttackInnerRingPer8;
-            parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value = evaluationConfig.MgKingSafetySemiOpenFilePer8;
-            parameters[nameof(EvaluationConfig.MgKingSafetyPawnShieldPer8)].Value = evaluationConfig.MgKingSafetyPawnShieldPer8;
+            parameters[nameof(evalConfig.MgKingSafetyPowerPer128)].Value = evalConfig.MgKingSafetyPowerPer128;
+            parameters[nameof(evalConfig.MgKingSafetyScalePer128)].Value = evalConfig.MgKingSafetyScalePer128;
+            parameters[nameof(evalConfig.MgKingSafetyMinorAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyMinorAttackOuterRingPer8;
+            parameters[nameof(evalConfig.MgKingSafetyMinorAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyMinorAttackInnerRingPer8;
+            parameters[nameof(evalConfig.MgKingSafetyRookAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyRookAttackOuterRingPer8;
+            parameters[nameof(evalConfig.MgKingSafetyRookAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyRookAttackInnerRingPer8;
+            parameters[nameof(evalConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackOuterRingPer8;
+            parameters[nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackInnerRingPer8;
+            parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
+            parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
             // Minor Pieces
-            parameters[nameof(EvaluationConfig.MgBishopPair)].Value = evaluationConfig.MgBishopPair;
-            parameters[nameof(EvaluationConfig.EgBishopPair)].Value = evaluationConfig.EgBishopPair;
+            parameters[nameof(evalConfig.MgBishopPair)].Value = evalConfig.MgBishopPair;
+            parameters[nameof(evalConfig.EgBishopPair)].Value = evalConfig.EgBishopPair;
             // Endgame Scaling
-            parameters[nameof(EvaluationConfig.EgBishopAdvantagePer128)].Value = evaluationConfig.EgBishopAdvantagePer128;
-            parameters[nameof(EvaluationConfig.EgOppBishopsPerPassedPawn)].Value = evaluationConfig.EgOppBishopsPerPassedPawn;
-            parameters[nameof(EvaluationConfig.EgOppBishopsPer128)].Value = evaluationConfig.EgOppBishopsPer128;
-            parameters[nameof(EvaluationConfig.EgWinningPerPawn)].Value = evaluationConfig.EgWinningPerPawn;
+            parameters[nameof(evalConfig.EgBishopAdvantagePer128)].Value = evalConfig.EgBishopAdvantagePer128;
+            parameters[nameof(evalConfig.EgOppBishopsPerPassedPawn)].Value = evalConfig.EgOppBishopsPerPassedPawn;
+            parameters[nameof(evalConfig.EgOppBishopsPer128)].Value = evalConfig.EgOppBishopsPer128;
+            parameters[nameof(evalConfig.EgWinningPerPawn)].Value = evalConfig.EgWinningPerPawn;
         }
 
 
@@ -271,18 +277,18 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             // Create game objects for each particle swarm.
             var boards = new Board[Count];
             var searches = new Search[Count];
-            var evaluations = new Evaluation[Count];
+            var evals = new Eval[Count];
             for (var index = 0; index < Count; index++)
             {
-                var board = new Board(_writeMessageLine);
+                var board = new Board(_writeMessageLine, UciStream.NodesInfoInterval);
                 boards[index] = board;
                 var stats = new Stats();
                 var cache = new Cache(1, stats, board.ValidateMove);
                 var killerMoves = new KillerMoves(Search.MaxHorizon);
                 var moveHistory = new MoveHistory();
-                var evaluation = new Evaluation(stats, board.IsRepeatPosition, () => false, _writeMessageLine);
-                evaluations[index] = evaluation;
-                searches[index] = new Search(stats, cache, killerMoves, moveHistory, evaluation, () => false, _displayStats, _writeMessageLine);
+                var eval = new Eval(stats, board.IsRepeatPosition, () => false, _writeMessageLine);
+                evals[index] = eval;
+                searches[index] = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, _displayStats, _writeMessageLine);
             }
             var tasks = new Task[Count];
             var bestEvaluationError = double.MaxValue;
@@ -295,7 +301,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     var particleSwarm = this[index];
                     var board = boards[index];
                     var search = searches[index];
-                    var evaluation = evaluations[index];
+                    var evaluation = evals[index];
                     tasks[index] = Task.Run(() => particleSwarm.Iterate(board, search, evaluation));
                 }
                 // Wait for all particle swarms to complete an iteration.

@@ -1,6 +1,6 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2021.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
@@ -8,22 +8,22 @@
 // +------------------------------------------------------------------------------+
 
 
-using ErikTheCoder.MadChess.Engine;
+using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Core.Utilities;
 using NUnit.Framework;
 
 
 namespace ErikTheCoder.MadChess.Tests
 {
     [TestFixture]
-    public sealed class PositionTests
+    public sealed class PositionTests : TestBase
     {
         [Test]
         public void TestStartPosition()
         {
-            var uciStream = new UciStream();
-            var board = uciStream.Board;
+            var board = new Board(WriteMessageLine, long.MaxValue);
             board.SetPosition(Board.StartPositionFen);
-            uciStream.WriteMessageLine(board.ToString());
+            WriteMessageLine(board.ToString());
             // Validate integrity of board and occupancy of every square.
             board.AssertIntegrity();
             Assert.That(board.CurrentPosition.GetPiece(Square.A8), Is.EqualTo(Piece.BlackRook));
@@ -77,10 +77,9 @@ namespace ErikTheCoder.MadChess.Tests
         [Test]
         public void TestWac11Position()
         {
-            var uciStream = new UciStream();
-            var board = uciStream.Board;
+            var board = new Board(WriteMessageLine, long.MaxValue);
             board.SetPosition("r1b1kb1r/3q1ppp/pBp1pn2/8/Np3P2/5B2/PPP3PP/R2Q1RK1 w kq -");
-            uciStream.WriteMessageLine(board.ToString());
+            WriteMessageLine(board.ToString());
             // Validate integrity of board and occupancy of every square.
             board.AssertIntegrity();
             Assert.That(board.CurrentPosition.GetPiece(Square.A8), Is.EqualTo(Piece.BlackRook));

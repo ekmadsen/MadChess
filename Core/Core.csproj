@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <AssemblyTitle>MadChess.Core</AssemblyTitle>
+	  <AssemblyName>MadChess.Core</AssemblyName>
+	  <Version>3.1</Version>
+	  <Authors>Erik Madsen</Authors>
+	  <Description>Core Chess Classes</Description>
+	  <Copyright>2020</Copyright>
+	  <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+	  <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+	  <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+	  <RootNamespace>ErikTheCoder.MadChess.Core</RootNamespace>
+	  <LangVersion>latest</LangVersion>
+	  <TargetFramework>net5.0</TargetFramework>
+	  <TieredCompilation>true</TieredCompilation>
+	  <OutputType>Library</OutputType>
+	  <PackageId>MadChess.Core</PackageId>
+	  <Configurations>Release64;Release64NonPopCount;Release32;Debug</Configurations>
+	  <Platforms>x64;x86</Platforms>
+  </PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release64'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64;POPCOUNT</DefineConstants>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release64NonPopCount'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64</DefineConstants>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release32'">
+		<PlatformTarget>x86</PlatformTarget>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<PlatformTarget>x64</PlatformTarget>
+		<DefineConstants>CPU64;POPCOUNT;DEBUG</DefineConstants>
+		<Optimize>false</Optimize>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
+  </ItemGroup>
+
+</Project>

@@ -8,12 +8,18 @@
 // +------------------------------------------------------------------------------+
 
 
-using System.Collections.Generic;
-
-
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Score
 {
-    public sealed class Particles : List<Particle>
+    public struct ScoredMove
     {
+        public ulong Move;
+        public int Score;
+
+
+        public ScoredMove(ulong move, int score)
+        {
+            Move = move;
+            Score = score;
+        }
     }
 }

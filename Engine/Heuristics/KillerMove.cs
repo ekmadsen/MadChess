@@ -8,12 +8,21 @@
 // +------------------------------------------------------------------------------+
 
 
-using System.Collections.Generic;
+using ErikTheCoder.MadChess.Core.Game;
 
 
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Heuristics
 {
-    public sealed class Particles : List<Particle>
+    public sealed class KillerMove
     {
+        public Piece Piece;
+        public Square ToSquare;
+
+
+        public KillerMove(Piece piece, Square toSquare)
+        {
+            Piece = piece;
+            ToSquare = toSquare;
+        }
     }
 }

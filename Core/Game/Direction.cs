@@ -8,12 +8,31 @@
 // +------------------------------------------------------------------------------+
 
 
-using System.Collections.Generic;
+using JetBrains.Annotations;
 
 
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Core.Game
 {
-    public sealed class Particles : List<Particle>
+    public enum Direction
     {
+        [UsedImplicitly] Unknown,
+        // Sliding Piece Moves
+        North,
+        NorthEast,
+        East,
+        SouthEast,
+        South,
+        SouthWest,
+        West,
+        NorthWest,
+        // Knight Moves
+        North2East1,
+        East2North1,
+        East2South1,
+        South2East1,
+        South2West1,
+        West2South1,
+        West2North1,
+        North2West1
     }
 }

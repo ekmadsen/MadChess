@@ -8,12 +8,15 @@
 // +------------------------------------------------------------------------------+
 
 
-using System.Collections.Generic;
+using JetBrains.Annotations;
 
 
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Uci
 {
-    public sealed class Particles : List<Particle>
+    public enum CommandDirection
     {
+        [UsedImplicitly] Unknown,
+        In,
+        Out
     }
 }
