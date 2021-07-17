@@ -1,11 +1,17 @@
 ﻿// +------------------------------------------------------------------------------+
 // |                                                                              |
-// |     MadChess is developed by Erik Madsen.  Copyright 2020.                   |
+// |     MadChess is developed by Erik Madsen.  Copyright 2021.                   |
 // |     MadChess is free software.  It is distributed under the GNU General      |
 // |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |
 // |     See https://www.madchess.net/ for user and developer guides.             |
 // |                                                                              |
 // +------------------------------------------------------------------------------+
+
+
+using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Core.Utilities;
+using ErikTheCoder.MadChess.Engine.Evaluation;
+using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
 namespace ErikTheCoder.MadChess.Engine.Tuning
@@ -40,7 +46,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
         }
 
 
-        public void Iterate(Board board, Search search, Evaluation evaluation)
+        public void Iterate(Board board, Search search, Eval eval)
         {
             var bestParticle = GetBestParticle();
             for (var index = 0; index < Particles.Count; index++)
@@ -53,7 +59,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     Particles[index] = particle;
                 }
                 particle.Move();
-                particle.ConfigureEvaluation(evaluation);
+                particle.ConfigureEvaluation(eval);
                 particle.CalculateEvaluationError(board, search, _winScale);
             }
         }

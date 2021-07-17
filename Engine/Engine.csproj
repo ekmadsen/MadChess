@@ -3,10 +3,10 @@
 	<PropertyGroup>
 		<AssemblyTitle>MadChess.Engine</AssemblyTitle>
 		<AssemblyName>MadChess.Engine</AssemblyName>
-		<Version>3.0</Version>
+		<Version>3.1</Version>
 		<Authors>Erik Madsen</Authors>
-		<Description>A UCI chess engine.</Description>
-		<Copyright>2020</Copyright>
+		<Description>UCI Chess Engine</Description>
+		<Copyright>2021</Copyright>
 		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
@@ -41,8 +41,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ErikTheCoder.Utilities" Version="1.0.13" />
 		<PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Core\Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -4,6 +4,7 @@
 	<s:Boolean x:Key="/Default/CodeInspection/ExcludedFiles/FileMasksToSkip/=License_002Etxt/@EntryIndexedValue">True</s:Boolean>
 	
 	
+	
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=ArrangeRedundantParentheses/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=ClassCanBeSealed_002EGlobal/@EntryIndexedValue">WARNING</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=ClassCanBeSealed_002ELocal/@EntryIndexedValue">WARNING</s:String>
@@ -230,7 +231,7 @@
 &lt;/Patterns&gt;</s:String>
 	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">+------------------------------------------------------------------------------+&#xD;
 |                                                                              |&#xD;
-|     MadChess is developed by Erik Madsen.  Copyright 2020.                   |&#xD;
+|     MadChess is developed by Erik Madsen.  Copyright 2021.                   |&#xD;
 |     MadChess is free software.  It is distributed under the GNU General      |&#xD;
 |     Public License Version 3 (GPLv3).  See LICENSE file for details.         |&#xD;
 |     See https://www.madchess.net/ for user and developer guides.             |&#xD;
