@@ -539,7 +539,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     var square = standardAlgebraicNoCheck.Substring(3, 2);
                     toSquare = Board.GetSquare(square);
                     if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
-                    else fromRank = Board.WhiteRanks[(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
+                    else fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
                 }
                 else if ((length > 3) && (standardAlgebraicNoCheck[3] == 'x'))
                 {
@@ -547,7 +547,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     var square = standardAlgebraicNoCheck.Substring(4, 2);
                     toSquare = Board.GetSquare(square);
                     fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
-                    fromRank = Board.WhiteRanks[(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
+                    fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
                 }
                 else if (length == 3)
                 {
@@ -561,7 +561,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     var square = standardAlgebraicNoCheck.Substring(2, 2);
                     toSquare = Board.GetSquare(square);
                     if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
-                    else fromRank = Board.WhiteRanks[(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
+                    else fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
                 }
                 else if (length == 5)
                 {
@@ -569,7 +569,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     var square = standardAlgebraicNoCheck.Substring(3, 2);
                     toSquare = Board.GetSquare(square);
                     fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
-                    fromRank = Board.WhiteRanks[(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
+                    fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
                 }
                 else throw new Exception($"{standardAlgebraic} move not supported.");
             }
@@ -594,7 +594,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 {
                     // Piece disambiguated by rank.
                     // Use white ranks regardless of side to move.
-                    var moveFromRank = Board.WhiteRanks[(int)From(move)];
+                    var moveFromRank = Board.Ranks[(int)Color.White][(int)From(move)];
                     if (moveFromRank != fromRank) continue; // Wrong Rank
                 }
                 if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");

@@ -290,7 +290,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
             // Piece can slide along file or rank.
             ulong occupancy;
             var file = Board.Files[(int)square];
-            var rank = Board.WhiteRanks[(int)square];
+            var rank = Board.Ranks[(int)Color.White][(int)square];
             // ReSharper disable ConvertSwitchStatementToSwitchExpression
             switch (file)
             {

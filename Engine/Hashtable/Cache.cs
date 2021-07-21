@@ -156,7 +156,7 @@ namespace ErikTheCoder.MadChess.Engine.Hashtable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetIndex(ulong key)
         {
-            // Ensure even distribution of indices by using GetHashCode method rather than raw Zobrist Key for modular division.
+            // Ensure even distribution of indices by using GetHashCode method rather than raw Zobrist key for modular division.
             var index = (key.GetHashCode() % _indices) * _buckets; // Index may be negative.
             // Ensure index is positive using technique faster than Math.Abs().  See http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs.
             var mask = index >> 31;

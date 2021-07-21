@@ -20,24 +20,12 @@ namespace ErikTheCoder.MadChess.Core.Game
     public sealed class Position
     {
         public const int MaxMoves = 128;
+        public readonly ulong[] PieceBitboards;
+        public readonly ulong[] ColorOccupancy;
         public readonly ulong[] Moves;
-        public ulong WhitePawns;
-        public ulong WhiteKnights;
-        public ulong WhiteBishops;
-        public ulong WhiteRooks;
-        public ulong WhiteQueens;
-        public ulong WhiteKing;
-        public ulong OccupancyWhite;
-        public ulong BlackPawns;
-        public ulong BlackKnights;
-        public ulong BlackBishops;
-        public ulong BlackRooks;
-        public ulong BlackQueens;
-        public ulong BlackKing;
-        public ulong OccupancyBlack;
         public ulong Occupancy;
         public ulong PinnedPieces;
-        public bool WhiteMove;
+        public Color ColorToMove;
         public uint Castling;
         public Square EnPassantSquare;
         public int PlySinceCaptureOrPawnMove;
@@ -53,9 +41,35 @@ namespace ErikTheCoder.MadChess.Core.Game
         private readonly Board _board;
 
 
+        public ulong WhitePawns => PieceBitboards[(int) Piece.WhitePawn];
+        public ulong WhiteKnights => PieceBitboards[(int) Piece.WhiteKnight];
+        public ulong WhiteBishops => PieceBitboards[(int) Piece.WhiteBishop];
+        public ulong WhiteRooks => PieceBitboards[(int) Piece.WhiteRook];
+        public ulong WhiteQueens => PieceBitboards[(int) Piece.WhiteQueen];
+        public ulong WhiteKing => PieceBitboards[(int) Piece.WhiteKing];
+        public ulong WhiteOccupancy => ColorOccupancy[(int) Color.White];
+        public ulong BlackPawns => PieceBitboards[(int) Piece.BlackPawn];
+        public ulong BlackKnights => PieceBitboards[(int) Piece.BlackKnight];
+        public ulong BlackBishops => PieceBitboards[(int) Piece.BlackBishop];
+        public ulong BlackRooks => PieceBitboards[(int) Piece.BlackRook];
+        public ulong BlackQueens => PieceBitboards[(int) Piece.BlackQueen];
+        public ulong BlackKing => PieceBitboards[(int) Piece.BlackKing];
+        public ulong BlackOccupancy => ColorOccupancy[(int) Color.Black];
+        public Color ColorLastMoved => 1 - ColorToMove;
+
+
+        public bool WhiteMove
+        {
+            get => ColorToMove == Color.White;
+            set => ColorToMove = value ? Color.White : Color.Black;
+        }
+
+
         public Position(Board board)
         {
             _board = board;
+            PieceBitboards = new ulong[(int) Piece.BlackKing + 1];
+            ColorOccupancy = new ulong[2];
             Moves = new ulong[MaxMoves];
             Reset();
         }
@@ -63,50 +77,37 @@ namespace ErikTheCoder.MadChess.Core.Game
 
         public Piece GetPiece(Square square)
         {
-            var squareMask = Board.SquareMasks[(int)square];
+            var squareMask = Board.SquareMasks[(int) square];
             if ((Occupancy & squareMask) == 0) return Piece.None;
-            if ((OccupancyWhite & squareMask) > 0)
+            if ((WhiteOccupancy & squareMask) > 0)
             {
                 // Locate white piece.
-                if ((WhitePawns & squareMask) > 0) return Piece.WhitePawn;
-                if ((WhiteKnights & squareMask) > 0) return Piece.WhiteKnight;
-                if ((WhiteBishops & squareMask) > 0) return Piece.WhiteBishop;
-                if ((WhiteRooks & squareMask) > 0) return Piece.WhiteRook;
-                if ((WhiteQueens & squareMask) > 0) return Piece.WhiteQueen;
-                if ((WhiteKing & squareMask) > 0) return Piece.WhiteKing;
-                throw new Exception($"White piece not found at {Board.SquareLocations[(int)square]}.");
+                for (var piece = Piece.WhitePawn; piece <= Piece.WhiteKing; piece++)
+                {
+                    if ((PieceBitboards[(int) piece] & squareMask) > 0) return piece;
+                }
+                throw new Exception($"White piece not found at {Board.SquareLocations[(int) square]}.");
             }
             // Locate black piece.
-            if ((BlackPawns & squareMask) > 0) return Piece.BlackPawn;
-            if ((BlackKnights & squareMask) > 0) return Piece.BlackKnight;
-            if ((BlackBishops & squareMask) > 0) return Piece.BlackBishop;
-            if ((BlackRooks & squareMask) > 0) return Piece.BlackRook;
-            if ((BlackQueens & squareMask) > 0) return Piece.BlackQueen;
-            if ((BlackKing & squareMask) > 0) return Piece.BlackKing;
-            throw new Exception($"Black piece not found at {Board.SquareLocations[(int)square]}.");
+            for (var piece = Piece.BlackPawn; piece <= Piece.BlackKing; piece++)
+            {
+                if ((PieceBitboards[(int) piece] & squareMask) > 0) return piece;
+            }
+            throw new Exception($"Black piece not found at {Board.SquareLocations[(int) square]}.");
         }
 
 
         public void Set(Position copyFromPosition)
         {
             // Copy bitboards.
-            WhitePawns = copyFromPosition.WhitePawns;
-            WhiteKnights = copyFromPosition.WhiteKnights;
-            WhiteBishops = copyFromPosition.WhiteBishops;
-            WhiteRooks = copyFromPosition.WhiteRooks;
-            WhiteQueens = copyFromPosition.WhiteQueens;
-            WhiteKing = copyFromPosition.WhiteKing;
-            OccupancyWhite = copyFromPosition.OccupancyWhite;
-            BlackPawns = copyFromPosition.BlackPawns;
-            BlackKnights = copyFromPosition.BlackKnights;
-            BlackBishops = copyFromPosition.BlackBishops;
-            BlackRooks = copyFromPosition.BlackRooks;
-            BlackQueens = copyFromPosition.BlackQueens;
-            BlackKing = copyFromPosition.BlackKing;
-            OccupancyBlack = copyFromPosition.OccupancyBlack;
+            for (var piece = Piece.WhitePawn; piece <= Piece.BlackKing; piece++) PieceBitboards[(int) piece] = copyFromPosition.PieceBitboards[(int) piece];
+            //Array.Copy(copyFromPosition.PieceBitboards, 1, PieceBitboards, 1, (int) Piece.BlackKing);
+            //Buffer.BlockCopy(copyFromPosition.PieceBitboards, 1, PieceBitboards, 1, (int) Piece.BlackKing * sizeof(ulong));
+            ColorOccupancy[(int) Color.White] = copyFromPosition.ColorOccupancy[(int) Color.White];
+            ColorOccupancy[(int) Color.Black] = copyFromPosition.ColorOccupancy[(int) Color.Black];
             Occupancy = copyFromPosition.Occupancy;
             // Copy board state.  Do not copy values that will be set after moves are generated or played.
-            WhiteMove = copyFromPosition.WhiteMove;
+            ColorToMove = copyFromPosition.ColorToMove;
             Castling = copyFromPosition.Castling;
             EnPassantSquare = copyFromPosition.EnPassantSquare;
             PlySinceCaptureOrPawnMove = copyFromPosition.PlySinceCaptureOrPawnMove;
@@ -146,12 +147,12 @@ namespace ErikTheCoder.MadChess.Core.Game
         private void GeneratePawnMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
         {
             ulong pawns;
-            ulong[] pawnMoveMasks;
-            ulong[] pawnDoubleMoveMasks;
-            ulong[] pawnAttackMasks;
+            var pawnMoveMasks = Board.PawnMoveMasks[(int)ColorToMove];
+            var pawnDoubleMoveMasks = Board.PawnDoubleMoveMasks[(int)ColorToMove];
+            var pawnAttackMasks = Board.PawnAttackMasks[(int)ColorToMove];
             ulong enemyOccupiedSquares;
             var unoccupiedSquares = ~Occupancy;
-            int[] ranks;
+            var ranks = Board.Ranks[(int)ColorToMove];
             Piece attacker;
             Piece queen;
             Piece rook;
@@ -162,11 +163,7 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // White Move
                 pawns = WhitePawns & fromSquareMask;
-                pawnMoveMasks = Board.WhitePawnMoveMasks;
-                pawnDoubleMoveMasks = Board.WhitePawnDoubleMoveMasks;
-                pawnAttackMasks = Board.WhitePawnAttackMasks;
-                enemyOccupiedSquares = OccupancyBlack;
-                ranks = Board.WhiteRanks;
+                enemyOccupiedSquares = BlackOccupancy;
                 attacker = Piece.WhitePawn;
                 queen = Piece.WhiteQueen;
                 rook = Piece.WhiteRook;
@@ -178,11 +175,7 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // Black Move
                 pawns = BlackPawns & fromSquareMask;
-                pawnMoveMasks = Board.BlackPawnMoveMasks;
-                pawnDoubleMoveMasks = Board.BlackPawnDoubleMoveMasks;
-                pawnAttackMasks = Board.BlackPawnAttackMasks;
-                enemyOccupiedSquares = OccupancyWhite;
-                ranks = Board.BlackRanks;
+                enemyOccupiedSquares = WhiteOccupancy;
                 attacker = Piece.BlackPawn;
                 queen = Piece.BlackQueen;
                 rook = Piece.BlackRook;
@@ -359,16 +352,16 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // White Move
                 knights = WhiteKnights & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
+                unOrEnemyOccupiedSquares = ~WhiteOccupancy;
+                enemyOccupiedSquares = BlackOccupancy;
                 attacker = Piece.WhiteKnight;
             }
             else
             {
                 // Black Move
                 knights = BlackKnights & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
+                unOrEnemyOccupiedSquares = ~BlackOccupancy;
+                enemyOccupiedSquares = WhiteOccupancy;
                 attacker = Piece.BlackKnight;
             }
             Square fromSquare;
@@ -409,16 +402,16 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // White Move
                 bishops = WhiteBishops & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
+                unOrEnemyOccupiedSquares = ~WhiteOccupancy;
+                enemyOccupiedSquares = BlackOccupancy;
                 attacker = Piece.WhiteBishop;
             }
             else
             {
                 // Black Move
                 bishops = BlackBishops & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
+                unOrEnemyOccupiedSquares = ~BlackOccupancy;
+                enemyOccupiedSquares = WhiteOccupancy;
                 attacker = Piece.BlackBishop;
             }
             Square fromSquare;
@@ -461,16 +454,16 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // White Move
                 rooks = WhiteRooks & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
+                unOrEnemyOccupiedSquares = ~WhiteOccupancy;
+                enemyOccupiedSquares = BlackOccupancy;
                 attacker = Piece.WhiteRook;
             }
             else
             {
                 // Black Move
                 rooks = BlackRooks & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
+                unOrEnemyOccupiedSquares = ~BlackOccupancy;
+                enemyOccupiedSquares = WhiteOccupancy;
                 attacker = Piece.BlackRook;
             }
             Square fromSquare;
@@ -513,16 +506,16 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // White Move
                 queens = WhiteQueens & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
+                unOrEnemyOccupiedSquares = ~WhiteOccupancy;
+                enemyOccupiedSquares = BlackOccupancy;
                 attacker = Piece.WhiteQueen;
             }
             else
             {
                 // Black Move
                 queens = BlackQueens & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
+                unOrEnemyOccupiedSquares = ~BlackOccupancy;
+                enemyOccupiedSquares = WhiteOccupancy;
                 attacker = Piece.BlackQueen;
             }
             Square fromSquare;
@@ -570,8 +563,8 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // White Move
                 king = WhiteKing & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
+                unOrEnemyOccupiedSquares = ~WhiteOccupancy;
+                enemyOccupiedSquares = BlackOccupancy;
                 attacker = Piece.WhiteKing;
                 castleQueenside = Game.Castling.WhiteQueenside(Castling);
                 castleQueensideMask = Board.WhiteCastleQEmptySquaresMask;
@@ -582,8 +575,8 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // Black Move
                 king = BlackKing & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
+                unOrEnemyOccupiedSquares = ~BlackOccupancy;
+                enemyOccupiedSquares = WhiteOccupancy;
                 attacker = Piece.BlackKing;
                 castleQueenside = Game.Castling.BlackQueenside(Castling);
                 castleQueensideMask = Board.BlackCastleQEmptySquaresMask;
@@ -684,19 +677,19 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // White Move
                 ownKingSquare = Bitwise.FirstSetSquare(WhiteKing);
-                ownPieces = OccupancyWhite;
+                ownPieces = WhiteOccupancy;
                 enemyRankFileAttackers = BlackRooks | BlackQueens;
                 enemyDiagonalAttackers = BlackBishops | BlackQueens;
-                enemyPieces = OccupancyBlack;
+                enemyPieces = BlackOccupancy;
             }
             else
             {
                 // Black Move
                 ownKingSquare = Bitwise.FirstSetSquare(BlackKing);
-                ownPieces = OccupancyBlack;
+                ownPieces = BlackOccupancy;
                 enemyRankFileAttackers = WhiteRooks | WhiteQueens;
                 enemyDiagonalAttackers = WhiteBishops | WhiteQueens;
-                enemyPieces = OccupancyWhite;
+                enemyPieces = WhiteOccupancy;
             }
             // Find pieces pinned to own king by enemy rank / file attackers.
             PinnedPieces = 0;
@@ -749,23 +742,12 @@ namespace ErikTheCoder.MadChess.Core.Game
 
         public void Reset()
         {
-            WhitePawns = 0;
-            WhiteKnights = 0;
-            WhiteBishops = 0;
-            WhiteRooks = 0;
-            WhiteQueens = 0;
-            WhiteKing = 0;
-            OccupancyWhite = 0;
-            BlackPawns = 0;
-            BlackKnights = 0;
-            BlackBishops = 0;
-            BlackRooks = 0;
-            BlackQueens = 0;
-            BlackKing = 0;
-            OccupancyBlack = 0;
+            for (var piece = Piece.WhitePawn; piece <= Piece.BlackKing; piece++) PieceBitboards[(int) piece] = 0;
+            ColorOccupancy[(int) Color.White] = 0;
+            ColorOccupancy[(int) Color.Black] = 0;
             Occupancy = 0;
             PinnedPieces = 0;
-            WhiteMove = true;
+            ColorToMove = Color.White;
             Castling = 0;
             EnPassantSquare = Square.Illegal;
             PlySinceCaptureOrPawnMove = 0;

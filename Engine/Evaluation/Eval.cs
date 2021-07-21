@@ -138,7 +138,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             // Calculate piece location values.
             for (var square = Square.A8; square < Square.Illegal; square++)
             {
-                var rank = Board.WhiteRanks[(int)square];
+                var rank = Board.Ranks[(int)Color.White][(int)square];
                 var file = Board.Files[(int)square];
                 var squareCentrality = 3 - Board.DistanceToCentralSquares[(int)square];
                 var fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
@@ -359,7 +359,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             {
                 // Case 0 = Lone White King
                 case 0 when loneBlackPawn:
-                    EvaluateKingVersusPawn(position, false);
+                    EvaluateKingVersusPawn(position, Color.Black);
                     return true;
                 // ReSharper disable once SwitchStatementMissingSomeCases
                 case 0:
@@ -385,7 +385,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             {
                 // Case 0 = Lone Black King
                 case 0 when loneWhitePawn:
-                    EvaluateKingVersusPawn(position, true);
+                    EvaluateKingVersusPawn(position, Color.White);
                     return true;
                 // ReSharper disable once SwitchStatementMissingSomeCases
                 case 0:
@@ -471,41 +471,21 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
-        private void EvaluateKingVersusPawn(Position position, bool loneWhitePawn)
+        private void EvaluateKingVersusPawn(Position position, Color lonePawnColor)
         {
-            int winningKingRank;
-            int winningKingFile;
-            int defendingKingRank;
-            int defendingKingFile;
-            int pawnRank;
-            int pawnFile;
-            // Get rank and file of all pieces.
-            if (loneWhitePawn)
-            {
-                // White Winning
-                var winningKingSquare = Bitwise.FirstSetSquare(position.WhiteKing);
-                winningKingRank = Board.WhiteRanks[(int)winningKingSquare];
-                winningKingFile = Board.Files[(int)winningKingSquare];
-                var defendingKingSquare = Bitwise.FirstSetSquare(position.BlackKing);
-                defendingKingRank = Board.WhiteRanks[(int)defendingKingSquare];
-                defendingKingFile = Board.Files[(int)defendingKingSquare];
-                var pawnSquare = Bitwise.FirstSetSquare(position.WhitePawns);
-                pawnRank = Board.WhiteRanks[(int)pawnSquare];
-                pawnFile = Board.Files[(int)pawnSquare];
-            }
-            else
-            {
-                // Black Winning
-                var winningKingSquare = Bitwise.FirstSetSquare(position.BlackKing);
-                winningKingRank = Board.BlackRanks[(int)winningKingSquare];
-                winningKingFile = Board.Files[(int)winningKingSquare];
-                var defendingKingSquare = Bitwise.FirstSetSquare(position.WhiteKing);
-                defendingKingRank = Board.BlackRanks[(int)defendingKingSquare];
-                defendingKingFile = Board.Files[(int)defendingKingSquare];
-                var pawnSquare = Bitwise.FirstSetSquare(position.BlackPawns);
-                pawnRank = Board.BlackRanks[(int)pawnSquare];
-                pawnFile = Board.Files[(int)pawnSquare];
-            }
+            var winningKingIndex = ((int) lonePawnColor + 1) * (int) Piece.WhiteKing;
+            var winningKingSquare = Bitwise.FirstSetSquare(position.PieceBitboards[winningKingIndex]);
+            var winningKingRank = Board.Ranks[(int)lonePawnColor][(int)winningKingSquare];
+            var winningKingFile = Board.Files[(int)winningKingSquare];
+            var defendingKingColor = 1 - lonePawnColor;
+            var defendingKingIndex = ((int)defendingKingColor + 1) * (int)Piece.WhiteKing;
+            var defendingKingSquare = Bitwise.FirstSetSquare(position.PieceBitboards[defendingKingIndex]);
+            var defendingKingRank = Board.Ranks[(int)defendingKingColor][(int)defendingKingSquare];
+            var defendingKingFile = Board.Files[(int)defendingKingSquare];
+            var pawnIndex = ((int) lonePawnColor * (int) Piece.WhiteKing) + (int) Piece.WhitePawn;
+            var pawnSquare = Bitwise.FirstSetSquare(position.PieceBitboards[pawnIndex]);
+            var pawnRank = Board.Ranks[(int)lonePawnColor][(int)pawnSquare];
+            var pawnFile = Board.Files[(int)pawnSquare];
             if ((pawnFile == 0) || (pawnFile == 7))
             {
                 // Pawn is on rook file.
@@ -535,7 +515,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                 if (winningKingOnKeySquare)
                 {
                     // Pawn promotes.
-                    if (loneWhitePawn) _staticScore.WhiteEgSimple = Config.SimpleEndgame + pawnRank;
+                    if (lonePawnColor == Color.White) _staticScore.WhiteEgSimple = Config.SimpleEndgame + pawnRank;
                     else _staticScore.BlackEgSimple = Config.SimpleEndgame + pawnRank;
                     return;
                 }
@@ -746,7 +726,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                 if (IsPassedPawn(position, pawnSquare, true))
                 {
                     _staticScore.WhitePassedPawnCount++;
-                    rank = Board.WhiteRanks[(int)pawnSquare];
+                    rank = Board.Ranks[(int)Color.White][(int)pawnSquare];
                     _staticScore.WhiteEgKingEscortedPassedPawns += (Board.SquareDistances[(int)pawnSquare][(int)enemyKingSquare] - Board.SquareDistances[(int)pawnSquare][(int)kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (IsFreePawn(position, pawnSquare, true))
                     {
@@ -772,7 +752,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                 if (IsPassedPawn(position, pawnSquare, false))
                 {
                     _staticScore.BlackPassedPawnCount++;
-                    rank = Board.BlackRanks[(int)pawnSquare];
+                    rank = Board.Ranks[(int)Color.Black][(int)pawnSquare];
                     _staticScore.BlackEgKingEscortedPassedPawns += (Board.SquareDistances[(int)pawnSquare][(int)enemyKingSquare] - Board.SquareDistances[(int)pawnSquare][(int)kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (IsFreePawn(position, pawnSquare, false))
                     {
@@ -797,8 +777,8 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         {
             Debug.Assert(position.GetPiece(square) == (white ? Piece.WhitePawn : Piece.BlackPawn));
             return white
-                ? (Board.WhitePassedPawnMasks[(int)square] & position.BlackPawns) == 0
-                : (Board.BlackPassedPawnMasks[(int)square] & position.WhitePawns) == 0;
+                ? (Board.PassedPawnMasks[(int)Color.White][(int)square] & position.BlackPawns) == 0
+                : (Board.PassedPawnMasks[(int)Color.Black][(int)square] & position.WhitePawns) == 0;
         }
 
 
@@ -808,8 +788,8 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             Debug.Assert(position.GetPiece(square) == (white ? Piece.WhitePawn : Piece.BlackPawn));
             // Determine if pawn can advance.
             return white
-                ? (Board.WhiteFreePawnMasks[(int)square] & position.Occupancy) == 0
-                : (Board.BlackFreePawnMasks[(int)square] & position.Occupancy) == 0;
+                ? (Board.FreePawnMasks[(int)Color.White][(int)square] & position.Occupancy) == 0
+                : (Board.FreePawnMasks[(int)Color.Black][(int)square] & position.Occupancy) == 0;
         }
 
 
