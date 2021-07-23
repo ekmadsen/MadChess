@@ -529,7 +529,7 @@ namespace ErikTheCoder.MadChess.Core.Game
 
         private static ulong[][] CreatePassedPawnMasks()
         {
-            var masks = new ulong[64][];
+            var masks = new ulong[2][];
             var directions = new[] { Direction.North, Direction.South };
             for (var color = Color.White; color <= Color.Black; color++)
             {
@@ -1430,11 +1430,11 @@ namespace ErikTheCoder.MadChess.Core.Game
         private void AddPiece(Piece piece, Square square)
         {
             Debug.Assert(piece != Piece.None);
-            var squareMask = SquareMasks[(int) square];
+            var squareMask = SquareMasks[(int)square];
             var pieceColor = PieceHelper.GetColor(piece);
             // Update bitboards and Zobrist key.
-            CurrentPosition.PieceBitboards[(int) piece] |= squareMask;
-            CurrentPosition.ColorOccupancy[(int) pieceColor] |= squareMask;
+            CurrentPosition.PieceBitboards[(int)piece] |= squareMask;
+            CurrentPosition.ColorOccupancy[(int)pieceColor] |= squareMask;
             CurrentPosition.Occupancy |= squareMask;
             UpdatePiecesSquaresKey(piece, square);
         }
@@ -1447,8 +1447,8 @@ namespace ErikTheCoder.MadChess.Core.Game
             var piece = CurrentPosition.GetPiece(square);
             var pieceColor = PieceHelper.GetColor(piece);
             // Update bitboards and Zobrist key.
-            CurrentPosition.PieceBitboards[(int) piece] &= squareUnmask;
-            CurrentPosition.ColorOccupancy[(int) pieceColor] &= squareUnmask;
+            CurrentPosition.PieceBitboards[(int)piece] &= squareUnmask;
+            CurrentPosition.ColorOccupancy[(int)pieceColor] &= squareUnmask;
             CurrentPosition.Occupancy &= squareUnmask;
             UpdatePiecesSquaresKey(piece, square);
             return piece;

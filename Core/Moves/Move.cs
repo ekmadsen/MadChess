@@ -593,7 +593,6 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 if (fromRank >= 0)
                 {
                     // Piece disambiguated by rank.
-                    // Use white ranks regardless of side to move.
                     var moveFromRank = Board.Ranks[(int)Color.White][(int)From(move)];
                     if (moveFromRank != fromRank) continue; // Wrong Rank
                 }
@@ -642,7 +641,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
         {
             return $"{ToLongAlgebraic(move)} (B = {IsBest(move)}, CapV = {PieceHelper.GetChar(CaptureVictim(move))}, CapA = {PieceHelper.GetChar(CaptureAttacker(move))}, Promo = {PieceHelper.GetChar(PromotedPiece(move))}, Kil = {Killer(move)}, " +
                    $"! = {Played(move)},  O = {IsCastling(move)}, K = {IsKingMove(move)}, E = {IsEnPassantCapture(move)}, 2 = {IsDoublePawnMove(move)}, P = {IsPawnMove(move)}, C = {IsCheck(move)}, Q = {IsQuiet(move)} " +
-                $"From = {From(move)}, To = {To(move)}";
+                $"From = {From(move)}, To = {To(move)})";
         }
     }
 }

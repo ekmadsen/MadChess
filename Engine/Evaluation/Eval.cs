@@ -473,17 +473,14 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
 
         private void EvaluateKingVersusPawn(Position position, Color lonePawnColor)
         {
-            var winningKingIndex = ((int) lonePawnColor + 1) * (int) Piece.WhiteKing;
-            var winningKingSquare = Bitwise.FirstSetSquare(position.PieceBitboards[winningKingIndex]);
+            var winningKingSquare = Bitwise.FirstSetSquare(position.GetKing(lonePawnColor));
             var winningKingRank = Board.Ranks[(int)lonePawnColor][(int)winningKingSquare];
             var winningKingFile = Board.Files[(int)winningKingSquare];
             var defendingKingColor = 1 - lonePawnColor;
-            var defendingKingIndex = ((int)defendingKingColor + 1) * (int)Piece.WhiteKing;
-            var defendingKingSquare = Bitwise.FirstSetSquare(position.PieceBitboards[defendingKingIndex]);
+            var defendingKingSquare = Bitwise.FirstSetSquare(position.GetKing(defendingKingColor));
             var defendingKingRank = Board.Ranks[(int)defendingKingColor][(int)defendingKingSquare];
             var defendingKingFile = Board.Files[(int)defendingKingSquare];
-            var pawnIndex = ((int) lonePawnColor * (int) Piece.WhiteKing) + (int) Piece.WhitePawn;
-            var pawnSquare = Bitwise.FirstSetSquare(position.PieceBitboards[pawnIndex]);
+            var pawnSquare = Bitwise.FirstSetSquare(position.GetPawns(lonePawnColor));
             var pawnRank = Board.Ranks[(int)lonePawnColor][(int)pawnSquare];
             var pawnFile = Board.Files[(int)pawnSquare];
             if ((pawnFile == 0) || (pawnFile == 7))
