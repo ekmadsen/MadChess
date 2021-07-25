@@ -11,6 +11,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
 
@@ -1178,7 +1179,7 @@ namespace ErikTheCoder.MadChess.Core.Game
             {
                 // Remove capture victim (none if destination square is unoccupied) and move piece.
                 captureVictim = RemovePiece(toSquare);
-                Debug.Assert(AssertKingIsNotCaptured(captureVictim, move));
+                Debug.Assert((captureVictim != Piece.WhiteKing) && (captureVictim != Piece.BlackKing));
                 RemovePiece(fromSquare);
                 var promotedPiece = Move.PromotedPiece(move);
                 AddPiece(promotedPiece == Piece.None ? piece : promotedPiece, toSquare);
@@ -1286,23 +1287,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
-        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-        private bool AssertKingIsNotCaptured(Piece captureVictim, ulong move)
-        {
-            if ((captureVictim == Piece.WhiteKing) || (captureVictim == Piece.BlackKing))
-            {
-                _positionIndex--;
-                _writeMessageLine($"Previous position = {PreviousPosition.ToFen()}{Environment.NewLine}Move = {Move.ToString(PreviousPosition.PlayedMove)}{Environment.NewLine}{PreviousPosition}");
-                _writeMessageLine(PreviousPosition.ToString());
-                _writeMessageLine(null);
-                Debug.Assert(captureVictim != Piece.WhiteKing, $"{CurrentPosition.ToFen()}{Environment.NewLine}Move = {Move.ToString(move)}{Environment.NewLine}{CurrentPosition}");
-                Debug.Assert(captureVictim != Piece.BlackKing, $"{CurrentPosition.ToFen()}{Environment.NewLine}Move = {Move.ToString(move)}{Environment.NewLine}{CurrentPosition}");
-            }
-            return true;
-        }
-
-
-        private void Castle(Piece piece, Square toSquare)
+                private void Castle(Piece piece, Square toSquare)
         {
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (piece == Piece.WhiteKing)
@@ -1445,6 +1430,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         {
             var squareUnmask = _squareUnmasks[(int)square];
             var piece = CurrentPosition.GetPiece(square);
+            if (piece == Piece.None) return piece;
             var pieceColor = PieceHelper.GetColor(piece);
             // Update bitboards and Zobrist key.
             CurrentPosition.PieceBitboards[(int)piece] &= squareUnmask;
@@ -1482,7 +1468,9 @@ namespace ErikTheCoder.MadChess.Core.Game
                 var piece = CurrentPosition.GetPiece(square);
                 if (piece != Piece.None) fullyUpdatedPiecesSquaresKey ^= _pieceSquareKeys[(int)piece][(int)square];
             }
-            return fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey;
+            var matches = fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey;
+            if (!matches) _writeMessageLine(ToString(true));
+            return matches;
         }
 
 
@@ -1502,5 +1490,14 @@ namespace ErikTheCoder.MadChess.Core.Game
 
 
         public override string ToString() => CurrentPosition.ToString();
+
+
+        private string ToString(bool allPositions)
+        {
+            if (!allPositions) return ToString();
+            var stringBuilder = new StringBuilder();
+            for (var positionIndex = 0; positionIndex <= _positionIndex; positionIndex++) stringBuilder.AppendLine(_positions[positionIndex].ToString());
+            return stringBuilder.ToString();
+        }
     }
 }

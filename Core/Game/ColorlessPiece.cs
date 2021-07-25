@@ -19,6 +19,6 @@ namespace ErikTheCoder.MadChess.Core.Game
         Bishop,
         Rook,
         Queen,
-        King,
+        King
     }
 }
