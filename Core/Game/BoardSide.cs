@@ -10,16 +10,9 @@
 
 namespace ErikTheCoder.MadChess.Core.Game
 {
-    public enum ColorlessPiece
+    public enum BoardSide
     {
-        // ReSharper disable UnusedMember.Global
-        None,
-        Pawn,
-        Knight,
-        Bishop,
-        Rook,
         Queen,
         King
-        // ReSharper restore UnusedMember.Global
     }
 }

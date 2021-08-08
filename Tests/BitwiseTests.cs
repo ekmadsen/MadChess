@@ -19,26 +19,37 @@ namespace ErikTheCoder.MadChess.Tests
     public sealed class BitwiseTests : TestBase
     {
         [Test]
-        public void TestCreateUIntMask()
-        {
-            var mask = Bitwise.CreateUIntMask(7, 11);
-            WriteMessageLine(Bitwise.ToString(mask));
-            Assert.That(Bitwise.ToString(mask), Is.EqualTo("00000000_00000000_00001111_10000000"));
-        }
-
-
-        [Test]
         public void TestKingRingMasks()
         {
-            // TODO: Assert in king ring mask tests.
             // King on e8.
+            // Inner Ring
             var square = "e8";
             var mask = Board.InnerRingMasks[(int)Board.GetSquare(square)];
             WriteMessageLine($"King on {square} inner ring mask = ");
             WriteMessageLine(Position.ToString(mask));
+            Assert.That(Bitwise.IsBitSet(mask, Square.D8), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.D7), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.E7), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.F7), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.F8), Is.EqualTo(true));
+            mask &= Bitwise.CreateULongUnmask(Square.D8) & Bitwise.CreateULongUnmask(Square.D7) & Bitwise.CreateULongUnmask(Square.E7) & Bitwise.CreateULongUnmask(Square.F7) & Bitwise.CreateULongUnmask(Square.F8);
+            Assert.That(mask & Bitwise.CreateULongMask((int) Square.A8, (int) Square.H1), Is.EqualTo(0));
+            // Outer Ring
             mask = Board.OuterRingMasks[(int)Board.GetSquare(square)];
             WriteMessageLine($"King on {square} outer ring mask = ");
             WriteMessageLine(Position.ToString(mask));
+            Assert.That(Bitwise.IsBitSet(mask, Square.C8), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.C7), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.C6), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.D6), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.E6), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.F6), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.G6), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.G7), Is.EqualTo(true));
+            Assert.That(Bitwise.IsBitSet(mask, Square.G8), Is.EqualTo(true));
+            mask &= Bitwise.CreateULongUnmask(Square.C8) & Bitwise.CreateULongUnmask(Square.C7) & Bitwise.CreateULongUnmask(Square.C6) & Bitwise.CreateULongUnmask(Square.D6) & Bitwise.CreateULongUnmask(Square.E6) &
+                    Bitwise.CreateULongUnmask(Square.F6) & Bitwise.CreateULongUnmask(Square.G6) & Bitwise.CreateULongUnmask(Square.G7) & Bitwise.CreateULongUnmask(Square.G8);
+            Assert.That(mask & Bitwise.CreateULongMask((int)Square.A8, (int)Square.H1), Is.EqualTo(0));
             // King on c3.
             square = "c3";
             mask = Board.InnerRingMasks[(int)Board.GetSquare(square)];
