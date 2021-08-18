@@ -1216,92 +1216,84 @@ namespace ErikTheCoder.MadChess.Core.Game
             }
             // Update castling rights.
             // ReSharper disable ConvertIfStatementToSwitchStatement
-            if (Bitwise.CountSetBits(CurrentPosition.PieceBitboards[(int)Piece.WhiteRook]) > 0)
+            if (CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen])
             {
-                // White has at least one rook.
-                if (CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen])
+                // From Square
+                if (fromSquare == Square.A1)
                 {
-                    // From Square
-                    if (fromSquare == Square.A1)
-                    {
-                        CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
-                    }
-                    else if (fromSquare == Square.E1)
-                    {
-                        CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
-                    }
-                    // To Square
-                    if (toSquare == Square.A1)
-                    {
-                        CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
-                    }
+                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
                 }
-                if (CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King])
+                else if (fromSquare == Square.E1)
                 {
-                    // From Square
-                    if (fromSquare == Square.E1)
-                    {
-                        CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
-                    }
-                    else if (fromSquare == Square.H1)
-                    {
-                        CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
-                    }
-                    // To Square
-                    if (toSquare == Square.H1)
-                    {
-                        CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
-                    }
+                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
+                }
+                // To Square
+                if (toSquare == Square.A1)
+                {
+                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
                 }
             }
-            if (Bitwise.CountSetBits(CurrentPosition.PieceBitboards[(int)Piece.BlackRook]) > 0)
+            if (CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King])
             {
-                // Black has at least one rook.
-                if (CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen])
+                // From Square
+                if (fromSquare == Square.E1)
                 {
-                    // From Square
-                    if (fromSquare == Square.A8)
-                    {
-                        CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
-                    }
-                    else if (fromSquare == Square.E8)
-                    {
-                        CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
-                    }
-                    // To Square
-                    if (toSquare == Square.A8)
-                    {
-                        CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
-                    }
+                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
                 }
-                if (CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King])
+                else if (fromSquare == Square.H1)
                 {
-                    // From Square
-                    if (fromSquare == Square.E8)
-                    {
-                        CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
-                    }
-                    else if (fromSquare == Square.H8)
-                    {
-                        CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
-                    }
-                    // To Square
-                    if (toSquare == Square.H8)
-                    {
-                        CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
-                        CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
-                    }
+                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
+                }
+                // To Square
+                if (toSquare == Square.H1)
+                {
+                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
+                }
+            }
+            if (CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen])
+            {
+                // From Square
+                if (fromSquare == Square.A8)
+                {
+                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
+                }
+                else if (fromSquare == Square.E8)
+                {
+                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
+                }
+                // To Square
+                if (toSquare == Square.A8)
+                {
+                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
+                }
+            }
+            if (CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King])
+            {
+                // From Square
+                if (fromSquare == Square.E8)
+                {
+                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
+                }
+                else if (fromSquare == Square.H8)
+                {
+                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
+                }
+                // To Square
+                if (toSquare == Square.H8)
+                {
+                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
+                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
                 }
             }
             // ReSharper restore ConvertIfStatementToSwitchStatement
