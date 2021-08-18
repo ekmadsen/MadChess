@@ -308,7 +308,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             {
                 // Position is a simple endgame.
                 if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
-                return position.WhiteMove
+                return position.ColorToMove == Color.White
                     ? (_staticScore.WhiteEg - _staticScore.BlackEg, false)
                     : (_staticScore.BlackEg - _staticScore.WhiteEg, false);
             }
@@ -323,7 +323,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             DetermineEndgameScale(position); // Scale down scores for difficult to win endgames.
             if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
             var phase = DetermineGamePhase(position);
-            return position.WhiteMove
+            return position.ColorToMove == Color.White
                 ? (_staticScore.GetTotalScore(phase), false)
                 : (-_staticScore.GetTotalScore(phase), false);
         }
@@ -610,7 +610,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             var blackScore = Bitwise.CountSetBits(position.BlackPawns) * PawnMaterial +
                              Bitwise.CountSetBits(position.BlackKnights) * _knightExchangeMaterial + Bitwise.CountSetBits(position.BlackBishops) * _bishopExchangeMaterial +
                              Bitwise.CountSetBits(position.BlackRooks) * _rookExchangeMaterial + Bitwise.CountSetBits(position.BlackQueens) * _queenExchangeMaterial;
-            return position.WhiteMove
+            return position.ColorToMove == Color.White
                 ? (whiteScore - blackScore, false)
                 : (blackScore - whiteScore, false);
         }
@@ -728,7 +728,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                     if (IsFreePawn(position, pawnSquare, true))
                     {
                         // Pawn can advance safely.
-                        if (IsUnstoppablePawn(position, pawnSquare, enemyKingSquare, true)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                        if (IsUnstoppablePawn(position, pawnSquare, enemyKingSquare, Color.White)) _staticScore.WhiteUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
                         else _staticScore.WhiteEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
                     }
                     else
@@ -754,7 +754,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                     if (IsFreePawn(position, pawnSquare, false))
                     {
                         // Pawn can advance safely.
-                        if (IsUnstoppablePawn(position, pawnSquare, enemyKingSquare, false)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                        if (IsUnstoppablePawn(position, pawnSquare, enemyKingSquare, Color.Black)) _staticScore.BlackUnstoppablePassedPawns += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
                         else _staticScore.BlackEgFreePassedPawns += _egFreePassedPawns[rank]; // Pawn is passed and free.
                     }
                     else
@@ -790,30 +790,20 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
-        private static bool IsUnstoppablePawn(Position position, Square pawnSquare, Square enemyKingSquare, bool white)
+        private static bool IsUnstoppablePawn(Position position, Square pawnSquare, Square enemyKingSquare, Color color)
         {
             // Pawn is free to advance to promotion square.
             var file = Board.Files[(int)pawnSquare];
-            Square promotionSquare;
-            int enemyPieces;
-            if (white)
-            {
-                // White Pawn
-                promotionSquare = Board.GetSquare(file, 7);
-                enemyPieces = Bitwise.CountSetBits(position.BlackKnights | position.BlackBishops | position.BlackRooks | position.BlackQueens);
-            }
-            else
-            {
-                // Black Pawn
-                promotionSquare = Board.GetSquare(file, 0);
-                enemyPieces = Bitwise.CountSetBits(position.WhiteKnights | position.WhiteBishops | position.WhiteRooks | position.WhiteQueens);
-            }
+            var rank = (int)Piece.BlackPawn - ((int)color * (int)Piece.BlackPawn);
+            var enemyColor = (Color)(1 - (int)color);
+            var promotionSquare = Board.GetSquare(file, rank);
+            var enemyPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(enemyColor));
             if (enemyPieces == 0)
             {
                 // Enemy has no minor or major pieces.
                 var pawnDistanceToPromotionSquare = Board.SquareDistances[(int)pawnSquare][(int)promotionSquare];
                 var kingDistanceToPromotionSquare = Board.SquareDistances[(int)enemyKingSquare][(int)promotionSquare];
-                if (white != position.WhiteMove) kingDistanceToPromotionSquare--; // Enemy king can move one square closer to pawn.
+                if (color != position.ColorToMove) kingDistanceToPromotionSquare--; // Enemy king can move one square closer to pawn.
                 return kingDistanceToPromotionSquare > pawnDistanceToPromotionSquare; // Enemy king cannot stop pawn from promoting.
             }
             return false;

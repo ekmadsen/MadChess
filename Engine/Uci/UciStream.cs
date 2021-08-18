@@ -498,7 +498,7 @@ namespace ErikTheCoder.MadChess.Engine.Uci
             _board.SetPosition(fen);
             while (moveIndex < tokens.Count)
             {
-                var move = Move.ParseLongAlgebraic(tokens[moveIndex], _board.CurrentPosition.WhiteMove);
+                var move = Move.ParseLongAlgebraic(tokens[moveIndex], _board.CurrentPosition.ColorToMove);
                 var validMove = _board.ValidateMove(ref move);
                 if (!validMove || !_board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
                 _board.PlayMove(move);
@@ -524,21 +524,21 @@ namespace ErikTheCoder.MadChess.Engine.Uci
                         // Assume all remaining tokens are moves.
                         for (var moveIndex = tokenIndex + 1; moveIndex < tokens.Count; moveIndex++)
                         {
-                            var move = Move.ParseLongAlgebraic(tokens[moveIndex], _board.CurrentPosition.WhiteMove);
+                            var move = Move.ParseLongAlgebraic(tokens[moveIndex], _board.CurrentPosition.ColorToMove);
                             _search.SpecifiedMoves.Add(move);
                         }
                         break;
                     case "wtime":
-                        _search.WhiteTimeRemaining = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                        _search.TimeRemaining[(int)Color.White] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
                         break;
                     case "btime":
-                        _search.BlackTimeRemaining = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                        _search.TimeRemaining[(int)Color.Black] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
                         break;
                     case "winc":
-                        _search.WhiteTimeIncrement = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                        _search.TimeIncrement[(int)Color.White] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
                         break;
                     case "binc":
-                        _search.BlackTimeIncrement = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                        _search.TimeIncrement[(int)Color.Black] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
                         break;
                     case "movestogo":
                         _search.MovesToTimeControl = int.Parse(tokens[tokenIndex + 1]);
@@ -554,8 +554,8 @@ namespace ErikTheCoder.MadChess.Engine.Uci
                     case "mate":
                         _search.MateInMoves = int.Parse(tokens[tokenIndex + 1]);
                         _search.MoveTimeHardLimit = TimeSpan.MaxValue;
-                        _search.WhiteTimeRemaining = TimeSpan.MaxValue;
-                        _search.BlackTimeRemaining = TimeSpan.MaxValue;
+                        _search.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
+                        _search.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
                         _search.CanAdjustMoveTime = false;
                         break;
                     case "movetime":
@@ -564,8 +564,8 @@ namespace ErikTheCoder.MadChess.Engine.Uci
                         break;
                     case "infinite":
                         _search.MoveTimeHardLimit = TimeSpan.MaxValue;
-                        _search.WhiteTimeRemaining = TimeSpan.MaxValue;
-                        _search.BlackTimeRemaining = TimeSpan.MaxValue;
+                        _search.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
+                        _search.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
                         _search.CanAdjustMoveTime = false;
                         break;
                 }
@@ -746,7 +746,7 @@ namespace ErikTheCoder.MadChess.Engine.Uci
 
         private void ExchangeScore(List<string> tokens)
         {
-            var move = Move.ParseLongAlgebraic(tokens[1].Trim(), _board.CurrentPosition.WhiteMove);
+            var move = Move.ParseLongAlgebraic(tokens[1].Trim(), _board.CurrentPosition.ColorToMove);
             var validMove = _board.ValidateMove(ref move);
             if (!validMove || !_board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
             var exchangeScore = _search.GetExchangeScore(_board, move);

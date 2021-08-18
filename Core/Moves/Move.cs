@@ -426,13 +426,13 @@ namespace ErikTheCoder.MadChess.Core.Moves
         public static bool Equals(ulong move1, ulong move2) => (From(move1) == From(move2)) && (To(move1) == To(move2)) && (PromotedPiece(move1) == PromotedPiece(move2));
 
 
-        public static ulong ParseLongAlgebraic(string longAlgebraic, bool whiteMove)
+        public static ulong ParseLongAlgebraic(string longAlgebraic, Color colorToMove)
         {
             var fromSquare = Board.GetSquare(longAlgebraic.Substring(0, 2));
             var toSquare = Board.GetSquare(longAlgebraic.Substring(2, 2));
             // Set case of promoted piece character based on side to move.
             var promotedPiece = longAlgebraic.Length == 5
-                ? PieceHelper.ParseChar(whiteMove ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
+                ? PieceHelper.ParseChar(colorToMove == Color.White ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
                 : Piece.None;
             var move = Null;
             SetFrom(ref move, fromSquare);
@@ -452,32 +452,16 @@ namespace ErikTheCoder.MadChess.Core.Moves
             {
                 case "O-O-O":
                 case "0-0-0":
-                    if (board.CurrentPosition.WhiteMove)
-                    {
-                        // White Castle Queenside
-                        SetFrom(ref move, Square.E1);
-                        SetTo(ref move, Square.C1);
-                        if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
-                        return move;
-                    }
-                    // Black Castle Queenside
-                    SetFrom(ref move, Square.E8);
-                    SetTo(ref move, Square.C8);
+                    // Castle Queenside
+                    SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.Queen]);
+                    SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.Queen]);
                     if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                     return move;
                 case "O-O":
                 case "0-0":
-                    if (board.CurrentPosition.WhiteMove)
-                    {
-                        // White Castle Kingside
-                        SetFrom(ref move, Square.E1);
-                        SetTo(ref move, Square.G1);
-                        if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
-                        return move;
-                    }
-                    // Black Castle Kingside
-                    SetFrom(ref move, Square.E8);
-                    SetTo(ref move, Square.G8);
+                    // Castle Kingside
+                    SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.King]);
+                    SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.King]);
                     if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                     return move;
             }
@@ -490,7 +474,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
             if (char.IsLower(standardAlgebraicNoCheck, 0))
             {
                 // Pawn Move
-                piece = board.CurrentPosition.WhiteMove ? Piece.WhitePawn : Piece.BlackPawn;
+                piece = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, board.CurrentPosition.ColorToMove);
                 fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[0]}1")];
                 switch (length)
                 {
@@ -505,14 +489,14 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     case 4 when standardAlgebraicNoCheck[2] == '=':
                         // Pawn promotion.  Set case of promoted piece character based on side to move.
                         toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(0, 2));
-                        promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
+                        promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
                             ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                             : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                         break;
                     case 6:
                         // Pawn promotion with capture.  Set case of promoted piece character based on side to move.
                         toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(2, 2));
-                        promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
+                        promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
                             ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                             : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                         break;
@@ -523,7 +507,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
             else
             {
                 // Piece Move
-                piece = PieceHelper.ParseChar(board.CurrentPosition.WhiteMove
+                piece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
                     ? char.ToUpper(standardAlgebraicNoCheck[0])
                     : char.ToLower(standardAlgebraicNoCheck[0]));
                 // ReSharper disable once ConvertIfStatementToSwitchStatement

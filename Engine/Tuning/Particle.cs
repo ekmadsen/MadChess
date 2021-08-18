@@ -189,9 +189,9 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                     // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
                     var result = game.Result switch
                     {
-                        GameResult.WhiteWon => board.CurrentPosition.WhiteMove ? 1d : 0,
+                        GameResult.WhiteWon => board.CurrentPosition.ColorToMove == Color.White ? 1d : 0,
                         GameResult.Draw => 0.5d,
-                        GameResult.BlackWon => board.CurrentPosition.WhiteMove ? 0 : 1d,
+                        GameResult.BlackWon => board.CurrentPosition.ColorToMove == Color.Black ? 1d : 0,
                         _ => throw new InvalidOperationException($"{game.Result} game result not supported.")
                     };
                     evaluationError += Math.Pow(winFraction - result, 2);

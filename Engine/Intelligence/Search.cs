@@ -35,10 +35,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         public AutoResetEvent Signal;
         public bool PvInfoUpdate;
         public List<ulong> SpecifiedMoves;
-        public TimeSpan? WhiteTimeRemaining;
-        public TimeSpan? BlackTimeRemaining;
-        public TimeSpan? WhiteTimeIncrement;
-        public TimeSpan? BlackTimeIncrement;
+        public TimeSpan?[] TimeRemaining;
+        public TimeSpan?[] TimeIncrement;
         public int? MovesToTimeControl;
         public int? MateInMoves;
         public int HorizonLimit;
@@ -172,6 +170,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             _stopwatch = new Stopwatch();
             // Create search parameters.
             SpecifiedMoves = new List<ulong>();
+            TimeRemaining = new TimeSpan?[2];
+            TimeIncrement = new TimeSpan?[2];
             // To Horizon =            000  001  002  003  004  005
             _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
             _lateMovePruning = new[] { 999, 003, 007, 013, 021, 031 };
@@ -215,10 +215,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             {
                 // Release managed resources.
                 SpecifiedMoves = null;
-                WhiteTimeRemaining = null;
-                BlackTimeRemaining = null;
-                WhiteTimeIncrement = null;
-                BlackTimeIncrement = null;
+                TimeRemaining = null;
+                TimeIncrement = null;
                 MovesToTimeControl = null;
                 MateInMoves = null;
                 _movePriorityComparer = null;
@@ -459,23 +457,11 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         {
             // No need to calculate move time if go command specified move time, horizon limit, or nodes..
             if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon) || (NodeLimit != long.MaxValue)) return;
-            // Retrieve time remaining increment.
-            TimeSpan timeRemaining;
-            TimeSpan timeIncrement;
-            if (position.WhiteMove)
-            {
-                // White Move
-                if (!WhiteTimeRemaining.HasValue) throw new Exception($"{nameof(WhiteTimeRemaining)} is null.");
-                timeRemaining = WhiteTimeRemaining.Value;
-                timeIncrement = WhiteTimeIncrement ?? TimeSpan.Zero;
-            }
-            else
-            {
-                // Black Move
-                if (!BlackTimeRemaining.HasValue) throw new Exception($"{nameof(BlackTimeRemaining)} is null.");
-                timeRemaining = BlackTimeRemaining.Value;
-                timeIncrement = BlackTimeIncrement ?? TimeSpan.Zero;
-            }
+            // Retrieve time remaining and increment.
+            if (!TimeRemaining[(int)position.ColorToMove].HasValue) throw new Exception($"{nameof(TimeRemaining)} for {position.ColorToMove} is null.");
+            // ReSharper disable once PossibleInvalidOperationException
+            var timeRemaining = TimeRemaining[(int)position.ColorToMove].Value;
+            var timeIncrement = TimeIncrement[(int)position.ColorToMove] ?? TimeSpan.Zero;
             if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate move time if go command specified infinite search.
             timeRemaining -= _stopwatch.Elapsed; // Account for lag between receiving go command and now.
             int movesRemaining;
@@ -890,9 +876,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         {
             if ((position.StaticScore < beta) || position.KingInCheck) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
-            var minorAndMajorPieces = position.WhiteMove
-                ? Bitwise.CountSetBits(position.WhiteKnights | position.WhiteBishops | position.WhiteRooks | position.WhiteQueens)
-                : Bitwise.CountSetBits(position.BlackKnights | position.BlackBishops | position.BlackRooks | position.BlackQueens);
+            var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
             return minorAndMajorPieces > 0;
         }
 
@@ -1279,10 +1263,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             _stopwatch.Restart();
             SpecifiedMoves.Clear();
             // Reset move times and limits.
-            WhiteTimeRemaining = null;
-            BlackTimeRemaining = null;
-            WhiteTimeIncrement = null;
-            BlackTimeIncrement = null;
+            TimeRemaining[(int)Color.White] = null;
+            TimeRemaining[(int)Color.Black] = null;
             MovesToTimeControl = null;
             MateInMoves = null;
             HorizonLimit = MaxHorizon;

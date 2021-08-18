@@ -71,10 +71,6 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         public static Color GetColor(Piece piece) => piece <= Piece.WhiteKing ? Color.White : Color.Black;
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsWhite(Piece piece) => piece <= Piece.WhiteKing;
-
-
         public static Piece ParseChar(char character)
         {
             return character switch

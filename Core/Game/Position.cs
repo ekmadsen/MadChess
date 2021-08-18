@@ -63,13 +63,6 @@ namespace ErikTheCoder.MadChess.Core.Game
         public Color ColorLastMoved => 1 - ColorToMove;
 
 
-        public bool WhiteMove
-        {
-            get => ColorToMove == Color.White;
-            set => ColorToMove = value ? Color.White : Color.Black;
-        }
-
-
         public Position(Board board)
         {
             _board = board;
@@ -86,9 +79,25 @@ namespace ErikTheCoder.MadChess.Core.Game
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetPawns(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhitePawn];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetKnights(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteKnight];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetBishops(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteBishop];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetRooks(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteRook];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetQueens(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteQueen];
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetKing(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteKing];
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong GetMajorAndMinorPieces(Color color)
+        {
+            var pieces = 0ul;
+            var firstPiece = (Piece)((int)color * (int)Piece.WhiteKing) + (int)Piece.WhiteKnight;
+            var lastPiece = firstPiece + 3;
+            for (var piece = firstPiece; piece <= lastPiece; piece++) pieces |= PieceBitboards[(int)piece];
+            return pieces;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Piece GetPiece(Square square)
         {
             var squareMask = Board.SquareMasks[(int) square];
@@ -111,6 +120,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(Position copyFromPosition)
         {
             // Copy bitboards.
@@ -139,7 +149,8 @@ namespace ErikTheCoder.MadChess.Core.Game
             GenerateMoves(MoveGeneration.AllMoves, Board.AllSquaresMask, Board.AllSquaresMask);
         }
 
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void GenerateMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
         {
             GeneratePawnMoves(moveGeneration, fromSquareMask, toSquareMask);
@@ -393,29 +404,11 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void FindPinnedPieces()
         {
-            Square ownKingSquare;
-            ulong ownPieces;
-            ulong enemyRankFileAttackers;
-            ulong enemyDiagonalAttackers;
-            ulong enemyPieces;
-            if (WhiteMove)
-            {
-                // White Move
-                ownKingSquare = Bitwise.FirstSetSquare(WhiteKing);
-                ownPieces = WhiteOccupancy;
-                enemyRankFileAttackers = BlackRooks | BlackQueens;
-                enemyDiagonalAttackers = BlackBishops | BlackQueens;
-                enemyPieces = BlackOccupancy;
-            }
-            else
-            {
-                // Black Move
-                ownKingSquare = Bitwise.FirstSetSquare(BlackKing);
-                ownPieces = BlackOccupancy;
-                enemyRankFileAttackers = WhiteRooks | WhiteQueens;
-                enemyDiagonalAttackers = WhiteBishops | WhiteQueens;
-                enemyPieces = WhiteOccupancy;
-            }
+            var ownKingSquare = Bitwise.FirstSetSquare(GetKing(ColorToMove));
+            var ownPieces = ColorOccupancy[(int)ColorToMove];
+            var enemyRankFileAttackers = GetRooks(ColorLastMoved) | GetQueens(ColorLastMoved);
+            var enemyDiagonalAttackers = GetBishops(ColorLastMoved) | GetQueens(ColorLastMoved);
+            var enemyPieces = ColorOccupancy[(int)ColorLastMoved];
             // Find pieces pinned to own king by enemy rank / file attackers.
             PinnedPieces = 0;
             Square attackerSquare;
@@ -430,12 +423,12 @@ namespace ErikTheCoder.MadChess.Core.Game
                 if ((betweenSquares & enemyPieces) == 0)
                 {
                     // No enemy pieces between enemy attacker and own king.
-                    var potentiallyPinnedPieces = betweenSquares & ownPieces;
-                    if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+                    var pinnedPieces = betweenSquares & ownPieces;
+                    if (Bitwise.CountSetBits(pinnedPieces) == 1)
                     {
                         // Exactly one own piece between enemy attacker and own king.
                         // Piece is pinned to own king.
-                        PinnedPieces |= potentiallyPinnedPieces;
+                        PinnedPieces |= pinnedPieces;
                     }
                 }
                 Bitwise.ClearBit(ref enemyRankFileAttackers, attackerSquare);
@@ -452,12 +445,12 @@ namespace ErikTheCoder.MadChess.Core.Game
                 if ((betweenSquares & enemyPieces) == 0)
                 {
                     // No enemy pieces between enemy attacker and own king.
-                    var potentiallyPinnedPieces = betweenSquares & ownPieces;
-                    if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+                    var pinnedPieces = betweenSquares & ownPieces;
+                    if (Bitwise.CountSetBits(pinnedPieces) == 1)
                     {
                         // Exactly one own piece between enemy attacker and own king.
                         // Piece is pinned to own king.
-                        PinnedPieces |= potentiallyPinnedPieces;
+                        PinnedPieces |= pinnedPieces;
                     }
                 }
                 Bitwise.ClearBit(ref enemyDiagonalAttackers, attackerSquare);
@@ -533,7 +526,7 @@ namespace ErikTheCoder.MadChess.Core.Game
             }
             // Display side to move, castling rights, en passant square, ply, and full move number.
             stringBuilder.Append(" ");
-            stringBuilder.Append(WhiteMove ? "w" : "b");
+            stringBuilder.Append(ColorToMove == Color.White ? "w" : "b");
             stringBuilder.Append(" ");
             stringBuilder.Append(CastlingHelper.ToString(Castling));
             stringBuilder.Append(" ");
