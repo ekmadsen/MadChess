@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq; // Use LINQ only for Debug.Asserts.
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 #if POPCOUNT
@@ -44,6 +45,35 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 #endif
 
 
+        // ReSharper disable MemberCanBePrivate.Global
+        // ReSharper disable UnusedMember.Global
+        public static uint CreateUIntMask(int index)
+        {
+            Debug.Assert((index >= 0) && (index < 32));
+            return 1u << index;
+        }
+
+
+        public static uint CreateUIntMask(int leastSignificantBit, int mostSignificantBit)
+        {
+            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 32));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 32));
+            Debug.Assert(leastSignificantBit <= mostSignificantBit);
+            var mask = 0u;
+            for (var index = leastSignificantBit; index <= mostSignificantBit; index++) SetBit(ref mask, index);
+            return mask;
+        }
+
+
+        public static uint CreateUIntMask(int[] indices)
+        {
+            var mask = 0u;
+            for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
+            Debug.Assert(indices.All(index => (index >= 0) && (index < 32)));
+            return mask;
+        }
+
+
         public static ulong CreateULongMask(int index)
         {
             Debug.Assert(index >= 0 && index < 64);
@@ -73,6 +103,29 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         }
 
 
+        public static uint CreateUIntUnmask(int index)
+        {
+            Debug.Assert((index >= 0) && (index < 32));
+            return ~CreateUIntMask(index);
+        }
+
+
+        public static uint CreateUIntUnmask(int leastSignificantBit, int mostSignificantBit)
+        {
+            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 32));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 32));
+            Debug.Assert(leastSignificantBit <= mostSignificantBit);
+            return ~CreateUIntMask(leastSignificantBit, mostSignificantBit);
+        }
+
+
+        public static uint CreateUIntUnMask(int[] indices)
+        {
+            Debug.Assert(indices.All(index => (index >= 0) && (index < 32)));
+            return ~CreateUIntMask(indices);
+        }
+
+
         public static ulong CreateULongUnmask(int index)
         {
             Debug.Assert(index >= 0 && index < 64);
@@ -93,6 +146,14 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SetBit(ref uint value, int index)
+        {
+            Debug.Assert((index >= 0) && (index < 32));
+            value |= 1u << index;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SetBit(ref ulong value, int index)
         {
             Debug.Assert((index >= 0) && (index < 64));
@@ -105,13 +166,46 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ClearBit(ref uint value, int index)
+        {
+            Debug.Assert((index >= 0) && (index < 32));
+            value &= ~(1u << index);
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ClearBit(ref ulong value, int index)
         {
             Debug.Assert((index >= 0) && (index < 64));
             value &= ~(1ul << index);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ClearBit(ref ulong value, Square square) => value &= ~(1ul << (int)square);
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ToggleBit(ref uint value, int index)
+        {
+            Debug.Assert((index >= 0) && (index < 32));
+            value ^= 1u << index;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ToggleBit(ref ulong value, int index)
+        {
+            Debug.Assert((index >= 0) && (index < 32));
+            value ^= 1ul << index;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsBitSet(uint value, int index)
+        {
+            Debug.Assert((index >= 0) && (index < 32));
+            return (value & (1u << index)) > 0;
+        }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -124,6 +218,25 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBitSet(ulong value, Square square) => (value & (1ul << (int)square)) > 0;
+
+
+#if POPCOUNT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountSetBits(uint value) => BitOperations.PopCount(value);
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountSetBits(uint Value)
+        {
+            var count = 0;
+            while (Value > 0)
+            {
+                count++;
+                Value &= Value - 1u;
+            }
+            Debug.Assert((count >= 0) && (count <= _intBits));
+            return count;
+        }
+#endif
 
 
 #if POPCOUNT
@@ -188,5 +301,7 @@ namespace ErikTheCoder.MadChess.Core.Utilities
                 }
             }
         }
+        // ReSharper restore UnusedMember.Global
+        // ReSharper restore MemberCanBePrivate.Global
     }
 }

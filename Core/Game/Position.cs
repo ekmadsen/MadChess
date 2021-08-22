@@ -22,11 +22,11 @@ namespace ErikTheCoder.MadChess.Core.Game
         public const int MaxMoves = 128;
         public readonly ulong[] PieceBitboards;
         public readonly ulong[] ColorOccupancy;
-        public readonly bool[][] Castling;
         public readonly ulong[] Moves;
         public ulong Occupancy;
         public ulong PinnedPieces;
         public Color ColorToMove;
+        public uint Castling;
         public Square EnPassantSquare;
         public int PlySinceCaptureOrPawnMove;
         public int FullMoveNumber;
@@ -35,7 +35,6 @@ namespace ErikTheCoder.MadChess.Core.Game
         public int MoveIndex;
         public MoveGenerationStage MoveGenerationStage;
         public ulong PiecesSquaresKey;
-        public ulong CastlingKey;
         public ulong Key;
         public int StaticScore;
         public ulong PlayedMove;
@@ -68,11 +67,6 @@ namespace ErikTheCoder.MadChess.Core.Game
             _board = board;
             PieceBitboards = new ulong[(int) Piece.BlackKing + 1];
             ColorOccupancy = new ulong[2];
-            Castling = new[]
-            {
-                new[] { false, false },
-                new[] { false, false }
-            };
             Moves = new ulong[MaxMoves];
             Reset();
         }
@@ -130,15 +124,11 @@ namespace ErikTheCoder.MadChess.Core.Game
             Occupancy = copyFromPosition.Occupancy;
             // Copy board state.  Do not copy values that will be set after moves are generated or played.
             ColorToMove = copyFromPosition.ColorToMove;
-            Castling[(int)Color.White][(int)BoardSide.Queen] = copyFromPosition.Castling[(int)Color.White][(int)BoardSide.Queen];
-            Castling[(int)Color.White][(int)BoardSide.King] = copyFromPosition.Castling[(int)Color.White][(int)BoardSide.King];
-            Castling[(int)Color.Black][(int)BoardSide.Queen] = copyFromPosition.Castling[(int)Color.Black][(int)BoardSide.Queen];
-            Castling[(int)Color.Black][(int)BoardSide.King] = copyFromPosition.Castling[(int)Color.Black][(int)BoardSide.King];
+            Castling = copyFromPosition.Castling;
             EnPassantSquare = copyFromPosition.EnPassantSquare;
             PlySinceCaptureOrPawnMove = copyFromPosition.PlySinceCaptureOrPawnMove;
             FullMoveNumber = copyFromPosition.FullMoveNumber;
             PiecesSquaresKey = copyFromPosition.PiecesSquaresKey;
-            CastlingKey = copyFromPosition.CastlingKey;
         }
 
 
@@ -367,34 +357,23 @@ namespace ErikTheCoder.MadChess.Core.Game
             }
             if (moveGeneration != MoveGeneration.OnlyCaptures)
             {
-                if (Castling[(int)ColorToMove][(int)BoardSide.Queen] && ((Occupancy & Board.CastleEmptySquaresMask[(int)ColorToMove][(int)BoardSide.Queen]) == 0))
+                for (var boardSide = BoardSide.Queen; boardSide <= BoardSide.King; boardSide++)
                 {
-                    // Castle Queenside
-                    toSquare = Board.CastleToSquares[(int)ColorToMove][(int)BoardSide.Queen];
-                    if ((Board.SquareMasks[(int)toSquare] & toSquareMask) > 0)
+                    var castleEmptySquaresMask = Board.CastleEmptySquaresMask[(int)ColorToMove][(int)boardSide];
+                    if (Game.Castling.Permitted(Castling, ColorToMove, boardSide) && ((Occupancy & castleEmptySquaresMask) == 0))
                     {
-                        move = Move.Null;
-                        Move.SetFrom(ref move, fromSquare);
-                        Move.SetTo(ref move, toSquare);
-                        Move.SetIsCastling(ref move, true);
-                        Move.SetIsKingMove(ref move, true);
-                        Moves[MoveIndex] = move;
-                        MoveIndex++;
-                    }
-                }
-                if (Castling[(int)ColorToMove][(int)BoardSide.King] && ((Occupancy & Board.CastleEmptySquaresMask[(int)ColorToMove][(int)BoardSide.King]) == 0))
-                {
-                    // Castle Kingside
-                    toSquare = Board.CastleToSquares[(int)ColorToMove][(int)BoardSide.King];
-                    if ((Board.SquareMasks[(int)toSquare] & toSquareMask) > 0)
-                    {
-                        move = Move.Null;
-                        Move.SetFrom(ref move, fromSquare);
-                        Move.SetTo(ref move, toSquare);
-                        Move.SetIsCastling(ref move, true);
-                        Move.SetIsKingMove(ref move, true);
-                        Moves[MoveIndex] = move;
-                        MoveIndex++;
+                        // Castle
+                        toSquare = Board.CastleToSquares[(int)ColorToMove][(int)boardSide];
+                        if ((Board.SquareMasks[(int)toSquare] & toSquareMask) > 0)
+                        {
+                            move = Move.Null;
+                            Move.SetFrom(ref move, fromSquare);
+                            Move.SetTo(ref move, toSquare);
+                            Move.SetIsCastling(ref move, true);
+                            Move.SetIsKingMove(ref move, true);
+                            Moves[MoveIndex] = move;
+                            MoveIndex++;
+                        }
                     }
                 }
             }
@@ -466,10 +445,7 @@ namespace ErikTheCoder.MadChess.Core.Game
             Occupancy = 0;
             PinnedPieces = 0;
             ColorToMove = Color.White;
-            Castling[(int)Color.White][(int)BoardSide.Queen] = false;
-            Castling[(int)Color.White][(int)BoardSide.King] = false;
-            Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
-            Castling[(int)Color.Black][(int)BoardSide.King] = false;
+            Castling = 0;
             EnPassantSquare = Square.Illegal;
             PlySinceCaptureOrPawnMove = 0;
             FullMoveNumber = 0;
@@ -478,7 +454,6 @@ namespace ErikTheCoder.MadChess.Core.Game
             MoveIndex = 0;
             MoveGenerationStage = MoveGenerationStage.BestMove;
             PiecesSquaresKey = 0;
-            CastlingKey = 0;
             Key = 0;
             StaticScore = 0;
             PlayedMove = Move.Null;
@@ -528,7 +503,7 @@ namespace ErikTheCoder.MadChess.Core.Game
             stringBuilder.Append(" ");
             stringBuilder.Append(ColorToMove == Color.White ? "w" : "b");
             stringBuilder.Append(" ");
-            stringBuilder.Append(CastlingHelper.ToString(Castling));
+            stringBuilder.Append(Game.Castling.ToString(Castling));
             stringBuilder.Append(" ");
             stringBuilder.Append(EnPassantSquare == Square.Illegal ? "-" : Board.SquareLocations[(int)EnPassantSquare]);
             stringBuilder.Append(" ");

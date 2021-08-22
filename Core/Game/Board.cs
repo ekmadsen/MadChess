@@ -71,7 +71,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         private readonly ulong _piecesSquaresInitialKey;
         private readonly ulong[][] _pieceSquareKeys;
         private readonly ulong[] _sideToMoveKeys;
-        private readonly ulong[][] _castlingKeys;
+        private readonly ulong[] _castlingKeys;
         private readonly ulong[] _enPassantKeys;
         private readonly Position[] _positions;
         private int _positionIndex;
@@ -400,11 +400,10 @@ namespace ErikTheCoder.MadChess.Core.Game
                 for (var square = Square.A8; square < Square.Illegal; square++) _pieceSquareKeys[(int)piece][(int)square] = SafeRandom.NextULong();
             }
             _sideToMoveKeys = new[] { SafeRandom.NextULong(), SafeRandom.NextULong() };
-            _castlingKeys = new[]
+            _castlingKeys = new ulong[16]; // 2 Pow 4 = 16 combinations of castling rights.
             {
-                new[] { SafeRandom.NextULong(), SafeRandom.NextULong() },
-                new[] { SafeRandom.NextULong(), SafeRandom.NextULong() }
-            };
+                for (var castlingRights = 0; castlingRights < 16; castlingRights++) _castlingKeys[castlingRights] = SafeRandom.NextULong();
+            }
             _enPassantKeys = new ulong[(int)Square.Illegal + 1];
             for (var square = Square.A8; square <= Square.Illegal; square++) _enPassantKeys[(int)square] = SafeRandom.NextULong();
             _piecesSquaresInitialKey = SafeRandom.NextULong();
@@ -945,10 +944,10 @@ namespace ErikTheCoder.MadChess.Core.Game
             }
             // Set side to move, castling rights, en passant square, ply, and full move number.
             CurrentPosition.ColorToMove = fenTokens[1].Equals("w") ? Color.White : Color.Black;
-            CurrentPosition.Castling[(int) Color.White][(int) BoardSide.King] = fenTokens[2].IndexOf("K") > -1;
-            CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = fenTokens[2].IndexOf("Q") > -1;
-            CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = fenTokens[2].IndexOf("k") > -1;
-            CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = fenTokens[2].IndexOf("q") > -1;
+            Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.King, fenTokens[2].IndexOf("K") > -1);
+            Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.Queen, fenTokens[2].IndexOf("Q") > -1);
+            Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.King, fenTokens[2].IndexOf("k") > -1);
+            Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.Queen, fenTokens[2].IndexOf("q") > -1);
             CurrentPosition.EnPassantSquare = fenTokens[3] == "-" ? Square.Illegal : GetSquare(fenTokens[3]);
             CurrentPosition.PlySinceCaptureOrPawnMove = fenTokens.Count == 6 ? int.Parse(fenTokens[4]) : 0;
             CurrentPosition.FullMoveNumber = fenTokens.Count == 6 ? int.Parse(fenTokens[5]) : 1;
@@ -1031,13 +1030,13 @@ namespace ErikTheCoder.MadChess.Core.Game
                     if (toSquare == Square.C1)
                     {
                         // Castle Queenside
-                        if (!CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen]) return false; // Castle not possible.
+                        if (!Castling.Permitted(CurrentPosition.Castling, Color.White, BoardSide.Queen)) return false; // Castle not possible.
                         if ((CurrentPosition.Occupancy & CastleEmptySquaresMask[(int)Color.White][(int)BoardSide.Queen]) > 0) return false; // Castle squares occupied.
                     }
                     else
                     {
                         // Castle Kingside
-                        if (!CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King]) return false; // Castle not possible.
+                        if (!Castling.Permitted(CurrentPosition.Castling, Color.White, BoardSide.King)) return false; // Castle not possible.
                         if ((CurrentPosition.Occupancy & CastleEmptySquaresMask[(int)Color.White][(int)BoardSide.King]) > 0) return false; // Castle squares occupied.
                     }
                 }
@@ -1048,13 +1047,13 @@ namespace ErikTheCoder.MadChess.Core.Game
                     if (toSquare == Square.C8)
                     {
                         // Castle Queenside
-                        if (!CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen]) return false; // Castle not possible.
+                        if (!Castling.Permitted(CurrentPosition.Castling, Color.Black, BoardSide.Queen)) return false; // Castle not possible.
                         if ((CurrentPosition.Occupancy & CastleEmptySquaresMask[(int)Color.Black][(int)BoardSide.Queen]) > 0) return false; // Castle squares occupied.
                     }
                     else
                     {
                         // Castle Kingside
-                        if (!CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King]) return false; // Castle not possible.
+                        if (!Castling.Permitted(CurrentPosition.Castling, Color.Black, BoardSide.King)) return false; // Castle not possible.
                         if ((CurrentPosition.Occupancy & CastleEmptySquaresMask[(int)Color.Black][(int)BoardSide.King]) > 0) return false; // Castle squares occupied.
                     }
                 }
@@ -1214,87 +1213,49 @@ namespace ErikTheCoder.MadChess.Core.Game
                 var promotedPiece = Move.PromotedPiece(move);
                 AddPiece(promotedPiece == Piece.None ? piece : promotedPiece, toSquare);
             }
-            // Update castling rights.
-            // ReSharper disable ConvertIfStatementToSwitchStatement
-            if (CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen])
+            if (Castling.Permitted(CurrentPosition.Castling))
             {
-                // From Square
-                if (fromSquare == Square.A1)
+                // Update castling rights.
+                // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
+                switch (fromSquare)
                 {
-                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
+                    case Square.A8:
+                        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.Queen, false);
+                        break;
+                    case Square.E8:
+                        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.Queen, false);
+                        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.King, false);
+                        break;
+                    case Square.H8:
+                        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.King, false);
+                        break;
+                    case Square.A1:
+                        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.Queen, false);
+                        break;
+                    case Square.E1:
+                        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.Queen, false);
+                        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.King, false);
+                        break;
+                    case Square.H1:
+                        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.King, false);
+                        break;
                 }
-                else if (fromSquare == Square.E1)
+                switch (toSquare)
                 {
-                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
+                    case Square.A8:
+                        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.Queen, false);
+                        break;
+                    case Square.H8:
+                        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.King, false);
+                        break;
+                    case Square.A1:
+                        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.Queen, false);
+                        break;
+                    case Square.H1:
+                        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.King, false);
+                        break;
                 }
-                // To Square
-                if (toSquare == Square.A1)
-                {
-                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.Queen] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.Queen];
-                }
-            }
-            if (CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King])
-            {
-                // From Square
-                if (fromSquare == Square.E1)
-                {
-                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
-                }
-                else if (fromSquare == Square.H1)
-                {
-                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
-                }
-                // To Square
-                if (toSquare == Square.H1)
-                {
-                    CurrentPosition.Castling[(int)Color.White][(int)BoardSide.King] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.White][(int)BoardSide.King];
-                }
-            }
-            if (CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen])
-            {
-                // From Square
-                if (fromSquare == Square.A8)
-                {
-                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
-                }
-                else if (fromSquare == Square.E8)
-                {
-                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
-                }
-                // To Square
-                if (toSquare == Square.A8)
-                {
-                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.Queen] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.Queen];
-                }
-            }
-            if (CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King])
-            {
-                // From Square
-                if (fromSquare == Square.E8)
-                {
-                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
-                }
-                else if (fromSquare == Square.H8)
-                {
-                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
-                }
-                // To Square
-                if (toSquare == Square.H8)
-                {
-                    CurrentPosition.Castling[(int)Color.Black][(int)BoardSide.King] = false;
-                    CurrentPosition.CastlingKey ^= _castlingKeys[(int)Color.Black][(int)BoardSide.King];
-                }
+                // ReSharper restore SwitchStatementMissingSomeEnumCasesNoDefault
             }
             // ReSharper restore ConvertIfStatementToSwitchStatement
             // Update current position.
@@ -1504,12 +1465,14 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
+        // TODO: Rename Board.GetPositionKey to Board.GetCurrentPositionKey().
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ulong GetPositionKey()
         {
             var sideToMoveKey = _sideToMoveKeys[(int)CurrentPosition.ColorToMove];
+            var castlingKey = _castlingKeys[CurrentPosition.Castling];
             var enPassantKey = _enPassantKeys[(int)CurrentPosition.EnPassantSquare];
-            return CurrentPosition.PiecesSquaresKey ^ sideToMoveKey ^ CurrentPosition.CastlingKey ^ enPassantKey;
+            return CurrentPosition.PiecesSquaresKey ^ sideToMoveKey ^ castlingKey ^ enPassantKey;
         }
 
 
