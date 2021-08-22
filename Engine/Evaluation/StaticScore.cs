@@ -10,6 +10,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Text;
+using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
@@ -22,78 +23,76 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         public const int Interrupted = Max - Search.MaxHorizon - 1;
         public const int NotCached = Max - Search.MaxHorizon - 2;
         public const int MaxPlyWithoutCaptureOrPawnMove = 100;
-        public int WhiteEgSimple;
-        public int WhitePawnMaterial;
-        public int WhiteMgPieceMaterial;
-        public int WhiteEgPieceMaterial;
-        public int WhiteMgPieceLocation;
-        public int WhiteEgPieceLocation;
-        public int WhitePassedPawnCount;
-        public int WhiteMgPassedPawns;
-        public int WhiteEgPassedPawns;
-        public int WhiteEgFreePassedPawns;
-        public int WhiteEgKingEscortedPassedPawns;
-        public int WhiteUnstoppablePassedPawns;
-        public int WhiteMgPieceMobility;
-        public int WhiteEgPieceMobility;
-        public int WhiteMgKingSafety;
-        public int WhiteMgBishopPair;
-        public int WhiteEgBishopPair;
-        public int BlackEgSimple;
-        public int BlackPawnMaterial;
-        public int BlackMgPieceMaterial;
-        public int BlackEgPieceMaterial;
-        public int BlackMgPieceLocation;
-        public int BlackEgPieceLocation;
-        public int BlackPassedPawnCount;
-        public int BlackMgPassedPawns;
-        public int BlackEgPassedPawns;
-        public int BlackEgFreePassedPawns;
-        public int BlackEgKingEscortedPassedPawns;
-        public int BlackUnstoppablePassedPawns;
-        public int BlackMgPieceMobility;
-        public int BlackEgPieceMobility;
-        public int BlackMgKingSafety;
-        public int BlackMgBishopPair;
-        public int BlackEgBishopPair;
+        public int[] EgSimple;
+        public int[] PawnMaterial;
+        public int[] MgPieceMaterial;
+        public int[] EgPieceMaterial;
+        public int[] MgPieceLocation;
+        public int[] EgPieceLocation;
+        public int[] PassedPawnCount;
+        public int[] MgPassedPawns;
+        public int[] EgPassedPawns;
+        public int[] EgFreePassedPawns;
+        public int[] EgKingEscortedPassedPawns;
+        public int[] UnstoppablePassedPawns;
+        public int[] MgPieceMobility;
+        public int[] EgPieceMobility;
+        public int[] MgKingSafety;
+        public int[] MgBishopPair;
+        public int[] EgBishopPair;
         public int PlySinceCaptureOrPawnMove;
         public int EgScalePer128;
 
 
-        private int WhiteMgMaterial => WhitePawnMaterial + WhiteMgPieceMaterial;
+        public StaticScore()
+        {
+            EgSimple = new int[2];
+            PawnMaterial = new int[2];
+            MgPieceMaterial = new int[2];
+            EgPieceMaterial = new int[2];
+            MgPieceLocation = new int[2];
+            EgPieceLocation = new int[2];
+            PassedPawnCount = new int[2];
+            MgPassedPawns = new int[2];
+            EgPassedPawns = new int[2];
+            EgFreePassedPawns = new int[2];
+            EgKingEscortedPassedPawns = new int[2];
+            UnstoppablePassedPawns = new int[2];
+            MgPieceMobility = new int[2];
+            EgPieceMobility = new int[2];
+            MgKingSafety = new int[2];
+            MgBishopPair = new int[2];
+            EgBishopPair = new int[2];
+        }
 
 
-        private int WhiteMg => WhiteMgMaterial + WhiteMgPieceLocation + WhiteMgPassedPawns + WhiteUnstoppablePassedPawns + WhiteMgPieceMobility + WhiteMgKingSafety + WhiteMgBishopPair;
+        private int GetMgMaterial(Color color) => PawnMaterial[(int)color] + MgPieceMaterial[(int)color];
 
 
-        private int WhiteEgMaterial => WhitePawnMaterial + WhiteEgPieceMaterial;
+        private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
+            MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgBishopPair[(int)color];
 
 
-        public int WhiteEg => WhiteEgSimple + WhiteEgMaterial + WhiteEgPieceLocation + WhiteEgPassedPawns + WhiteEgFreePassedPawns + WhiteEgKingEscortedPassedPawns + WhiteUnstoppablePassedPawns +
-                              WhiteEgPieceMobility + WhiteEgBishopPair;
+        private int GetEgMaterial(Color color) => PawnMaterial[(int)color] + EgPieceMaterial[(int)color];
 
 
-        private int WhiteEgScaled => (EgScalePer128 * WhiteEg) / 128;
+        public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgPieceLocation[(int)color] + EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] +
+                                         EgKingEscortedPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgBishopPair[(int)color];
 
 
-        private int BlackMgMaterial => BlackPawnMaterial + BlackMgPieceMaterial;
-
-
-        private int BlackMg => BlackMgMaterial + BlackMgPieceLocation + BlackMgPassedPawns + BlackUnstoppablePassedPawns + BlackMgPieceMobility + BlackMgKingSafety + BlackMgBishopPair;
-
-
-        private int BlackEgMaterial => BlackPawnMaterial + BlackEgPieceMaterial;
-
-
-        public int BlackEg => BlackEgSimple + BlackEgMaterial + BlackEgPieceLocation + BlackEgPassedPawns + BlackEgFreePassedPawns + BlackEgKingEscortedPassedPawns + BlackUnstoppablePassedPawns +
-                              BlackEgPieceMobility + BlackEgBishopPair;
-
-
-        private int BlackEgScaled => (EgScalePer128 * BlackEg) / 128;
+        private int GetEgScaled(Color color) => (EgScalePer128 * GetEg(color)) / 128;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetTaperedScore(int phase) => GetTaperedScore(WhiteMg - BlackMg, WhiteEgScaled - BlackEgScaled, phase);
+        private int GetTaperedScore(Color color, int phase)
+        {
+            var enemyColor = (Color)(1 - (int)color);
+            var mgScore = GetMg(color);
+            var mgEnemyScore = GetMg(enemyColor);
+            var egScaledScore = GetEgScaled(color);
+            var egEnemyScaledScore = GetEgScaled(enemyColor);
+            return GetTaperedScore(mgScore - mgEnemyScore, egScaledScore - egEnemyScaledScore, phase);
+        }
 
 
         // Linearly interpolate between middlegame and endgame scores.
@@ -102,9 +101,9 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetTotalScore(int phase)
+        public int GetTotalScore(Color color, int phase)
         {
-            var taperedScore = GetTaperedScore(phase);
+            var taperedScore = GetTaperedScore(color, phase);
             // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
             return (taperedScore * (MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / MaxPlyWithoutCaptureOrPawnMove;
         }
@@ -112,40 +111,26 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
 
         public void Reset()
         {
-            WhiteEgSimple = 0;
-            WhitePawnMaterial = 0;
-            WhiteMgPieceMaterial = 0;
-            WhiteEgPieceMaterial = 0;
-            WhiteMgPieceLocation = 0;
-            WhiteEgPieceLocation = 0;
-            WhitePassedPawnCount = 0;
-            WhiteMgPassedPawns = 0;
-            WhiteEgPassedPawns = 0;
-            WhiteEgFreePassedPawns = 0;
-            WhiteEgKingEscortedPassedPawns = 0;
-            WhiteUnstoppablePassedPawns = 0;
-            WhiteMgPieceMobility = 0;
-            WhiteEgPieceMobility = 0;
-            WhiteMgKingSafety = 0;
-            WhiteMgBishopPair = 0;
-            WhiteEgBishopPair = 0;
-            BlackEgSimple = 0;
-            BlackPawnMaterial = 0;
-            BlackMgPieceMaterial = 0;
-            BlackEgPieceMaterial = 0;
-            BlackMgPieceLocation = 0;
-            BlackEgPieceLocation = 0;
-            BlackPassedPawnCount = 0;
-            BlackMgPassedPawns = 0;
-            BlackEgPassedPawns = 0;
-            BlackEgFreePassedPawns = 0;
-            BlackEgKingEscortedPassedPawns = 0;
-            BlackUnstoppablePassedPawns = 0;
-            BlackMgPieceMobility = 0;
-            BlackEgPieceMobility = 0;
-            BlackMgKingSafety = 0;
-            BlackMgBishopPair = 0;
-            BlackEgBishopPair = 0;
+            for (var color = Color.White; color <= Color.Black; color++)
+            {
+                EgSimple[(int)color] = 0;
+                PawnMaterial[(int)color] = 0;
+                MgPieceMaterial[(int)color] = 0;
+                EgPieceMaterial[(int)color] = 0;
+                MgPieceLocation[(int)color] = 0;
+                EgPieceLocation[(int)color] = 0;
+                PassedPawnCount[(int)color] = 0;
+                MgPassedPawns[(int)color] = 0;
+                EgPassedPawns[(int)color] = 0;
+                EgFreePassedPawns[(int)color] = 0;
+                EgKingEscortedPassedPawns[(int)color] = 0;
+                UnstoppablePassedPawns[(int)color] = 0;
+                MgPieceMobility[(int)color] = 0;
+                EgPieceMobility[(int)color] = 0;
+                MgKingSafety[(int)color] = 0;
+                MgBishopPair[(int)color] = 0;
+                EgBishopPair[(int)color] = 0;
+            }
             PlySinceCaptureOrPawnMove = 0;
             EgScalePer128 = 128;
         }
@@ -158,23 +143,25 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             stringBuilder.AppendLine("                             |         Middlegame        |          Endgame          |           Total           |");
             stringBuilder.AppendLine("Evaluation Param             |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |");
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
-            AppendStaticScoreLine(stringBuilder, "Simple Endgame", WhiteEgSimple, BlackEgSimple, WhiteEgSimple, BlackEgSimple, phase);
-            AppendStaticScoreLine(stringBuilder, "Material", WhiteMgMaterial, BlackMgMaterial, WhiteEgMaterial, BlackEgMaterial, phase);
-            AppendStaticScoreLine(stringBuilder, "Piece Location", WhiteMgPieceLocation, BlackMgPieceLocation, WhiteEgPieceLocation, BlackEgPieceLocation, phase);
-            AppendStaticScoreLine(stringBuilder, "Passed Pawns", WhiteMgPassedPawns, BlackMgPassedPawns, WhiteEgPassedPawns, BlackEgPassedPawns, phase);
-            AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, WhiteEgFreePassedPawns, BlackEgFreePassedPawns, phase);
-            AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, WhiteEgKingEscortedPassedPawns, BlackEgKingEscortedPassedPawns, phase);
-            AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, WhiteUnstoppablePassedPawns, BlackUnstoppablePassedPawns, phase);
-            AppendStaticScoreLine(stringBuilder, "Piece Mobility", WhiteMgPieceMobility, BlackMgPieceMobility, WhiteEgPieceMobility, BlackEgPieceMobility, phase);
-            AppendStaticScoreLine(stringBuilder, "King Safety", WhiteMgKingSafety, BlackMgKingSafety, 0, 0, phase);
-            AppendStaticScoreLine(stringBuilder, "Bishop Pair", WhiteMgBishopPair, BlackMgBishopPair, WhiteEgBishopPair, BlackEgBishopPair, phase);
+            AppendStaticScoreLine(stringBuilder, "Simple Endgame", EgSimple[(int)Color.White], EgSimple[(int)Color.Black], EgSimple[(int)Color.White], EgSimple[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Material", GetMgMaterial(Color.White), GetMgMaterial(Color.Black), GetEgMaterial(Color.White), GetEgMaterial(Color.Black), phase);
+            AppendStaticScoreLine(stringBuilder, "Piece Location", MgPieceLocation[(int)Color.White], MgPieceLocation[(int)Color.Black], EgPieceLocation[(int)Color.White], EgPieceLocation[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Passed Pawns", MgPassedPawns[(int)Color.White], MgPassedPawns[(int)Color.Black], EgPassedPawns[(int)Color.White], EgPassedPawns[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, EgFreePassedPawns[(int)Color.White], EgFreePassedPawns[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, EgKingEscortedPassedPawns[(int)Color.White], EgKingEscortedPassedPawns[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Piece Mobility", MgPieceMobility[(int)Color.White], MgPieceMobility[(int)Color.Black], EgPieceMobility[(int)Color.White], EgPieceMobility[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
+            AppendStaticScoreLine(stringBuilder, "Bishop Pair", MgBishopPair[(int)Color.White], MgBishopPair[(int)Color.Black], EgBishopPair[(int)Color.White], EgBishopPair[(int)Color.Black], phase);
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
-            AppendStaticScoreLine(stringBuilder, "Subtotal", WhiteMg, BlackMg, WhiteEg, BlackEg, phase);
+            var mgWhite = GetMg(Color.White);
+            var mgBlack = GetMg(Color.Black);
+            AppendStaticScoreLine(stringBuilder, "Subtotal", mgWhite, mgBlack, GetEg(Color.White), GetEg(Color.Black), phase);
             AppendStaticScoreLine(stringBuilder, "Scale", 100, 100, egScale, egScale, phase);
-            AppendStaticScoreLine(stringBuilder, "Total", WhiteMg, BlackMg, WhiteEgScaled, BlackEgScaled, phase);
+            AppendStaticScoreLine(stringBuilder, "Total", mgWhite, mgBlack, GetEgScaled(Color.White), GetEgScaled(Color.Black), phase);
             stringBuilder.AppendLine();
             var phaseFraction = (100 * phase) / Eval.MiddlegamePhase;
-            var totalScore = GetTotalScore(phase) / 100d;
+            var totalScore = GetTotalScore(Color.White, phase) / 100d;
             stringBuilder.AppendLine($"Middlegame   = {phase} of {Eval.MiddlegamePhase} ({phaseFraction}%)");
             stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
             stringBuilder.AppendLine($"Total Score  = {totalScore:0.00}");

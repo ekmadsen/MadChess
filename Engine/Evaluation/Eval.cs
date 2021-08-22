@@ -304,16 +304,22 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             Debug.Assert(!position.KingInCheck);
             _stats.Evaluations++;
             _staticScore.Reset();
-            if (EvaluateSimpleEndgame(position))
+            for (var color = Color.White; color <= Color.Black; color++)
             {
-                // Position is a simple endgame.
-                if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
-                return position.ColorToMove == Color.White
-                    ? (_staticScore.WhiteEg - _staticScore.BlackEg, false)
-                    : (_staticScore.BlackEg - _staticScore.WhiteEg, false);
+                if (EvaluateSimpleEndgame(position, color))
+                {
+                    // Position is a simple endgame.
+                    return _staticScore.EgScalePer128 == 0
+                        ? (0, true) // Drawn Endgame
+                        : (_staticScore.GetEg(position.ColorToMove), false);
+                }
             }
             // Position is not a simple endgame.
             _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
+            for (var color = Color.White; color <= Color.Black; color++)
+            {
+
+            }
             EvaluateMaterial(position);
             EvaluatePieceLocation(position);
             EvaluatePawns(position);
@@ -323,27 +329,27 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             DetermineEndgameScale(position); // Scale down scores for difficult to win endgames.
             if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
             var phase = DetermineGamePhase(position);
-            return position.ColorToMove == Color.White
-                ? (_staticScore.GetTotalScore(phase), false)
-                : (-_staticScore.GetTotalScore(phase), false);
+            return (_staticScore.GetTotalScore(position.ColorToMove, phase), false);
         }
 
 
-        private bool EvaluateSimpleEndgame(Position position)
+        private bool EvaluateSimpleEndgame(Position position, Color color)
         {
-            var whitePawns = Bitwise.CountSetBits(position.WhitePawns);
-            var blackPawns = Bitwise.CountSetBits(position.BlackPawns);
-            if ((whitePawns == 0) && (blackPawns == 0) && IsPawnlessDraw(position))
+            var enemyColor = (Color)(1 - (int)color);
+            var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
+            var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));
+            if ((pawnCount == 0) && (enemyPawnCount == 0) && IsPawnlessDraw(position, color) && IsPawnlessDraw(position))
             {
                 // Game is pawnless draw.
                 _staticScore.EgScalePer128 = 0;
                 return true;
             }
-            var whiteKnights = Bitwise.CountSetBits(position.WhiteKnights);
-            var whiteBishops = Bitwise.CountSetBits(position.WhiteBishops);
-            var whiteMinorPieces = whiteKnights + whiteBishops;
-            var whiteMajorPieces = Bitwise.CountSetBits(position.WhiteRooks | position.WhiteQueens);
-            var whitePawnsAndPieces = whitePawns + whiteMinorPieces + whiteMajorPieces;
+            var knightCount = Bitwise.CountSetBits(position.GetKnights(color));
+            var bishopCount = Bitwise.CountSetBits(position.GetBishops(color));
+            var minorPieceCount = knightCount + bishopCount;
+            var majorPieceCount = Bitwise.CountSetBits(position.GetRooks(color) | position.GetQueens(color));
+            var pawnsAndPiecesCount = pawnCount + minorPieceCount + majorPieceCount;
+
             var blackKnights = Bitwise.CountSetBits(position.BlackKnights);
             var blackBishops = Bitwise.CountSetBits(position.BlackBishops);
             var blackMinorPieces = blackKnights + blackBishops;
@@ -411,54 +417,49 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
-        private static bool IsPawnlessDraw(Position position)
+        private static bool IsPawnlessDraw(Position position) => IsPawnlessDraw(position, Color.White) || IsPawnlessDraw(position, Color.Black);
+
+
+        private static bool IsPawnlessDraw(Position position, Color color)
         {
-            var whiteKnights = Bitwise.CountSetBits(position.WhiteKnights);
-            var whiteBishops = Bitwise.CountSetBits(position.WhiteBishops);
-            var whiteRooks = Bitwise.CountSetBits(position.WhiteRooks);
-            var whiteQueens = Bitwise.CountSetBits(position.WhiteQueens);
-            var whiteMinorPieces = whiteKnights + whiteBishops;
-            var whiteMajorPieces = whiteRooks + whiteQueens;
-            var blackKnights = Bitwise.CountSetBits(position.BlackKnights);
-            var blackBishops = Bitwise.CountSetBits(position.BlackBishops);
-            var blackRooks = Bitwise.CountSetBits(position.BlackRooks);
-            var blackQueens = Bitwise.CountSetBits(position.BlackQueens);
-            var blackMinorPieces = blackKnights + blackBishops;
-            var blackMajorPieces = blackRooks + blackQueens;
-            var totalMajorPieces = whiteMajorPieces + blackMajorPieces;
+            var knightCount = Bitwise.CountSetBits(position.GetKnights(color));
+            var bishopCount = Bitwise.CountSetBits(position.GetBishops(color));
+            var rookCount = Bitwise.CountSetBits(position.GetRooks(color));
+            var queenCount = Bitwise.CountSetBits(position.GetQueens(color));
+            var minorPieceCount = knightCount + bishopCount;
+            var majorPieceCount = rookCount + queenCount;
+            var enemyColor = (Color)(1 - (int)color);
+            var enemyKnightCount = Bitwise.CountSetBits(position.GetKnights(enemyColor));
+            var enemyBishopCount = Bitwise.CountSetBits(position.GetBishops(enemyColor));
+            var enemyRookCount = Bitwise.CountSetBits(position.GetRooks(enemyColor));
+            var enemyQueenCount = Bitwise.CountSetBits(position.GetQueens(enemyColor));
+            var enemyMinorPieceCount = enemyKnightCount + enemyBishopCount;
+            var enemyMajorPieceCount = enemyRookCount + enemyQueenCount;
+            var totalMajorPieces = majorPieceCount + enemyMajorPieceCount;
             switch (totalMajorPieces)
             {
                 case 0:
-                    if ((whiteKnights == 2) && (whiteMinorPieces == 2) && (blackMinorPieces <= 1)) return true; // 2N vrs <= 1 Minor
-                    if ((blackKnights == 2) && (blackMinorPieces == 2) && (whiteMinorPieces <= 1)) return true; // 2N vrs <= 1 Minor
+                    if ((knightCount == 2) && (minorPieceCount == 2) && (enemyMinorPieceCount <= 1)) return true; // 2N vrs <= 1 Minor
                     break;
                 case 1:
-                    if ((whiteQueens == 1) && (whiteMinorPieces == 0))
+                    if ((queenCount == 1) && (minorPieceCount == 0))
                     {
-                        if ((blackBishops == 2) && (blackMinorPieces == 2)) return true; // Q vrs 2B
-                        if ((blackKnights == 2) && (blackMinorPieces == 2)) return true; // Q vrs 2N
-                    }
-                    if ((blackQueens == 1) && (blackMinorPieces == 0))
-                    {
-                        if ((whiteBishops == 2) && (whiteMinorPieces == 2)) return true; // Q vrs 2B
-                        if ((whiteKnights == 2) && (whiteMinorPieces == 2)) return true; // Q vrs 2N
+                        if ((enemyBishopCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2B
+                        if ((enemyKnightCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2N
                     }
                     // Considering R vrs <= 2 Minors a draw increases evaluation error and causes engine to play weaker.
-                    //if ((whiteRooks == 1) && (whiteMinorPieces == 0) && (blackMinorPieces <= 2)) return true; // R vrs <= 2 Minors
-                    //if ((blackRooks == 1) && (blackMinorPieces == 0) && (whiteMinorPieces <= 2)) return true; // R vrs <= 2 Minors
+                    //if ((rookCount == 1) && (minorPieceCount == 0) && (enemyMinorPieceCount <= 2)) return true; // R vrs <= 2 Minors
                     break;
                 case 2:
-                    if ((whiteQueens == 1) && (whiteMinorPieces == 0))
+                    if ((queenCount == 1) && (minorPieceCount == 0))
                     {
-                        if ((blackQueens == 1) && (blackMinorPieces == 0)) return true; // Q vrs Q
-                        if ((blackRooks == 1) && (blackMinorPieces == 1)) return true; // Q vrs R + Minor
+                        if ((enemyQueenCount == 1) && (enemyMinorPieceCount == 0)) return true; // Q vrs Q
+                        if ((enemyRookCount == 1) && (enemyMinorPieceCount == 1)) return true; // Q vrs R + Minor
                     }
-                    if ((blackQueens == 1) && (blackMinorPieces == 0) && (whiteRooks == 1) && (whiteMinorPieces == 1)) return true; // Q vrs R + Minor
-                    if ((whiteRooks == 1) && (whiteMinorPieces == 0) && (blackRooks == 1) && (blackMinorPieces <= 1)) return true; // R vrs R + <= 1 Minor
-                    if ((blackRooks == 1) && (blackMinorPieces == 0) && (whiteRooks == 1) && (whiteMinorPieces <= 1)) return true; // R vrs R + <= 1 Minor
+                    if ((rookCount == 1) && (minorPieceCount == 0) && (enemyRookCount == 1) && (enemyMinorPieceCount <= 1)) return true; // R vrs R + <= 1 Minor
                     break;
                 case 3:
-                    if ((whiteQueens == 1) && (whiteMinorPieces == 0) && (blackRooks == 2) && (blackMinorPieces == 0)) return true; // Q vrs 2R
+                    if ((queenCount == 1) && (minorPieceCount == 0) && (enemyRookCount == 2) && (enemyMinorPieceCount == 0)) return true; // Q vrs 2R
                     if ((blackQueens == 1) && (blackMinorPieces == 0) && (whiteRooks == 2) && (whiteMinorPieces == 0)) return true; // Q vrs 2R
                     if ((whiteRooks == 2) & (whiteMinorPieces == 0) && (blackRooks == 1) && (blackMinorPieces == 1)) return true; // 2R vrs R + Minor
                     if ((blackRooks == 2) & (blackMinorPieces == 0) && (whiteRooks == 1) && (whiteMinorPieces == 1)) return true; // 2R vrs R + Minor
