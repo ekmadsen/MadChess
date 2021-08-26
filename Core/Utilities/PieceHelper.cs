@@ -42,7 +42,7 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 
         public static string GetName(Piece piece)
         {
-            // Sequence cases in order of integer value to improve performance of switch statement.
+            // Sequence cases in order of enum value to improve performance of switch statement.
             return piece switch
             {
                 Piece.None => string.Empty,
@@ -61,6 +61,10 @@ namespace ErikTheCoder.MadChess.Core.Utilities
                 _ => throw new ArgumentException($"{piece} piece not supported.")
             };
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ColorlessPiece GetColorlessPiece(Piece piece) => piece <= Piece.WhiteKing ? (ColorlessPiece)piece : (ColorlessPiece)(piece - Piece.WhiteKing);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

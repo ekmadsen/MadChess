@@ -41,6 +41,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         private readonly Board _board;
 
 
+        // TODO: Eliminate color and piece-specific bitboards.
         public ulong WhitePawns => PieceBitboards[(int) Piece.WhitePawn];
         public ulong WhiteKnights => PieceBitboards[(int) Piece.WhiteKnight];
         public ulong WhiteBishops => PieceBitboards[(int) Piece.WhiteBishop];

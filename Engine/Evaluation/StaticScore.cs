@@ -23,23 +23,23 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         public const int Interrupted = Max - Search.MaxHorizon - 1;
         public const int NotCached = Max - Search.MaxHorizon - 2;
         public const int MaxPlyWithoutCaptureOrPawnMove = 100;
-        public int[] EgSimple;
-        public int[] PawnMaterial;
-        public int[] MgPieceMaterial;
-        public int[] EgPieceMaterial;
-        public int[] MgPieceLocation;
-        public int[] EgPieceLocation;
-        public int[] PassedPawnCount;
-        public int[] MgPassedPawns;
-        public int[] EgPassedPawns;
-        public int[] EgFreePassedPawns;
-        public int[] EgKingEscortedPassedPawns;
-        public int[] UnstoppablePassedPawns;
-        public int[] MgPieceMobility;
-        public int[] EgPieceMobility;
-        public int[] MgKingSafety;
-        public int[] MgBishopPair;
-        public int[] EgBishopPair;
+        public readonly int[] EgSimple;
+        public readonly int[] PawnMaterial;
+        public readonly int[] MgPieceMaterial;
+        public readonly int[] EgPieceMaterial;
+        public readonly int[] MgPieceLocation;
+        public readonly int[] EgPieceLocation;
+        public readonly int[] PassedPawnCount;
+        public readonly int[] MgPassedPawns;
+        public readonly int[] EgPassedPawns;
+        public readonly int[] EgFreePassedPawns;
+        public readonly int[] EgKingEscortedPassedPawns;
+        public readonly int[] UnstoppablePassedPawns;
+        public readonly int[] MgPieceMobility;
+        public readonly int[] EgPieceMobility;
+        public readonly int[] MgKingSafety;
+        public readonly int[] MgBishopPair;
+        public readonly int[] EgBishopPair;
         public int PlySinceCaptureOrPawnMove;
         public int EgScalePer128;
 
@@ -86,7 +86,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetTaperedScore(Color color, int phase)
         {
-            var enemyColor = (Color)(1 - (int)color);
+            var enemyColor = 1 - color;
             var mgScore = GetMg(color);
             var mgEnemyScore = GetMg(enemyColor);
             var egScaledScore = GetEgScaled(color);

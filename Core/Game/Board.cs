@@ -23,12 +23,11 @@ namespace ErikTheCoder.MadChess.Core.Game
         public const string StartPositionFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         public static readonly int[] Files;
         public static readonly int[][] Ranks;
-        public static readonly bool[] LightSquares;
+        public static readonly Color[] SquareColors;
         public static readonly int[][] SquareDistances;
         public static readonly int[] DistanceToCentralSquares;
         public static readonly int[] DistanceToNearestCorner;
-        public static readonly int[] DistanceToNearestLightCorner;
-        public static readonly int[] DistanceToNearestDarkCorner;
+        public static readonly int[][] DistanceToNearestCornerOfColor;
         public static readonly string[] SquareLocations;
         public static readonly ulong[] SquareMasks;
         public static readonly ulong[] FileMasks;
@@ -52,8 +51,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         public static readonly ulong[][] FreePawnMasks;
         public static readonly ulong[] InnerRingMasks;
         public static readonly ulong[] OuterRingMasks;
-        public static readonly ulong[] WhitePawnShieldMasks;
-        public static readonly ulong[] BlackPawnShieldMasks;
+        public static readonly ulong[][] PawnShieldMasks;
         public static readonly PrecalculatedMoves PrecalculatedMoves;
         public static readonly ulong[][] RankFileBetweenSquares;
         public static readonly ulong[][] DiagonalBetweenSquares;
@@ -61,6 +59,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         public long NodesInfoUpdate;
         public long NodesExamineTime;
         private const int _maxPositions = 1024;
+        private static readonly int[] _squarePerspectiveFactors;
         private static readonly ulong[] _squareUnmasks;
         private static readonly ulong[][] _castleAttackedSquareMasks;
         private static readonly int[][] _neighborSquares;
@@ -144,19 +143,22 @@ namespace ErikTheCoder.MadChess.Core.Game
             };
             Square[] centralSquares = { Square.D5, Square.E5, Square.D4, Square.E4 };
             Square[] cornerSquares = { Square.A8, Square.H8, Square.A1, Square.H1 };
-            LightSquares = new[]
+            Square[][] cornerSquaresOfColor =
             {
-                true, false, true, false, true, false, true, false,
-                false, true, false, true, false, true, false, true,
-                true, false, true, false, true, false, true, false,
-                false, true, false, true, false, true, false, true,
-                true, false, true, false, true, false, true, false,
-                false, true, false, true, false, true, false, true,
-                true, false, true, false, true, false, true, false,
-                false, true, false, true, false, true, false, true
+                new[] {Square.A8, Square.H1},
+                new[] {Square.H8, Square.A1}
             };
-            Square[] lightCornerSquares = { Square.A8, Square.H1 };
-            Square[] darkCornerSquares = { Square.A1, Square.H8 };
+            SquareColors = new[]
+            {
+                Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+                Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+                Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+                Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+                Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+                Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+                Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+                Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White
+            };
             // Determine distances between squares.
             SquareDistances = new int[64][];
             for (var square1 = 0; square1 < 64; square1++)
@@ -172,14 +174,19 @@ namespace ErikTheCoder.MadChess.Core.Game
             // Determine distances to central and nearest corner squares.
             DistanceToCentralSquares = new int[64];
             DistanceToNearestCorner = new int[64];
-            DistanceToNearestLightCorner = new int[64];
-            DistanceToNearestDarkCorner = new int[64];
             for (var square = Square.A8; square < Square.Illegal; square++)
             {
                 DistanceToCentralSquares[(int)square] = GetShortestDistance(square, centralSquares);
                 DistanceToNearestCorner[(int)square] = GetShortestDistance(square, cornerSquares);
-                DistanceToNearestLightCorner[(int)square] = GetShortestDistance(square, lightCornerSquares);
-                DistanceToNearestDarkCorner[(int)square] = GetShortestDistance(square, darkCornerSquares);
+            }
+            DistanceToNearestCornerOfColor = new int[2][];
+            for (var color = Color.White; color <= Color.Black; color++)
+            {
+                DistanceToNearestCornerOfColor[(int)color] = new int[64];
+                for (var square = Square.A8; square < Square.Illegal; square++)
+                {
+                    DistanceToNearestCornerOfColor[(int)color][(int)square] = GetShortestDistance(square, cornerSquaresOfColor[(int)color]);
+                }
             }
             SquareLocations = new[]
             {
@@ -192,6 +199,8 @@ namespace ErikTheCoder.MadChess.Core.Game
                 "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
                 "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
             };
+            // Square perspective factors are used to determine square from white's perspective (black's g6 = white's b3).
+            _squarePerspectiveFactors = new[] { -1, 1 };
             // Create square, file, rank, diagonal, and edge masks.
             SquareMasks = new ulong[64];
             _squareUnmasks = new ulong[64];
@@ -379,8 +388,7 @@ namespace ErikTheCoder.MadChess.Core.Game
             FreePawnMasks = CreateFreePawnMasks();
             // Create ring and pawn shield masks.
             (InnerRingMasks, OuterRingMasks) = CreateRingMasks();
-            WhitePawnShieldMasks = CreateWhitePawnShieldMasks();
-            BlackPawnShieldMasks = CreateBlackPawnShieldMasks();
+            PawnShieldMasks = CreatePawnShieldMasks();
         }
 
 
@@ -478,11 +486,11 @@ namespace ErikTheCoder.MadChess.Core.Game
 
         private static ulong[][] CreatePawnMoveMasks()
         {
-            var moveMasks = new ulong[2][];
+            var masks = new ulong[2][];
             var directions = new[] { Direction.North, Direction.South };
             for (var color = Color.White; color <= Color.Black; color++)
             {
-                moveMasks[(int)color] = new ulong[64];
+                masks[(int)color] = new ulong[64];
                 var direction = directions[(int)color];
                 for (var square = Square.A8; square < Square.Illegal; square++)
                 {
@@ -494,20 +502,20 @@ namespace ErikTheCoder.MadChess.Core.Game
                         otherSquare = (Square)_neighborSquares[(int)otherSquare][(int)direction];
                         Bitwise.SetBit(ref mask, otherSquare);
                     }
-                    moveMasks[(int)color][(int)square] = mask;
+                    masks[(int)color][(int)square] = mask;
                 }
             }
-            return moveMasks;
+            return masks;
         }
 
 
         private static ulong[][] CreatePawnDoubleMoveMasks()
         {
-            var moveMasks = new ulong[2][];
+            var masks = new ulong[2][];
             var directions = new[] { Direction.North, Direction.South };
             for (var color = Color.White; color <= Color.Black; color++)
             {
-                moveMasks[(int)color] = new ulong[64];
+                masks[(int)color] = new ulong[64];
                 var direction = directions[(int) color];
                 for (var square = Square.A8; square < Square.Illegal; square++)
                 {
@@ -517,37 +525,38 @@ namespace ErikTheCoder.MadChess.Core.Game
                         var otherSquare = (Square) _neighborSquares[(int)square][(int)direction];
                         Bitwise.SetBit(ref mask, otherSquare);
                     }
-                    moveMasks[(int)color][(int)square] = mask;
+                    masks[(int)color][(int)square] = mask;
                 }
             }
-            return moveMasks;
+            return masks;
         }
 
 
         private static ulong[][] CreatePawnAttackMasks()
         {
-            var moveMasks = new ulong[2][];
-            var directions = new[]
+            var masks = new ulong[2][];
+            var colorDirections = new[]
             {
                 new[] { Direction.NorthWest, Direction.NorthEast },
                 new[] { Direction.SouthWest, Direction.SouthEast }
             };
             for (var color = Color.White; color <= Color.Black; color++)
             {
-                moveMasks[(int)color] = new ulong[64];
+                masks[(int)color] = new ulong[64];
+                var directions = colorDirections[(int)color];
                 for (var square = Square.A8; square < Square.Illegal; square++)
                 {
                     var mask = 0ul;
                     for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
                     {
-                        var direction = directions[(int)color][directionIndex];
+                        var direction = directions[directionIndex];
                         var otherSquare = (Square)_neighborSquares[(int)square][(int)direction];
                         if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
                     }
-                    moveMasks[(int)color][(int)square] = mask;
+                    masks[(int)color][(int)square] = mask;
                 }
             }
-            return moveMasks;
+            return masks;
         }
 
 
@@ -686,47 +695,37 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
-        private static ulong[] CreateWhitePawnShieldMasks()
+        private static ulong[][] CreatePawnShieldMasks()
         {
-            var pawnShieldMasks = new ulong[64];
-            Direction[] directions = { Direction.NorthWest, Direction.North, Direction.NorthEast };
-            for (var square = Square.A8; square < Square.Illegal; square++)
+            var masks = new ulong[2][];
+            var colorDirections = new[]
             {
-                var mask = 0ul;
-                for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
-                {
-                    var direction = directions[directionIndex];
-                    var otherSquare = (Square)_neighborSquares[(int)square][(int)direction];
-                    if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
-                }
-                pawnShieldMasks[(int)square] = mask;
-            }
-            return pawnShieldMasks;
-        }
-
-
-        private static ulong[] CreateBlackPawnShieldMasks()
-        {
-            var pawnShieldMasks = new ulong[64];
-            Direction[] directions = { Direction.SouthWest, Direction.South, Direction.SouthEast };
-            for (var square = Square.A8; square < Square.Illegal; square++)
+                new[] { Direction.NorthWest, Direction.North, Direction.NorthEast },
+                new[] { Direction.SouthWest, Direction.South, Direction.SouthEast}
+            };
+            for (var color = Color.White; color <= Color.Black; color++)
             {
-                var mask = 0ul;
-                for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+                masks[(int)color] = new ulong[64];
+                var directions = colorDirections[(int)color];
+                for (var square = Square.A8; square < Square.Illegal; square++)
                 {
-                    var direction = directions[directionIndex];
-                    var otherSquare = (Square)_neighborSquares[(int)square][(int)direction];
-                    if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
+                    var mask = 0ul;
+                    for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+                    {
+                        var direction = directions[directionIndex];
+                        var otherSquare = (Square)_neighborSquares[(int)square][(int)direction];
+                        if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
+                    }
+                    masks[(int)color][(int)square] = mask;
                 }
-                pawnShieldMasks[(int)square] = mask;
             }
-            return pawnShieldMasks;
+            return masks;
         }
 
 
         private static ulong[] CreateKnightMoveMasks()
         {
-            var attackMasks = new ulong[64];
+            var masks = new ulong[64];
             Direction[] directions = { Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1 };
             for (var square = Square.A8; square < Square.Illegal; square++)
             {
@@ -737,15 +736,15 @@ namespace ErikTheCoder.MadChess.Core.Game
                     var otherSquare = (Square)_neighborSquares[(int)square][(int)direction];
                     if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
                 }
-                attackMasks[(int)square] = mask;
+                masks[(int)square] = mask;
             }
-            return attackMasks;
+            return masks;
         }
 
 
         private static ulong[] CreateBishopMoveMasks()
         {
-            var moveMasks = new ulong[64];
+            var masks = new ulong[64];
             Direction[] directions = { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
             for (var square = Square.A8; square < Square.Illegal; square++)
             {
@@ -761,15 +760,15 @@ namespace ErikTheCoder.MadChess.Core.Game
                         Bitwise.SetBit(ref mask, otherSquare);
                     }
                 }
-                moveMasks[(int)square] = mask;
+                masks[(int)square] = mask;
             }
-            return moveMasks;
+            return masks;
         }
 
 
         private static ulong[] CreateRookMoveMasks()
         {
-            var moveMasks = new ulong[64];
+            var masks = new ulong[64];
             Direction[] directions = { Direction.North, Direction.East, Direction.South, Direction.West };
             for (var square = Square.A8; square < Square.Illegal; square++)
             {
@@ -785,15 +784,15 @@ namespace ErikTheCoder.MadChess.Core.Game
                         Bitwise.SetBit(ref mask, otherSquare);
                     }
                 }
-                moveMasks[(int)square] = mask;
+                masks[(int)square] = mask;
             }
-            return moveMasks;
+            return masks;
         }
 
 
         private static ulong[] CreateKingMoveMasks()
         {
-            var attackMasks = new ulong[64];
+            var masks = new ulong[64];
             Direction[] directions = { Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest };
             for (var square = Square.A8; square < Square.Illegal; square++)
             {
@@ -804,9 +803,9 @@ namespace ErikTheCoder.MadChess.Core.Game
                     var otherSquare = (Square)_neighborSquares[(int)square][(int)direction];
                     if (otherSquare != Square.Illegal) Bitwise.SetBit(ref mask, otherSquare);
                 }
-                attackMasks[(int)square] = mask;
+                masks[(int)square] = mask;
             }
-            return attackMasks;
+            return masks;
         }
 
 
@@ -850,7 +849,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
-        public static Square GetBlackSquare(Square square) => 63 - square;
+        public static Square GetSquareFromWhitePerspective(Square square, Color color) => (Square)((int)color * 63) - ((int)square * _squarePerspectiveFactors[(int)color]);
 
 
         private static int GetShortestDistance(Square square, Square[] otherSquares)
@@ -865,57 +864,11 @@ namespace ErikTheCoder.MadChess.Core.Game
             return shortestDistance;
         }
 
-
+        
         private static ulong GetKnightDestinations(Square fromSquare, ulong occupancy) => KnightMoveMasks[(int)fromSquare];
-
-
-        public static ulong GetKnightDestinations(Position position, Square fromSquare, bool white)
-        {
-            var unOrEnemyOccupiedSquares = white
-                ? ~position.WhiteOccupancy
-                : ~position.BlackOccupancy;
-            return KnightMoveMasks[(int)fromSquare] & unOrEnemyOccupiedSquares;
-        }
-
-
         private static ulong GetBishopDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy);
-
-
-        public static ulong GetBishopDestinations(Position position, Square fromSquare, bool white)
-        {
-            var unOrEnemyOccupiedSquares = white
-                ? ~position.WhiteOccupancy
-                : ~position.BlackOccupancy;
-            var occupancy = BishopMoveMasks[(int)fromSquare] & position.Occupancy;
-            return PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares;
-        }
-
-
         private static ulong GetRookDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
-
-
-        public static ulong GetRookDestinations(Position position, Square fromSquare, bool white)
-        {
-            var unOrEnemyOccupiedSquares = white
-                ? ~position.WhiteOccupancy
-                : ~position.BlackOccupancy;
-            var occupancy = RookMoveMasks[(int)fromSquare] & position.Occupancy;
-            return PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares;
-        }
-
-
         private static ulong GetQueenDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
-
-
-        public static ulong GetQueenDestinations(Position position, Square fromSquare, bool white)
-        {
-            var unOrEnemyOccupiedSquares = white
-                ? ~position.WhiteOccupancy
-                : ~position.BlackOccupancy;
-            var bishopOccupancy = BishopMoveMasks[(int)fromSquare] & position.Occupancy;
-            var rookOccupancy = RookMoveMasks[(int)fromSquare] & position.Occupancy;
-            return (PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares;
-        }
 
 
         public void SetPosition(string fen, bool preserveMoveCount = false)
