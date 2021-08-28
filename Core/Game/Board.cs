@@ -828,6 +828,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Square GetSquare(int file, int rank)
         {
             Debug.Assert(file >= 0 && file < 8);
@@ -849,9 +850,11 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Square GetSquareFromWhitePerspective(Square square, Color color) => (Square)((int)color * 63) - ((int)square * _squarePerspectiveFactors[(int)color]);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetShortestDistance(Square square, Square[] otherSquares)
         {
             var shortestDistance = int.MaxValue;
@@ -864,11 +867,11 @@ namespace ErikTheCoder.MadChess.Core.Game
             return shortestDistance;
         }
 
-        
-        private static ulong GetKnightDestinations(Square fromSquare, ulong occupancy) => KnightMoveMasks[(int)fromSquare];
-        private static ulong GetBishopDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy);
-        private static ulong GetRookDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
-        private static ulong GetQueenDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetKnightDestinations(Square fromSquare, ulong occupancy) => KnightMoveMasks[(int)fromSquare];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetBishopDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetRookDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetQueenDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
 
 
         public void SetPosition(string fen, bool preserveMoveCount = false)

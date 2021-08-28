@@ -10,9 +10,9 @@
 
 namespace ErikTheCoder.MadChess.Core.Game
 {
-    public enum GamePhase
+    public enum KingRing
     {
-        Middlegame,
-        Endgame
+        Outer,
+        Inner
     }
 }

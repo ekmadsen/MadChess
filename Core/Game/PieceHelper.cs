@@ -10,10 +10,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using ErikTheCoder.MadChess.Core.Game;
 
 
-namespace ErikTheCoder.MadChess.Core.Utilities
+namespace ErikTheCoder.MadChess.Core.Game
 {
     public static class PieceHelper
     {

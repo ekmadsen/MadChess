@@ -1018,7 +1018,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             if (Move.IsQuiet(move) && (quietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
             var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return board.CurrentPosition.StaticScore + _eval.GetMaterialScore(board.CurrentPosition, captureVictim) + futilityMargin < alpha;
+            return board.CurrentPosition.StaticScore + _eval.GetMaterialScore(board.CurrentPosition, PieceHelper.GetColorlessPiece(captureVictim)) + futilityMargin < alpha;
         }
 
 
