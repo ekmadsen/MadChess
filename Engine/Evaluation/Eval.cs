@@ -19,7 +19,6 @@ using ErikTheCoder.MadChess.Core.Utilities;
 
 namespace ErikTheCoder.MadChess.Engine.Evaluation
 {
-    // TODO: Refactor evaluation into color-agnostic methods using delegates.
     public sealed class Eval
     {
         private const int _beginnerElo = 800;
@@ -357,6 +356,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         public void ConfigureFullStrength() => Config.Set(_defaultConfig);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public (bool TerminalDraw, bool RepeatPosition) IsTerminalDraw(Position position)
         {
             // Only return true if position is drawn and no sequence of moves can make game winnable.
@@ -380,6 +380,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public (int StaticScore, bool DrawnEndgame) GetStaticScore(Position position)
         {
             // TODO: Handicap knowledge of checkmates and endgames when in limited strength mode.
@@ -393,7 +394,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                     // Position is a simple endgame.
                     return _staticScore.EgScalePer128 == 0
                         ? (0, true) // Drawn Endgame
-                        : (_staticScore.GetEg(position.ColorToMove), false);
+                        : (_staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved), false);
                 }
             }
             // Position is not a simple endgame.
@@ -414,6 +415,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool EvaluateSimpleEndgame(Position position, Color color)
         {
             var enemyColor = 1 - color;
@@ -469,9 +471,11 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsPawnlessDraw(Position position) => IsPawnlessDraw(position, Color.White) || IsPawnlessDraw(position, Color.Black);
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static bool IsPawnlessDraw(Position position, Color color)
         {
             var knightCount = Bitwise.CountSetBits(position.GetKnights(color));
@@ -522,6 +526,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void EvaluateKingVersusPawn(Position position, Color lonePawnColor)
         {
             var winningKingSquare = Bitwise.FirstSetSquare(position.GetKing(lonePawnColor));
@@ -572,7 +577,8 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             _staticScore.EgScalePer128 = 0;
         }
 
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EvaluateMaterial(Position position, Color color)
         {
             _staticScore.PawnMaterial[(int)color] = Bitwise.CountSetBits(position.GetPawns(color)) * PawnMaterial;
@@ -586,6 +592,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMaterialScore(Position position, ColorlessPiece colorlessPiece)
         {
             var mgMaterial = _mgMaterialScores[(int)colorlessPiece];
@@ -610,6 +617,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EvaluatePieceLocation(Position position, Color color)
         {
             for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
@@ -628,6 +636,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void EvaluatePawns(Position position, Color color)
         {
             var enemyColor = 1 - color;
@@ -681,6 +690,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static bool IsUnstoppablePawn(Position position, Square pawnSquare, Square enemyKingSquare, Color color)
         {
             // Pawn is free to advance to promotion square.
@@ -703,6 +713,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
 
 
         // TODO: Include stacked attacks on same square via x-rays.  For example, a rook behind a queen.
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void EvaluatePieceMobilityKingSafety(Position position, Color color)
         {
             var enemyColor = 1 - color;
@@ -769,6 +780,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EvaluateMinorPieces(Position position, Color color)
         {
             // Bishop Pair
@@ -806,6 +818,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void DetermineEndgameScale(Position position)
         {
             // Use middlegame material values because they are constant (endgame material values are tuned).
@@ -864,7 +877,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetNonLinearBonus(double bonus, double scale, double power, int constant) => (int)(scale * Math.Pow(bonus, power)) + constant;
 
 

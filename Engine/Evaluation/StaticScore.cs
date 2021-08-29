@@ -66,20 +66,25 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetMgMaterial(Color color) => PawnMaterial[(int)color] + MgPieceMaterial[(int)color];
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
             MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgBishopPair[(int)color];
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetEgMaterial(Color color) => PawnMaterial[(int)color] + EgPieceMaterial[(int)color];
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgPieceLocation[(int)color] + EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] +
                                          EgKingEscortedPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgBishopPair[(int)color];
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetEgScaled(Color color) => (EgScalePer128 * GetEg(color)) / 128;
 
 
@@ -109,6 +114,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void Reset()
         {
             for (var color = Color.White; color <= Color.Black; color++)

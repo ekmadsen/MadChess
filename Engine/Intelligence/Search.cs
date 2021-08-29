@@ -322,6 +322,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public ulong FindBestMove(Board board)
         {
             // Ensure all root moves are legal.
@@ -440,6 +441,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool ShouldSearchMove(ulong move)
         {
             if (SpecifiedMoves.Count == 0) return true; // Search all moves.
@@ -451,8 +453,9 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             }
             return false;
         }
-        
-        
+
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GetMoveTime(Position position)
         {
             // No need to calculate move time if go command specified move time, horizon limit, or nodes..
@@ -489,6 +492,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AdjustMoveTime()
         {
             if (!CanAdjustMoveTime || (_originalHorizon < _adjustMoveTimeMinDepth) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
@@ -500,6 +504,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool HaveTimeForNextHorizon()
         {
             if (MoveTimeSoftLimit == TimeSpan.MaxValue) return true;
@@ -748,8 +753,9 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             board.UndoMove();
             return scoreAfterMove - scoreBeforeMove;
         }
-        
-        
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetQuietScore(Board board, int depth, int horizon, int alpha, int beta) => GetQuietScore(board, depth, horizon, Board.AllSquaresMask, alpha, beta, _getStaticScore, true);
 
 
@@ -825,6 +831,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void ExamineTimeAndNodes(long nodes)
         {
             if (nodes >= NodeLimit)
@@ -1111,7 +1118,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void PrioritizeMoves(Position position, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
         {
             for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
@@ -1132,7 +1139,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         public void PrioritizeMoves(Position position, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(position, moves, 0, lastMoveIndex, bestMove, depth);
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void PrioritizeMoves(Position position, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
         {
             for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)

@@ -438,6 +438,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void Reset()
         {
             for (var piece = Piece.WhitePawn; piece <= Piece.BlackKing; piece++) PieceBitboards[(int) piece] = 0;
