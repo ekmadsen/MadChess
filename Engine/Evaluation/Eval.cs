@@ -396,7 +396,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             Debug.Assert(!position.KingInCheck);
             _stats.Evaluations++;
             _staticScore.Reset();
-            if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position,Color.Black))
+            if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position, Color.Black))
             {
                 // Position is a simple endgame.
                 return _staticScore.EgScalePer128 == 0
