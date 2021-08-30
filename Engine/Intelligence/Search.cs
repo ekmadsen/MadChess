@@ -868,10 +868,9 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
             if (isDrawnEndgame || (depth == 0) || position.KingInCheck) return false; // Position in drawn endgame, at root, or when king is in check is not futile.
             if ((Math.Abs(alpha) >= StaticScore.Checkmate) || (Math.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
-            // Count pawns and pieces (but don't include kings).
-            var whitePawnsAndPieces = Bitwise.CountSetBits(position.WhiteOccupancy) - 1;
-            var blackPawnsAndPieces = Bitwise.CountSetBits(position.BlackOccupancy) - 1;
-            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Position with lone king on board is not futile.
+            // Position with lone king on board is not futile.
+            if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
+            if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
             // Determine if any move can lower score to beta.
             var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return position.StaticScore - futilityMargin > beta;
@@ -1017,10 +1016,9 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
                 if (rank >= 6) return false; // Pawn push to 7th rank is not futile.
             }
-            // Count pawns and pieces (but don't include kings).
-            var whitePawnsAndPieces = Bitwise.CountSetBits(board.CurrentPosition.WhiteOccupancy) - 1;
-            var blackPawnsAndPieces = Bitwise.CountSetBits(board.CurrentPosition.BlackOccupancy) - 1;
-            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
+            // Move with lone king on board is not futile.
+            if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.White]) == 1) return false;
+            if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.Black]) == 1) return false;
             var lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (Move.IsQuiet(move) && (quietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
@@ -1050,10 +1048,9 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
                 if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
             }
-            // Count pawns and pieces (but don't include kings).
-            var whitePawnsAndPieces = Bitwise.CountSetBits(board.CurrentPosition.WhiteOccupancy) - 1;
-            var blackPawnsAndPieces = Bitwise.CountSetBits(board.CurrentPosition.BlackOccupancy) - 1;
-            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return horizon; // Do not reduce move with lone king on board.
+            // Do not reduce move with lone king on board or a tactical move.
+            if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.White]) == 1) return horizon;
+            if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.Black]) == 1) return horizon;
             if (!Move.IsQuiet(move)) return horizon;
             // Reduce search horizon of late move.
             var quietMoveIndex = Math.Min(quietMoveNumber, _lateMoveReductions.Length - 1);

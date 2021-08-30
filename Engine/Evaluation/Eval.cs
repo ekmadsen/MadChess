@@ -34,11 +34,20 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
         private readonly StaticScore _staticScore;
         // Game Phase (constants selected such that starting material = 256)
-        public const int MiddlegamePhase = 4 * (_knightPhase + _bishopPhase + _rookPhase) + (2 * _queenPhase);
-        private const int _knightPhase = 10; //   4 * 10 =  40
-        private const int _bishopPhase = 10; // + 4 * 10 =  80
-        private const int _rookPhase = 22; //   + 4 * 22 = 168
-        private const int _queenPhase = 44; //  + 2 * 44 = 256
+        public const int MiddlegamePhase = 4 * (_knightPhaseWeight + _bishopPhaseWeight + _rookPhaseWeight) + (2 * _queenPhaseWeight);
+        private const int _knightPhaseWeight = 10; //   4 * 10 =  40
+        private const int _bishopPhaseWeight = 10; // + 4 * 10 =  80
+        private const int _rookPhaseWeight = 22; //   + 4 * 22 = 168
+        private const int _queenPhaseWeight = 44; //  + 2 * 44 = 256
+        private static readonly int[] _piecePhaseWeights =
+        {
+            0, // None
+            0, // Pawn
+            _knightPhaseWeight,
+            _bishopPhaseWeight,
+            _rookPhaseWeight,
+            _queenPhaseWeight
+        };
         // Draw by Repetition
         public int DrawMoves;
         // Material
@@ -363,13 +372,13 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             if (_isRepeatPosition(DrawMoves)) return (true, true); // Draw by repetition of position.
             if (position.PlySinceCaptureOrPawnMove >= StaticScore.MaxPlyWithoutCaptureOrPawnMove) return (true, false); // Draw by 50 moves (100 ply) without a capture or pawn move.
             // Determine if insufficient material remains for checkmate.
-            if (Bitwise.CountSetBits(position.WhitePawns | position.BlackPawns) == 0)
+            if (Bitwise.CountSetBits(position.GetPawns(Color.White) | position.GetPawns(Color.Black)) == 0)
             {
                 // Neither side has any pawns.
-                if (Bitwise.CountSetBits(position.WhiteRooks | position.WhiteQueens | position.BlackRooks | position.BlackQueens) == 0)
+                if (Bitwise.CountSetBits(position.GetMajorPieces(Color.White) | position.GetMajorPieces(Color.Black)) == 0)
                 {
                     // Neither side has any major pieces.
-                    if ((Bitwise.CountSetBits(position.WhiteKnights | position.WhiteBishops) <= 1) && (Bitwise.CountSetBits(position.BlackKnights | position.BlackBishops) <= 1))
+                    if ((Bitwise.CountSetBits(position.GetMinorPieces(Color.White)) <= 1) && (Bitwise.CountSetBits(position.GetMinorPieces(Color.Black)) <= 1))
                     {
                         // Each side has one or zero minor pieces.  Draw by insufficient material.
                         return (true, false);
@@ -387,15 +396,12 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             Debug.Assert(!position.KingInCheck);
             _stats.Evaluations++;
             _staticScore.Reset();
-            for (var color = Color.White; color <= Color.Black; color++)
+            if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position,Color.Black))
             {
-                if (EvaluateSimpleEndgame(position, color))
-                {
-                    // Position is a simple endgame.
-                    return _staticScore.EgScalePer128 == 0
-                        ? (0, true) // Drawn Endgame
-                        : (_staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved), false);
-                }
+                // Position is a simple endgame.
+                return _staticScore.EgScalePer128 == 0
+                    ? (0, true) // Drawn Endgame
+                    : (_staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved), false);
             }
             // Position is not a simple endgame.
             _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
@@ -492,6 +498,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             var enemyMinorPieceCount = enemyKnightCount + enemyBishopCount;
             var enemyMajorPieceCount = enemyRookCount + enemyQueenCount;
             var totalMajorPieces = majorPieceCount + enemyMajorPieceCount;
+            // TODO: Add rook versus bishop as a draw?
             switch (totalMajorPieces)
             {
                 case 0:
@@ -829,8 +836,10 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             var winningPassedPawns = _staticScore.PassedPawnCount[(int)winningColor];
             var winningPieceMaterial = _staticScore.MgPieceMaterial[(int)winningColor];
             var losingPieceMaterial = _staticScore.MgPieceMaterial[(int)losingColor];
-            var oppositeColoredBishops = (Bitwise.CountSetBits(position.WhiteBishops) == 1) && (Bitwise.CountSetBits(position.BlackBishops) == 1) &&
-                                         (Board.SquareColors[(int)Bitwise.FirstSetSquare(position.WhiteBishops)] != Board.SquareColors[(int)Bitwise.FirstSetSquare(position.BlackBishops)]);
+            var whiteBishops = position.GetBishops(Color.White);
+            var blackBishops = position.GetBishops(Color.Black);
+            var oppositeColoredBishops = (Bitwise.CountSetBits(whiteBishops) == 1) && (Bitwise.CountSetBits(blackBishops) == 1) &&
+                                         (Board.SquareColors[(int)Bitwise.FirstSetSquare(whiteBishops)] != Board.SquareColors[(int)Bitwise.FirstSetSquare(blackBishops)]);
             var pieceMaterialDiff = winningPieceMaterial - losingPieceMaterial;
             if ((winningPawnCount == 0) && (pieceMaterialDiff <= Config.MgBishopMaterial))
             {
@@ -869,10 +878,11 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int DetermineGamePhase(Position position)
         {
-            var phase = _knightPhase * Bitwise.CountSetBits(position.WhiteKnights | position.BlackKnights) +
-                        _bishopPhase * Bitwise.CountSetBits(position.WhiteBishops | position.BlackBishops) +
-                        _rookPhase * Bitwise.CountSetBits(position.WhiteRooks | position.BlackRooks) +
-                        _queenPhase * Bitwise.CountSetBits(position.WhiteQueens | position.BlackQueens);
+            var phase = 0;
+            for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
+            {
+                phase += Bitwise.CountSetBits(position.GetPieces(colorlessPiece)) * _piecePhaseWeights[(int)colorlessPiece];
+            }
             return Math.Min(phase, MiddlegamePhase);
         }
 

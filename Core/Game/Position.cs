@@ -41,25 +41,6 @@ namespace ErikTheCoder.MadChess.Core.Game
         private readonly Board _board;
 
 
-        // TODO: Eliminate color and piece-specific bitboards.
-        public ulong WhitePawns => PieceBitboards[(int) Piece.WhitePawn];
-        public ulong WhiteKnights => PieceBitboards[(int) Piece.WhiteKnight];
-        public ulong WhiteBishops => PieceBitboards[(int) Piece.WhiteBishop];
-        public ulong WhiteRooks => PieceBitboards[(int) Piece.WhiteRook];
-        public ulong WhiteQueens => PieceBitboards[(int) Piece.WhiteQueen];
-        public ulong WhiteKing => PieceBitboards[(int) Piece.WhiteKing];
-        public ulong WhiteOccupancy => ColorOccupancy[(int) Color.White];
-
-        
-        public ulong BlackPawns => PieceBitboards[(int) Piece.BlackPawn];
-        public ulong BlackKnights => PieceBitboards[(int) Piece.BlackKnight];
-        public ulong BlackBishops => PieceBitboards[(int) Piece.BlackBishop];
-        public ulong BlackRooks => PieceBitboards[(int) Piece.BlackRook];
-        public ulong BlackQueens => PieceBitboards[(int) Piece.BlackQueen];
-        public ulong BlackKing => PieceBitboards[(int) Piece.BlackKing];
-        public ulong BlackOccupancy => ColorOccupancy[(int) Color.Black];
-
-
         public Color ColorLastMoved => 1 - ColorToMove;
 
 
@@ -79,6 +60,23 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetRooks(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteRook];
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetQueens(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteQueen];
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetKing(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteKing];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetPieces(ColorlessPiece piece) => PieceBitboards[(int)piece] | PieceBitboards[(int)piece + (int)Piece.WhiteKing];
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong GetMajorPieces(Color color)
+        {
+            var firstPiece = (Piece)((int)color * (int)Piece.WhiteKing) + (int)Piece.WhiteRook;
+            return PieceBitboards[(int)firstPiece] | PieceBitboards[(int)firstPiece + 1];
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong GetMinorPieces(Color color)
+        {
+            var firstPiece = (Piece)((int)color * (int)Piece.WhiteKing) + (int)Piece.WhiteKnight;
+            return PieceBitboards[(int)firstPiece] | PieceBitboards[(int)firstPiece + 1];
+        }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -97,7 +95,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         {
             var squareMask = Board.SquareMasks[(int) square];
             if ((Occupancy & squareMask) == 0) return Piece.None;
-            if ((WhiteOccupancy & squareMask) > 0)
+            if ((ColorOccupancy[(int)Color.White] & squareMask) > 0)
             {
                 // Locate white piece.
                 for (var piece = Piece.WhitePawn; piece <= Piece.WhiteKing; piece++)

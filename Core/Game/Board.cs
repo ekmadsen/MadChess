@@ -1383,12 +1383,15 @@ namespace ErikTheCoder.MadChess.Core.Game
         public bool AssertIntegrity()
         {
             // Validate occupancy.
-            Debug.Assert((CurrentPosition.WhitePawns | CurrentPosition.WhiteKnights | CurrentPosition.WhiteBishops | CurrentPosition.WhiteRooks | CurrentPosition.WhiteQueens | CurrentPosition.WhiteKing) == CurrentPosition.WhiteOccupancy);
-            Debug.Assert((CurrentPosition.BlackPawns | CurrentPosition.BlackKnights | CurrentPosition.BlackBishops | CurrentPosition.BlackRooks | CurrentPosition.BlackQueens | CurrentPosition.BlackKing) == CurrentPosition.BlackOccupancy);
-            Debug.Assert((CurrentPosition.WhiteOccupancy | CurrentPosition.BlackOccupancy) == CurrentPosition.Occupancy);
-            // Validate one king of each color is on the board.
-            Debug.Assert(Bitwise.CountSetBits(CurrentPosition.WhiteKing) == 1);
-            Debug.Assert(Bitwise.CountSetBits(CurrentPosition.BlackKing) == 1);
+            for (var color = Color.White; color <= Color.Black; color++)
+            {
+                // ReSharper disable once RedundantAssignment
+                var occupancy = CurrentPosition.GetPawns(color) | CurrentPosition.GetKnights(color) | CurrentPosition.GetBishops(color) |
+                                CurrentPosition.GetRooks(color) | CurrentPosition.GetQueens(color) | CurrentPosition.GetKing(color);
+                Debug.Assert(occupancy == CurrentPosition.ColorOccupancy[(int)color]);
+                Debug.Assert(Bitwise.CountSetBits(CurrentPosition.GetKing(color)) == 1);
+            }
+            Debug.Assert((CurrentPosition.ColorOccupancy[(int)Color.White] | CurrentPosition.ColorOccupancy[(int)Color.Black]) == CurrentPosition.Occupancy);
             return true;
         }
 
