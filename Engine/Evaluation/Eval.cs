@@ -39,15 +39,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         private const int _bishopPhaseWeight = 10; // + 4 * 10 =  80
         private const int _rookPhaseWeight = 22; //   + 4 * 22 = 168
         private const int _queenPhaseWeight = 44; //  + 2 * 44 = 256
-        private static readonly int[] _piecePhaseWeights =
-        {
-            0, // None
-            0, // Pawn
-            _knightPhaseWeight,
-            _bishopPhaseWeight,
-            _rookPhaseWeight,
-            _queenPhaseWeight
-        };
         // Draw by Repetition
         public int DrawMoves;
         // Material
@@ -878,11 +869,10 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int DetermineGamePhase(Position position)
         {
-            var phase = 0;
-            for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
-            {
-                phase += Bitwise.CountSetBits(position.GetPieces(colorlessPiece)) * _piecePhaseWeights[(int)colorlessPiece];
-            }
+            var phase = (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Knight)) * _knightPhaseWeight) +
+                        (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Bishop)) * _bishopPhaseWeight) +
+                        (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Rook)) * _rookPhaseWeight) +
+                        (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Queen)) * _queenPhaseWeight);
             return Math.Min(phase, MiddlegamePhase);
         }
 

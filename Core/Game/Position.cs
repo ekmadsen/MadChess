@@ -82,11 +82,13 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong GetMajorAndMinorPieces(Color color)
         {
-            var pieces = 0ul;
-            var firstPiece = (Piece)((int)color * (int)Piece.WhiteKing) + (int)Piece.WhiteKnight;
-            var lastPiece = firstPiece + 3;
-            for (var piece = firstPiece; piece <= lastPiece; piece++) pieces |= PieceBitboards[(int)piece];
-            return pieces;
+            // Explicit array lookups are faster than looping through pieces.
+            return color switch
+            {
+                Color.White => PieceBitboards[(int)Piece.WhiteKnight] | PieceBitboards[(int)Piece.WhiteBishop] | PieceBitboards[(int)Piece.WhiteRook] | PieceBitboards[(int)Piece.WhiteQueen],
+                Color.Black => PieceBitboards[(int)Piece.BlackKnight] | PieceBitboards[(int)Piece.BlackBishop] | PieceBitboards[(int)Piece.BlackRook] | PieceBitboards[(int)Piece.BlackQueen],
+                _ => throw new NotImplementedException()
+            };
         }
 
 
@@ -97,18 +99,22 @@ namespace ErikTheCoder.MadChess.Core.Game
             if ((Occupancy & squareMask) == 0) return Piece.None;
             if ((ColorOccupancy[(int)Color.White] & squareMask) > 0)
             {
-                // Locate white piece.
-                for (var piece = Piece.WhitePawn; piece <= Piece.WhiteKing; piece++)
-                {
-                    if ((PieceBitboards[(int) piece] & squareMask) > 0) return piece;
-                }
+                // Locate white piece.  // Explicit array lookups are faster than looping through pieces.
+                if ((PieceBitboards[(int)Piece.WhitePawn] & squareMask) > 0) return Piece.WhitePawn;
+                if ((PieceBitboards[(int)Piece.WhiteKnight] & squareMask) > 0) return Piece.WhiteKnight;
+                if ((PieceBitboards[(int)Piece.WhiteBishop] & squareMask) > 0) return Piece.WhiteBishop;
+                if ((PieceBitboards[(int)Piece.WhiteRook] & squareMask) > 0) return Piece.WhiteRook;
+                if ((PieceBitboards[(int)Piece.WhiteQueen] & squareMask) > 0) return Piece.WhiteQueen;
+                if ((PieceBitboards[(int)Piece.WhiteKing] & squareMask) > 0) return Piece.WhiteKing;
                 throw new Exception($"White piece not found at {Board.SquareLocations[(int) square]}.");
             }
-            // Locate black piece.
-            for (var piece = Piece.BlackPawn; piece <= Piece.BlackKing; piece++)
-            {
-                if ((PieceBitboards[(int) piece] & squareMask) > 0) return piece;
-            }
+            // Locate black piece.  // Explicit array lookups are faster than looping through pieces.
+            if ((PieceBitboards[(int)Piece.BlackPawn] & squareMask) > 0) return Piece.BlackPawn;
+            if ((PieceBitboards[(int)Piece.BlackKnight] & squareMask) > 0) return Piece.BlackKnight;
+            if ((PieceBitboards[(int)Piece.BlackBishop] & squareMask) > 0) return Piece.BlackBishop;
+            if ((PieceBitboards[(int)Piece.BlackRook] & squareMask) > 0) return Piece.BlackRook;
+            if ((PieceBitboards[(int)Piece.BlackQueen] & squareMask) > 0) return Piece.BlackQueen;
+            if ((PieceBitboards[(int)Piece.BlackKing] & squareMask) > 0) return Piece.BlackKing;
             throw new Exception($"Black piece not found at {Board.SquareLocations[(int) square]}.");
         }
 
@@ -116,8 +122,19 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(Position copyFromPosition)
         {
-            // Copy bitboards.
-            for (var piece = Piece.WhitePawn; piece <= Piece.BlackKing; piece++) PieceBitboards[(int) piece] = copyFromPosition.PieceBitboards[(int) piece];
+            // Copy bitboards.  Explicit array lookups are faster than looping through pieces.
+            PieceBitboards[(int)Piece.WhitePawn] = copyFromPosition.PieceBitboards[(int)Piece.WhitePawn];
+            PieceBitboards[(int)Piece.WhiteKnight] = copyFromPosition.PieceBitboards[(int)Piece.WhiteKnight];
+            PieceBitboards[(int)Piece.WhiteBishop] = copyFromPosition.PieceBitboards[(int)Piece.WhiteBishop];
+            PieceBitboards[(int)Piece.WhiteRook] = copyFromPosition.PieceBitboards[(int)Piece.WhiteRook];
+            PieceBitboards[(int)Piece.WhiteQueen] = copyFromPosition.PieceBitboards[(int)Piece.WhiteQueen];
+            PieceBitboards[(int)Piece.WhiteKing] = copyFromPosition.PieceBitboards[(int)Piece.WhiteKing];
+            PieceBitboards[(int)Piece.BlackPawn] = copyFromPosition.PieceBitboards[(int)Piece.BlackPawn];
+            PieceBitboards[(int)Piece.BlackKnight] = copyFromPosition.PieceBitboards[(int)Piece.BlackKnight];
+            PieceBitboards[(int)Piece.BlackBishop] = copyFromPosition.PieceBitboards[(int)Piece.BlackBishop];
+            PieceBitboards[(int)Piece.BlackRook] = copyFromPosition.PieceBitboards[(int)Piece.BlackRook];
+            PieceBitboards[(int)Piece.BlackQueen] = copyFromPosition.PieceBitboards[(int)Piece.BlackQueen];
+            PieceBitboards[(int)Piece.BlackKing] = copyFromPosition.PieceBitboards[(int)Piece.BlackKing];
             ColorOccupancy[(int) Color.White] = copyFromPosition.ColorOccupancy[(int) Color.White];
             ColorOccupancy[(int) Color.Black] = copyFromPosition.ColorOccupancy[(int) Color.Black];
             Occupancy = copyFromPosition.Occupancy;
