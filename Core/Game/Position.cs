@@ -83,12 +83,9 @@ namespace ErikTheCoder.MadChess.Core.Game
         public ulong GetMajorAndMinorPieces(Color color)
         {
             // Explicit array lookups are faster than looping through pieces.
-            return color switch
-            {
-                Color.White => PieceBitboards[(int)Piece.WhiteKnight] | PieceBitboards[(int)Piece.WhiteBishop] | PieceBitboards[(int)Piece.WhiteRook] | PieceBitboards[(int)Piece.WhiteQueen],
-                Color.Black => PieceBitboards[(int)Piece.BlackKnight] | PieceBitboards[(int)Piece.BlackBishop] | PieceBitboards[(int)Piece.BlackRook] | PieceBitboards[(int)Piece.BlackQueen],
-                _ => throw new NotImplementedException()
-            };
+            return color == Color.White
+                ? PieceBitboards[(int)Piece.WhiteKnight] | PieceBitboards[(int)Piece.WhiteBishop] | PieceBitboards[(int)Piece.WhiteRook] | PieceBitboards[(int)Piece.WhiteQueen]
+                : PieceBitboards[(int)Piece.BlackKnight] | PieceBitboards[(int)Piece.BlackBishop] | PieceBitboards[(int)Piece.BlackRook] | PieceBitboards[(int)Piece.BlackQueen];
         }
 
 
@@ -312,12 +309,11 @@ namespace ErikTheCoder.MadChess.Core.Game
                 Square fromSquare;
                 while ((fromSquare = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
                 {
-                    var occupancy = Board.PieceMoveMasks[(int)colorlessPiece][(int)fromSquare] & Occupancy;
                     var pieceDestinations = moveGeneration switch
                     {
-                        MoveGeneration.AllMoves => getPieceMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & toSquareMask,
-                        MoveGeneration.OnlyCaptures => getPieceMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & toSquareMask,
-                        MoveGeneration.OnlyNonCaptures => getPieceMovesMask(fromSquare, occupancy) & ~Occupancy & toSquareMask,
+                        MoveGeneration.AllMoves => getPieceMovesMask(fromSquare, Occupancy) & unOrEnemyOccupiedSquares & toSquareMask,
+                        MoveGeneration.OnlyCaptures => getPieceMovesMask(fromSquare, Occupancy) & enemyOccupiedSquares & toSquareMask,
+                        MoveGeneration.OnlyNonCaptures => getPieceMovesMask(fromSquare, Occupancy) & ~Occupancy & toSquareMask,
                         _ => throw new Exception($"{moveGeneration} move generation not supported.")
                     };
                     Square toSquare;
@@ -376,7 +372,7 @@ namespace ErikTheCoder.MadChess.Core.Game
                 for (var boardSide = BoardSide.Queen; boardSide <= BoardSide.King; boardSide++)
                 {
                     var castleEmptySquaresMask = Board.CastleEmptySquaresMask[(int)ColorToMove][(int)boardSide];
-                    if (Game.Castling.Permitted(Castling, ColorToMove, boardSide) && ((Occupancy & castleEmptySquaresMask) == 0))
+                    if (!KingInCheck && Game.Castling.Permitted(Castling, ColorToMove, boardSide) && ((Occupancy & castleEmptySquaresMask) == 0))
                     {
                         // Castle
                         toSquare = Board.CastleToSquares[(int)ColorToMove][(int)boardSide];

@@ -44,7 +44,6 @@ namespace ErikTheCoder.MadChess.Core.Game
         public static readonly ulong[] BishopMoveMasks;
         public static readonly ulong[] RookMoveMasks;
         public static readonly ulong[] KingMoveMasks;
-        public static readonly ulong[][] PieceMoveMasks;
         public static readonly Delegates.GetPieceMovesMask[] PieceMoveMaskDelegates;
         public static readonly ulong[] EnPassantAttackerMasks;
         public static readonly ulong[][] PassedPawnMasks;
@@ -313,15 +312,6 @@ namespace ErikTheCoder.MadChess.Core.Game
             BishopMoveMasks = CreateBishopMoveMasks();
             RookMoveMasks = CreateRookMoveMasks();
             KingMoveMasks = CreateKingMoveMasks();
-            PieceMoveMasks = new ulong[(int)ColorlessPiece.Queen + 1][];
-            PieceMoveMasks[(int)ColorlessPiece.Knight] = KnightMoveMasks;
-            PieceMoveMasks[(int)ColorlessPiece.Bishop] = BishopMoveMasks;
-            PieceMoveMasks[(int)ColorlessPiece.Rook] = RookMoveMasks;
-            PieceMoveMasks[(int) ColorlessPiece.Queen] = new ulong[64];
-            for (var square = Square.A8; square < Square.Illegal; square++)
-            {
-                PieceMoveMasks[(int)ColorlessPiece.Queen][(int)square] = BishopMoveMasks[(int)square] | RookMoveMasks[(int)square];
-            }
             PieceMoveMaskDelegates = new Delegates.GetPieceMovesMask[(int)ColorlessPiece.Queen + 1];
             PieceMoveMaskDelegates[(int)ColorlessPiece.Knight] = GetKnightDestinations;
             PieceMoveMaskDelegates[(int)ColorlessPiece.Bishop] = GetBishopDestinations;
@@ -1034,7 +1024,6 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public bool IsMoveLegal(ref ulong move)
         {
-            if (Move.IsCastling(move) && CurrentPosition.KingInCheck) return false;
             var fromSquare = Move.From(move);
             if (!CurrentPosition.KingInCheck && !Move.IsKingMove(move) && !Move.IsEnPassantCapture(move))
             {

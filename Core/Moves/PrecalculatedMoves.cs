@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 
@@ -193,6 +194,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong GetBishopMovesMask(Square square, ulong occupancy)
         {
             var relevantOccupancy = occupancy & _bishopRelevantOccupancyMasks[(int)square];
@@ -201,12 +203,17 @@ namespace ErikTheCoder.MadChess.Core.Moves
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong GetRookMovesMask(Square square, ulong occupancy)
         {
             var relevantOccupancy = occupancy & _rookRelevantOccupancyMasks[(int)square];
             var index = GetIndex(relevantOccupancy, _rookMagicMultipliers[(int)square], _rookShifts[(int)square]);
             return _rookMoveMasks[(int)square][index];
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetIndex(ulong occupancy, ulong magicMultiplier, int shift) => (int)((occupancy * magicMultiplier) >> shift);
 
 
         public void FindMagicMultipliers(Piece piece, Delegates.WriteMessageLine writeMessageLine = null)
@@ -352,9 +359,6 @@ namespace ErikTheCoder.MadChess.Core.Moves
             }
             // ReSharper restore ConvertSwitchStatementToSwitchExpression
         }
-
-
-        private static int GetIndex(ulong occupancy, ulong magicMultiplier, int shift) => (int) ((occupancy * magicMultiplier) >> shift);
 
 
         private static (ulong MagicMultiplier, ulong[] MovesMasks) FindMagicMultiplier(Dictionary<ulong, ulong> occupancyToMovesMask, int shift, ulong? knownMagicMultiplier)
