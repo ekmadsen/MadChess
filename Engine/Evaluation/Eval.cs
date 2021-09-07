@@ -15,6 +15,7 @@ using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Core.Utilities;
+using ErikTheCoder.MadChess.Engine.Score;
 
 
 namespace ErikTheCoder.MadChess.Engine.Evaluation
@@ -396,14 +397,18 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             }
             // Position is not a simple endgame.
             _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
-            for (var color = Color.White; color <= Color.Black; color++)
-            {
-                EvaluateMaterial(position, color);
-                EvaluatePieceLocation(position, color);
-                EvaluatePawns(position, color);
-                EvaluatePieceMobilityKingSafety(position, color);
-                EvaluateMinorPieces(position, color);
-            }
+            // Explicit array lookups are faster than looping through colors.
+            EvaluateMaterial(position, Color.White);
+            EvaluateMaterial(position, Color.Black);
+            EvaluatePieceLocation(position, Color.White);
+            EvaluatePieceLocation(position, Color.Black);
+            EvaluatePawns(position, Color.White);
+            EvaluatePawns(position, Color.Black);
+            EvaluatePieceMobilityKingSafety(position, Color.White);
+            EvaluatePieceMobilityKingSafety(position, Color.Black);
+            EvaluateMinorPieces(position, Color.White);
+            EvaluateMinorPieces(position, Color.Black);
+            // Limit strength, determine endgame scale, phase, and total score.
             if (Config.LimitedStrength) LimitStrength();
             DetermineEndgameScale(position); // Scale down scores for difficult to win endgames.
             if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
@@ -576,17 +581,36 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void EvaluateMaterial(Position position, Color color)
         {
+            // Explicit piece evaluation is faster than looping through pieces due to avoiding CPU stalls and enabling out-of-order execution.
+            // See https://stackoverflow.com/a/2349265/8992299.
+            // Pawns
             _staticScore.PawnMaterial[(int)color] = Bitwise.CountSetBits(position.GetPawns(color)) * PawnMaterial;
-            for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
-            {
-                var piece = PieceHelper.GetPieceOfColor(colorlessPiece, color);
-                var pieceCount = Bitwise.CountSetBits(position.PieceBitboards[(int)piece]);
-                _staticScore.MgPieceMaterial[(int)color] += pieceCount * _mgMaterialScores[(int)colorlessPiece];
-                _staticScore.EgPieceMaterial[(int)color] += pieceCount * _egMaterialScores[(int)colorlessPiece];
-            }
+            // Knights
+            var knight = PieceHelper.GetPieceOfColor(ColorlessPiece.Knight, color);
+            var knightCount = Bitwise.CountSetBits(position.PieceBitboards[(int)knight]);
+            var mgKnightMaterial = knightCount * _mgMaterialScores[(int)ColorlessPiece.Knight];
+            var egKnightMaterial = knightCount * _egMaterialScores[(int)ColorlessPiece.Knight];
+            // Bishops
+            var bishop = PieceHelper.GetPieceOfColor(ColorlessPiece.Bishop, color);
+            var bishopCount = Bitwise.CountSetBits(position.PieceBitboards[(int)bishop]);
+            var mgBishopMaterial = bishopCount * _mgMaterialScores[(int)ColorlessPiece.Bishop];
+            var egBishopMaterial = bishopCount * _egMaterialScores[(int)ColorlessPiece.Bishop];
+            // Rooks
+            var rook = PieceHelper.GetPieceOfColor(ColorlessPiece.Rook, color);
+            var rookCount = Bitwise.CountSetBits(position.PieceBitboards[(int)rook]);
+            var mgRookMaterial = rookCount * _mgMaterialScores[(int)ColorlessPiece.Rook];
+            var egRookMaterial = rookCount * _egMaterialScores[(int)ColorlessPiece.Rook];
+            // Queens
+            var queen = PieceHelper.GetPieceOfColor(ColorlessPiece.Queen, color);
+            var queenCount = Bitwise.CountSetBits(position.PieceBitboards[(int)queen]);
+            var mgQueenMaterial = queenCount * _mgMaterialScores[(int)ColorlessPiece.Queen];
+            var egQueenMaterial = queenCount * _egMaterialScores[(int)ColorlessPiece.Queen];
+            // Total
+            _staticScore.MgPieceMaterial[(int)color] = mgKnightMaterial + mgBishopMaterial + mgRookMaterial + mgQueenMaterial;
+            _staticScore.EgPieceMaterial[(int)color] = egKnightMaterial + egBishopMaterial + egRookMaterial + egQueenMaterial;
         }
 
 
@@ -615,7 +639,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void EvaluatePieceLocation(Position position, Color color)
         {
             for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
@@ -639,6 +663,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         {
             var enemyColor = 1 - color;
             var pawns = position.GetPawns(color);
+            if (pawns == 0) return;
             var kingSquare = Bitwise.FirstSetSquare(position.GetKing(color));
             var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
             Square pawnSquare;
@@ -651,7 +676,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                     _staticScore.EgKingEscortedPassedPawns[(int)color] += (Board.SquareDistances[(int)pawnSquare][(int)enemyKingSquare] - Board.SquareDistances[(int)pawnSquare][(int)kingSquare]) * Config.EgKingEscortedPassedPawn;
                     if (IsFreePawn(position, pawnSquare, color))
                     {
-                        // Pawn can advance safely.
+                        // Pawn is free to advance.
                         if (IsUnstoppablePawn(position, pawnSquare, enemyKingSquare, color)) _staticScore.UnstoppablePassedPawns[(int)color] += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
                         else _staticScore.EgFreePassedPawns[(int)color] += _egFreePassedPawns[rank]; // Pawn is passed and free.
                     }
@@ -880,7 +905,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         public static int GetNonLinearBonus(double bonus, double scale, double power, int constant) => (int)(scale * Math.Pow(bonus, power)) + constant;
 
 
-        // TODO: Loop over colorless pieces when showing piece location values.
         public string ShowParameters()
         {
             var stringBuilder = new StringBuilder();
@@ -898,88 +922,45 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             stringBuilder.AppendLine($"EG Queen:   {Config.EgQueenMaterial}");
             stringBuilder.AppendLine();
             // Piece Location
-            stringBuilder.AppendLine("Middlegame Pawn Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_mgPieceLocations[(int)ColorlessPiece.Pawn], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Pawn Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_egPieceLocations[(int)ColorlessPiece.Pawn], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame Knight Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_mgPieceLocations[(int)ColorlessPiece.Knight], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Knight Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_egPieceLocations[(int)ColorlessPiece.Knight], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame Bishop Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_mgPieceLocations[(int)ColorlessPiece.Bishop], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Bishop Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_egPieceLocations[(int)ColorlessPiece.Bishop], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame Rook Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_mgPieceLocations[(int)ColorlessPiece.Rook], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Rook Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_egPieceLocations[(int)ColorlessPiece.Rook], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame Queen Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_mgPieceLocations[(int)ColorlessPiece.Queen], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame Queen Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_egPieceLocations[(int)ColorlessPiece.Queen], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Middlegame King Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_mgPieceLocations[(int)ColorlessPiece.King], stringBuilder);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Endgame King Location");
-            stringBuilder.AppendLine("==============================================");
-            ShowParameterSquares(_egPieceLocations[(int)ColorlessPiece.King], stringBuilder);
-            stringBuilder.AppendLine();
+            for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
+            {
+                // Middlegame
+                stringBuilder.AppendLine($"Middlegame {PieceHelper.GetName(colorlessPiece)} Location");
+                stringBuilder.AppendLine("==============================================");
+                ShowParameterSquares(_mgPieceLocations[(int)colorlessPiece], stringBuilder);
+                stringBuilder.AppendLine();
+                // Endgame
+                stringBuilder.AppendLine($"Endgame {PieceHelper.GetName(colorlessPiece)} Location");
+                stringBuilder.AppendLine("==============================================");
+                ShowParameterSquares(_egPieceLocations[(int)colorlessPiece], stringBuilder);
+                stringBuilder.AppendLine();
+            }
             // Passed Pawns
             stringBuilder.Append("Middlegame Passed Pawns:            ");
             ShowParameterArray(_mgPassedPawns, stringBuilder);
+            stringBuilder.AppendLine();
             stringBuilder.Append("Endgame Passed Pawns:               ");
             ShowParameterArray(_egPassedPawns, stringBuilder);
+            stringBuilder.AppendLine();
             stringBuilder.Append("Endgame Free Passed Pawns:          ");
             ShowParameterArray(_egFreePassedPawns, stringBuilder);
+            stringBuilder.AppendLine();
             stringBuilder.AppendLine($"Endgame King Escorted Passed Pawn:  {Config.EgKingEscortedPassedPawn}");
             stringBuilder.AppendLine($"Unstoppable Passed Pawn:            {Config.UnstoppablePassedPawn}");
             stringBuilder.AppendLine();
-            // Knight Mobility
-            stringBuilder.Append("Middlegame Knight Mobility:  ");
-            ShowParameterArray(_mgPieceMobility[(int)ColorlessPiece.Knight], stringBuilder);
-            stringBuilder.Append("   Endgame Knight Mobility:  ");
-            ShowParameterArray(_egPieceMobility[(int)ColorlessPiece.Knight], stringBuilder);
-            stringBuilder.AppendLine();
-            // Bishop Mobility
-            stringBuilder.Append("Middlegame Bishop Mobility:  ");
-            ShowParameterArray(_mgPieceMobility[(int)ColorlessPiece.Bishop], stringBuilder);
-            stringBuilder.Append("   Endgame Bishop Mobility:  ");
-            ShowParameterArray(_egPieceMobility[(int)ColorlessPiece.Bishop], stringBuilder);
-            stringBuilder.AppendLine();
-            // Rook Mobility
-            stringBuilder.Append("Middlegame Rook Mobility:    ");
-            ShowParameterArray(_mgPieceMobility[(int)ColorlessPiece.Rook], stringBuilder);
-            stringBuilder.Append("   Endgame Rook Mobility:    ");
-            ShowParameterArray(_egPieceMobility[(int)ColorlessPiece.Rook], stringBuilder);
-            stringBuilder.AppendLine();
-            // Queen Mobility
-            stringBuilder.Append("Middlegame Queen Mobility:   ");
-            ShowParameterArray(_mgPieceMobility[(int)ColorlessPiece.Queen], stringBuilder);
-            stringBuilder.Append("   Endgame Queen Mobility:   ");
-            ShowParameterArray(_egPieceMobility[(int)ColorlessPiece.Queen], stringBuilder);
-            stringBuilder.AppendLine();
+            // Mobility
+            for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
+            {
+                // Middlegame
+                stringBuilder.Append($"Middlegame {PieceHelper.GetName(colorlessPiece)} Mobility:  ".PadLeft(29));
+                ShowParameterArray(_mgPieceMobility[(int)colorlessPiece], stringBuilder);
+                stringBuilder.AppendLine();
+                // Endgame
+                stringBuilder.Append($"   Endgame {PieceHelper.GetName(colorlessPiece)} Mobility:  ".PadLeft(29));
+                ShowParameterArray(_egPieceMobility[(int)colorlessPiece], stringBuilder);
+                stringBuilder.AppendLine();
+                stringBuilder.AppendLine();
+            }
             // King Safety
             stringBuilder.AppendLine($"King Safety MinorAttackOuterRingPer8:  {Config.MgKingSafetyMinorAttackOuterRingPer8:000}");
             stringBuilder.AppendLine($"King Safety MinorAttackInnerRingPer8:  {Config.MgKingSafetyMinorAttackInnerRingPer8:000}");
@@ -992,6 +973,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             stringBuilder.AppendLine();
             stringBuilder.Append("Middlegame King Safety:  ");
             ShowParameterArray(_mgKingSafety, stringBuilder);
+            stringBuilder.AppendLine();
             return stringBuilder.ToString();
         }
 
@@ -1013,7 +995,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         private static void ShowParameterArray(int[] parameters, StringBuilder stringBuilder)
         {
             for (var index = 0; index < parameters.Length; index++) stringBuilder.Append(parameters[index].ToString("+000;-000").PadRight(5));
-            stringBuilder.AppendLine();
         }
 
 

@@ -11,10 +11,11 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
-namespace ErikTheCoder.MadChess.Engine.Evaluation
+namespace ErikTheCoder.MadChess.Engine.Score
 {
     public sealed class StaticScore
     {
@@ -114,29 +115,44 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset()
         {
-            for (var color = Color.White; color <= Color.Black; color++)
-            {
-                EgSimple[(int)color] = 0;
-                PawnMaterial[(int)color] = 0;
-                MgPieceMaterial[(int)color] = 0;
-                EgPieceMaterial[(int)color] = 0;
-                MgPieceLocation[(int)color] = 0;
-                EgPieceLocation[(int)color] = 0;
-                PassedPawnCount[(int)color] = 0;
-                MgPassedPawns[(int)color] = 0;
-                EgPassedPawns[(int)color] = 0;
-                EgFreePassedPawns[(int)color] = 0;
-                EgKingEscortedPassedPawns[(int)color] = 0;
-                UnstoppablePassedPawns[(int)color] = 0;
-                MgPieceMobility[(int)color] = 0;
-                EgPieceMobility[(int)color] = 0;
-                MgKingSafety[(int)color] = 0;
-                MgBishopPair[(int)color] = 0;
-                EgBishopPair[(int)color] = 0;
-            }
+            // Explicit array lookups are faster than looping through colors.
+            EgSimple[(int)Color.White] = 0;
+            EgSimple[(int)Color.Black] = 0;
+            PawnMaterial[(int)Color.White] = 0;
+            PawnMaterial[(int)Color.Black] = 0;
+            MgPieceMaterial[(int)Color.White] = 0;
+            MgPieceMaterial[(int)Color.Black] = 0;
+            EgPieceMaterial[(int)Color.White] = 0;
+            EgPieceMaterial[(int)Color.Black] = 0;
+            MgPieceLocation[(int)Color.White] = 0;
+            MgPieceLocation[(int)Color.Black] = 0;
+            EgPieceLocation[(int)Color.White] = 0;
+            EgPieceLocation[(int)Color.Black] = 0;
+            PassedPawnCount[(int)Color.White] = 0;
+            PassedPawnCount[(int)Color.Black] = 0;
+            MgPassedPawns[(int)Color.White] = 0;
+            MgPassedPawns[(int)Color.Black] = 0;
+            EgPassedPawns[(int)Color.White] = 0;
+            EgPassedPawns[(int)Color.Black] = 0;
+            EgFreePassedPawns[(int)Color.White] = 0;
+            EgFreePassedPawns[(int)Color.Black] = 0;
+            EgKingEscortedPassedPawns[(int)Color.White] = 0;
+            EgKingEscortedPassedPawns[(int)Color.Black] = 0;
+            UnstoppablePassedPawns[(int)Color.White] = 0;
+            UnstoppablePassedPawns[(int)Color.Black] = 0;
+            MgPieceMobility[(int)Color.White] = 0;
+            MgPieceMobility[(int)Color.Black] = 0;
+            EgPieceMobility[(int)Color.White] = 0;
+            EgPieceMobility[(int)Color.Black] = 0;
+            MgKingSafety[(int)Color.White] = 0;
+            MgKingSafety[(int)Color.Black] = 0;
+            MgBishopPair[(int)Color.White] = 0;
+            MgBishopPair[(int)Color.Black] = 0;
+            EgBishopPair[(int)Color.White] = 0;
+            EgBishopPair[(int)Color.Black] = 0;
             PlySinceCaptureOrPawnMove = 0;
             EgScalePer128 = 128;
         }

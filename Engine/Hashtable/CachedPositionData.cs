@@ -14,7 +14,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
-using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Score;
 

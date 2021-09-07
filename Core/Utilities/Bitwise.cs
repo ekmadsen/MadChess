@@ -20,7 +20,6 @@ using System.Numerics;
 
 namespace ErikTheCoder.MadChess.Core.Utilities
 {
-    // See https://graphics.stanford.edu/~seander/bithacks.html.
     public static class Bitwise
     {
 #if (!POPCOUNT)
@@ -225,13 +224,13 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         public static int CountSetBits(uint value) => BitOperations.PopCount(value);
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountSetBits(uint Value)
+        public static int CountSetBits(uint value)
         {
             var count = 0;
-            while (Value > 0)
+            while (value > 0)
             {
                 count++;
-                Value &= Value - 1u;
+                value &= value - 1u;
             }
             Debug.Assert((count >= 0) && (count <= _intBits));
             return count;

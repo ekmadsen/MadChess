@@ -863,7 +863,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetQueenDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void SetPosition(string fen, bool preserveMoveCount = false)
         {
             var fenTokens = Tokens.Parse(fen, ' ', '"');
@@ -1338,7 +1338,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public bool IsRepeatPosition(int repeats)
         {
             var currentPositionKey = CurrentPosition.Key;
@@ -1354,7 +1354,7 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public int GetPositionCount()
         {
             var currentPositionKey = CurrentPosition.Key;

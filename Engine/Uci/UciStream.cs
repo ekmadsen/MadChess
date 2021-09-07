@@ -612,8 +612,8 @@ namespace ErikTheCoder.MadChess.Engine.Uci
             WriteMessageLine("======  ======  =====  ==================  ============  ================");
             // Find magic multipliers for bishop and rook moves.
             // No need to find magic multipliers for queen moves since the queen combines bishop and rook moves.
-            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteBishop, WriteMessageLine);
-            Board.PrecalculatedMoves.FindMagicMultipliers(Piece.WhiteRook, WriteMessageLine);
+            Board.PrecalculatedMoves.FindMagicMultipliers(ColorlessPiece.Bishop, WriteMessageLine);
+            Board.PrecalculatedMoves.FindMagicMultipliers(ColorlessPiece.Rook, WriteMessageLine);
         }
 
 

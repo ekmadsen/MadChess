@@ -14,7 +14,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
-using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
 
@@ -154,13 +153,6 @@ namespace ErikTheCoder.MadChess.Engine.Hashtable
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetIndex(ulong key)
-        {
-            // Ensure even distribution of indices by using GetHashCode method rather than raw Zobrist key for modular division.
-            var index = (key.GetHashCode() % _indices) * _buckets; // Index may be negative.
-            // Ensure index is positive using technique faster than Math.Abs().  See http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs.
-            var mask = index >> 31;
-            return (index ^ mask) - mask;
-        }
+        private int GetIndex(ulong key) => (int)(key % (ulong)_indices) * _buckets;
     }
 }

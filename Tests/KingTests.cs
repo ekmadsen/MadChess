@@ -16,7 +16,7 @@ using NUnit.Framework;
 namespace ErikTheCoder.MadChess.Tests
 {
     [TestFixture]
-    public sealed class BitwiseTests : TestBase
+    public sealed class KingTests : TestBase
     {
         [Test]
         public void TestKingRingMasks()

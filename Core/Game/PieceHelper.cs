@@ -39,25 +39,22 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
-        public static string GetName(Piece piece)
+        public static string GetName(Piece piece) => GetName(GetColorlessPiece(piece));
+
+
+        public static string GetName(ColorlessPiece colorlessPiece)
         {
             // Sequence cases in order of enum value to improve performance of switch statement.
-            return piece switch
+            return colorlessPiece switch
             {
-                Piece.None => string.Empty,
-                Piece.WhitePawn => "Pawn",
-                Piece.WhiteKnight => "Knight",
-                Piece.WhiteBishop => "Bishop",
-                Piece.WhiteRook => "Rook",
-                Piece.WhiteQueen => "Queen",
-                Piece.WhiteKing => "King",
-                Piece.BlackPawn => "Pawn",
-                Piece.BlackKnight => "Knight",
-                Piece.BlackBishop => "Bishop",
-                Piece.BlackRook => "Rook",
-                Piece.BlackQueen => "Queen",
-                Piece.BlackKing => "King",
-                _ => throw new ArgumentException($"{piece} piece not supported.")
+                ColorlessPiece.None => string.Empty,
+                ColorlessPiece.Pawn => "Pawn",
+                ColorlessPiece.Knight => "Knight",
+                ColorlessPiece.Bishop => "Bishop",
+                ColorlessPiece.Rook => "Rook",
+                ColorlessPiece.Queen => "Queen",
+                ColorlessPiece.King => "King",
+                _ => throw new ArgumentException($"{colorlessPiece} piece not supported.")
             };
         }
 
@@ -67,7 +64,7 @@ namespace ErikTheCoder.MadChess.Core.Game
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Piece GetPieceOfColor(ColorlessPiece piece, Color color) => ((int) color * (int) Piece.WhiteKing) + (Piece) piece;
+        public static Piece GetPieceOfColor(ColorlessPiece colorlessPiece, Color color) => ((int) color * (int) Piece.WhiteKing) + (Piece) colorlessPiece;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

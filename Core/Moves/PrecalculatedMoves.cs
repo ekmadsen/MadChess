@@ -189,8 +189,8 @@ namespace ErikTheCoder.MadChess.Core.Moves
             _rookMagicMultipliers[(int)Square.G1] = 0x0003FFEF27EEBE74ul;
             _rookMagicMultipliers[(int)Square.H1] = 0x7645FFFECBFEA79Eul;
 
-            FindMagicMultipliers(Piece.WhiteBishop);
-            FindMagicMultipliers(Piece.WhiteRook);
+            FindMagicMultipliers(ColorlessPiece.Bishop);
+            FindMagicMultipliers(ColorlessPiece.Rook);
         }
 
 
@@ -216,7 +216,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
         private static int GetIndex(ulong occupancy, ulong magicMultiplier, int shift) => (int)((occupancy * magicMultiplier) >> shift);
 
 
-        public void FindMagicMultipliers(Piece piece, Delegates.WriteMessageLine writeMessageLine = null)
+        public void FindMagicMultipliers(ColorlessPiece colorlessPiece, Delegates.WriteMessageLine writeMessageLine = null)
         {
             Direction[] directions;
             ulong[] unoccupiedMoveMasks;
@@ -225,10 +225,9 @@ namespace ErikTheCoder.MadChess.Core.Moves
             int[] shifts;
             ulong[][] moveMasks;
             // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-            switch (piece)
+            switch (colorlessPiece)
             {
-                case Piece.WhiteBishop:
-                case Piece.BlackBishop:
+                case ColorlessPiece.Bishop:
                     directions = new[] {Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest};
                     unoccupiedMoveMasks = Board.BishopMoveMasks;
                     relevantOccupancyMasks = _bishopRelevantOccupancyMasks;
@@ -236,8 +235,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     shifts = _bishopShifts;
                     moveMasks = _bishopMoveMasks;
                     break;
-                case Piece.WhiteRook:
-                case Piece.BlackRook:
+                case ColorlessPiece.Rook:
                     directions = new[] {Direction.North, Direction.East, Direction.South, Direction.West};
                     unoccupiedMoveMasks = Board.RookMoveMasks;
                     relevantOccupancyMasks = _rookRelevantOccupancyMasks;
@@ -246,7 +244,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     moveMasks = _rookMoveMasks;
                     break;
                 default:
-                    throw new ArgumentException($"{piece} piece not supported.");
+                    throw new ArgumentException($"{colorlessPiece} piece not supported.");
             }
             // ReSharper restore SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             // Generate moves mask on each square.
@@ -284,7 +282,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 var magicMultiplier = magicMultipliers[(int)square];
                 if (magicMultiplier == 0) (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
                 else (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, magicMultiplier);
-                writeMessageLine?.Invoke($"{Board.SquareLocations[(int)square],6}  {PieceHelper.GetName(piece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[(int)square],16:X16}");
+                writeMessageLine?.Invoke($"{Board.SquareLocations[(int)square],6}  {PieceHelper.GetName(colorlessPiece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[(int)square],16:X16}");
             }
         }
 
