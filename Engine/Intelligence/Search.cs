@@ -407,7 +407,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 // Reset move scores then search moves.
                 for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
                 var score = GetDynamicScore(board, 0, _originalHorizon, false, alpha, beta);
-                if (Math.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
+                if (FastMath.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
                 SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
                 var failHigh = _rootMoves[0].Score >= beta;
                 var failHighScore = score;
@@ -423,7 +423,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                     // Reset move scores then search moves within infinite alpha / beta window.
                     for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
                     score = GetDynamicScore(board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
-                    if (Math.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
+                    if (FastMath.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
                     SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
                 }
                 // Find best move.
@@ -658,7 +658,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 board.CurrentPosition.Moves[moveIndex] = move;
                 board.PlayMove(move);
                 var score = -GetDynamicScore(board, depth + 1, searchHorizon, true, -moveBeta, -alpha);
-                if (Math.Abs(score) == StaticScore.Interrupted)
+                if (FastMath.Abs(score) == StaticScore.Interrupted)
                 {
                     // Stop searching.
                     board.UndoMove();
@@ -674,7 +674,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                     }
                 }
                 board.UndoMove();
-                if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
+                if (FastMath.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if ((score > alpha) && (score < beta) && (depth == 0)) _rootMoves[moveIndex].Score = score; // Update root move score.
                 if (score >= beta)
                 {
@@ -821,7 +821,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 board.PlayMove(move);
                 var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, -beta, -alpha, getStaticScore, considerFutility);
                 board.UndoMove();
-                if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
+                if (FastMath.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if (score >= beta) return beta; // Position is not the result of best play by both players.
                 alpha = Math.Max(score, alpha);
             } while (true);
@@ -867,7 +867,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             var toHorizon = horizon - depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
             if (isDrawnEndgame || (depth == 0) || position.KingInCheck) return false; // Position in drawn endgame, at root, or when king is in check is not futile.
-            if ((Math.Abs(alpha) >= StaticScore.Checkmate) || (Math.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
+            if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
             // Position with lone king on board is not futile.
             if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
             if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
@@ -1006,7 +1006,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
             if ((depth == 0) || (legalMoveNumber == 1)) return false; // Root move or first move is not futile.
             if (drawnEndgame || Move.IsCheck(move) || board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame, checking move, or move when king is in check is not futile.
-            if ((Math.Abs(alpha) >= StaticScore.Checkmate) || (Math.Abs(beta) >= StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
+            if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
             var captureVictim = Move.CaptureVictim(move);
             var capture = captureVictim != Piece.None;
             if (capture && (toHorizon > 0)) return false; // Capture in main search is not futile.
@@ -1066,7 +1066,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             var toHorizon = horizon - depth;
             if ((depth == 0) || (toHorizon < _singularMoveMinToHorizon)) return false;
             var score = CachedPositionData.Score(cachedPosition.Data);
-            if ((score == StaticScore.NotCached) || (Math.Abs(score) >= StaticScore.Checkmate)) return false;
+            if ((score == StaticScore.NotCached) || (FastMath.Abs(score) >= StaticScore.Checkmate)) return false;
             if (CachedPositionData.ScorePrecision(cachedPosition.Data) != ScorePrecision.LowerBound) return false;
             if (CachedPositionData.ToHorizon(cachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientDraft)) return false;
             var beta = score - (_singularMoveMargin * toHorizon);
@@ -1084,7 +1084,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             var toHorizon = horizon - depth;
             var cachedToHorizon = CachedPositionData.ToHorizon(cachedPositionData);
             if (cachedToHorizon < toHorizon) return StaticScore.NotCached; // Cached position is shallower than current horizon. Do not use cached score.
-            if (Math.Abs(score) >= StaticScore.Checkmate)
+            if (FastMath.Abs(score) >= StaticScore.Checkmate)
             {
                 // Adjust checkmate score.
                 if (score > 0) score -= depth;
@@ -1172,7 +1172,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void UpdateBestMoveCache(Position currentPosition, int depth, int horizon, ulong bestMove, int score, int alpha, int beta)
         {
-            if (Math.Abs(score) == StaticScore.Interrupted) return;
+            if (FastMath.Abs(score) == StaticScore.Interrupted) return;
             var cachedPosition = _cache.NullPosition;
             cachedPosition.Key = currentPosition.Key;
             CachedPositionData.SetToHorizon(ref cachedPosition.Data, horizon - depth);
@@ -1184,7 +1184,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 CachedPositionData.SetBestMovePromotedPiece(ref cachedPosition.Data, Move.PromotedPiece(bestMove));
             }
             var adjustedScore = score;
-            if (Math.Abs(adjustedScore) >= StaticScore.Checkmate) adjustedScore += adjustedScore > 0 ? depth : -depth; // Adjust checkmate score.
+            if (FastMath.Abs(adjustedScore) >= StaticScore.Checkmate) adjustedScore += adjustedScore > 0 ? depth : -depth; // Adjust checkmate score.
             // Update score.
             if (adjustedScore <= alpha)
             {
@@ -1230,7 +1230,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                     var pvLongAlgebraic = stringBuilder.ToString();
                     var score = _bestMoves[pv].Score;
                     var multiPvPhrase = MultiPv > 1 ? $"multipv {pv + 1} " : null;
-                    var scorePhrase = Math.Abs(score) >= StaticScore.Checkmate ? $"mate {Eval.GetMateMoveCount(score)}" : $"cp {score}";
+                    var scorePhrase = FastMath.Abs(score) >= StaticScore.Checkmate ? $"mate {Eval.GetMateMoveCount(score)}" : $"cp {score}";
                     _writeMessageLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
                                       $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
                 }

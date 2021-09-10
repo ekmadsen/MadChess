@@ -256,7 +256,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 uniqueMovesMasks.Clear();
                 var moveDestinations = unoccupiedMoveMasks[(int)square];
                 var relevantMoveDestinations = moveDestinations & relevantOccupancyMasks[(int)square];
-                var uniqueOccupancies = (int) Math.Pow(2, Bitwise.CountSetBits(relevantMoveDestinations));
+                var uniqueOccupancies = (int)Math.Pow(2, Bitwise.CountSetBits(relevantMoveDestinations));
                 occupancyToMovesMask.EnsureCapacity(uniqueOccupancies);
                 // Generate moves mask for every permutation of relevant occupancy bits.
                 using (var occupancyPermutations = Bitwise.GetAllPermutations(relevantMoveDestinations).GetEnumerator())
@@ -277,7 +277,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 Debug.Assert(occupancyToMovesMask.Count == uniqueOccupancies);
                 // Determine bit shift that produces number >= unique occupancies.
                 // A stricter condition is number >= unique moves but this requires more computing time to find magic multipliers.
-                var shift = 64 - (int) Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
+                var shift = 64 - (int)Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
                 shifts[(int)square] = shift;
                 var magicMultiplier = magicMultipliers[(int)square];
                 if (magicMultiplier == 0) (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
@@ -362,7 +362,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
         private static (ulong MagicMultiplier, ulong[] MovesMasks) FindMagicMultiplier(Dictionary<ulong, ulong> occupancyToMovesMask, int shift, ulong? knownMagicMultiplier)
         {
             var indexBits = 64 - shift;
-            var indexLength = (int) Math.Pow(2d, indexBits);
+            var indexLength = (int)Math.Pow(2d, indexBits);
             var movesMasks = new ulong[indexLength];
             var occupancies = new List<ulong>(occupancyToMovesMask.Keys);
             NextMagicMultiplier:

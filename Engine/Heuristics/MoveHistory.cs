@@ -8,10 +8,10 @@
 // +------------------------------------------------------------------------------+
 
 
-using System;
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
+using ErikTheCoder.MadChess.Core.Utilities;
 
 
 namespace ErikTheCoder.MadChess.Engine.Heuristics
@@ -51,7 +51,7 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics
             var piece = position.GetPiece(Move.From(move));
             var toSquare = Move.To(move);
             var value = _moveHistory[(int)piece][(int)toSquare];
-            value += (increment * _multiplier) - ((value * Math.Abs(increment)) / _divisor);
+            value += (increment * _multiplier) - ((value * FastMath.Abs(increment)) / _divisor);
             _moveHistory[(int)piece][(int)toSquare] = value;
         }
 

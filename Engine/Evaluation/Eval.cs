@@ -151,10 +151,9 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                     var file = Board.Files[(int)square];
                     var squareCentrality = 3 - Board.DistanceToCentralSquares[(int)square];
                     var fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
+                    var mgCentralityMetric = squareCentrality;
                     var nearestCorner = 3 - Board.DistanceToNearestCorner[(int)square];
                     int mgAdvancement;
-                    int mgCentralityMetric;
-                    int egCentralityMetric;
                     int mgCentrality;
                     int mgCorner;
                     int egAdvancement;
@@ -165,8 +164,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                     {
                         case ColorlessPiece.Pawn:
                             mgAdvancement = Config.MgPawnAdvancement;
-                            mgCentralityMetric = squareCentrality;
-                            egCentralityMetric = squareCentrality;
                             mgCentrality = Config.MgPawnCentrality;
                             mgCorner = 0;
                             egAdvancement = Config.EgPawnAdvancement;
@@ -175,8 +172,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                             break;
                         case ColorlessPiece.Knight:
                             mgAdvancement = Config.MgKnightAdvancement;
-                            mgCentralityMetric = squareCentrality;
-                            egCentralityMetric = squareCentrality;
                             mgCentrality = Config.MgKnightCentrality;
                             mgCorner = Config.MgKnightCorner;
                             egAdvancement = Config.EgKnightAdvancement;
@@ -185,8 +180,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                             break;
                         case ColorlessPiece.Bishop:
                             mgAdvancement = Config.MgBishopAdvancement;
-                            mgCentralityMetric = squareCentrality;
-                            egCentralityMetric = squareCentrality;
                             mgCentrality = Config.MgBishopCentrality;
                             mgCorner = Config.MgBishopCorner;
                             egAdvancement = Config.EgBishopAdvancement;
@@ -196,7 +189,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                         case ColorlessPiece.Rook:
                             mgAdvancement = Config.MgRookAdvancement;
                             mgCentralityMetric = fileCentrality;
-                            egCentralityMetric = squareCentrality;
                             mgCentrality = Config.MgRookCentrality;
                             mgCorner = Config.MgRookCorner;
                             egAdvancement = Config.EgRookAdvancement;
@@ -205,8 +197,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                             break;
                         case ColorlessPiece.Queen:
                             mgAdvancement = Config.MgQueenAdvancement;
-                            mgCentralityMetric = squareCentrality;
-                            egCentralityMetric = squareCentrality;
                             mgCentrality = Config.MgQueenCentrality;
                             mgCorner = Config.MgQueenCorner;
                             egAdvancement = Config.EgQueenAdvancement;
@@ -215,8 +205,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                             break;
                         case ColorlessPiece.King:
                             mgAdvancement = Config.MgKingAdvancement;
-                            mgCentralityMetric = squareCentrality;
-                            egCentralityMetric = squareCentrality;
                             mgCentrality = Config.MgKingCentrality;
                             mgCorner = Config.MgKingCorner;
                             egAdvancement = Config.EgKingAdvancement;
@@ -227,7 +215,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                             throw new Exception($"{colorlessPiece} colorless piece not supported.");
                     }
                     _mgPieceLocations[(int)colorlessPiece][(int)square] = (rank * mgAdvancement) + (mgCentralityMetric * mgCentrality) + (nearestCorner * mgCorner);
-                    _egPieceLocations[(int)colorlessPiece][(int)square] = (rank * egAdvancement) + (egCentralityMetric * egCentrality) + (nearestCorner * egCorner);
+                    _egPieceLocations[(int)colorlessPiece][(int)square] = (rank * egAdvancement) + (squareCentrality * egCentrality) + (nearestCorner * egCorner);
                 }
             }
             // Calculate passed pawn values.
@@ -557,7 +545,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             {
                 // Pawn is not on rook file.
                 var kingPawnRankDifference = winningKingRank - pawnRank;
-                var kingPawnAbsoluteFileDifference = Math.Abs(winningKingFile - pawnFile);
+                var kingPawnAbsoluteFileDifference = FastMath.Abs(winningKingFile - pawnFile);
                 var winningKingOnKeySquare = pawnRank switch
                 {
                     1 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
