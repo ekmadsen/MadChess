@@ -27,6 +27,7 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetValue(Position position, int depth, ulong move)
         {
             if (Equals(position, _killerMoves[depth][0], move)) return 2;
@@ -34,6 +35,7 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UpdateValue(Position position, int depth, ulong move)
         {
             if (Equals(position, _killerMoves[depth][0], move)) return; // Move already is the best killer move.

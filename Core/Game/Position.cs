@@ -20,24 +20,12 @@ namespace ErikTheCoder.MadChess.Core.Game
     public sealed class Position
     {
         public const int MaxMoves = 128;
+        public readonly ulong[] PieceBitboards;
+        public readonly ulong[] ColorOccupancy;
         public readonly ulong[] Moves;
-        public ulong WhitePawns;
-        public ulong WhiteKnights;
-        public ulong WhiteBishops;
-        public ulong WhiteRooks;
-        public ulong WhiteQueens;
-        public ulong WhiteKing;
-        public ulong OccupancyWhite;
-        public ulong BlackPawns;
-        public ulong BlackKnights;
-        public ulong BlackBishops;
-        public ulong BlackRooks;
-        public ulong BlackQueens;
-        public ulong BlackKing;
-        public ulong OccupancyBlack;
         public ulong Occupancy;
         public ulong PinnedPieces;
-        public bool WhiteMove;
+        public Color ColorToMove;
         public uint Castling;
         public Square EnPassantSquare;
         public int PlySinceCaptureOrPawnMove;
@@ -53,60 +41,102 @@ namespace ErikTheCoder.MadChess.Core.Game
         private readonly Board _board;
 
 
+        public Color ColorLastMoved => 1 - ColorToMove;
+
+
         public Position(Board board)
         {
             _board = board;
+            PieceBitboards = new ulong[(int) Piece.BlackKing + 1];
+            ColorOccupancy = new ulong[2];
             Moves = new ulong[MaxMoves];
             Reset();
         }
 
 
-        public Piece GetPiece(Square square)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetPawns(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhitePawn];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetKnights(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteKnight];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetBishops(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteBishop];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetRooks(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteRook];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetQueens(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteQueen];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetKing(Color color) => PieceBitboards[((int) color * (int) Piece.WhiteKing) + (int) Piece.WhiteKing];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public ulong GetPieces(ColorlessPiece piece) => PieceBitboards[(int)piece] | PieceBitboards[(int)piece + (int)Piece.WhiteKing];
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong GetMajorPieces(Color color)
         {
-            var squareMask = Board.SquareMasks[(int)square];
-            if ((Occupancy & squareMask) == 0) return Piece.None;
-            if ((OccupancyWhite & squareMask) > 0)
-            {
-                // Locate white piece.
-                if ((WhitePawns & squareMask) > 0) return Piece.WhitePawn;
-                if ((WhiteKnights & squareMask) > 0) return Piece.WhiteKnight;
-                if ((WhiteBishops & squareMask) > 0) return Piece.WhiteBishop;
-                if ((WhiteRooks & squareMask) > 0) return Piece.WhiteRook;
-                if ((WhiteQueens & squareMask) > 0) return Piece.WhiteQueen;
-                if ((WhiteKing & squareMask) > 0) return Piece.WhiteKing;
-                throw new Exception($"White piece not found at {Board.SquareLocations[(int)square]}.");
-            }
-            // Locate black piece.
-            if ((BlackPawns & squareMask) > 0) return Piece.BlackPawn;
-            if ((BlackKnights & squareMask) > 0) return Piece.BlackKnight;
-            if ((BlackBishops & squareMask) > 0) return Piece.BlackBishop;
-            if ((BlackRooks & squareMask) > 0) return Piece.BlackRook;
-            if ((BlackQueens & squareMask) > 0) return Piece.BlackQueen;
-            if ((BlackKing & squareMask) > 0) return Piece.BlackKing;
-            throw new Exception($"Black piece not found at {Board.SquareLocations[(int)square]}.");
+            var firstPiece = (Piece)((int)color * (int)Piece.WhiteKing) + (int)Piece.WhiteRook;
+            return PieceBitboards[(int)firstPiece] | PieceBitboards[(int)firstPiece + 1];
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong GetMinorPieces(Color color)
+        {
+            var firstPiece = (Piece)((int)color * (int)Piece.WhiteKing) + (int)Piece.WhiteKnight;
+            return PieceBitboards[(int)firstPiece] | PieceBitboards[(int)firstPiece + 1];
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong GetMajorAndMinorPieces(Color color)
+        {
+            // Explicit array lookups are faster than looping through pieces.
+            return color == Color.White
+                ? PieceBitboards[(int)Piece.WhiteKnight] | PieceBitboards[(int)Piece.WhiteBishop] | PieceBitboards[(int)Piece.WhiteRook] | PieceBitboards[(int)Piece.WhiteQueen]
+                : PieceBitboards[(int)Piece.BlackKnight] | PieceBitboards[(int)Piece.BlackBishop] | PieceBitboards[(int)Piece.BlackRook] | PieceBitboards[(int)Piece.BlackQueen];
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Piece GetPiece(Square square)
+        {
+            var squareMask = Board.SquareMasks[(int) square];
+            if ((Occupancy & squareMask) == 0) return Piece.None;
+            if ((ColorOccupancy[(int)Color.White] & squareMask) > 0)
+            {
+                // Locate white piece.  // Explicit array lookups are faster than looping through pieces.
+                if ((PieceBitboards[(int)Piece.WhitePawn] & squareMask) > 0) return Piece.WhitePawn;
+                if ((PieceBitboards[(int)Piece.WhiteKnight] & squareMask) > 0) return Piece.WhiteKnight;
+                if ((PieceBitboards[(int)Piece.WhiteBishop] & squareMask) > 0) return Piece.WhiteBishop;
+                if ((PieceBitboards[(int)Piece.WhiteRook] & squareMask) > 0) return Piece.WhiteRook;
+                if ((PieceBitboards[(int)Piece.WhiteQueen] & squareMask) > 0) return Piece.WhiteQueen;
+                if ((PieceBitboards[(int)Piece.WhiteKing] & squareMask) > 0) return Piece.WhiteKing;
+                throw new Exception($"White piece not found at {Board.SquareLocations[(int) square]}.");
+            }
+            // Locate black piece.  // Explicit array lookups are faster than looping through pieces.
+            if ((PieceBitboards[(int)Piece.BlackPawn] & squareMask) > 0) return Piece.BlackPawn;
+            if ((PieceBitboards[(int)Piece.BlackKnight] & squareMask) > 0) return Piece.BlackKnight;
+            if ((PieceBitboards[(int)Piece.BlackBishop] & squareMask) > 0) return Piece.BlackBishop;
+            if ((PieceBitboards[(int)Piece.BlackRook] & squareMask) > 0) return Piece.BlackRook;
+            if ((PieceBitboards[(int)Piece.BlackQueen] & squareMask) > 0) return Piece.BlackQueen;
+            if ((PieceBitboards[(int)Piece.BlackKing] & squareMask) > 0) return Piece.BlackKing;
+            throw new Exception($"Black piece not found at {Board.SquareLocations[(int) square]}.");
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(Position copyFromPosition)
         {
-            // Copy bitboards.
-            WhitePawns = copyFromPosition.WhitePawns;
-            WhiteKnights = copyFromPosition.WhiteKnights;
-            WhiteBishops = copyFromPosition.WhiteBishops;
-            WhiteRooks = copyFromPosition.WhiteRooks;
-            WhiteQueens = copyFromPosition.WhiteQueens;
-            WhiteKing = copyFromPosition.WhiteKing;
-            OccupancyWhite = copyFromPosition.OccupancyWhite;
-            BlackPawns = copyFromPosition.BlackPawns;
-            BlackKnights = copyFromPosition.BlackKnights;
-            BlackBishops = copyFromPosition.BlackBishops;
-            BlackRooks = copyFromPosition.BlackRooks;
-            BlackQueens = copyFromPosition.BlackQueens;
-            BlackKing = copyFromPosition.BlackKing;
-            OccupancyBlack = copyFromPosition.OccupancyBlack;
+            // Copy bitboards.  Explicit array lookups are faster than looping through pieces.
+            PieceBitboards[(int)Piece.WhitePawn] = copyFromPosition.PieceBitboards[(int)Piece.WhitePawn];
+            PieceBitboards[(int)Piece.WhiteKnight] = copyFromPosition.PieceBitboards[(int)Piece.WhiteKnight];
+            PieceBitboards[(int)Piece.WhiteBishop] = copyFromPosition.PieceBitboards[(int)Piece.WhiteBishop];
+            PieceBitboards[(int)Piece.WhiteRook] = copyFromPosition.PieceBitboards[(int)Piece.WhiteRook];
+            PieceBitboards[(int)Piece.WhiteQueen] = copyFromPosition.PieceBitboards[(int)Piece.WhiteQueen];
+            PieceBitboards[(int)Piece.WhiteKing] = copyFromPosition.PieceBitboards[(int)Piece.WhiteKing];
+            PieceBitboards[(int)Piece.BlackPawn] = copyFromPosition.PieceBitboards[(int)Piece.BlackPawn];
+            PieceBitboards[(int)Piece.BlackKnight] = copyFromPosition.PieceBitboards[(int)Piece.BlackKnight];
+            PieceBitboards[(int)Piece.BlackBishop] = copyFromPosition.PieceBitboards[(int)Piece.BlackBishop];
+            PieceBitboards[(int)Piece.BlackRook] = copyFromPosition.PieceBitboards[(int)Piece.BlackRook];
+            PieceBitboards[(int)Piece.BlackQueen] = copyFromPosition.PieceBitboards[(int)Piece.BlackQueen];
+            PieceBitboards[(int)Piece.BlackKing] = copyFromPosition.PieceBitboards[(int)Piece.BlackKing];
+            ColorOccupancy[(int) Color.White] = copyFromPosition.ColorOccupancy[(int) Color.White];
+            ColorOccupancy[(int) Color.Black] = copyFromPosition.ColorOccupancy[(int) Color.Black];
             Occupancy = copyFromPosition.Occupancy;
             // Copy board state.  Do not copy values that will be set after moves are generated or played.
-            WhiteMove = copyFromPosition.WhiteMove;
+            ColorToMove = copyFromPosition.ColorToMove;
             Castling = copyFromPosition.Castling;
             EnPassantSquare = copyFromPosition.EnPassantSquare;
             PlySinceCaptureOrPawnMove = copyFromPosition.PlySinceCaptureOrPawnMove;
@@ -123,17 +153,16 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void GenerateMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
         {
             GeneratePawnMoves(moveGeneration, fromSquareMask, toSquareMask);
-            GenerateKnightMoves(moveGeneration, fromSquareMask, toSquareMask);
-            GenerateBishopMoves(moveGeneration, fromSquareMask, toSquareMask);
-            GenerateRookMoves(moveGeneration, fromSquareMask, toSquareMask);
-            GenerateQueenMoves(moveGeneration, fromSquareMask, toSquareMask);
+            GeneratePieceMoves(moveGeneration, fromSquareMask, toSquareMask);
             GenerateKingMoves(moveGeneration, fromSquareMask, toSquareMask);
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PrepareMoveGeneration()
         {
             CurrentMoveIndex = 0;
@@ -145,51 +174,18 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GeneratePawnMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
         {
-            ulong pawns;
-            ulong[] pawnMoveMasks;
-            ulong[] pawnDoubleMoveMasks;
-            ulong[] pawnAttackMasks;
-            ulong enemyOccupiedSquares;
+            var pawns = GetPawns(ColorToMove) & fromSquareMask;
+            if (pawns == 0) return;
+            var pawnMoveMasks = Board.PawnMoveMasks[(int)ColorToMove];
+            var pawnDoubleMoveMasks = Board.PawnDoubleMoveMasks[(int)ColorToMove];
+            var pawnAttackMasks = Board.PawnAttackMasks[(int)ColorToMove];
+            var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
             var unoccupiedSquares = ~Occupancy;
-            int[] ranks;
-            Piece attacker;
-            Piece queen;
-            Piece rook;
-            Piece bishop;
-            Piece knight;
-            Piece enPassantVictim;
-            if (WhiteMove)
-            {
-                // White Move
-                pawns = WhitePawns & fromSquareMask;
-                pawnMoveMasks = Board.WhitePawnMoveMasks;
-                pawnDoubleMoveMasks = Board.WhitePawnDoubleMoveMasks;
-                pawnAttackMasks = Board.WhitePawnAttackMasks;
-                enemyOccupiedSquares = OccupancyBlack;
-                ranks = Board.WhiteRanks;
-                attacker = Piece.WhitePawn;
-                queen = Piece.WhiteQueen;
-                rook = Piece.WhiteRook;
-                bishop = Piece.WhiteBishop;
-                knight = Piece.WhiteKnight;
-                enPassantVictim = Piece.BlackPawn;
-            }
-            else
-            {
-                // Black Move
-                pawns = BlackPawns & fromSquareMask;
-                pawnMoveMasks = Board.BlackPawnMoveMasks;
-                pawnDoubleMoveMasks = Board.BlackPawnDoubleMoveMasks;
-                pawnAttackMasks = Board.BlackPawnAttackMasks;
-                enemyOccupiedSquares = OccupancyWhite;
-                ranks = Board.BlackRanks;
-                attacker = Piece.BlackPawn;
-                queen = Piece.BlackQueen;
-                rook = Piece.BlackRook;
-                bishop = Piece.BlackBishop;
-                knight = Piece.BlackKnight;
-                enPassantVictim = Piece.WhitePawn;
-            }
+            var ranks = Board.Ranks[(int)ColorToMove];
+            var attacker = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorToMove);
+            var queen = PieceHelper.GetPieceOfColor(ColorlessPiece.Queen, ColorToMove);
+            var knight = PieceHelper.GetPieceOfColor(ColorlessPiece.Knight, ColorToMove);
+            var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorLastMoved);
             Square fromSquare;
             ulong move;
             if ((EnPassantSquare != Square.Illegal) && ((Board.SquareMasks[(int)EnPassantSquare] & toSquareMask) > 0) && (moveGeneration != MoveGeneration.OnlyNonCaptures))
@@ -241,38 +237,17 @@ namespace ErikTheCoder.MadChess.Core.Game
                         }
                         else
                         {
-                            // Promote pawn to queen.
-                            move = Move.Null;
-                            Move.SetFrom(ref move, fromSquare);
-                            Move.SetTo(ref move, toSquare);
-                            Move.SetPromotedPiece(ref move, queen);
-                            Move.SetIsPawnMove(ref move, true);
-                            Moves[MoveIndex] = move;
-                            MoveIndex++;
-                            // Promote pawn to rook.
-                            move = Move.Null;
-                            Move.SetFrom(ref move, fromSquare);
-                            Move.SetTo(ref move, toSquare);
-                            Move.SetPromotedPiece(ref move, rook);
-                            Move.SetIsPawnMove(ref move, true);
-                            Moves[MoveIndex] = move;
-                            MoveIndex++;
-                            // Promote pawn to bishop.
-                            move = Move.Null;
-                            Move.SetFrom(ref move, fromSquare);
-                            Move.SetTo(ref move, toSquare);
-                            Move.SetPromotedPiece(ref move, bishop);
-                            Move.SetIsPawnMove(ref move, true);
-                            Moves[MoveIndex] = move;
-                            MoveIndex++;
-                            // Promote pawn to knight.
-                            move = Move.Null;
-                            Move.SetFrom(ref move, fromSquare);
-                            Move.SetTo(ref move, toSquare);
-                            Move.SetPromotedPiece(ref move, knight);
-                            Move.SetIsPawnMove(ref move, true);
-                            Moves[MoveIndex] = move;
-                            MoveIndex++;
+                            for (var promotedPiece = queen; promotedPiece >= knight; promotedPiece--)
+                            {
+                                // Promote pawn.
+                                move = Move.Null;
+                                Move.SetFrom(ref move, fromSquare);
+                                Move.SetTo(ref move, toSquare);
+                                Move.SetPromotedPiece(ref move, promotedPiece);
+                                Move.SetIsPawnMove(ref move, true);
+                                Moves[MoveIndex] = move;
+                                MoveIndex++;
+                            }
                         }
                         Bitwise.ClearBit(ref pawnDestinations, toSquare);
                     }
@@ -298,46 +273,19 @@ namespace ErikTheCoder.MadChess.Core.Game
                         }
                         else
                         {
-                            // Promote pawn to queen.
-                            move = Move.Null;
-                            Move.SetFrom(ref move, fromSquare);
-                            Move.SetTo(ref move, toSquare);
-                            Move.SetPromotedPiece(ref move, queen);
-                            Move.SetCaptureAttacker(ref move, attacker);
-                            Move.SetCaptureVictim(ref move, victim);
-                            Move.SetIsPawnMove(ref move, true);
-                            Moves[MoveIndex] = move;
-                            MoveIndex++;
-                            // Promote pawn to rook.
-                            move = Move.Null;
-                            Move.SetFrom(ref move, fromSquare);
-                            Move.SetTo(ref move, toSquare);
-                            Move.SetPromotedPiece(ref move, rook);
-                            Move.SetCaptureAttacker(ref move, attacker);
-                            Move.SetCaptureVictim(ref move, victim);
-                            Move.SetIsPawnMove(ref move, true);
-                            Moves[MoveIndex] = move;
-                            MoveIndex++;
-                            // Promote pawn to bishop.
-                            move = Move.Null;
-                            Move.SetFrom(ref move, fromSquare);
-                            Move.SetTo(ref move, toSquare);
-                            Move.SetPromotedPiece(ref move, bishop);
-                            Move.SetCaptureAttacker(ref move, attacker);
-                            Move.SetCaptureVictim(ref move, victim);
-                            Move.SetIsPawnMove(ref move, true);
-                            Moves[MoveIndex] = move;
-                            MoveIndex++;
-                            // Promote pawn to knight.
-                            move = Move.Null;
-                            Move.SetFrom(ref move, fromSquare);
-                            Move.SetTo(ref move, toSquare);
-                            Move.SetPromotedPiece(ref move, knight);
-                            Move.SetCaptureAttacker(ref move, attacker);
-                            Move.SetCaptureVictim(ref move, victim);
-                            Move.SetIsPawnMove(ref move, true);
-                            Moves[MoveIndex] = move;
-                            MoveIndex++;
+                            for (var promotedPiece = queen; promotedPiece >= knight; promotedPiece--)
+                            {
+                                // Promote pawn.
+                                move = Move.Null;
+                                Move.SetFrom(ref move, fromSquare);
+                                Move.SetTo(ref move, toSquare);
+                                Move.SetCaptureAttacker(ref move, attacker);
+                                Move.SetPromotedPiece(ref move, promotedPiece);
+                                Move.SetCaptureVictim(ref move, victim);
+                                Move.SetIsPawnMove(ref move, true);
+                                Moves[MoveIndex] = move;
+                                MoveIndex++;
+                            }
                         }
                         Bitwise.ClearBit(ref pawnDestinations, toSquare);
                     }
@@ -347,210 +295,42 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
-        // TODO: Refactor move generation into sliders and non-sliders using a delegate to get move masks.
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private void GenerateKnightMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
+        private void GeneratePieceMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
         {
-            ulong knights;
-            ulong unOrEnemyOccupiedSquares;
-            ulong enemyOccupiedSquares;
-            Piece attacker;
-            if (WhiteMove)
+            for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
             {
-                // White Move
-                knights = WhiteKnights & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
-                attacker = Piece.WhiteKnight;
-            }
-            else
-            {
-                // Black Move
-                knights = BlackKnights & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
-                attacker = Piece.BlackKnight;
-            }
-            Square fromSquare;
-            while ((fromSquare = Bitwise.FirstSetSquare(knights)) != Square.Illegal)
-            {
-                var knightDestinations = moveGeneration switch
+                var attacker = PieceHelper.GetPieceOfColor(colorlessPiece, ColorToMove);
+                var pieces = PieceBitboards[(int)attacker] & fromSquareMask;
+                if (pieces == 0) continue;
+                var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
+                var unOrEnemyOccupiedSquares = ~ColorOccupancy[(int)ColorToMove];
+                var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
+                Square fromSquare;
+                while ((fromSquare = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
                 {
-                    MoveGeneration.AllMoves => Board.KnightMoveMasks[(int)fromSquare] & unOrEnemyOccupiedSquares & toSquareMask,
-                    MoveGeneration.OnlyCaptures => Board.KnightMoveMasks[(int)fromSquare] & enemyOccupiedSquares & toSquareMask,
-                    MoveGeneration.OnlyNonCaptures => Board.KnightMoveMasks[(int)fromSquare] & ~Occupancy & toSquareMask,
-                    _ => throw new Exception($"{moveGeneration} move generation not supported.")
-                };
-                Square toSquare;
-                while ((toSquare = Bitwise.FirstSetSquare(knightDestinations)) != Square.Illegal)
-                {
-                    var victim = GetPiece(toSquare);
-                    var move = Move.Null;
-                    Move.SetFrom(ref move, fromSquare);
-                    Move.SetTo(ref move, toSquare);
-                    if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
-                    Move.SetCaptureVictim(ref move, victim);
-                    Moves[MoveIndex] = move;
-                    MoveIndex++;
-                    Bitwise.ClearBit(ref knightDestinations, toSquare);
+                    var pieceDestinations = moveGeneration switch
+                    {
+                        MoveGeneration.AllMoves => getPieceMovesMask(fromSquare, Occupancy) & unOrEnemyOccupiedSquares & toSquareMask,
+                        MoveGeneration.OnlyCaptures => getPieceMovesMask(fromSquare, Occupancy) & enemyOccupiedSquares & toSquareMask,
+                        MoveGeneration.OnlyNonCaptures => getPieceMovesMask(fromSquare, Occupancy) & ~Occupancy & toSquareMask,
+                        _ => throw new Exception($"{moveGeneration} move generation not supported.")
+                    };
+                    Square toSquare;
+                    while ((toSquare = Bitwise.FirstSetSquare(pieceDestinations)) != Square.Illegal)
+                    {
+                        var victim = GetPiece(toSquare);
+                        var move = Move.Null;
+                        Move.SetFrom(ref move, fromSquare);
+                        Move.SetTo(ref move, toSquare);
+                        if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
+                        Move.SetCaptureVictim(ref move, victim);
+                        Moves[MoveIndex] = move;
+                        MoveIndex++;
+                        Bitwise.ClearBit(ref pieceDestinations, toSquare);
+                    }
+                    Bitwise.ClearBit(ref pieces, fromSquare);
                 }
-                Bitwise.ClearBit(ref knights, fromSquare);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private void GenerateBishopMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
-        {
-            ulong bishops;
-            ulong unOrEnemyOccupiedSquares;
-            ulong enemyOccupiedSquares;
-            Piece attacker;
-            if (WhiteMove)
-            {
-                // White Move
-                bishops = WhiteBishops & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
-                attacker = Piece.WhiteBishop;
-            }
-            else
-            {
-                // Black Move
-                bishops = BlackBishops & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
-                attacker = Piece.BlackBishop;
-            }
-            Square fromSquare;
-            while ((fromSquare = Bitwise.FirstSetSquare(bishops)) != Square.Illegal)
-            {
-                var occupancy = Board.BishopMoveMasks[(int)fromSquare] & Occupancy;
-                var bishopDestinations = moveGeneration switch
-                {
-                    MoveGeneration.AllMoves => Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & toSquareMask,
-                    MoveGeneration.OnlyCaptures => Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & toSquareMask,
-                    MoveGeneration.OnlyNonCaptures => Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) & ~Occupancy & toSquareMask,
-                    _ => throw new Exception($"{moveGeneration} move generation not supported.")
-                };
-                Square toSquare;
-                while ((toSquare = Bitwise.FirstSetSquare(bishopDestinations)) != Square.Illegal)
-                {
-                    var victim = GetPiece(toSquare);
-                    var move = Move.Null;
-                    Move.SetFrom(ref move, fromSquare);
-                    Move.SetTo(ref move, toSquare);
-                    if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
-                    Move.SetCaptureVictim(ref move, victim);
-                    Moves[MoveIndex] = move;
-                    MoveIndex++;
-                    Bitwise.ClearBit(ref bishopDestinations, toSquare);
-                }
-                Bitwise.ClearBit(ref bishops, fromSquare);
-            }
-        }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private void GenerateRookMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
-        {
-            ulong rooks;
-            ulong unOrEnemyOccupiedSquares;
-            ulong enemyOccupiedSquares;
-            Piece attacker;
-            if (WhiteMove)
-            {
-                // White Move
-                rooks = WhiteRooks & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
-                attacker = Piece.WhiteRook;
-            }
-            else
-            {
-                // Black Move
-                rooks = BlackRooks & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
-                attacker = Piece.BlackRook;
-            }
-            Square fromSquare;
-            while ((fromSquare = Bitwise.FirstSetSquare(rooks)) != Square.Illegal)
-            {
-                var occupancy = Board.RookMoveMasks[(int)fromSquare] & Occupancy;
-                var rookDestinations = moveGeneration switch
-                {
-                    MoveGeneration.AllMoves => Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & unOrEnemyOccupiedSquares & toSquareMask,
-                    MoveGeneration.OnlyCaptures => Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & enemyOccupiedSquares & toSquareMask,
-                    MoveGeneration.OnlyNonCaptures => Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy) & ~Occupancy & toSquareMask,
-                    _ => throw new Exception($"{moveGeneration} move generation not supported.")
-                };
-                Square toSquare;
-                while ((toSquare = Bitwise.FirstSetSquare(rookDestinations)) != Square.Illegal)
-                {
-                    var victim = GetPiece(toSquare);
-                    var move = Move.Null;
-                    Move.SetFrom(ref move, fromSquare);
-                    Move.SetTo(ref move, toSquare);
-                    if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
-                    Move.SetCaptureVictim(ref move, victim);
-                    Moves[MoveIndex] = move;
-                    MoveIndex++;
-                    Bitwise.ClearBit(ref rookDestinations, toSquare);
-                }
-                Bitwise.ClearBit(ref rooks, fromSquare);
-            }
-        }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private void GenerateQueenMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
-        {
-            ulong queens;
-            ulong unOrEnemyOccupiedSquares;
-            ulong enemyOccupiedSquares;
-            Piece attacker;
-            if (WhiteMove)
-            {
-                // White Move
-                queens = WhiteQueens & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
-                attacker = Piece.WhiteQueen;
-            }
-            else
-            {
-                // Black Move
-                queens = BlackQueens & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
-                attacker = Piece.BlackQueen;
-            }
-            Square fromSquare;
-            while ((fromSquare = Bitwise.FirstSetSquare(queens)) != Square.Illegal)
-            {
-                var bishopOccupancy = Board.BishopMoveMasks[(int)fromSquare] & Occupancy;
-                var rookOccupancy = Board.RookMoveMasks[(int)fromSquare] & Occupancy;
-                var queenDestinations = moveGeneration switch
-                {
-                    MoveGeneration.AllMoves => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & unOrEnemyOccupiedSquares & toSquareMask,
-                    MoveGeneration.OnlyCaptures => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & enemyOccupiedSquares & toSquareMask,
-                    MoveGeneration.OnlyNonCaptures => (Board.PrecalculatedMoves.GetBishopMovesMask(fromSquare, bishopOccupancy) | Board.PrecalculatedMoves.GetRookMovesMask(fromSquare, rookOccupancy)) & ~Occupancy & toSquareMask,
-                    _ => throw new Exception($"{moveGeneration} move generation not supported.")
-                };
-                Square toSquare;
-                while ((toSquare = Bitwise.FirstSetSquare(queenDestinations)) != Square.Illegal)
-                {
-                    var victim = GetPiece(toSquare);
-                    var move = Move.Null;
-                    Move.SetFrom(ref move, fromSquare);
-                    Move.SetTo(ref move, toSquare);
-                    if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
-                    Move.SetCaptureVictim(ref move, victim);
-                    Moves[MoveIndex] = move;
-                    MoveIndex++;
-                    Bitwise.ClearBit(ref queenDestinations, toSquare);
-                }
-                Bitwise.ClearBit(ref queens, fromSquare);
             }
         }
 
@@ -558,38 +338,11 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GenerateKingMoves(MoveGeneration moveGeneration, ulong fromSquareMask, ulong toSquareMask)
         {
-            ulong king;
-            ulong unOrEnemyOccupiedSquares;
-            ulong enemyOccupiedSquares;
-            Piece attacker;
-            bool castleQueenside;
-            ulong castleQueensideMask;
-            bool castleKingside;
-            ulong castleKingsideMask;
-            if (WhiteMove)
-            {
-                // White Move
-                king = WhiteKing & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyWhite;
-                enemyOccupiedSquares = OccupancyBlack;
-                attacker = Piece.WhiteKing;
-                castleQueenside = Game.Castling.WhiteQueenside(Castling);
-                castleQueensideMask = Board.WhiteCastleQEmptySquaresMask;
-                castleKingside = Game.Castling.WhiteKingside(Castling);
-                castleKingsideMask = Board.WhiteCastleKEmptySquaresMask;
-            }
-            else
-            {
-                // Black Move
-                king = BlackKing & fromSquareMask;
-                unOrEnemyOccupiedSquares = ~OccupancyBlack;
-                enemyOccupiedSquares = OccupancyWhite;
-                attacker = Piece.BlackKing;
-                castleQueenside = Game.Castling.BlackQueenside(Castling);
-                castleQueensideMask = Board.BlackCastleQEmptySquaresMask;
-                castleKingside = Game.Castling.BlackKingside(Castling);
-                castleKingsideMask = Board.BlackCastleKEmptySquaresMask;
-            }
+            var king = GetKing(ColorToMove) & fromSquareMask;
+            if (king == 0) return;
+            var unOrEnemyOccupiedSquares = ~ColorOccupancy[(int)ColorToMove];
+            var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
+            var attacker = PieceHelper.GetPieceOfColor(ColorlessPiece.King, ColorToMove);
             ulong move;
             var fromSquare = Bitwise.FirstSetSquare(king);
             if (fromSquare == Square.Illegal) return;
@@ -616,56 +369,23 @@ namespace ErikTheCoder.MadChess.Core.Game
             }
             if (moveGeneration != MoveGeneration.OnlyCaptures)
             {
-                if (castleQueenside && ((Occupancy & castleQueensideMask) == 0))
+                for (var boardSide = BoardSide.Queen; boardSide <= BoardSide.King; boardSide++)
                 {
-                    // Castle Queenside
-                    if (WhiteMove)
+                    var castleEmptySquaresMask = Board.CastleEmptySquaresMask[(int)ColorToMove][(int)boardSide];
+                    if (!KingInCheck && Game.Castling.Permitted(Castling, ColorToMove, boardSide) && ((Occupancy & castleEmptySquaresMask) == 0))
                     {
-                        // White Move
-                        fromSquare = Square.E1;
-                        toSquare = Square.C1;
-                    }
-                    else
-                    {
-                        // Black Move
-                        fromSquare = Square.E8;
-                        toSquare = Square.C8;
-                    }
-                    if ((Board.SquareMasks[(int)toSquare] & toSquareMask) > 0)
-                    {
-                        move = Move.Null;
-                        Move.SetFrom(ref move, fromSquare);
-                        Move.SetTo(ref move, toSquare);
-                        Move.SetIsCastling(ref move, true);
-                        Move.SetIsKingMove(ref move, true);
-                        Moves[MoveIndex] = move;
-                        MoveIndex++;
-                    }
-                }
-                if (castleKingside && ((Occupancy & castleKingsideMask) == 0))
-                {
-                    // Castle Kingside
-                    if (WhiteMove)
-                    {
-                        // White Move
-                        fromSquare = Square.E1;
-                        toSquare = Square.G1;
-                    }
-                    else
-                    {
-                        // Black Move
-                        fromSquare = Square.E8;
-                        toSquare = Square.G8;
-                    }
-                    if ((Board.SquareMasks[(int)toSquare] & toSquareMask) > 0)
-                    {
-                        move = Move.Null;
-                        Move.SetFrom(ref move, fromSquare);
-                        Move.SetTo(ref move, toSquare);
-                        Move.SetIsCastling(ref move, true);
-                        Move.SetIsKingMove(ref move, true);
-                        Moves[MoveIndex] = move;
-                        MoveIndex++;
+                        // Castle
+                        toSquare = Board.CastleToSquares[(int)ColorToMove][(int)boardSide];
+                        if ((Board.SquareMasks[(int)toSquare] & toSquareMask) > 0)
+                        {
+                            move = Move.Null;
+                            Move.SetFrom(ref move, fromSquare);
+                            Move.SetTo(ref move, toSquare);
+                            Move.SetIsCastling(ref move, true);
+                            Move.SetIsKingMove(ref move, true);
+                            Moves[MoveIndex] = move;
+                            MoveIndex++;
+                        }
                     }
                 }
             }
@@ -675,29 +395,11 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void FindPinnedPieces()
         {
-            Square ownKingSquare;
-            ulong ownPieces;
-            ulong enemyRankFileAttackers;
-            ulong enemyDiagonalAttackers;
-            ulong enemyPieces;
-            if (WhiteMove)
-            {
-                // White Move
-                ownKingSquare = Bitwise.FirstSetSquare(WhiteKing);
-                ownPieces = OccupancyWhite;
-                enemyRankFileAttackers = BlackRooks | BlackQueens;
-                enemyDiagonalAttackers = BlackBishops | BlackQueens;
-                enemyPieces = OccupancyBlack;
-            }
-            else
-            {
-                // Black Move
-                ownKingSquare = Bitwise.FirstSetSquare(BlackKing);
-                ownPieces = OccupancyBlack;
-                enemyRankFileAttackers = WhiteRooks | WhiteQueens;
-                enemyDiagonalAttackers = WhiteBishops | WhiteQueens;
-                enemyPieces = OccupancyWhite;
-            }
+            var ownKingSquare = Bitwise.FirstSetSquare(GetKing(ColorToMove));
+            var ownPieces = ColorOccupancy[(int)ColorToMove];
+            var enemyRankFileAttackers = GetRooks(ColorLastMoved) | GetQueens(ColorLastMoved);
+            var enemyDiagonalAttackers = GetBishops(ColorLastMoved) | GetQueens(ColorLastMoved);
+            var enemyPieces = ColorOccupancy[(int)ColorLastMoved];
             // Find pieces pinned to own king by enemy rank / file attackers.
             PinnedPieces = 0;
             Square attackerSquare;
@@ -712,12 +414,12 @@ namespace ErikTheCoder.MadChess.Core.Game
                 if ((betweenSquares & enemyPieces) == 0)
                 {
                     // No enemy pieces between enemy attacker and own king.
-                    var potentiallyPinnedPieces = betweenSquares & ownPieces;
-                    if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+                    var pinnedPieces = betweenSquares & ownPieces;
+                    if (Bitwise.CountSetBits(pinnedPieces) == 1)
                     {
                         // Exactly one own piece between enemy attacker and own king.
                         // Piece is pinned to own king.
-                        PinnedPieces |= potentiallyPinnedPieces;
+                        PinnedPieces |= pinnedPieces;
                     }
                 }
                 Bitwise.ClearBit(ref enemyRankFileAttackers, attackerSquare);
@@ -734,12 +436,12 @@ namespace ErikTheCoder.MadChess.Core.Game
                 if ((betweenSquares & enemyPieces) == 0)
                 {
                     // No enemy pieces between enemy attacker and own king.
-                    var potentiallyPinnedPieces = betweenSquares & ownPieces;
-                    if (Bitwise.CountSetBits(potentiallyPinnedPieces) == 1)
+                    var pinnedPieces = betweenSquares & ownPieces;
+                    if (Bitwise.CountSetBits(pinnedPieces) == 1)
                     {
                         // Exactly one own piece between enemy attacker and own king.
                         // Piece is pinned to own king.
-                        PinnedPieces |= potentiallyPinnedPieces;
+                        PinnedPieces |= pinnedPieces;
                     }
                 }
                 Bitwise.ClearBit(ref enemyDiagonalAttackers, attackerSquare);
@@ -747,25 +449,15 @@ namespace ErikTheCoder.MadChess.Core.Game
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void Reset()
         {
-            WhitePawns = 0;
-            WhiteKnights = 0;
-            WhiteBishops = 0;
-            WhiteRooks = 0;
-            WhiteQueens = 0;
-            WhiteKing = 0;
-            OccupancyWhite = 0;
-            BlackPawns = 0;
-            BlackKnights = 0;
-            BlackBishops = 0;
-            BlackRooks = 0;
-            BlackQueens = 0;
-            BlackKing = 0;
-            OccupancyBlack = 0;
+            for (var piece = Piece.WhitePawn; piece <= Piece.BlackKing; piece++) PieceBitboards[(int) piece] = 0;
+            ColorOccupancy[(int) Color.White] = 0;
+            ColorOccupancy[(int) Color.Black] = 0;
             Occupancy = 0;
             PinnedPieces = 0;
-            WhiteMove = true;
+            ColorToMove = Color.White;
             Castling = 0;
             EnPassantSquare = Square.Illegal;
             PlySinceCaptureOrPawnMove = 0;
@@ -822,7 +514,7 @@ namespace ErikTheCoder.MadChess.Core.Game
             }
             // Display side to move, castling rights, en passant square, ply, and full move number.
             stringBuilder.Append(" ");
-            stringBuilder.Append(WhiteMove ? "w" : "b");
+            stringBuilder.Append(ColorToMove == Color.White ? "w" : "b");
             stringBuilder.Append(" ");
             stringBuilder.Append(Game.Castling.ToString(Castling));
             stringBuilder.Append(" ");

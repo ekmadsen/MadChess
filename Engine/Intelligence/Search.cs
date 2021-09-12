@@ -35,10 +35,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         public AutoResetEvent Signal;
         public bool PvInfoUpdate;
         public List<ulong> SpecifiedMoves;
-        public TimeSpan? WhiteTimeRemaining;
-        public TimeSpan? BlackTimeRemaining;
-        public TimeSpan? WhiteTimeIncrement;
-        public TimeSpan? BlackTimeIncrement;
+        public TimeSpan?[] TimeRemaining;
+        public TimeSpan?[] TimeIncrement;
         public int? MovesToTimeControl;
         public int? MateInMoves;
         public int HorizonLimit;
@@ -172,6 +170,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             _stopwatch = new Stopwatch();
             // Create search parameters.
             SpecifiedMoves = new List<ulong>();
+            TimeRemaining = new TimeSpan?[2];
+            TimeIncrement = new TimeSpan?[2];
             // To Horizon =            000  001  002  003  004  005
             _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
             _lateMovePruning = new[] { 999, 003, 007, 013, 021, 031 };
@@ -215,10 +215,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             {
                 // Release managed resources.
                 SpecifiedMoves = null;
-                WhiteTimeRemaining = null;
-                BlackTimeRemaining = null;
-                WhiteTimeIncrement = null;
-                BlackTimeIncrement = null;
+                TimeRemaining = null;
+                TimeIncrement = null;
                 MovesToTimeControl = null;
                 MateInMoves = null;
                 _movePriorityComparer = null;
@@ -324,6 +322,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public ulong FindBestMove(Board board)
         {
             // Ensure all root moves are legal.
@@ -408,7 +407,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 // Reset move scores then search moves.
                 for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
                 var score = GetDynamicScore(board, 0, _originalHorizon, false, alpha, beta);
-                if (Math.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
+                if (FastMath.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
                 SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
                 var failHigh = _rootMoves[0].Score >= beta;
                 var failHighScore = score;
@@ -424,7 +423,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                     // Reset move scores then search moves within infinite alpha / beta window.
                     for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -StaticScore.Max;
                     score = GetDynamicScore(board, 0, _originalHorizon, false, -StaticScore.Max, StaticScore.Max);
-                    if (Math.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
+                    if (FastMath.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
                     SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
                 }
                 // Find best move.
@@ -442,6 +441,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool ShouldSearchMove(ulong move)
         {
             if (SpecifiedMoves.Count == 0) return true; // Search all moves.
@@ -453,29 +453,18 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             }
             return false;
         }
-        
-        
+
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void GetMoveTime(Position position)
         {
             // No need to calculate move time if go command specified move time, horizon limit, or nodes..
             if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon) || (NodeLimit != long.MaxValue)) return;
-            // Retrieve time remaining increment.
-            TimeSpan timeRemaining;
-            TimeSpan timeIncrement;
-            if (position.WhiteMove)
-            {
-                // White Move
-                if (!WhiteTimeRemaining.HasValue) throw new Exception($"{nameof(WhiteTimeRemaining)} is null.");
-                timeRemaining = WhiteTimeRemaining.Value;
-                timeIncrement = WhiteTimeIncrement ?? TimeSpan.Zero;
-            }
-            else
-            {
-                // Black Move
-                if (!BlackTimeRemaining.HasValue) throw new Exception($"{nameof(BlackTimeRemaining)} is null.");
-                timeRemaining = BlackTimeRemaining.Value;
-                timeIncrement = BlackTimeIncrement ?? TimeSpan.Zero;
-            }
+            // Retrieve time remaining and increment.
+            if (!TimeRemaining[(int)position.ColorToMove].HasValue) throw new Exception($"{nameof(TimeRemaining)} for {position.ColorToMove} is null.");
+            // ReSharper disable once PossibleInvalidOperationException
+            var timeRemaining = TimeRemaining[(int)position.ColorToMove].Value;
+            var timeIncrement = TimeIncrement[(int)position.ColorToMove] ?? TimeSpan.Zero;
             if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate move time if go command specified infinite search.
             timeRemaining -= _stopwatch.Elapsed; // Account for lag between receiving go command and now.
             int movesRemaining;
@@ -503,6 +492,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AdjustMoveTime()
         {
             if (!CanAdjustMoveTime || (_originalHorizon < _adjustMoveTimeMinDepth) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
@@ -514,6 +504,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool HaveTimeForNextHorizon()
         {
             if (MoveTimeSoftLimit == TimeSpan.MaxValue) return true;
@@ -667,7 +658,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 board.CurrentPosition.Moves[moveIndex] = move;
                 board.PlayMove(move);
                 var score = -GetDynamicScore(board, depth + 1, searchHorizon, true, -moveBeta, -alpha);
-                if (Math.Abs(score) == StaticScore.Interrupted)
+                if (FastMath.Abs(score) == StaticScore.Interrupted)
                 {
                     // Stop searching.
                     board.UndoMove();
@@ -683,7 +674,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                     }
                 }
                 board.UndoMove();
-                if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
+                if (FastMath.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if ((score > alpha) && (score < beta) && (depth == 0)) _rootMoves[moveIndex].Score = score; // Update root move score.
                 if (score >= beta)
                 {
@@ -762,8 +753,9 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             board.UndoMove();
             return scoreAfterMove - scoreBeforeMove;
         }
-        
-        
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetQuietScore(Board board, int depth, int horizon, int alpha, int beta) => GetQuietScore(board, depth, horizon, Board.AllSquaresMask, alpha, beta, _getStaticScore, true);
 
 
@@ -829,7 +821,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 board.PlayMove(move);
                 var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, -beta, -alpha, getStaticScore, considerFutility);
                 board.UndoMove();
-                if (Math.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
+                if (FastMath.Abs(score) == StaticScore.Interrupted) return score; // Stop searching.
                 if (score >= beta) return beta; // Position is not the result of best play by both players.
                 alpha = Math.Max(score, alpha);
             } while (true);
@@ -839,6 +831,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void ExamineTimeAndNodes(long nodes)
         {
             if (nodes >= NodeLimit)
@@ -874,11 +867,10 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             var toHorizon = horizon - depth;
             if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
             if (isDrawnEndgame || (depth == 0) || position.KingInCheck) return false; // Position in drawn endgame, at root, or when king is in check is not futile.
-            if ((Math.Abs(alpha) >= StaticScore.Checkmate) || (Math.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
-            // Count pawns and pieces (but don't include kings).
-            var whitePawnsAndPieces = Bitwise.CountSetBits(position.OccupancyWhite) - 1;
-            var blackPawnsAndPieces = Bitwise.CountSetBits(position.OccupancyBlack) - 1;
-            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Position with lone king on board is not futile.
+            if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
+            // Position with lone king on board is not futile.
+            if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
+            if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
             // Determine if any move can lower score to beta.
             var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
             return position.StaticScore - futilityMargin > beta;
@@ -890,9 +882,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         {
             if ((position.StaticScore < beta) || position.KingInCheck) return false;
             // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
-            var minorAndMajorPieces = position.WhiteMove
-                ? Bitwise.CountSetBits(position.WhiteKnights | position.WhiteBishops | position.WhiteRooks | position.WhiteQueens)
-                : Bitwise.CountSetBits(position.BlackKnights | position.BlackBishops | position.BlackRooks | position.BlackQueens);
+            var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
             return minorAndMajorPieces > 0;
         }
 
@@ -1016,25 +1006,24 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
             if ((depth == 0) || (legalMoveNumber == 1)) return false; // Root move or first move is not futile.
             if (drawnEndgame || Move.IsCheck(move) || board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame, checking move, or move when king is in check is not futile.
-            if ((Math.Abs(alpha) >= StaticScore.Checkmate) || (Math.Abs(beta) >= StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
+            if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
             var captureVictim = Move.CaptureVictim(move);
             var capture = captureVictim != Piece.None;
             if (capture && (toHorizon > 0)) return false; // Capture in main search is not futile.
             if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return false; // Killer move, pawn promotion, or castling is not futile.
             if (Move.IsPawnMove(move))
             {
-                var rank = board.CurrentPosition.WhiteMove ? Board.WhiteRanks[(int)Move.To(move)] : Board.BlackRanks[(int)Move.To(move)];
+                var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
                 if (rank >= 6) return false; // Pawn push to 7th rank is not futile.
             }
-            // Count pawns and pieces (but don't include kings).
-            var whitePawnsAndPieces = Bitwise.CountSetBits(board.CurrentPosition.OccupancyWhite) - 1;
-            var blackPawnsAndPieces = Bitwise.CountSetBits(board.CurrentPosition.OccupancyBlack) - 1;
-            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return false; // Move with lone king on board is not futile.
+            // Move with lone king on board is not futile.
+            if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.White]) == 1) return false;
+            if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.Black]) == 1) return false;
             var lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
             if (Move.IsQuiet(move) && (quietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
             var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return board.CurrentPosition.StaticScore + _eval.GetMaterialScore(board.CurrentPosition, captureVictim) + futilityMargin < alpha;
+            return board.CurrentPosition.StaticScore + _eval.GetMaterialScore(board.CurrentPosition, PieceHelper.GetColorlessPiece(captureVictim)) + futilityMargin < alpha;
         }
 
 
@@ -1056,13 +1045,12 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return horizon; // Do not reduce killer move, pawn promotion, or castling.
             if (Move.IsPawnMove(move))
             {
-                var rank = board.CurrentPosition.WhiteMove ? Board.WhiteRanks[(int)Move.To(move)] : Board.BlackRanks[(int)Move.To(move)];
+                var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
                 if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
             }
-            // Count pawns and pieces (but don't include kings).
-            var whitePawnsAndPieces = Bitwise.CountSetBits(board.CurrentPosition.OccupancyWhite) - 1;
-            var blackPawnsAndPieces = Bitwise.CountSetBits(board.CurrentPosition.OccupancyBlack) - 1;
-            if ((whitePawnsAndPieces == 0) || (blackPawnsAndPieces == 0)) return horizon; // Do not reduce move with lone king on board.
+            // Do not reduce move with lone king on board or a tactical move.
+            if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.White]) == 1) return horizon;
+            if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.Black]) == 1) return horizon;
             if (!Move.IsQuiet(move)) return horizon;
             // Reduce search horizon of late move.
             var quietMoveIndex = Math.Min(quietMoveNumber, _lateMoveReductions.Length - 1);
@@ -1078,7 +1066,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             var toHorizon = horizon - depth;
             if ((depth == 0) || (toHorizon < _singularMoveMinToHorizon)) return false;
             var score = CachedPositionData.Score(cachedPosition.Data);
-            if ((score == StaticScore.NotCached) || (Math.Abs(score) >= StaticScore.Checkmate)) return false;
+            if ((score == StaticScore.NotCached) || (FastMath.Abs(score) >= StaticScore.Checkmate)) return false;
             if (CachedPositionData.ScorePrecision(cachedPosition.Data) != ScorePrecision.LowerBound) return false;
             if (CachedPositionData.ToHorizon(cachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientDraft)) return false;
             var beta = score - (_singularMoveMargin * toHorizon);
@@ -1096,7 +1084,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             var toHorizon = horizon - depth;
             var cachedToHorizon = CachedPositionData.ToHorizon(cachedPositionData);
             if (cachedToHorizon < toHorizon) return StaticScore.NotCached; // Cached position is shallower than current horizon. Do not use cached score.
-            if (Math.Abs(score) >= StaticScore.Checkmate)
+            if (FastMath.Abs(score) >= StaticScore.Checkmate)
             {
                 // Adjust checkmate score.
                 if (score > 0) score -= depth;
@@ -1127,7 +1115,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void PrioritizeMoves(Position position, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
         {
             for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
@@ -1148,7 +1136,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         public void PrioritizeMoves(Position position, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(position, moves, 0, lastMoveIndex, bestMove, depth);
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void PrioritizeMoves(Position position, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
         {
             for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
@@ -1184,7 +1172,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void UpdateBestMoveCache(Position currentPosition, int depth, int horizon, ulong bestMove, int score, int alpha, int beta)
         {
-            if (Math.Abs(score) == StaticScore.Interrupted) return;
+            if (FastMath.Abs(score) == StaticScore.Interrupted) return;
             var cachedPosition = _cache.NullPosition;
             cachedPosition.Key = currentPosition.Key;
             CachedPositionData.SetToHorizon(ref cachedPosition.Data, horizon - depth);
@@ -1196,7 +1184,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                 CachedPositionData.SetBestMovePromotedPiece(ref cachedPosition.Data, Move.PromotedPiece(bestMove));
             }
             var adjustedScore = score;
-            if (Math.Abs(adjustedScore) >= StaticScore.Checkmate) adjustedScore += adjustedScore > 0 ? depth : -depth; // Adjust checkmate score.
+            if (FastMath.Abs(adjustedScore) >= StaticScore.Checkmate) adjustedScore += adjustedScore > 0 ? depth : -depth; // Adjust checkmate score.
             // Update score.
             if (adjustedScore <= alpha)
             {
@@ -1242,7 +1230,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                     var pvLongAlgebraic = stringBuilder.ToString();
                     var score = _bestMoves[pv].Score;
                     var multiPvPhrase = MultiPv > 1 ? $"multipv {pv + 1} " : null;
-                    var scorePhrase = Math.Abs(score) >= StaticScore.Checkmate ? $"mate {Eval.GetMateMoveCount(score)}" : $"cp {score}";
+                    var scorePhrase = FastMath.Abs(score) >= StaticScore.Checkmate ? $"mate {Eval.GetMateMoveCount(score)}" : $"cp {score}";
                     _writeMessageLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
                                       $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
                 }
@@ -1279,10 +1267,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             _stopwatch.Restart();
             SpecifiedMoves.Clear();
             // Reset move times and limits.
-            WhiteTimeRemaining = null;
-            BlackTimeRemaining = null;
-            WhiteTimeIncrement = null;
-            BlackTimeIncrement = null;
+            TimeRemaining[(int)Color.White] = null;
+            TimeRemaining[(int)Color.Black] = null;
             MovesToTimeControl = null;
             MateInMoves = null;
             HorizonLimit = MaxHorizon;

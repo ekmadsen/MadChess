@@ -59,18 +59,18 @@ namespace ErikTheCoder.MadChess.Tests
             Assert.That(board.CurrentPosition.GetPiece(Square.G1), Is.EqualTo(Piece.WhiteKnight));
             Assert.That(board.CurrentPosition.GetPiece(Square.H1), Is.EqualTo(Piece.WhiteRook));
             // Validate piece counts.
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhitePawns), Is.EqualTo(8));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteKnights), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteBishops), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteRooks), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteQueens), Is.EqualTo(1));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteKing), Is.EqualTo(1));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackPawns), Is.EqualTo(8));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackKnights), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackBishops), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackRooks), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackQueens), Is.EqualTo(1));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackKing), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhitePawn]), Is.EqualTo(8));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteKnight]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteBishop]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteRook]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteQueen]), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteKing]), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackPawn]), Is.EqualTo(8));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackKnight]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackBishop]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackRook]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackQueen]), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackKing]), Is.EqualTo(1));
         }
 
 
@@ -147,18 +147,18 @@ namespace ErikTheCoder.MadChess.Tests
             Assert.That(board.CurrentPosition.GetPiece(Square.G1), Is.EqualTo(Piece.WhiteKing));
             Assert.That(board.CurrentPosition.GetPiece(Square.H1), Is.EqualTo(Piece.None));
             // Validate piece counts.
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhitePawns), Is.EqualTo(6));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteKnights), Is.EqualTo(1));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteBishops), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteRooks), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteQueens), Is.EqualTo(1));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.WhiteKing), Is.EqualTo(1));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackPawns), Is.EqualTo(7));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackKnights), Is.EqualTo(1));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackBishops), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackRooks), Is.EqualTo(2));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackQueens), Is.EqualTo(1));
-            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.BlackKing), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhitePawn]), Is.EqualTo(6));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteKnight]), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteBishop]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteRook]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteQueen]), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteKing]), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackPawn]), Is.EqualTo(7));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackKnight]), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackBishop]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackRook]), Is.EqualTo(2));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackQueen]), Is.EqualTo(1));
+            Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.BlackKing]), Is.EqualTo(1));
         }
     }
 }

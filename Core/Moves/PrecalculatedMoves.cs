@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 
@@ -188,11 +189,12 @@ namespace ErikTheCoder.MadChess.Core.Moves
             _rookMagicMultipliers[(int)Square.G1] = 0x0003FFEF27EEBE74ul;
             _rookMagicMultipliers[(int)Square.H1] = 0x7645FFFECBFEA79Eul;
 
-            FindMagicMultipliers(Piece.WhiteBishop);
-            FindMagicMultipliers(Piece.WhiteRook);
+            FindMagicMultipliers(ColorlessPiece.Bishop);
+            FindMagicMultipliers(ColorlessPiece.Rook);
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong GetBishopMovesMask(Square square, ulong occupancy)
         {
             var relevantOccupancy = occupancy & _bishopRelevantOccupancyMasks[(int)square];
@@ -201,6 +203,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong GetRookMovesMask(Square square, ulong occupancy)
         {
             var relevantOccupancy = occupancy & _rookRelevantOccupancyMasks[(int)square];
@@ -209,7 +212,11 @@ namespace ErikTheCoder.MadChess.Core.Moves
         }
 
 
-        public void FindMagicMultipliers(Piece piece, Delegates.WriteMessageLine writeMessageLine = null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetIndex(ulong occupancy, ulong magicMultiplier, int shift) => (int)((occupancy * magicMultiplier) >> shift);
+
+
+        public void FindMagicMultipliers(ColorlessPiece colorlessPiece, Delegates.WriteMessageLine writeMessageLine = null)
         {
             Direction[] directions;
             ulong[] unoccupiedMoveMasks;
@@ -218,10 +225,9 @@ namespace ErikTheCoder.MadChess.Core.Moves
             int[] shifts;
             ulong[][] moveMasks;
             // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-            switch (piece)
+            switch (colorlessPiece)
             {
-                case Piece.WhiteBishop:
-                case Piece.BlackBishop:
+                case ColorlessPiece.Bishop:
                     directions = new[] {Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest};
                     unoccupiedMoveMasks = Board.BishopMoveMasks;
                     relevantOccupancyMasks = _bishopRelevantOccupancyMasks;
@@ -229,8 +235,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     shifts = _bishopShifts;
                     moveMasks = _bishopMoveMasks;
                     break;
-                case Piece.WhiteRook:
-                case Piece.BlackRook:
+                case ColorlessPiece.Rook:
                     directions = new[] {Direction.North, Direction.East, Direction.South, Direction.West};
                     unoccupiedMoveMasks = Board.RookMoveMasks;
                     relevantOccupancyMasks = _rookRelevantOccupancyMasks;
@@ -239,7 +244,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                     moveMasks = _rookMoveMasks;
                     break;
                 default:
-                    throw new ArgumentException($"{piece} piece not supported.");
+                    throw new ArgumentException($"{colorlessPiece} piece not supported.");
             }
             // ReSharper restore SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             // Generate moves mask on each square.
@@ -251,7 +256,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 uniqueMovesMasks.Clear();
                 var moveDestinations = unoccupiedMoveMasks[(int)square];
                 var relevantMoveDestinations = moveDestinations & relevantOccupancyMasks[(int)square];
-                var uniqueOccupancies = (int) Math.Pow(2, Bitwise.CountSetBits(relevantMoveDestinations));
+                var uniqueOccupancies = (int)Math.Pow(2, Bitwise.CountSetBits(relevantMoveDestinations));
                 occupancyToMovesMask.EnsureCapacity(uniqueOccupancies);
                 // Generate moves mask for every permutation of relevant occupancy bits.
                 using (var occupancyPermutations = Bitwise.GetAllPermutations(relevantMoveDestinations).GetEnumerator())
@@ -272,12 +277,12 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 Debug.Assert(occupancyToMovesMask.Count == uniqueOccupancies);
                 // Determine bit shift that produces number >= unique occupancies.
                 // A stricter condition is number >= unique moves but this requires more computing time to find magic multipliers.
-                var shift = 64 - (int) Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
+                var shift = 64 - (int)Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
                 shifts[(int)square] = shift;
                 var magicMultiplier = magicMultipliers[(int)square];
                 if (magicMultiplier == 0) (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
                 else (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, magicMultiplier);
-                writeMessageLine?.Invoke($"{Board.SquareLocations[(int)square],6}  {PieceHelper.GetName(piece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[(int)square],16:X16}");
+                writeMessageLine?.Invoke($"{Board.SquareLocations[(int)square],6}  {PieceHelper.GetName(colorlessPiece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[(int)square],16:X16}");
             }
         }
 
@@ -290,7 +295,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
             // Piece can slide along file or rank.
             ulong occupancy;
             var file = Board.Files[(int)square];
-            var rank = Board.WhiteRanks[(int)square];
+            var rank = Board.Ranks[(int)Color.White][(int)square];
             // ReSharper disable ConvertSwitchStatementToSwitchExpression
             switch (file)
             {
@@ -354,13 +359,10 @@ namespace ErikTheCoder.MadChess.Core.Moves
         }
 
 
-        private static int GetIndex(ulong occupancy, ulong magicMultiplier, int shift) => (int) ((occupancy * magicMultiplier) >> shift);
-
-
         private static (ulong MagicMultiplier, ulong[] MovesMasks) FindMagicMultiplier(Dictionary<ulong, ulong> occupancyToMovesMask, int shift, ulong? knownMagicMultiplier)
         {
             var indexBits = 64 - shift;
-            var indexLength = (int) Math.Pow(2d, indexBits);
+            var indexLength = (int)Math.Pow(2d, indexBits);
             var movesMasks = new ulong[indexLength];
             var occupancies = new List<ulong>(occupancyToMovesMask.Keys);
             NextMagicMultiplier:

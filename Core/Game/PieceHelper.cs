@@ -10,10 +10,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using ErikTheCoder.MadChess.Core.Game;
 
 
-namespace ErikTheCoder.MadChess.Core.Utilities
+namespace ErikTheCoder.MadChess.Core.Game
 {
     public static class PieceHelper
     {
@@ -40,31 +39,36 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         }
 
 
-        public static string GetName(Piece piece)
+        public static string GetName(Piece piece) => GetName(GetColorlessPiece(piece));
+
+
+        public static string GetName(ColorlessPiece colorlessPiece)
         {
-            // Sequence cases in order of integer value to improve performance of switch statement.
-            return piece switch
+            // Sequence cases in order of enum value to improve performance of switch statement.
+            return colorlessPiece switch
             {
-                Piece.None => string.Empty,
-                Piece.WhitePawn => "Pawn",
-                Piece.WhiteKnight => "Knight",
-                Piece.WhiteBishop => "Bishop",
-                Piece.WhiteRook => "Rook",
-                Piece.WhiteQueen => "Queen",
-                Piece.WhiteKing => "King",
-                Piece.BlackPawn => "Pawn",
-                Piece.BlackKnight => "Knight",
-                Piece.BlackBishop => "Bishop",
-                Piece.BlackRook => "Rook",
-                Piece.BlackQueen => "Queen",
-                Piece.BlackKing => "King",
-                _ => throw new ArgumentException($"{piece} piece not supported.")
+                ColorlessPiece.None => string.Empty,
+                ColorlessPiece.Pawn => "Pawn",
+                ColorlessPiece.Knight => "Knight",
+                ColorlessPiece.Bishop => "Bishop",
+                ColorlessPiece.Rook => "Rook",
+                ColorlessPiece.Queen => "Queen",
+                ColorlessPiece.King => "King",
+                _ => throw new ArgumentException($"{colorlessPiece} piece not supported.")
             };
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsWhite(Piece piece) => piece <= Piece.WhiteKing;
+        public static ColorlessPiece GetColorlessPiece(Piece piece) => piece <= Piece.WhiteKing ? (ColorlessPiece)piece : (ColorlessPiece)(piece - Piece.WhiteKing);
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Piece GetPieceOfColor(ColorlessPiece colorlessPiece, Color color) => ((int) color * (int) Piece.WhiteKing) + (Piece) colorlessPiece;
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Color GetColor(Piece piece) => piece <= Piece.WhiteKing ? Color.White : Color.Black;
 
 
         public static Piece ParseChar(char character)

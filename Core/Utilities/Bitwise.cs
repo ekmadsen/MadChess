@@ -10,9 +10,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices; // Use LINQ only for Debug.Asserts.
-using System.Text;
+using System.Linq; // Use LINQ only for Debug.Asserts.
+using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 #if POPCOUNT
 using System.Numerics;
@@ -21,11 +20,8 @@ using System.Numerics;
 
 namespace ErikTheCoder.MadChess.Core.Utilities
 {
-    // See https://graphics.stanford.edu/~seander/bithacks.html.
     public static class Bitwise
     {
-        private const int _intBits = 32;
-        private const int _longBits = 64;
 #if (!POPCOUNT)
         private const ulong _deBruijnSequence = 0x37E84A99DAE458F;
         private static readonly int[] _multiplyDeBruijnBitPosition;
@@ -48,19 +44,19 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 #endif
 
 
+        // ReSharper disable MemberCanBePrivate.Global
         // ReSharper disable UnusedMember.Global
-        // ReSharper disable once MemberCanBePrivate.Global
         public static uint CreateUIntMask(int index)
         {
-            Debug.Assert((index >= 0) && (index < _intBits));
+            Debug.Assert((index >= 0) && (index < 32));
             return 1u << index;
         }
 
 
         public static uint CreateUIntMask(int leastSignificantBit, int mostSignificantBit)
         {
-            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < _intBits));
-            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _intBits));
+            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 32));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 32));
             Debug.Assert(leastSignificantBit <= mostSignificantBit);
             var mask = 0u;
             for (var index = leastSignificantBit; index <= mostSignificantBit; index++) SetBit(ref mask, index);
@@ -68,19 +64,18 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         }
 
 
-        // ReSharper disable once MemberCanBePrivate.Global
         public static uint CreateUIntMask(int[] indices)
         {
             var mask = 0u;
             for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
-            Debug.Assert(indices.All(index => (index >= 0) && (index < _intBits)));
+            Debug.Assert(indices.All(index => (index >= 0) && (index < 32)));
             return mask;
         }
 
 
         public static ulong CreateULongMask(int index)
         {
-            Debug.Assert(index >= 0 && index < _longBits);
+            Debug.Assert(index >= 0 && index < 64);
             return 1ul << index;
         }
 
@@ -90,20 +85,11 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 
         public static ulong CreateULongMask(int leastSignificantBit, int mostSignificantBit)
         {
-            Debug.Assert((leastSignificantBit) >= 0 && (leastSignificantBit < _longBits));
-            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _longBits));
+            Debug.Assert((leastSignificantBit) >= 0 && (leastSignificantBit < 64));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 64));
             Debug.Assert(leastSignificantBit <= mostSignificantBit);
             var mask = 0ul;
             for (var index = leastSignificantBit; index <= mostSignificantBit; index++) SetBit(ref mask, index);
-            return mask;
-        }
-
-
-        public static ulong CreateULongMask(int[] indices)
-        {
-            var mask = 0ul;
-            for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
-            Debug.Assert(indices.All(index => (index >= 0) && (index < _longBits)));
             return mask;
         }
 
@@ -118,15 +104,15 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 
         public static uint CreateUIntUnmask(int index)
         {
-            Debug.Assert((index >= 0) && (index < _intBits));
+            Debug.Assert((index >= 0) && (index < 32));
             return ~CreateUIntMask(index);
         }
 
 
         public static uint CreateUIntUnmask(int leastSignificantBit, int mostSignificantBit)
         {
-            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < _intBits));
-            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _intBits));
+            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 32));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 32));
             Debug.Assert(leastSignificantBit <= mostSignificantBit);
             return ~CreateUIntMask(leastSignificantBit, mostSignificantBit);
         }
@@ -134,14 +120,14 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 
         public static uint CreateUIntUnMask(int[] indices)
         {
-            Debug.Assert(indices.All(index => (index >= 0) && (index < _intBits)));
+            Debug.Assert(indices.All(index => (index >= 0) && (index < 32)));
             return ~CreateUIntMask(indices);
         }
 
 
         public static ulong CreateULongUnmask(int index)
         {
-            Debug.Assert(index >= 0 && index < _longBits);
+            Debug.Assert(index >= 0 && index < 64);
             return ~CreateULongMask(index);
         }
 
@@ -151,18 +137,17 @@ namespace ErikTheCoder.MadChess.Core.Utilities
 
         public static ulong CreateULongUnmask(int leastSignificantBit, int mostSignificantBit)
         {
-            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < _longBits));
-            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < _longBits));
+            Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 64));
+            Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 64));
             Debug.Assert(leastSignificantBit <= mostSignificantBit);
             return ~CreateULongMask(leastSignificantBit, mostSignificantBit);
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        // ReSharper disable once MemberCanBePrivate.Global
         public static void SetBit(ref uint value, int index)
         {
-            Debug.Assert((index >= 0) && (index < _intBits));
+            Debug.Assert((index >= 0) && (index < 32));
             value |= 1u << index;
         }
 
@@ -170,7 +155,7 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SetBit(ref ulong value, int index)
         {
-            Debug.Assert((index >= 0) && (index < _longBits));
+            Debug.Assert((index >= 0) && (index < 64));
             value |= 1ul << index;
         }
 
@@ -182,7 +167,7 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ClearBit(ref uint value, int index)
         {
-            Debug.Assert((index >= 0) && (index < _intBits));
+            Debug.Assert((index >= 0) && (index < 32));
             value &= ~(1u << index);
         }
 
@@ -190,17 +175,18 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ClearBit(ref ulong value, int index)
         {
-            Debug.Assert((index >= 0) && (index < _longBits));
+            Debug.Assert((index >= 0) && (index < 64));
             value &= ~(1ul << index);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ClearBit(ref ulong value, Square square) => value &= ~(1ul << (int)square);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ToggleBit(ref uint value, int index)
         {
-            Debug.Assert((index >= 0) && (index < _intBits));
+            Debug.Assert((index >= 0) && (index < 32));
             value ^= 1u << index;
         }
 
@@ -208,16 +194,15 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ToggleBit(ref ulong value, int index)
         {
-            Debug.Assert((index >= 0) && (index < _longBits));
+            Debug.Assert((index >= 0) && (index < 32));
             value ^= 1ul << index;
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        // ReSharper disable once MemberCanBePrivate.Global
         public static bool IsBitSet(uint value, int index)
         {
-            Debug.Assert((index >= 0) && (index < _intBits));
+            Debug.Assert((index >= 0) && (index < 32));
             return (value & (1u << index)) > 0;
         }
 
@@ -225,7 +210,7 @@ namespace ErikTheCoder.MadChess.Core.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsBitSet(ulong value, int index)
         {
-            Debug.Assert((index >= 0) && (index < _longBits));
+            Debug.Assert((index >= 0) && (index < 64));
             return (value & (1ul << index)) > 0;
         }
 
@@ -266,7 +251,7 @@ namespace ErikTheCoder.MadChess.Core.Utilities
                 count++;
                 value &= value - 1ul;
             }
-            Debug.Assert((count >= 0) && (count <= _longBits));
+            Debug.Assert((count >= 0) && (count <= 64));
             return count;
         }
 #endif
@@ -315,30 +300,7 @@ namespace ErikTheCoder.MadChess.Core.Utilities
                 }
             }
         }
-
-
-        public static string ToString(uint value)
-        {
-            var stringBuilder = new StringBuilder();
-            for (var index = _intBits - 1; index >= 0; index--)
-            {
-                stringBuilder.Append(IsBitSet(value, index) ? '1' : '0');
-                if ((index <= _intBits && index > 0) && (index % 8 == 0)) stringBuilder.Append('_');
-            }
-            return stringBuilder.ToString();
-        }
-
-
-        public static string ToString(ulong value)
-        {
-            var stringBuilder = new StringBuilder();
-            for (var index = _longBits - 1; index >= 0; index--)
-            {
-                stringBuilder.Append(IsBitSet(value, index) ? '1' : '0');
-                if ((index <= _longBits && index > 0) && (index % 8 == 0)) stringBuilder.Append('_');
-            }
-            return stringBuilder.ToString();
-        }
         // ReSharper restore UnusedMember.Global
+        // ReSharper restore MemberCanBePrivate.Global
     }
 }
