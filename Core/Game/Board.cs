@@ -20,6 +20,7 @@ namespace ErikTheCoder.MadChess.Core.Game
 {
     public sealed class Board
     {
+        // TODO: Add comments explaining the indexing of jagged arrays in Board class.
         public const string StartPositionFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         public static readonly int[] Files;
         public static readonly int[][] Ranks;
@@ -1108,23 +1109,24 @@ namespace ErikTheCoder.MadChess.Core.Game
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool IsSquareAttacked(Square square)
         {
-            var pawns = CurrentPosition.GetPawns(CurrentPosition.ColorToMove);
             var pawnAttackMask = PawnAttackMasks[(int)CurrentPosition.ColorLastMoved][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice-versa.
-            var knights = CurrentPosition.GetKnights(CurrentPosition.ColorToMove);
-            var bishops = CurrentPosition.GetBishops(CurrentPosition.ColorToMove);
-            var rooks = CurrentPosition.GetRooks(CurrentPosition.ColorToMove);
-            var queens = CurrentPosition.GetQueens(CurrentPosition.ColorToMove);
-            var king = CurrentPosition.GetKing(CurrentPosition.ColorToMove);
-            // Determine if square is attacked by pawns or knights.
+            var pawns = CurrentPosition.GetPawns(CurrentPosition.ColorToMove);
+            // Determine if square is attacked by pawns.
             if ((pawnAttackMask & pawns) > 0) return true;
+            // Determine if square is attacked by knights.
+            var knights = CurrentPosition.GetKnights(CurrentPosition.ColorToMove);
             if ((KnightMoveMasks[(int)square] & knights) > 0) return true;
             // Determine if square is attacked by diagonal sliding piece.
             var bishopDestinations = PrecalculatedMoves.GetBishopMovesMask(square, CurrentPosition.Occupancy);
+            var bishops = CurrentPosition.GetBishops(CurrentPosition.ColorToMove);
+            var queens = CurrentPosition.GetQueens(CurrentPosition.ColorToMove);
             if ((bishopDestinations & (bishops | queens)) > 0) return true;
             // Determine if square is attacked by file / rank sliding pieces.
             var rookDestinations = PrecalculatedMoves.GetRookMovesMask(square, CurrentPosition.Occupancy);
+            var rooks = CurrentPosition.GetRooks(CurrentPosition.ColorToMove);
             if ((rookDestinations & (rooks | queens)) > 0) return true;
             // Determine if square is attacked by king.
+            var king = CurrentPosition.GetKing(CurrentPosition.ColorToMove);
             return (KingMoveMasks[(int)square] & king) > 0;
         }
 

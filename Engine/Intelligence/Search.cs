@@ -911,8 +911,8 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
                     var moveIndex = position.CurrentMoveIndex;
                     var move = position.Moves[moveIndex];
                     position.CurrentMoveIndex++;
-                    var generatedBestMove = (moveIndex > 0) && Move.Equals(move, bestMove);
-                    if (Move.Played(move) || generatedBestMove) continue; // Don't play move twice.
+                    if (Move.Played(move)) continue; // Don't play move twice.
+                    if ((moveIndex > 0) && Move.Equals(move, bestMove)) continue; // Don't play move twice.
                     return (move, moveIndex);
                 }
                 // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
@@ -1023,7 +1023,7 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence
             if (Move.IsQuiet(move) && (quietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
             // Determine if move can raise score to alpha.
             var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-            return board.CurrentPosition.StaticScore + _eval.GetMaterialScore(board.CurrentPosition, PieceHelper.GetColorlessPiece(captureVictim)) + futilityMargin < alpha;
+            return board.CurrentPosition.StaticScore + _eval.TaperedMaterialScores[(int)PieceHelper.GetColorlessPiece(captureVictim)] + futilityMargin < alpha;
         }
 
 

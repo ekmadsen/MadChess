@@ -34,6 +34,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         private readonly Core.Delegates.Debug _debug;
         private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
         private readonly StaticScore _staticScore;
+        public readonly EvalConfig Config;
         // Game Phase (constants selected such that starting material = 256)
         public const int MiddlegamePhase = 4 * (_knightPhaseWeight + _bishopPhaseWeight + _rookPhaseWeight) + (2 * _queenPhaseWeight);
         private const int _knightPhaseWeight = 10; //   4 * 10 =  40
@@ -44,9 +45,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         public int DrawMoves;
         // Material
         public const int PawnMaterial = 100;
-        public readonly EvalConfig Config;
-        private readonly int[] _mgMaterialScores; // [(int)colorlessPiece]
-        private readonly int[] _egMaterialScores; // [(int)colorlessPiece]
         private static readonly int[] _exchangeMaterialScores =
         {
             0,   // None
@@ -54,8 +52,12 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             300, // Knight
             300, // Bishop
             500, // Rook
-            900  // Queen
+            900, // Queen
+            0    // King
         };
+        public readonly int[] TaperedMaterialScores; // [(int)colorlessPiece]
+        private readonly int[] _mgMaterialScores; // [(int)colorlessPiece]
+        private readonly int[] _egMaterialScores; // [(int)colorlessPiece]
         // Piece Location
         private readonly int[][] _mgPieceLocations; // [(int)colorlessPiece][(int)square)]
         private readonly int[][] _egPieceLocations; // [(int)colorlessPiece][(int)square)]
@@ -82,6 +84,8 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             Config = new EvalConfig();
             _defaultConfig = new EvalConfig();
             // Create arrays for quick lookup of positional factors, then calculate positional factors.
+            TaperedMaterialScores = new int[(int)ColorlessPiece.King + 1];
+            TaperedMaterialScores[(int)ColorlessPiece.Pawn] = PawnMaterial;
             _mgMaterialScores = new int[(int)ColorlessPiece.King + 1];
             _egMaterialScores = new int[(int)ColorlessPiece.King + 1];
             _mgPieceLocations = new int[(int)ColorlessPiece.King + 1][];
@@ -137,11 +141,13 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             _mgMaterialScores[(int)ColorlessPiece.Bishop] = Config.MgBishopMaterial;
             _mgMaterialScores[(int)ColorlessPiece.Rook] = Config.MgRookMaterial;
             _mgMaterialScores[(int)ColorlessPiece.Queen] = Config.MgQueenMaterial;
+            _mgMaterialScores[(int)ColorlessPiece.King] = 0;
             _egMaterialScores[(int)ColorlessPiece.Pawn] = PawnMaterial;
             _egMaterialScores[(int)ColorlessPiece.Knight] = Config.EgKnightMaterial;
             _egMaterialScores[(int)ColorlessPiece.Bishop] = Config.EgBishopMaterial;
             _egMaterialScores[(int)ColorlessPiece.Rook] = Config.EgRookMaterial;
             _egMaterialScores[(int)ColorlessPiece.Queen] = Config.EgQueenMaterial;
+            _egMaterialScores[(int)ColorlessPiece.King] = 0;
             // Calculate piece location values.
             for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
             {
@@ -385,6 +391,12 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             }
             // Position is not a simple endgame.
             _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
+            // Update tapered material scores for current position.
+            var phase = DetermineGamePhase(position);
+            TaperedMaterialScores[(int)ColorlessPiece.Knight] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Knight], _egMaterialScores[(int)ColorlessPiece.Knight], phase);
+            TaperedMaterialScores[(int)ColorlessPiece.Bishop] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Bishop], _egMaterialScores[(int)ColorlessPiece.Bishop], phase);
+            TaperedMaterialScores[(int)ColorlessPiece.Rook] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Rook], _egMaterialScores[(int)ColorlessPiece.Rook], phase);
+            TaperedMaterialScores[(int)ColorlessPiece.Queen] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Queen], _egMaterialScores[(int)ColorlessPiece.Queen], phase);
             // Explicit array lookups are faster than looping through colors.
             EvaluateMaterial(position, Color.White);
             EvaluateMaterial(position, Color.Black);
@@ -392,16 +404,16 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             EvaluatePieceLocation(position, Color.Black);
             EvaluatePawns(position, Color.White);
             EvaluatePawns(position, Color.Black);
-            EvaluatePieceMobilityKingSafety(position, Color.White);
-            EvaluatePieceMobilityKingSafety(position, Color.Black);
+            EvaluateMobilityKingSafetyThreats(position, Color.White);
+            EvaluateMobilityKingSafetyThreats(position, Color.Black);
             EvaluateMinorPieces(position, Color.White);
             EvaluateMinorPieces(position, Color.Black);
             // Limit strength, determine endgame scale, phase, and total score.
             if (Config.LimitedStrength) LimitStrength();
             DetermineEndgameScale(position); // Scale down scores for difficult to win endgames.
-            if (_staticScore.EgScalePer128 == 0) return (0, true); // Drawn Endgame
-            var phase = DetermineGamePhase(position);
-            return (_staticScore.GetTotalScore(position.ColorToMove, phase), false);
+            return _staticScore.EgScalePer128 == 0
+                ? (0, true) // Drawn Endgame
+                : (_staticScore.GetTotalScore(position.ColorToMove, phase), false);
         }
 
 
@@ -602,16 +614,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetMaterialScore(Position position, ColorlessPiece colorlessPiece)
-        {
-            var mgMaterial = _mgMaterialScores[(int)colorlessPiece];
-            var egMaterial = _egMaterialScores[(int)colorlessPiece];
-            var phase = DetermineGamePhase(position);
-            return StaticScore.GetTaperedScore(mgMaterial, egMaterial, phase);
-        }
-
-
         public static (int StaticScore, bool DrawnEndgame) GetExchangeMaterialScore(Position position)
         {
             var score = 0;
@@ -649,23 +651,23 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void EvaluatePawns(Position position, Color color)
         {
-            var enemyColor = 1 - color;
             var pawns = position.GetPawns(color);
             if (pawns == 0) return;
+            var enemyColor = 1 - color;
             var kingSquare = Bitwise.FirstSetSquare(position.GetKing(color));
             var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
-            Square pawnSquare;
-            while ((pawnSquare = Bitwise.FirstSetSquare(pawns)) != Square.Illegal)
+            Square square;
+            while ((square = Bitwise.FirstSetSquare(pawns)) != Square.Illegal)
             {
-                if (IsPassedPawn(position, pawnSquare, color))
+                if (IsPassedPawn(position, square, color))
                 {
                     _staticScore.PassedPawnCount[(int)color]++;
-                    var rank = Board.Ranks[(int)color][(int)pawnSquare];
-                    _staticScore.EgKingEscortedPassedPawns[(int)color] += (Board.SquareDistances[(int)pawnSquare][(int)enemyKingSquare] - Board.SquareDistances[(int)pawnSquare][(int)kingSquare]) * Config.EgKingEscortedPassedPawn;
-                    if (IsFreePawn(position, pawnSquare, color))
+                    var rank = Board.Ranks[(int)color][(int)square];
+                    _staticScore.EgKingEscortedPassedPawns[(int)color] += (Board.SquareDistances[(int)square][(int)enemyKingSquare] - Board.SquareDistances[(int)square][(int)kingSquare]) * Config.EgKingEscortedPassedPawn;
+                    if (IsFreePawn(position, square, color))
                     {
                         // Pawn is free to advance.
-                        if (IsUnstoppablePawn(position, pawnSquare, enemyKingSquare, color)) _staticScore.UnstoppablePassedPawns[(int)color] += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
+                        if (IsUnstoppablePawn(position, square, enemyKingSquare, color)) _staticScore.UnstoppablePassedPawns[(int)color] += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
                         else _staticScore.EgFreePassedPawns[(int)color] += _egFreePassedPawns[rank]; // Pawn is passed and free.
                     }
                     else
@@ -675,7 +677,15 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                         _staticScore.EgPassedPawns[(int)color] += _egPassedPawns[rank];
                     }
                 }
-                Bitwise.ClearBit(ref pawns, pawnSquare);
+                // Evaluate threats.
+                for (var attackedColorlessPiece = ColorlessPiece.Knight; attackedColorlessPiece <= ColorlessPiece.Queen; attackedColorlessPiece++)
+                {
+                    var attackedPieceMaterialScore = TaperedMaterialScores[(int)attackedColorlessPiece];
+                    var attackedPiece = PieceHelper.GetPieceOfColor(attackedColorlessPiece, enemyColor);
+                    var attackedPieceCount = Bitwise.CountSetBits(Board.PawnAttackMasks[(int)color][(int)square] & position.PieceBitboards[(int)attackedPiece]);
+                    _staticScore.MgThreats[(int)color] += (attackedPieceCount * (attackedPieceMaterialScore - PawnMaterial) * Config.MgThreatsPer256) / 256;
+                }
+                Bitwise.ClearBit(ref pawns, square);
             }
         }
 
@@ -725,30 +735,42 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
 
         // TODO: Include stacked attacks on same square via x-rays.  For example, a rook behind a queen.
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private void EvaluatePieceMobilityKingSafety(Position position, Color color)
+        private void EvaluateMobilityKingSafetyThreats(Position position, Color color)
         {
             var enemyColor = 1 - color;
             var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
             var enemyKingInnerRing = Board.InnerRingMasks[(int)enemyKingSquare];
             var enemyKingOuterRing = Board.OuterRingMasks[(int)enemyKingSquare];
+            var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
             var mgEnemyKingSafetyIndexPer8 = 0;
             for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
             {
                 var piece = PieceHelper.GetPieceOfColor(colorlessPiece, color);
                 var pieces = position.PieceBitboards[(int)piece];
+                var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
+                var pieceMaterialScore = TaperedMaterialScores[(int)colorlessPiece];
                 Square square;
                 while ((square = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
                 {
-                    var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
-                    var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
-                    var pieceDestinations = getPieceMovesMask(square, position.Occupancy) & unOrEnemyOccupiedSquares;
+                    var pieceMovesMask = getPieceMovesMask(square, position.Occupancy);
+                    var pieceDestinations = pieceMovesMask & unOrEnemyOccupiedSquares;
+                    // Evaluate piece mobility.
                     var (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgPieceMobility[(int)colorlessPiece], _egPieceMobility[(int)colorlessPiece]);
                     _staticScore.MgPieceMobility[(int)color] += mgPieceMobilityScore;
                     _staticScore.EgPieceMobility[(int)color] += egPieceMobilityScore;
+                    // Evaluate king safety.
                     var outerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Outer];
                     var innerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Inner];
                     var kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
                     mgEnemyKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
+                    // Evaluate threats (attacks on higher-value pieces from lower-value pieces).
+                    for (var attackedColorlessPiece = colorlessPiece + 1; attackedColorlessPiece <= ColorlessPiece.Queen; attackedColorlessPiece++)
+                    {
+                        var attackedPieceMaterialScore = TaperedMaterialScores[(int)attackedColorlessPiece];
+                        var attackedPiece = PieceHelper.GetPieceOfColor(attackedColorlessPiece, enemyColor);
+                        var attackedPieceCount = Bitwise.CountSetBits(pieceMovesMask & position.PieceBitboards[(int)attackedPiece]);
+                        _staticScore.MgThreats[(int)color] += (attackedPieceCount * (attackedPieceMaterialScore - pieceMaterialScore) * Config.MgThreatsPer256) / 256;
+                    }
                     Bitwise.ClearBit(ref pieces, square);
                 }
             }

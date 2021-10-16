@@ -165,6 +165,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
                 new(nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
                 new(nameof(evalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
                 new(nameof(evalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
+                // Threats
+                new(nameof(evalConfig.MgThreatsPer256), 0, 128),
                 // Minor Pieces
                 new(nameof(evalConfig.MgBishopPair), 0, 50),
                 new(nameof(evalConfig.EgBishopPair), 50, 200),
@@ -252,6 +254,8 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             parameters[nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackInnerRingPer8;
             parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
             parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
+            // Threats
+            parameters[nameof(evalConfig.MgThreatsPer256)].Value = evalConfig.MgThreatsPer256;
             // Minor Pieces
             parameters[nameof(evalConfig.MgBishopPair)].Value = evalConfig.MgBishopPair;
             parameters[nameof(evalConfig.EgBishopPair)].Value = evalConfig.EgBishopPair;
