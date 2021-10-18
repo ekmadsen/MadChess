@@ -55,22 +55,22 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             900, // Queen
             0    // King
         };
-        public readonly int[] TaperedMaterialScores; // [(int)colorlessPiece]
-        private readonly int[] _mgMaterialScores; // [(int)colorlessPiece]
-        private readonly int[] _egMaterialScores; // [(int)colorlessPiece]
+        public readonly int[] TaperedMaterialScores; // [colorlessPiece]
+        private readonly int[] _mgMaterialScores; // [colorlessPiece]
+        private readonly int[] _egMaterialScores; // [colorlessPiece]
         // Piece Location
-        private readonly int[][] _mgPieceLocations; // [(int)colorlessPiece][(int)square)]
-        private readonly int[][] _egPieceLocations; // [(int)colorlessPiece][(int)square)]
+        private readonly int[][] _mgPieceLocations; // [colorlessPiece][square)]
+        private readonly int[][] _egPieceLocations; // [colorlessPiece][square)]
         // Passed Pawns
-        private readonly int[] _mgPassedPawns;
-        private readonly int[] _egPassedPawns;
-        private readonly int[] _egFreePassedPawns;
+        private readonly int[] _mgPassedPawns; // [rank]
+        private readonly int[] _egPassedPawns; // [rank]
+        private readonly int[] _egFreePassedPawns; // [rank]
         // Piece Mobility
-        private readonly int[][] _mgPieceMobility; // [(int)colorlessPiece][moveCount]
-        private readonly int[][] _egPieceMobility; // [(int)colorlessPiece][moveCount]
+        private readonly int[][] _mgPieceMobility; // [colorlessPiece][moves]
+        private readonly int[][] _egPieceMobility; // [colorlessPiece][moves]
         // King Safety
-        private readonly int[][] _mgKingSafetyAttackWeights; // [(int)colorlessPiece][(int)kingRing]
-        private readonly int[] _mgKingSafety;
+        private readonly int[][] _mgKingSafetyAttackWeights; // [colorlessPiece][kingRing]
+        private readonly int[] _mgKingSafety; // [threatsToEnemyKingSafety]
 
 
         public Eval(Stats stats, Delegates.IsRepeatPosition isRepeatPosition, Core.Delegates.Debug debug, Core.Delegates.WriteMessageLine writeMessageLine)
@@ -250,7 +250,7 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Outer] = Config.MgKingSafetyQueenAttackOuterRingPer8;
             _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Inner] = Config.MgKingSafetyQueenAttackInnerRingPer8;
             var kingSafetyPower = Config.MgKingSafetyPowerPer128 / 128d;
-            var scale = -Config.MgKingSafetyScalePer128 / 128d;
+            var scale = -Config.MgKingSafetyScalePer128 / 128d; // Note the negative scale.  More threats to king == less safety.
             for (var index = 0; index < _mgKingSafety.Length; index++) _mgKingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
         }
 
@@ -494,7 +494,6 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             var enemyMinorPieceCount = enemyKnightCount + enemyBishopCount;
             var enemyMajorPieceCount = enemyRookCount + enemyQueenCount;
             var totalMajorPieces = majorPieceCount + enemyMajorPieceCount;
-            // TODO: Add rook versus bishop as a draw?
             switch (totalMajorPieces)
             {
                 case 0:
@@ -656,6 +655,8 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             var enemyColor = 1 - color;
             var kingSquare = Bitwise.FirstSetSquare(position.GetKing(color));
             var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
+            var enemyMinorPieces = position.GetMinorPieces(enemyColor);
+            var enemyMajorPieces = position.GetMajorPieces(enemyColor);
             Square square;
             while ((square = Bitwise.FirstSetSquare(pawns)) != Square.Illegal)
             {
@@ -678,13 +679,9 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                     }
                 }
                 // Evaluate threats.
-                for (var attackedColorlessPiece = ColorlessPiece.Knight; attackedColorlessPiece <= ColorlessPiece.Queen; attackedColorlessPiece++)
-                {
-                    var attackedPieceMaterialScore = TaperedMaterialScores[(int)attackedColorlessPiece];
-                    var attackedPiece = PieceHelper.GetPieceOfColor(attackedColorlessPiece, enemyColor);
-                    var attackedPieceCount = Bitwise.CountSetBits(Board.PawnAttackMasks[(int)color][(int)square] & position.PieceBitboards[(int)attackedPiece]);
-                    _staticScore.MgThreats[(int)color] += (attackedPieceCount * (attackedPieceMaterialScore - PawnMaterial) * Config.MgThreatsPer256) / 256;
-                }
+                var pawnAttacks = Board.PawnAttackMasks[(int)color][(int)square];
+                _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pawnAttacks & enemyMinorPieces) * Config.MgPawnThreatenMinor;
+                _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pawnAttacks & enemyMajorPieces) * Config.MgPawnThreatenMajor;
                 Bitwise.ClearBit(ref pawns, square);
             }
         }
@@ -741,14 +738,15 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
             var enemyKingInnerRing = Board.InnerRingMasks[(int)enemyKingSquare];
             var enemyKingOuterRing = Board.OuterRingMasks[(int)enemyKingSquare];
+            var enemyMajorPieces = position.GetMajorPieces(enemyColor);
             var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
-            var mgEnemyKingSafetyIndexPer8 = 0;
+            var mgThreatsToEnemyKingSafety = 0;
+            // Evaluate mobility of individual pieces.
             for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
             {
                 var piece = PieceHelper.GetPieceOfColor(colorlessPiece, color);
                 var pieces = position.PieceBitboards[(int)piece];
                 var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
-                var pieceMaterialScore = TaperedMaterialScores[(int)colorlessPiece];
                 Square square;
                 while ((square = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
                 {
@@ -761,15 +759,11 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
                     // Evaluate king safety.
                     var outerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Outer];
                     var innerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Inner];
-                    var kingSafetyIndexIncrementPer8 = GetKingSafetyIndexIncrement(pieceDestinations, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
-                    mgEnemyKingSafetyIndexPer8 += kingSafetyIndexIncrementPer8;
-                    // Evaluate threats (attacks on higher-value pieces from lower-value pieces).
-                    for (var attackedColorlessPiece = colorlessPiece + 1; attackedColorlessPiece <= ColorlessPiece.Queen; attackedColorlessPiece++)
+                    mgThreatsToEnemyKingSafety += GetKingSafetyIndexIncrement(pieceDestinations, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
+                    if (colorlessPiece < ColorlessPiece.Rook)
                     {
-                        var attackedPieceMaterialScore = TaperedMaterialScores[(int)attackedColorlessPiece];
-                        var attackedPiece = PieceHelper.GetPieceOfColor(attackedColorlessPiece, enemyColor);
-                        var attackedPieceCount = Bitwise.CountSetBits(pieceMovesMask & position.PieceBitboards[(int)attackedPiece]);
-                        _staticScore.MgThreats[(int)color] += (attackedPieceCount * (attackedPieceMaterialScore - pieceMaterialScore) * Config.MgThreatsPer256) / 256;
+                        // Evaluate threats.
+                        _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pieceMovesMask & enemyMajorPieces) * Config.MgMinorThreatenMajor;
                     }
                     Bitwise.ClearBit(ref pieces, square);
                 }
@@ -783,14 +777,14 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             var kingFileSemiOpen = (position.GetPawns(enemyColor) & enemyKingFileMask) == 0 ? 1 : 0;
             var rightFileSemiOpen = (rightFileMask > 0) && ((position.GetPawns(enemyColor) & rightFileMask) == 0) ? 1 : 0;
             var semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
-            mgEnemyKingSafetyIndexPer8 += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
+            mgThreatsToEnemyKingSafety += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
             // Evaluate enemy king pawn shield.
             const int maxPawnsInShield = 3;
             var missingPawns = maxPawnsInShield - Bitwise.CountSetBits(position.GetPawns(enemyColor) & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
-            mgEnemyKingSafetyIndexPer8 += missingPawns * Config.MgKingSafetyPawnShieldPer8;
+            mgThreatsToEnemyKingSafety += missingPawns * Config.MgKingSafetyPawnShieldPer8;
             // Lookup king safety score in array.
             var maxIndex = _mgKingSafety.Length - 1;
-            _staticScore.MgKingSafety[(int)enemyColor] = _mgKingSafety[Math.Min(mgEnemyKingSafetyIndexPer8 / 8, maxIndex)];
+            _staticScore.MgKingSafety[(int)enemyColor] = _mgKingSafety[Math.Min(mgThreatsToEnemyKingSafety / 8, maxIndex)];
         }
 
 

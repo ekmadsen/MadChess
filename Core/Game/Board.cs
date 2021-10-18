@@ -20,59 +20,58 @@ namespace ErikTheCoder.MadChess.Core.Game
 {
     public sealed class Board
     {
-        // TODO: Add comments explaining the indexing of jagged arrays in Board class.
         public const string StartPositionFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        public static readonly int[] Files;
-        public static readonly int[][] Ranks;
-        public static readonly Color[] SquareColors;
-        public static readonly int[][] SquareDistances;
-        public static readonly int[] DistanceToCentralSquares;
-        public static readonly int[] DistanceToNearestCorner;
-        public static readonly int[][] DistanceToNearestCornerOfColor;
-        public static readonly string[] SquareLocations;
-        public static readonly ulong[] SquareMasks;
-        public static readonly ulong[] FileMasks;
-        public static readonly ulong[] RankMasks;
+        public static readonly int[] Files; // [square]
+        public static readonly int[][] Ranks; // [color][square]
+        public static readonly Color[] SquareColors; // [square]
+        public static readonly int[][] SquareDistances; // [square1][square2]
+        public static readonly int[] DistanceToCentralSquares; // [square]
+        public static readonly int[] DistanceToNearestCorner; // [square]
+        public static readonly int[][] DistanceToNearestCornerOfColor; // [color][square]
+        public static readonly string[] SquareLocations; // [square]
+        public static readonly ulong[] SquareMasks; // [square]
+        public static readonly ulong[] FileMasks; // [file]
+        public static readonly ulong[] WhiteRankMasks; // [rank]
         public static readonly ulong AllSquaresMask;
         public static readonly ulong EdgeSquaresMask;
-        public static readonly ulong[][] CastleEmptySquaresMask;
-        public static readonly Square[][] CastleFromSquares;
-        public static readonly Square[][] CastleToSquares;
-        public static readonly ulong[][] PawnMoveMasks;
-        public static readonly ulong[][] PawnDoubleMoveMasks;
-        public static readonly ulong[][] PawnAttackMasks;
-        public static readonly ulong[] KnightMoveMasks;
-        public static readonly ulong[] BishopMoveMasks;
-        public static readonly ulong[] RookMoveMasks;
-        public static readonly ulong[] KingMoveMasks;
-        public static readonly Delegates.GetPieceMovesMask[] PieceMoveMaskDelegates;
-        public static readonly ulong[] EnPassantAttackerMasks;
-        public static readonly ulong[][] PassedPawnMasks;
-        public static readonly ulong[][] FreePawnMasks;
-        public static readonly ulong[] InnerRingMasks;
-        public static readonly ulong[] OuterRingMasks;
-        public static readonly ulong[][] PawnShieldMasks;
+        public static readonly ulong[][] CastleEmptySquaresMask; // [color][boardSide]
+        public static readonly Square[] CastleFromSquares; // [color]
+        public static readonly Square[][] CastleToSquares; // [color][boardSide]
+        public static readonly ulong[][] PawnMoveMasks; // [color][square]
+        public static readonly ulong[][] PawnDoubleMoveMasks; // [color][square]
+        public static readonly ulong[][] PawnAttackMasks; // [color][square]
+        public static readonly ulong[] KnightMoveMasks; // [square]
+        public static readonly ulong[] BishopMoveMasks; // [square]
+        public static readonly ulong[] RookMoveMasks; // [square]
+        public static readonly ulong[] KingMoveMasks; // [square]
+        public static readonly Delegates.GetPieceMovesMask[] PieceMoveMaskDelegates; // [colorlessPiece]
+        public static readonly ulong[] EnPassantAttackerMasks; // [square]
+        public static readonly ulong[][] PassedPawnMasks; // [color][square]
+        public static readonly ulong[][] FreePawnMasks; // [color][square]
+        public static readonly ulong[] InnerRingMasks; // [square]
+        public static readonly ulong[] OuterRingMasks; // [square]
+        public static readonly ulong[][] PawnShieldMasks; // [color][square]
         public static readonly PrecalculatedMoves PrecalculatedMoves;
-        public static readonly ulong[][] RankFileBetweenSquares;
-        public static readonly ulong[][] DiagonalBetweenSquares;
+        public static readonly ulong[][] RankFileBetweenSquares; // [square1][square2]
+        public static readonly ulong[][] DiagonalBetweenSquares; // [square1][square2]
         public long Nodes;
         public long NodesInfoUpdate;
         public long NodesExamineTime;
         private const int _maxPositions = 1024;
-        private static readonly int[] _squarePerspectiveFactors;
-        private static readonly ulong[] _squareUnmasks;
-        private static readonly ulong[][] _castleAttackedSquareMasks;
-        private static readonly int[][] _neighborSquares;
-        private static readonly Square[] _enPassantTargetSquares;
-        private static readonly Square[] _enPassantVictimSquares;
+        private static readonly int[] _squarePerspectiveFactors; // [color]
+        private static readonly ulong[] _squareUnmasks; // [square]
+        private static readonly ulong[][] _castleAttackedSquareMasks; // [color][boardSide]
+        private static readonly int[][] _neighborSquares; // [square][direction]
+        private static readonly Square[] _enPassantTargetSquares; // [square]
+        private static readonly Square[] _enPassantVictimSquares; // [square]
+        private readonly ulong[][] _pieceSquareKeys; // [piece][square]
+        private readonly ulong[] _sideToMoveKeys; // [color]
+        private readonly ulong[] _castlingKeys; // [castlingRights]
+        private readonly ulong[] _enPassantKeys; // [square]
+        private readonly Position[] _positions; // [distanceFromRoot]
         private readonly Delegates.WriteMessageLine _writeMessageLine;
         private readonly long _nodesInfoInterval;
         private readonly ulong _piecesSquaresInitialKey;
-        private readonly ulong[][] _pieceSquareKeys;
-        private readonly ulong[] _sideToMoveKeys;
-        private readonly ulong[] _castlingKeys;
-        private readonly ulong[] _enPassantKeys;
-        private readonly Position[] _positions;
         private int _positionIndex;
 
 
@@ -219,18 +218,18 @@ namespace ErikTheCoder.MadChess.Core.Game
                     FileMasks[file] |= Bitwise.CreateULongMask(square);
                 }
             }
-            RankMasks = new ulong[8];
+            WhiteRankMasks = new ulong[8];
             for (var rank = 0; rank < 8; rank++)
             {
-                RankMasks[rank] = 0;
+                WhiteRankMasks[rank] = 0;
                 for (var file = 0; file < 8; file++)
                 {
                     var square = GetSquare(file, rank);
-                    RankMasks[rank] |= Bitwise.CreateULongMask(square);
+                    WhiteRankMasks[rank] |= Bitwise.CreateULongMask(square);
                 }
             }
             AllSquaresMask = Bitwise.CreateULongMask(0, 63);
-            EdgeSquaresMask = FileMasks[0] | RankMasks[7] | FileMasks[7] | RankMasks[0];
+            EdgeSquaresMask = FileMasks[0] | WhiteRankMasks[7] | FileMasks[7] | WhiteRankMasks[0];
             // Create castling masks.
             CastleEmptySquaresMask = new[]
             {
@@ -258,19 +257,7 @@ namespace ErikTheCoder.MadChess.Core.Game
                     Bitwise.CreateULongMask(Square.F8)
                 }
             };
-            CastleFromSquares = new[]
-            {
-                new[]
-                {
-                    Square.E1,
-                    Square.E1
-                },
-                new[]
-                {
-                    Square.E8,
-                    Square.E8
-                }
-            };
+            CastleFromSquares = new[] { Square.E1, Square.E8 };
             CastleToSquares = new[]
             {
                 new[]

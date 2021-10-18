@@ -97,7 +97,9 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
         public int MgKingSafetySemiOpenFilePer8 = 30;
         public int MgKingSafetyPawnShieldPer8 = 8;
         // Threats
-        public int MgThreatsPer256 = 40;
+        public int MgPawnThreatenMinor = 54;
+        public int MgPawnThreatenMajor = 74;
+        public int MgMinorThreatenMajor = 59;
         // Minor Pieces
         public int MgBishopPair = 42;
         public int EgBishopPair = 85;
@@ -191,7 +193,9 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation
             MgKingSafetySemiOpenFilePer8 = copyFromConfig.MgKingSafetySemiOpenFilePer8;
             MgKingSafetyPawnShieldPer8 = copyFromConfig.MgKingSafetyPawnShieldPer8;
             // Copy threats value.
-            MgThreatsPer256 = copyFromConfig.MgThreatsPer256;
+            MgPawnThreatenMinor = copyFromConfig.MgPawnThreatenMinor;
+            MgPawnThreatenMajor = copyFromConfig.MgPawnThreatenMajor;
+            MgMinorThreatenMajor = copyFromConfig.MgMinorThreatenMajor;
             // Copy minor values.
             MgBishopPair = copyFromConfig.MgBishopPair;
             EgBishopPair = copyFromConfig.EgBishopPair;

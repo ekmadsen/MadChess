@@ -152,7 +152,9 @@ namespace ErikTheCoder.MadChess.Engine.Tuning
             eval.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvalConfig.MgKingSafetySemiOpenFilePer8)].Value;
             eval.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvalConfig.MgKingSafetyPawnShieldPer8)].Value;
             // Threats
-            eval.Config.MgThreatsPer256 = Parameters[nameof(EvalConfig.MgThreatsPer256)].Value;
+            eval.Config.MgPawnThreatenMinor = Parameters[nameof(EvalConfig.MgPawnThreatenMinor)].Value;
+            eval.Config.MgPawnThreatenMajor = Parameters[nameof(EvalConfig.MgPawnThreatenMajor)].Value;
+            eval.Config.MgMinorThreatenMajor = Parameters[nameof(EvalConfig.MgMinorThreatenMajor)].Value;
             // Minor Pieces
             eval.Config.MgBishopPair = Parameters[nameof(EvalConfig.MgBishopPair)].Value;
             eval.Config.EgBishopPair = Parameters[nameof(EvalConfig.EgBishopPair)].Value;

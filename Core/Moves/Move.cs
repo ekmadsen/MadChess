@@ -453,14 +453,14 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 case "O-O-O":
                 case "0-0-0":
                     // Castle Queenside
-                    SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.Queen]);
+                    SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                     SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.Queen]);
                     if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                     return move;
                 case "O-O":
                 case "0-0":
                     // Castle Kingside
-                    SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.King]);
+                    SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                     SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.King]);
                     if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
                     return move;
