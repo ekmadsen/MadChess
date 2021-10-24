@@ -39,6 +39,7 @@ namespace ErikTheCoder.MadChess.Engine.Score
         public readonly int[] MgPieceMobility;
         public readonly int[] EgPieceMobility;
         public readonly int[] MgKingSafety;
+        public readonly int[] MgThreats;
         public readonly int[] MgBishopPair;
         public readonly int[] EgBishopPair;
         public int PlySinceCaptureOrPawnMove;
@@ -62,6 +63,7 @@ namespace ErikTheCoder.MadChess.Engine.Score
             MgPieceMobility = new int[2];
             EgPieceMobility = new int[2];
             MgKingSafety = new int[2];
+            MgThreats = new int[2];
             MgBishopPair = new int[2];
             EgBishopPair = new int[2];
         }
@@ -73,7 +75,7 @@ namespace ErikTheCoder.MadChess.Engine.Score
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
-            MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgBishopPair[(int)color];
+            MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgThreats[(int)color] + MgBishopPair[(int)color];
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -147,6 +149,8 @@ namespace ErikTheCoder.MadChess.Engine.Score
             MgPieceMobility[(int)Color.Black] = 0;
             EgPieceMobility[(int)Color.White] = 0;
             EgPieceMobility[(int)Color.Black] = 0;
+            MgThreats[(int)Color.White] = 0;
+            MgThreats[(int)Color.Black] = 0;
             MgKingSafety[(int)Color.White] = 0;
             MgKingSafety[(int)Color.Black] = 0;
             MgBishopPair[(int)Color.White] = 0;
@@ -174,6 +178,7 @@ namespace ErikTheCoder.MadChess.Engine.Score
             AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], phase);
             AppendStaticScoreLine(stringBuilder, "Piece Mobility", MgPieceMobility[(int)Color.White], MgPieceMobility[(int)Color.Black], EgPieceMobility[(int)Color.White], EgPieceMobility[(int)Color.Black], phase);
             AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
+            AppendStaticScoreLine(stringBuilder, "Threats", MgThreats[(int)Color.White], MgThreats[(int)Color.Black], 0, 0, phase);
             AppendStaticScoreLine(stringBuilder, "Bishop Pair", MgBishopPair[(int)Color.White], MgBishopPair[(int)Color.Black], EgBishopPair[(int)Color.White], EgBishopPair[(int)Color.Black], phase);
             stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
             var mgWhite = GetMg(Color.White);

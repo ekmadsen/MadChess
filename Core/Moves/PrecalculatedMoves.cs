@@ -23,11 +23,11 @@ namespace ErikTheCoder.MadChess.Core.Moves
         private readonly ulong[] _bishopRelevantOccupancyMasks;
         private readonly ulong[] _bishopMagicMultipliers;
         private readonly int[] _bishopShifts;
-        private readonly ulong[][] _bishopMoveMasks; // [(int)square][Index]
+        private readonly ulong[][] _bishopMoveMasks; // [square][magicIndex]
         private readonly ulong[] _rookRelevantOccupancyMasks;
         private readonly ulong[] _rookMagicMultipliers;
         private readonly int[] _rookShifts;
-        private readonly ulong[][] _rookMoveMasks; // [(int)square][Index]
+        private readonly ulong[][] _rookMoveMasks; // [square][magicIndex]
 
 
         public PrecalculatedMoves()
@@ -198,8 +198,8 @@ namespace ErikTheCoder.MadChess.Core.Moves
         public ulong GetBishopMovesMask(Square square, ulong occupancy)
         {
             var relevantOccupancy = occupancy & _bishopRelevantOccupancyMasks[(int)square];
-            var index = GetIndex(relevantOccupancy, _bishopMagicMultipliers[(int)square], _bishopShifts[(int)square]);
-            return _bishopMoveMasks[(int)square][index];
+            var magicIndex = GetMagicIndex(relevantOccupancy, _bishopMagicMultipliers[(int)square], _bishopShifts[(int)square]);
+            return _bishopMoveMasks[(int)square][magicIndex];
         }
 
 
@@ -207,13 +207,13 @@ namespace ErikTheCoder.MadChess.Core.Moves
         public ulong GetRookMovesMask(Square square, ulong occupancy)
         {
             var relevantOccupancy = occupancy & _rookRelevantOccupancyMasks[(int)square];
-            var index = GetIndex(relevantOccupancy, _rookMagicMultipliers[(int)square], _rookShifts[(int)square]);
-            return _rookMoveMasks[(int)square][index];
+            var magicIndex = GetMagicIndex(relevantOccupancy, _rookMagicMultipliers[(int)square], _rookShifts[(int)square]);
+            return _rookMoveMasks[(int)square][magicIndex];
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetIndex(ulong occupancy, ulong magicMultiplier, int shift) => (int)((occupancy * magicMultiplier) >> shift);
+        private static int GetMagicIndex(ulong occupancy, ulong magicMultiplier, int shift) => (int)((occupancy * magicMultiplier) >> shift);
 
 
         public void FindMagicMultipliers(ColorlessPiece colorlessPiece, Delegates.WriteMessageLine writeMessageLine = null)
@@ -314,7 +314,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                         default:
                             // Piece is not on edge rank.
                             // Occupancy of edge ranks and opposite edge file does not affect pseudo-legal moves.
-                            return ~Board.RankMasks[0] & ~Board.RankMasks[7] & ~Board.FileMasks[7];
+                            return ~Board.WhiteRankMasks[0] & ~Board.WhiteRankMasks[7] & ~Board.FileMasks[7];
                     }
                 case 7:
                     // Piece is on Easternmost edge file.
@@ -331,7 +331,7 @@ namespace ErikTheCoder.MadChess.Core.Moves
                         default:
                             // Piece is not on edge rank.
                             // Occupancy of edge ranks and opposite edge file does not affect pseudo-legal moves.
-                            return ~Board.RankMasks[0] & ~Board.RankMasks[7] & ~Board.FileMasks[0];
+                            return ~Board.WhiteRankMasks[0] & ~Board.WhiteRankMasks[7] & ~Board.FileMasks[0];
                     }
                 default:
                     // Piece is not on edge file.
@@ -345,15 +345,15 @@ namespace ErikTheCoder.MadChess.Core.Moves
                 case 0:
                     // Piece is on Southernmost edge rank.
                     // Occupancy of opposite rank does not affect pseudo-legal moves.
-                    return occupancy & ~Board.RankMasks[7];
+                    return occupancy & ~Board.WhiteRankMasks[7];
                 case 7:
                     // Piece is on Northernmost edge rank.
                     // Occupancy of opposite rank does not affect pseudo-legal moves.
-                    return occupancy & ~Board.RankMasks[0];
+                    return occupancy & ~Board.WhiteRankMasks[0];
                 default:
                     // Piece is not on edge rank.
                     // Occupancy of edge ranks does not affect pseudo-legal moves.
-                    return occupancy & ~Board.RankMasks[0] & ~Board.RankMasks[7];
+                    return occupancy & ~Board.WhiteRankMasks[0] & ~Board.WhiteRankMasks[7];
             }
             // ReSharper restore ConvertSwitchStatementToSwitchExpression
         }
@@ -372,9 +372,9 @@ namespace ErikTheCoder.MadChess.Core.Moves
             for (var occupancyIndex = 0; occupancyIndex < occupancies.Count; occupancyIndex++)
             {
                 var occupancy = occupancies[occupancyIndex];
-                var index = GetIndex(occupancy, magicMultiplier, shift);
-                var movesMask = movesMasks[index];
-                if (movesMask == 0) movesMasks[index] = occupancyToMovesMask[occupancy]; // Moves mask not yet added to unique moves array.
+                var magicIndex = GetMagicIndex(occupancy, magicMultiplier, shift);
+                var movesMask = movesMasks[magicIndex];
+                if (movesMask == 0) movesMasks[magicIndex] = occupancyToMovesMask[occupancy]; // Moves mask not yet added to unique moves array.
                 else if (movesMask != occupancyToMovesMask[occupancy]) goto NextMagicMultiplier; // Moves mask already added to unique moves array but mask is incorrect.
             }
             // Found magic multiplier that maps to correct moves index for all occupancies.

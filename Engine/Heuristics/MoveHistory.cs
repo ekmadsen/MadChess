@@ -47,7 +47,7 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics
         public void UpdateValue(Position position, ulong move, int increment)
         {
             // Update value with decay.  Idea from Ethereal chess engine.
-            // This function approaches an asymptotic limit of +/- MaxValue.
+            // This function approaches an asymptotic limit of +/- Move.HistoryMaxValue.
             var piece = position.GetPiece(Move.From(move));
             var toSquare = Move.To(move);
             var value = _moveHistory[(int)piece][(int)toSquare];
