@@ -8,11 +8,11 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Core.Game
+namespace ErikTheCoder.MadChess.Core.Game;
+
+
+public enum Color
 {
-    public enum Color
-    {
-        White,
-        Black
-    }
+    White,
+    Black
 }

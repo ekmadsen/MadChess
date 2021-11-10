@@ -11,49 +11,49 @@
 using System;
 
 
-namespace ErikTheCoder.MadChess.Core.Utilities
+namespace ErikTheCoder.MadChess.Core.Utilities;
+
+
+public static class SafeRandom
 {
-    public static class SafeRandom
+    private static readonly byte[] _buffer;
+    private static readonly Random _random;
+    private static readonly object _lock;
+
+
+    static SafeRandom()
     {
-        private static readonly byte[] _buffer;
-        private static readonly Random _random;
-        private static readonly object _lock;
+        _buffer = new byte[sizeof(ulong)];
+        _random = new Random();
+        _lock = new object();
+    }
 
 
-        static SafeRandom()
+
+    public static int NextInt(int inclusiveMin, int exclusiveMax)
+    {
+        lock (_lock)
         {
-            _buffer = new byte[sizeof(ulong)];
-            _random = new Random();
-            _lock = new object();
+            return _random.Next(inclusiveMin, exclusiveMax);
         }
+    }
 
 
-
-        public static int NextInt(int inclusiveMin, int exclusiveMax)
+    public static double NextDouble()
+    {
+        lock (_lock)
         {
-            lock (_lock)
-            {
-                return _random.Next(inclusiveMin, exclusiveMax);
-            }
+            return _random.NextDouble();
         }
+    }
 
 
-        public static double NextDouble()
+    public static ulong NextULong()
+    {
+        lock (_lock)
         {
-            lock (_lock)
-            {
-                return _random.NextDouble();
-            }
-        }
-
-
-        public static ulong NextULong()
-        {
-            lock (_lock)
-            {
-                _random.NextBytes(_buffer);
-                return BitConverter.ToUInt64(_buffer, 0);
-            }
+            _random.NextBytes(_buffer);
+            return BitConverter.ToUInt64(_buffer, 0);
         }
     }
 }

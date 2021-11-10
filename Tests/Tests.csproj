@@ -12,7 +12,7 @@
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<RootNamespace>ErikTheCoder.MadChess.Tests</RootNamespace>
 		<LangVersion>latest</LangVersion>
-		<TargetFramework>net5.0</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Library</OutputType>
 		<PackageId>MadChess.Tests</PackageId>
@@ -41,9 +41,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
 		<PackageReference Include="NUnit" Version="3.13.2" />
-		<PackageReference Include="NUnit3TestAdapter" Version="4.0.0" />
+		<PackageReference Include="NUnit3TestAdapter" Version="4.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>

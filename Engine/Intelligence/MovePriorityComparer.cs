@@ -12,17 +12,16 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 
-namespace ErikTheCoder.MadChess.Engine.Intelligence
+namespace ErikTheCoder.MadChess.Engine.Intelligence;
+
+
+public sealed class MovePriorityComparer : IComparer<ulong>
 {
-    public sealed class MovePriorityComparer : IComparer<ulong>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Compare(ulong move1, ulong move2)
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Compare(ulong move1, ulong move2)
-        {
-            // Sort moves by priority descending.
-            if (move2 > move1) return 1;
-            return move2 < move1 ? -1 : 0;
-        }
+        // Sort moves by priority descending.
+        if (move2 > move1) return 1;
+        return move2 < move1 ? -1 : 0;
     }
 }
-

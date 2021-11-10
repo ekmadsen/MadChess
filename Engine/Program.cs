@@ -13,25 +13,24 @@ using System.Runtime;
 using ErikTheCoder.MadChess.Engine.Uci;
 
 
-namespace ErikTheCoder.MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine;
+
+public static class Program
 {
-    public static class Program
+    public static void Main()
     {
-        public static void Main()
+        // Improve garbage collector performance at the cost of memory usage.
+        // Engine should not allocate much memory when searching a position anyhow, since it references pre-allocated objects.
+        GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+        using (var uciStream = new UciStream())
         {
-            // Improve garbage collector performance at the cost of memory usage.
-            // Engine should not allocate much memory when searching a position anyhow, since it references pre-allocated objects.
-            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
-            using (var uciStream = new UciStream())
+            try
             {
-                try
-                {
-                    uciStream.Run();
-                }
-                catch (Exception exception)
-                {
-                    uciStream.HandleException(exception);
-                }
+                uciStream.Run();
+            }
+            catch (Exception exception)
+            {
+                uciStream.HandleException(exception);
             }
         }
     }

@@ -11,28 +11,28 @@
 using JetBrains.Annotations;
 
 
-namespace ErikTheCoder.MadChess.Core.Game
+namespace ErikTheCoder.MadChess.Core.Game;
+
+
+public enum Direction
 {
-    public enum Direction
-    {
-        [UsedImplicitly] Unknown,
-        // Sliding Piece Moves
-        North,
-        NorthEast,
-        East,
-        SouthEast,
-        South,
-        SouthWest,
-        West,
-        NorthWest,
-        // Knight Moves
-        North2East1,
-        East2North1,
-        East2South1,
-        South2East1,
-        South2West1,
-        West2South1,
-        West2North1,
-        North2West1
-    }
+    [UsedImplicitly] Unknown,
+    // Sliding Piece Moves
+    North,
+    NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
+    West,
+    NorthWest,
+    // Knight Moves
+    North2East1,
+    East2North1,
+    East2South1,
+    South2East1,
+    South2West1,
+    West2South1,
+    West2North1,
+    North2West1
 }

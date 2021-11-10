@@ -11,18 +11,18 @@
 using ErikTheCoder.MadChess.Core.Game;
 
 
-namespace ErikTheCoder.MadChess.Engine.Heuristics
+namespace ErikTheCoder.MadChess.Engine.Heuristics;
+
+
+public sealed class KillerMove
 {
-    public sealed class KillerMove
+    public Piece Piece;
+    public Square ToSquare;
+
+
+    public KillerMove(Piece piece, Square toSquare)
     {
-        public Piece Piece;
-        public Square ToSquare;
-
-
-        public KillerMove(Piece piece, Square toSquare)
-        {
-            Piece = piece;
-            ToSquare = toSquare;
-        }
+        Piece = piece;
+        ToSquare = toSquare;
     }
 }

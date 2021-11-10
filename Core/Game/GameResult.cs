@@ -8,13 +8,13 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Core.Game
+namespace ErikTheCoder.MadChess.Core.Game;
+
+
+public enum GameResult
 {
-    public enum GameResult
-    {
-        Unknown,
-        WhiteWon,
-        Draw,
-        BlackWon
-    }
+    Unknown,
+    WhiteWon,
+    Draw,
+    BlackWon
 }

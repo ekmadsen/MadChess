@@ -8,12 +8,12 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Engine.Intelligence
+namespace ErikTheCoder.MadChess.Engine.Intelligence;
+
+
+public enum PositionSolution
 {
-    public enum PositionSolution
-    {
-        Unknown,
-        BestMoves,
-        AvoidMoves
-    }
+    Unknown,
+    BestMoves,
+    AvoidMoves
 }

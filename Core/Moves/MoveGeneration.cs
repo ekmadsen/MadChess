@@ -8,12 +8,12 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Core.Moves
+namespace ErikTheCoder.MadChess.Core.Moves;
+
+
+public enum MoveGeneration
 {
-    public enum MoveGeneration
-    {
-        AllMoves,
-        OnlyCaptures,
-        OnlyNonCaptures
-    }
+    AllMoves,
+    OnlyCaptures,
+    OnlyNonCaptures
 }
