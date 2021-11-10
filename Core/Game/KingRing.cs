@@ -8,11 +8,11 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Core.Game
+namespace ErikTheCoder.MadChess.Core.Game;
+
+
+public enum KingRing
 {
-    public enum KingRing
-    {
-        Outer,
-        Inner
-    }
+    Outer,
+    Inner
 }

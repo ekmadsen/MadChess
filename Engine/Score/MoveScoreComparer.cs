@@ -12,16 +12,16 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 
-namespace ErikTheCoder.MadChess.Engine.Score
+namespace ErikTheCoder.MadChess.Engine.Score;
+
+
+public sealed class MoveScoreComparer : IComparer<ScoredMove>
 {
-    public sealed class MoveScoreComparer : IComparer<ScoredMove>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Compare(ScoredMove move1, ScoredMove move2)
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Compare(ScoredMove move1, ScoredMove move2)
-        {
-            // Sort moves by score descending.
-            if (move2.Score > move1.Score) return 1;
-            return move2.Score < move1.Score ? -1 : 0;
-        }
+        // Sort moves by score descending.
+        if (move2.Score > move1.Score) return 1;
+        return move2.Score < move1.Score ? -1 : 0;
     }
 }

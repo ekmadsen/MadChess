@@ -8,11 +8,11 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Core.Game
+namespace ErikTheCoder.MadChess.Core.Game;
+
+
+public enum BoardSide
 {
-    public enum BoardSide
-    {
-        Queen,
-        King
-    }
+    Queen,
+    King
 }

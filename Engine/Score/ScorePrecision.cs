@@ -8,13 +8,13 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Engine.Score
+namespace ErikTheCoder.MadChess.Engine.Score;
+
+
+public enum ScorePrecision
 {
-    public enum ScorePrecision
-    {
-        Unknown,
-        LowerBound,
-        UpperBound,
-        Exact
-    }
+    Unknown,
+    LowerBound,
+    UpperBound,
+    Exact
 }

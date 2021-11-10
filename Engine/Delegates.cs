@@ -11,13 +11,13 @@
 using ErikTheCoder.MadChess.Core.Game;
 
 
-namespace ErikTheCoder.MadChess.Engine
+namespace ErikTheCoder.MadChess.Engine;
+
+
+public static class Delegates
 {
-    public static class Delegates
-    {
-        public delegate (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove);
-        public delegate bool IsRepeatPosition(int repetitions);
-        public delegate void DisplayStats();
-        public delegate (int StaticScore, bool DrawnEndgame) GetStaticScore(Position position);
-    }
+    public delegate (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove);
+    public delegate bool IsRepeatPosition(int repetitions);
+    public delegate void DisplayStats();
+    public delegate (int StaticScore, bool DrawnEndgame) GetStaticScore(Position position);
 }

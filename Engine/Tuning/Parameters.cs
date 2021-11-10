@@ -12,46 +12,46 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Tuning;
+
+
+// Derive from Collection class in order to intercept insertions.
+public sealed class Parameters : Collection<Parameter>
 {
-    // Derive from Collection class in order to intercept insertions.
-    public sealed class Parameters : Collection<Parameter>
+    private readonly Dictionary<string, int> _namesToIndices;
+
+
+    public Parameters() => _namesToIndices = new Dictionary<string, int>();
+
+
+    public Parameter this[string name] => this[_namesToIndices[name]];
+
+
+    public Parameters DuplicateWithSameValues()
     {
-        private readonly Dictionary<string, int> _namesToIndices;
+        var parameters = new Parameters();
+        for (var index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithSameValue());
+        return parameters;
+    }
 
 
-        public Parameters() => _namesToIndices = new Dictionary<string, int>();
+    public Parameters DuplicateWithRandomValues()
+    {
+        var parameters = new Parameters();
+        for (var index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithRandomValue());
+        return parameters;
+    }
 
 
-        public Parameter this[string name] => this[_namesToIndices[name]];
+    public void CopyValuesTo(Parameters parameters)
+    {
+        for (var index = 0; index < Count; index++) parameters[index].Value = this[index].Value;
+    }
 
 
-        public Parameters DuplicateWithSameValues()
-        {
-            var parameters = new Parameters();
-            for (var index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithSameValue());
-            return parameters;
-        }
-
-
-        public Parameters DuplicateWithRandomValues()
-        {
-            var parameters = new Parameters();
-            for (var index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithRandomValue());
-            return parameters;
-        }
-
-
-        public void CopyValuesTo(Parameters parameters)
-        {
-            for (var index = 0; index < Count; index++) parameters[index].Value = this[index].Value;
-        }
-
-
-        protected override void InsertItem(int index, Parameter parameter)
-        {
-            base.InsertItem(index, parameter);
-            _namesToIndices[parameter?.Name ?? string.Empty] = index;
-        }
+    protected override void InsertItem(int index, Parameter parameter)
+    {
+        base.InsertItem(index, parameter);
+        _namesToIndices[parameter?.Name ?? string.Empty] = index;
     }
 }

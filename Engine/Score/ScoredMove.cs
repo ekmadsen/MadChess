@@ -8,18 +8,18 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Engine.Score
+namespace ErikTheCoder.MadChess.Engine.Score;
+
+
+public struct ScoredMove
 {
-    public struct ScoredMove
+    public ulong Move;
+    public int Score;
+
+
+    public ScoredMove(ulong move, int score)
     {
-        public ulong Move;
-        public int Score;
-
-
-        public ScoredMove(ulong move, int score)
-        {
-            Move = move;
-            Score = score;
-        }
+        Move = move;
+        Score = score;
     }
 }

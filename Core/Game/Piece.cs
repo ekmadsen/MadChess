@@ -8,22 +8,22 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Core.Game
+namespace ErikTheCoder.MadChess.Core.Game;
+
+
+public enum Piece
 {
-    public enum Piece
-    {
-        None,
-        WhitePawn,
-        WhiteKnight,
-        WhiteBishop,
-        WhiteRook,
-        WhiteQueen,
-        WhiteKing,
-        BlackPawn,
-        BlackKnight,
-        BlackBishop,
-        BlackRook,
-        BlackQueen,
-        BlackKing
-    }
+    None,
+    WhitePawn,
+    WhiteKnight,
+    WhiteBishop,
+    WhiteRook,
+    WhiteQueen,
+    WhiteKing,
+    BlackPawn,
+    BlackKnight,
+    BlackBishop,
+    BlackRook,
+    BlackQueen,
+    BlackKing
 }

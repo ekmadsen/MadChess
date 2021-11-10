@@ -11,12 +11,12 @@
 using JetBrains.Annotations;
 
 
-namespace ErikTheCoder.MadChess.Engine.Uci
+namespace ErikTheCoder.MadChess.Engine.Uci;
+
+
+public enum CommandDirection
 {
-    public enum CommandDirection
-    {
-        [UsedImplicitly] Unknown,
-        In,
-        Out
-    }
+    [UsedImplicitly] Unknown,
+    In,
+    Out
 }

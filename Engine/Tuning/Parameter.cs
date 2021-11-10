@@ -11,39 +11,39 @@
 using ErikTheCoder.MadChess.Core.Utilities;
 
 
-namespace ErikTheCoder.MadChess.Engine.Tuning
+namespace ErikTheCoder.MadChess.Engine.Tuning;
+
+
+public sealed class Parameter
 {
-    public sealed class Parameter
+    public readonly string Name;
+    public readonly int MinValue;
+    public readonly int MaxValue;
+    public int Value;
+
+
+    public Parameter(string name, int minValue, int maxValue) : this(name, minValue, maxValue, SafeRandom.NextInt(minValue, maxValue + 1)) // Assign random initial value.
     {
-        public readonly string Name;
-        public readonly int MinValue;
-        public readonly int MaxValue;
-        public int Value;
+    }
 
 
-        public Parameter(string name, int minValue, int maxValue) : this(name, minValue, maxValue, SafeRandom.NextInt(minValue, maxValue + 1)) // Assign random initial value.
-        {
-        }
+    private Parameter(string name, int minValue, int maxValue, int value)
+    {
+        Name = name;
+        MinValue = minValue;
+        MaxValue = maxValue;
+        Value = value;
+    }
 
 
-        private Parameter(string name, int minValue, int maxValue, int value)
-        {
-            Name = name;
-            MinValue = minValue;
-            MaxValue = maxValue;
-            Value = value;
-        }
+    public Parameter DuplicateWithSameValue()
+    {
+        return new Parameter(Name, MinValue, MaxValue, Value);
+    }
 
 
-        public Parameter DuplicateWithSameValue()
-        {
-            return new Parameter(Name, MinValue, MaxValue, Value);
-        }
-
-
-        public Parameter DuplicateWithRandomValue()
-        {
-            return new Parameter(Name, MinValue, MaxValue);
-        }
+    public Parameter DuplicateWithRandomValue()
+    {
+        return new Parameter(Name, MinValue, MaxValue);
     }
 }

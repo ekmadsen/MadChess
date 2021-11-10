@@ -8,18 +8,18 @@
 // +------------------------------------------------------------------------------+
 
 
-namespace ErikTheCoder.MadChess.Core.Game
+namespace ErikTheCoder.MadChess.Core.Game;
+
+
+public enum ColorlessPiece
 {
-    public enum ColorlessPiece
-    {
-        // ReSharper disable UnusedMember.Global
-        None,
-        Pawn,
-        Knight,
-        Bishop,
-        Rook,
-        Queen,
-        King
-        // ReSharper restore UnusedMember.Global
-    }
+    // ReSharper disable UnusedMember.Global
+    None,
+    Pawn,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King
+    // ReSharper restore UnusedMember.Global
 }
