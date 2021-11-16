@@ -159,11 +159,10 @@ public sealed class Particle
         // Minor Pieces
         eval.Config.MgBishopPair = Parameters[nameof(EvalConfig.MgBishopPair)].Value;
         eval.Config.EgBishopPair = Parameters[nameof(EvalConfig.EgBishopPair)].Value;
-        // Endgame Scaling
-        eval.Config.EgBishopAdvantagePer128 = Parameters[nameof(EvalConfig.EgBishopAdvantagePer128)].Value;
-        eval.Config.EgOppBishopsPerPassedPawn = Parameters[nameof(EvalConfig.EgOppBishopsPerPassedPawn)].Value;
-        eval.Config.EgOppBishopsPer128 = Parameters[nameof(EvalConfig.EgOppBishopsPer128)].Value;
-        eval.Config.EgWinningPerPawn = Parameters[nameof(EvalConfig.EgWinningPerPawn)].Value;
+        // Endgame Scale
+        eval.Config.EgScaleBishopAdvantagePer128 = Parameters[nameof(EvalConfig.EgScaleBishopAdvantagePer128)].Value;
+        eval.Config.EgScaleOppBishopsPerPassedPawn = Parameters[nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn)].Value;
+        eval.Config.EgScaleWinningPerPawn = Parameters[nameof(EvalConfig.EgScaleWinningPerPawn)].Value;
         // Calculate positional factors after updating evaluation config.
         eval.CalculatePositionalFactors();
     }

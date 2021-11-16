@@ -22,7 +22,7 @@ public sealed class EvalConfig
     public int MgBishopMaterial = 330;
     public int EgBishopMaterial = 472;
     public int MgRookMaterial = 500;
-    public int EgRookMaterial = 765;
+    public int EgRookMaterial = 767;
     public int MgQueenMaterial = 975;
     public int EgQueenMaterial = 1388;
     // Incentivize engine to promote pawns.
@@ -53,9 +53,9 @@ public sealed class EvalConfig
     public int MgRookAdvancement = 3;
     public int EgRookAdvancement = 13;
     public int MgRookCentrality = 0;
-    public int EgRookCentrality = -5;
-    public int MgRookCorner = -13;
-    public int EgRookCorner = 0;
+    public int EgRookCentrality = -6;
+    public int MgRookCorner = -14;
+    public int EgRookCorner = 1;
     // Queen Location
     public int MgQueenAdvancement = -22;
     public int EgQueenAdvancement = 25;
@@ -82,8 +82,8 @@ public sealed class EvalConfig
     public int EgKnightMobilityScale = 6;
     public int MgBishopMobilityScale = 1;
     public int EgBishopMobilityScale = 162;
-    public int MgRookMobilityScale = 45;
-    public int EgRookMobilityScale = 86;
+    public int MgRookMobilityScale = 44;
+    public int EgRookMobilityScale = 88;
     public int MgQueenMobilityScale = 72;
     public int EgQueenMobilityScale = 166;
     // King Safety
@@ -104,11 +104,10 @@ public sealed class EvalConfig
     // Minor Pieces
     public int MgBishopPair = 42;
     public int EgBishopPair = 85;
-    // Endgame Scaling
-    public int EgBishopAdvantagePer128 = 19;
-    public int EgOppBishopsPerPassedPawn = 25;
-    public int EgOppBishopsPer128 = 23;
-    public int EgWinningPerPawn = 30;
+    // Endgame Scale
+    public int EgScaleBishopAdvantagePer128 = 20;
+    public int EgScaleOppBishopsPerPassedPawn = 38;
+    public int EgScaleWinningPerPawn = 32;
     // Limit Strength
     public bool LimitedStrength = false;
     public int LsPieceLocationPer128 = 128;
@@ -197,14 +196,13 @@ public sealed class EvalConfig
         MgPawnThreatenMinor = copyFromConfig.MgPawnThreatenMinor;
         MgPawnThreatenMajor = copyFromConfig.MgPawnThreatenMajor;
         MgMinorThreatenMajor = copyFromConfig.MgMinorThreatenMajor;
-        // Copy minor values.
+        // Copy minor piece values.
         MgBishopPair = copyFromConfig.MgBishopPair;
         EgBishopPair = copyFromConfig.EgBishopPair;
-        // Copy endgame scaling values.
-        EgBishopAdvantagePer128 = copyFromConfig.EgBishopAdvantagePer128;
-        EgOppBishopsPerPassedPawn = copyFromConfig.EgOppBishopsPerPassedPawn;
-        EgOppBishopsPer128 = copyFromConfig.EgOppBishopsPer128;
-        EgWinningPerPawn = copyFromConfig.EgWinningPerPawn;
+        // Copy endgame scale values.
+        EgScaleBishopAdvantagePer128 = copyFromConfig.EgScaleBishopAdvantagePer128;
+        EgScaleOppBishopsPerPassedPawn = copyFromConfig.EgScaleOppBishopsPerPassedPawn;
+        EgScaleWinningPerPawn = copyFromConfig.EgScaleWinningPerPawn;
         // Copy limit strength values.
         LimitedStrength = copyFromConfig.LimitedStrength;
         LsPieceLocationPer128 = copyFromConfig.LsPieceLocationPer128;

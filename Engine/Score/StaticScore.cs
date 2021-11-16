@@ -31,7 +31,6 @@ public sealed class StaticScore
     public readonly int[] EgPieceMaterial;
     public readonly int[] MgPieceLocation;
     public readonly int[] EgPieceLocation;
-    public readonly int[] PassedPawnCount;
     public readonly int[] MgPassedPawns;
     public readonly int[] EgPassedPawns;
     public readonly int[] EgFreePassedPawns;
@@ -55,7 +54,6 @@ public sealed class StaticScore
         EgPieceMaterial = new int[2];
         MgPieceLocation = new int[2];
         EgPieceLocation = new int[2];
-        PassedPawnCount = new int[2];
         MgPassedPawns = new int[2];
         EgPassedPawns = new int[2];
         EgFreePassedPawns = new int[2];
@@ -134,8 +132,6 @@ public sealed class StaticScore
         MgPieceLocation[(int)Color.Black] = 0;
         EgPieceLocation[(int)Color.White] = 0;
         EgPieceLocation[(int)Color.Black] = 0;
-        PassedPawnCount[(int)Color.White] = 0;
-        PassedPawnCount[(int)Color.Black] = 0;
         MgPassedPawns[(int)Color.White] = 0;
         MgPassedPawns[(int)Color.Black] = 0;
         EgPassedPawns[(int)Color.White] = 0;

@@ -173,11 +173,10 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             // Minor Pieces
             new(nameof(evalConfig.MgBishopPair), 0, 50),
             new(nameof(evalConfig.EgBishopPair), 50, 200),
-            // Endgame Scaling
-            new(nameof(evalConfig.EgBishopAdvantagePer128), 0, 64),
-            new(nameof(evalConfig.EgOppBishopsPerPassedPawn), 0, 64),
-            new(nameof(evalConfig.EgOppBishopsPer128), 0, 64),
-            new(nameof(evalConfig.EgWinningPerPawn), 0, 32)
+            // Endgame Scale
+            new(nameof(evalConfig.EgScaleBishopAdvantagePer128), 0, 64),
+            new(nameof(evalConfig.EgScaleOppBishopsPerPassedPawn), 0, 64),
+            new(nameof(evalConfig.EgScaleWinningPerPawn), 0, 64)
         };
     }
 
@@ -264,11 +263,10 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         // Minor Pieces
         parameters[nameof(evalConfig.MgBishopPair)].Value = evalConfig.MgBishopPair;
         parameters[nameof(evalConfig.EgBishopPair)].Value = evalConfig.EgBishopPair;
-        // Endgame Scaling
-        parameters[nameof(evalConfig.EgBishopAdvantagePer128)].Value = evalConfig.EgBishopAdvantagePer128;
-        parameters[nameof(evalConfig.EgOppBishopsPerPassedPawn)].Value = evalConfig.EgOppBishopsPerPassedPawn;
-        parameters[nameof(evalConfig.EgOppBishopsPer128)].Value = evalConfig.EgOppBishopsPer128;
-        parameters[nameof(evalConfig.EgWinningPerPawn)].Value = evalConfig.EgWinningPerPawn;
+        // Endgame Scale
+        parameters[nameof(evalConfig.EgScaleBishopAdvantagePer128)].Value = evalConfig.EgScaleBishopAdvantagePer128;
+        parameters[nameof(evalConfig.EgScaleOppBishopsPerPassedPawn)].Value = evalConfig.EgScaleOppBishopsPerPassedPawn;
+        parameters[nameof(evalConfig.EgScaleWinningPerPawn)].Value = evalConfig.EgScaleWinningPerPawn;
     }
 
 

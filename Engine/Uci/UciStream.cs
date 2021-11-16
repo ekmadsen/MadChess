@@ -988,7 +988,7 @@ public sealed class UciStream : IDisposable
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 633 for ComputerGamesBulletStrongerThanMadChess.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 643 for ComputerGamesBulletStrongerThanMadChess.pgn.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
         particleSwarms.Optimize(iterations);
@@ -1108,7 +1108,7 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");
         WriteMessageLine("                                      ws = Win Scale, i = Iterations.");
         WriteMessageLine();
-        WriteMessageLine("tunewinscale [pgn]                    Compute a scaling constant used in the sigmoid function of the tuning algorithm.");
+        WriteMessageLine("tunewinscale [pgn]                    Compute a scale constant used in the sigmoid function of the tuning algorithm.");
         WriteMessageLine("                                      The sigmoid function maps evaluation score to expected win fraction.");
     }
 
