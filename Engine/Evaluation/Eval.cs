@@ -683,8 +683,12 @@ public sealed class Eval
             }
             // Evaluate threats.
             var pawnAttacks = Board.PawnAttackMasks[(int)color][(int)square];
-            _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pawnAttacks & enemyMinorPieces) * Config.MgPawnThreatenMinor;
-            _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pawnAttacks & enemyMajorPieces) * Config.MgPawnThreatenMajor;
+            var minorPiecesAttacked = Bitwise.CountSetBits(pawnAttacks & enemyMinorPieces);
+            var majorPiecesAttacked = Bitwise.CountSetBits(pawnAttacks & enemyMajorPieces);
+            _staticScore.MgThreats[(int)color] += minorPiecesAttacked * Config.MgPawnThreatenMinor;
+            _staticScore.EgThreats[(int)color] += minorPiecesAttacked * Config.EgPawnThreatenMinor;
+            _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgPawnThreatenMajor;
+            _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgPawnThreatenMajor;
             Bitwise.ClearBit(ref pawns, square);
         }
     }
@@ -766,7 +770,9 @@ public sealed class Eval
                 if (colorlessPiece < ColorlessPiece.Rook)
                 {
                     // Evaluate threats.
-                    _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pieceMovesMask & enemyMajorPieces) * Config.MgMinorThreatenMajor;
+                    var majorPiecesAttacked = Bitwise.CountSetBits(pieceMovesMask & enemyMajorPieces);
+                    _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgMinorThreatenMajor;
+                    _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgMinorThreatenMajor;
                 }
                 Bitwise.ClearBit(ref pieces, square);
             }
@@ -814,8 +820,18 @@ public sealed class Eval
     private void EvaluateMinorPieces(Position position, Color color)
     {
         // Bishop Pair
-        var bishopCount = Bitwise.CountSetBits(position.GetBishops(color));
-        if (bishopCount >= 2)
+        var bishops = position.GetBishops(color);
+        if (Bitwise.CountSetBits(bishops) < 2) return;
+        var whiteSquares = 0;
+        var blackSquares = 0;
+        Square square;
+        while ((square = Bitwise.FirstSetSquare(bishops)) != Square.Illegal)
+        {
+            if (Board.SquareColors[(int)square] == Color.White) whiteSquares++;
+            else blackSquares++;
+            Bitwise.ClearBit(ref bishops, square);
+        }
+        if ((whiteSquares > 0) && (blackSquares > 0))
         {
             _staticScore.MgBishopPair[(int)color] += Config.MgBishopPair;
             _staticScore.EgBishopPair[(int)color] += Config.EgBishopPair;

@@ -168,8 +168,11 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(evalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
             // Threats
             new(nameof(evalConfig.MgPawnThreatenMinor), 0, 100),
+            new(nameof(evalConfig.EgPawnThreatenMinor), 0, 200),
             new(nameof(evalConfig.MgPawnThreatenMajor), 0, 100),
+            new(nameof(evalConfig.EgPawnThreatenMajor), 0, 200),
             new(nameof(evalConfig.MgMinorThreatenMajor), 0, 100),
+            new(nameof(evalConfig.EgMinorThreatenMajor), 0, 200),
             // Minor Pieces
             new(nameof(evalConfig.MgBishopPair), 0, 50),
             new(nameof(evalConfig.EgBishopPair), 50, 200),
@@ -258,8 +261,11 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
         // Threats
         parameters[nameof(evalConfig.MgPawnThreatenMinor)].Value = evalConfig.MgPawnThreatenMinor;
+        parameters[nameof(evalConfig.EgPawnThreatenMinor)].Value = evalConfig.EgPawnThreatenMinor;
         parameters[nameof(evalConfig.MgPawnThreatenMajor)].Value = evalConfig.MgPawnThreatenMajor;
+        parameters[nameof(evalConfig.EgPawnThreatenMajor)].Value = evalConfig.EgPawnThreatenMajor;
         parameters[nameof(evalConfig.MgMinorThreatenMajor)].Value = evalConfig.MgMinorThreatenMajor;
+        parameters[nameof(evalConfig.EgMinorThreatenMajor)].Value = evalConfig.EgMinorThreatenMajor;
         // Minor Pieces
         parameters[nameof(evalConfig.MgBishopPair)].Value = evalConfig.MgBishopPair;
         parameters[nameof(evalConfig.EgBishopPair)].Value = evalConfig.EgBishopPair;
