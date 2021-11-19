@@ -18,13 +18,13 @@ public sealed class EvalConfig
     // ReSharper disable RedundantDefaultMemberInitializer
     // Material
     public int MgKnightMaterial = 300;
-    public int EgKnightMaterial = 455;
+    public int EgKnightMaterial = 456;
     public int MgBishopMaterial = 330;
     public int EgBishopMaterial = 472;
     public int MgRookMaterial = 500;
-    public int EgRookMaterial = 767;
+    public int EgRookMaterial = 768;
     public int MgQueenMaterial = 975;
-    public int EgQueenMaterial = 1388;
+    public int EgQueenMaterial = 1389;
     // Incentivize engine to promote pawns.
     // Also incentivize engine to eliminate enemy's last pawn in K vrs KQ or KR endgames (to trigger simple endgame scoring that pushes enemy king to a corner).
     // Want to ensure simple endgame score > (queen material + position + mobility - enemy pawn material - enemy pawn position).
@@ -78,17 +78,17 @@ public sealed class EvalConfig
     public int EgKingEscortedPassedPawn = 12;
     // Piece Mobility
     public int PieceMobilityPowerPer128 = 81;
-    public int MgKnightMobilityScale = 1;
-    public int EgKnightMobilityScale = 6;
+    public int MgKnightMobilityScale = 0;
+    public int EgKnightMobilityScale = 7;
     public int MgBishopMobilityScale = 1;
-    public int EgBishopMobilityScale = 162;
+    public int EgBishopMobilityScale = 160;
     public int MgRookMobilityScale = 44;
     public int EgRookMobilityScale = 88;
-    public int MgQueenMobilityScale = 72;
-    public int EgQueenMobilityScale = 166;
+    public int MgQueenMobilityScale = 71;
+    public int EgQueenMobilityScale = 165;
     // King Safety
-    public int MgKingSafetyPowerPer128 = 244;
-    public int MgKingSafetyScalePer128 = 84;
+    public int MgKingSafetyPowerPer128 = 245;
+    public int MgKingSafetyScalePer128 = 86;
     public int MgKingSafetyMinorAttackOuterRingPer8 = 8;
     public int MgKingSafetyMinorAttackInnerRingPer8 = 31;
     public int MgKingSafetyRookAttackOuterRingPer8 = 12;
@@ -98,15 +98,15 @@ public sealed class EvalConfig
     public int MgKingSafetySemiOpenFilePer8 = 30;
     public int MgKingSafetyPawnShieldPer8 = 8;
     // Threats
-    public int MgPawnThreatenMinor = 54;
-    public int EgPawnThreatenMinor = 0;
-    public int MgPawnThreatenMajor = 74;
-    public int EgPawnThreatenMajor = 0;
-    public int MgMinorThreatenMajor = 60;
-    public int EgMinorThreatenMajor = 0;
+    public int MgPawnThreatenMinor = 35;
+    public int EgPawnThreatenMinor = 49;
+    public int MgPawnThreatenMajor = 59;
+    public int EgPawnThreatenMajor = 32;
+    public int MgMinorThreatenMajor = 36;
+    public int EgMinorThreatenMajor = 34;
     // Minor Pieces
     public int MgBishopPair = 42;
-    public int EgBishopPair = 85;
+    public int EgBishopPair = 82;
     // Endgame Scale
     public int EgScaleBishopAdvantagePer128 = 20;
     public int EgScaleOppBishopsPerPassedPawn = 38;

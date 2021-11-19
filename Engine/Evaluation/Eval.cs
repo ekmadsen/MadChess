@@ -897,7 +897,7 @@ public sealed class Eval
             return;
         }
         // All Other Endgames
-        _staticScore.EgScalePer128 = (winningPawnCount * Config.EgScaleWinningPerPawn);
+        _staticScore.EgScalePer128 = (winningPawnCount * Config.EgScaleWinningPerPawn) + 128;
     }
 
 
@@ -910,7 +910,7 @@ public sealed class Eval
     {
         var plyCount = (score > 0) ? StaticScore.Max - score : -StaticScore.Max - score;
         // Convert plies to full moves.
-        var quotient = Math.DivRem(plyCount, 2, out var remainder);
+        var (quotient, remainder) = Math.DivRem(plyCount, 2);
         return quotient + remainder;
     }
 
