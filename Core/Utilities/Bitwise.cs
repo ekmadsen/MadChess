@@ -11,7 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Numerics; // Enables CPU intrinsics (popcount and bitscan).  Falls back to software implementation for CPU that lack the intrinsic operation.
+using System.Numerics; // Enables CPU intrinsics (popcount and bitscan).  Falls back to software implementation when CPU lacks the intrinsic operation.
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 
