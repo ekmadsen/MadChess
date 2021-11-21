@@ -192,7 +192,7 @@ public sealed class Position
         if ((EnPassantSquare != Square.Illegal) && ((Board.SquareMasks[(int)EnPassantSquare] & toSquareMask) > 0) && (moveGeneration != MoveGeneration.OnlyNonCaptures))
         {
             var enPassantAttackers = Board.EnPassantAttackerMasks[(int)EnPassantSquare] & pawns;
-            while ((fromSquare = Bitwise.FirstSetSquare(enPassantAttackers)) != Square.Illegal)
+            while ((fromSquare = Bitwise.PopFirstSetSquare(ref enPassantAttackers)) != Square.Illegal)
             {
                 // Capture pawn en passant.
                 move = Move.Null;
@@ -204,10 +204,9 @@ public sealed class Position
                 Move.SetIsPawnMove(ref move, true);
                 Moves[MoveIndex] = move;
                 MoveIndex++;
-                Bitwise.ClearBit(ref enPassantAttackers, fromSquare);
             }
         }
-        while ((fromSquare = Bitwise.FirstSetSquare(pawns)) != Square.Illegal)
+        while ((fromSquare = Bitwise.PopFirstSetSquare(ref pawns)) != Square.Illegal)
         {
             ulong pawnDestinations;
             Square toSquare;
@@ -216,15 +215,10 @@ public sealed class Position
             {
                 // Pawns may move forward one square (or two if on initial square) if forward squares are unoccupied.
                 pawnDestinations = pawnMoveMasks[(int)fromSquare] & unoccupiedSquares & toSquareMask;
-                while ((toSquare = Bitwise.FirstSetSquare(pawnDestinations)) != Square.Illegal)
+                while ((toSquare = Bitwise.PopFirstSetSquare(ref pawnDestinations)) != Square.Illegal)
                 {
                     var doubleMove = Board.SquareDistances[(int)fromSquare][(int)toSquare] == 2;
-                    if (doubleMove && ((Occupancy & pawnDoubleMoveMasks[(int)fromSquare]) > 0))
-                    {
-                        // Double move is blocked.
-                        Bitwise.ClearBit(ref pawnDestinations, toSquare);
-                        continue;
-                    }
+                    if (doubleMove && ((Occupancy & pawnDoubleMoveMasks[(int)fromSquare]) > 0)) continue; // Double move is blocked.
                     toSquareRank = ranks[(int)toSquare];
                     if (toSquareRank < 7)
                     {
@@ -250,14 +244,13 @@ public sealed class Position
                             MoveIndex++;
                         }
                     }
-                    Bitwise.ClearBit(ref pawnDestinations, toSquare);
                 }
             }
             if (moveGeneration != MoveGeneration.OnlyNonCaptures)
             {
                 // Pawns may attack diagonally forward one square if occupied by enemy.
                 pawnDestinations = pawnAttackMasks[(int)fromSquare] & enemyOccupiedSquares & toSquareMask;
-                while ((toSquare = Bitwise.FirstSetSquare(pawnDestinations)) != Square.Illegal)
+                while ((toSquare = Bitwise.PopFirstSetSquare(ref pawnDestinations)) != Square.Illegal)
                 {
                     toSquareRank = ranks[(int)toSquare];
                     var victim = GetPiece(toSquare);
@@ -288,10 +281,8 @@ public sealed class Position
                             MoveIndex++;
                         }
                     }
-                    Bitwise.ClearBit(ref pawnDestinations, toSquare);
                 }
             }
-            Bitwise.ClearBit(ref pawns, fromSquare);
         }
     }
 
@@ -308,7 +299,7 @@ public sealed class Position
             var unOrEnemyOccupiedSquares = ~ColorOccupancy[(int)ColorToMove];
             var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
             Square fromSquare;
-            while ((fromSquare = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
+            while ((fromSquare = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
                 var pieceDestinations = moveGeneration switch
                 {
@@ -318,7 +309,7 @@ public sealed class Position
                     _ => throw new Exception($"{moveGeneration} move generation not supported.")
                 };
                 Square toSquare;
-                while ((toSquare = Bitwise.FirstSetSquare(pieceDestinations)) != Square.Illegal)
+                while ((toSquare = Bitwise.PopFirstSetSquare(ref pieceDestinations)) != Square.Illegal)
                 {
                     var victim = GetPiece(toSquare);
                     var move = Move.Null;
@@ -328,9 +319,7 @@ public sealed class Position
                     Move.SetCaptureVictim(ref move, victim);
                     Moves[MoveIndex] = move;
                     MoveIndex++;
-                    Bitwise.ClearBit(ref pieceDestinations, toSquare);
                 }
-                Bitwise.ClearBit(ref pieces, fromSquare);
             }
         }
     }
@@ -355,7 +344,7 @@ public sealed class Position
             _ => throw new Exception($"{moveGeneration} move generation not supported.")
         };
         Square toSquare;
-        while ((toSquare = Bitwise.FirstSetSquare(kingDestinations)) != Square.Illegal)
+        while ((toSquare = Bitwise.PopFirstSetSquare(ref kingDestinations)) != Square.Illegal)
         {
             var victim = GetPiece(toSquare);
             move = Move.Null;
@@ -366,7 +355,6 @@ public sealed class Position
             Move.SetIsKingMove(ref move, true);
             Moves[MoveIndex] = move;
             MoveIndex++;
-            Bitwise.ClearBit(ref kingDestinations, toSquare);
         }
         if (moveGeneration != MoveGeneration.OnlyCaptures)
         {
@@ -404,7 +392,7 @@ public sealed class Position
         // Find pieces pinned to own king by enemy rank / file attackers.
         PinnedPieces = 0;
         Square attackerSquare;
-        while ((attackerSquare = Bitwise.FirstSetSquare(enemyRankFileAttackers)) != Square.Illegal)
+        while ((attackerSquare = Bitwise.PopFirstSetSquare(ref enemyRankFileAttackers)) != Square.Illegal)
         {
             var betweenSquares = Board.RankFileBetweenSquares[(int)attackerSquare][(int)ownKingSquare];
             if (betweenSquares == 0)
@@ -423,10 +411,9 @@ public sealed class Position
                     PinnedPieces |= pinnedPieces;
                 }
             }
-            Bitwise.ClearBit(ref enemyRankFileAttackers, attackerSquare);
         }
         // Find pieces pinned to own king by enemy diagonal attackers.
-        while ((attackerSquare = Bitwise.FirstSetSquare(enemyDiagonalAttackers)) != Square.Illegal)
+        while ((attackerSquare = Bitwise.PopFirstSetSquare(ref enemyDiagonalAttackers)) != Square.Illegal)
         {
             var betweenSquares = Board.DiagonalBetweenSquares[(int)attackerSquare][(int)ownKingSquare];
             if (betweenSquares == 0)
@@ -445,7 +432,6 @@ public sealed class Position
                     PinnedPieces |= pinnedPieces;
                 }
             }
-            Bitwise.ClearBit(ref enemyDiagonalAttackers, attackerSquare);
         }
     }
 

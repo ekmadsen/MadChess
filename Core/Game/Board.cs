@@ -1085,11 +1085,7 @@ public sealed class Board
                 _ => throw new Exception($"White king cannot castle to {SquareLocations[(int)toSquare]}.")
             };
         }
-        while ((toSquare = Bitwise.FirstSetSquare(attackedSquaresMask)) != Square.Illegal)
-        {
-            if (IsSquareAttacked(toSquare)) return true;
-            Bitwise.ClearBit(ref attackedSquaresMask, toSquare);
-        }
+        while ((toSquare = Bitwise.PopFirstSetSquare(ref attackedSquaresMask)) != Square.Illegal) if (IsSquareAttacked(toSquare)) return true;
         return false;
     }
 

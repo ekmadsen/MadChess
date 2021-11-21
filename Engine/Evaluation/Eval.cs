@@ -639,12 +639,11 @@ public sealed class Eval
             var piece = PieceHelper.GetPieceOfColor(colorlessPiece, color);
             var pieces = position.PieceBitboards[(int)piece];
             Square square;
-            while ((square = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
+            while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
                 var squareFromWhitePerspective = Board.GetSquareFromWhitePerspective(square, color);
                 _staticScore.MgPieceLocation[(int)color] += _mgPieceLocations[(int)colorlessPiece][(int)squareFromWhitePerspective];
                 _staticScore.EgPieceLocation[(int)color] += _egPieceLocations[(int)colorlessPiece][(int)squareFromWhitePerspective];
-                Bitwise.ClearBit(ref pieces, square);
             }
         }
     }
@@ -661,7 +660,7 @@ public sealed class Eval
         var enemyMinorPieces = position.GetMinorPieces(enemyColor);
         var enemyMajorPieces = position.GetMajorPieces(enemyColor);
         Square square;
-        while ((square = Bitwise.FirstSetSquare(pawns)) != Square.Illegal)
+        while ((square = Bitwise.PopFirstSetSquare(ref pawns)) != Square.Illegal)
         {
             if (IsPassedPawn(position, square, color))
             {
@@ -689,7 +688,6 @@ public sealed class Eval
             _staticScore.EgThreats[(int)color] += minorPiecesAttacked * Config.EgPawnThreatenMinor;
             _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgPawnThreatenMajor;
             _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgPawnThreatenMajor;
-            Bitwise.ClearBit(ref pawns, square);
         }
     }
 
@@ -755,7 +753,7 @@ public sealed class Eval
             var pieces = position.PieceBitboards[(int)piece];
             var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
             Square square;
-            while ((square = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
+            while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
                 var pieceMovesMask = getPieceMovesMask(square, position.Occupancy);
                 var pieceDestinations = pieceMovesMask & unOrEnemyOccupiedSquares;
@@ -774,7 +772,6 @@ public sealed class Eval
                     _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgMinorThreatenMajor;
                     _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgMinorThreatenMajor;
                 }
-                Bitwise.ClearBit(ref pieces, square);
             }
         }
         // Evaluate enemy king near semi-open file.
@@ -825,16 +822,16 @@ public sealed class Eval
         var whiteSquares = 0;
         var blackSquares = 0;
         Square square;
-        while ((square = Bitwise.FirstSetSquare(bishops)) != Square.Illegal)
+        while ((square = Bitwise.PopFirstSetSquare(ref bishops)) != Square.Illegal)
         {
             if (Board.SquareColors[(int)square] == Color.White) whiteSquares++;
             else blackSquares++;
-            Bitwise.ClearBit(ref bishops, square);
-        }
-        if ((whiteSquares > 0) && (blackSquares > 0))
-        {
-            _staticScore.MgBishopPair[(int)color] += Config.MgBishopPair;
-            _staticScore.EgBishopPair[(int)color] += Config.EgBishopPair;
+            if ((whiteSquares > 0) && (blackSquares > 0))
+            {
+                _staticScore.MgBishopPair[(int)color] += Config.MgBishopPair;
+                _staticScore.EgBishopPair[(int)color] += Config.EgBishopPair;
+                return;
+            }
         }
     }
 

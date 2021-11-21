@@ -11,7 +11,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq; // Use LINQ only for Debug.Asserts.
 using System.Numerics; // Enables CPU intrinsics (popcount and bitscan).  Falls back to software implementation for CPU that lack the intrinsic operation.
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
@@ -22,33 +21,10 @@ namespace ErikTheCoder.MadChess.Core.Utilities;
 
 public static class Bitwise
 {
-    // ReSharper disable MemberCanBePrivate.Global
-    // ReSharper disable UnusedMember.Global
-    // ReSharper disable UnusedMember.Local
     public static uint CreateUIntMask(int index)
     {
         Debug.Assert((index >= 0) && (index < 32));
         return 1u << index;
-    }
-
-
-    public static uint CreateUIntMask(int leastSignificantBit, int mostSignificantBit)
-    {
-        Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 32));
-        Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 32));
-        Debug.Assert(leastSignificantBit <= mostSignificantBit);
-        var mask = 0u;
-        for (var index = leastSignificantBit; index <= mostSignificantBit; index++) SetBit(ref mask, index);
-        return mask;
-    }
-
-
-    public static uint CreateUIntMask(int[] indices)
-    {
-        Debug.Assert(indices.All(index => (index >= 0) && (index < 32)));
-        var mask = 0u;
-        for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
-        return mask;
     }
 
 
@@ -72,16 +48,7 @@ public static class Bitwise
         return mask;
     }
 
-
-    public static ulong CreateULongMask(int[] indices)
-    {
-        Debug.Assert(indices.All(index => (index >= 0) && (index < 64)));
-        var mask = 0ul;
-        for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
-        return mask;
-    }
-
-
+    
     public static ulong CreateULongMask(Square[] squares)
     {
         var mask = 0ul;
@@ -94,22 +61,6 @@ public static class Bitwise
     {
         Debug.Assert((index >= 0) && (index < 32));
         return ~CreateUIntMask(index);
-    }
-
-
-    public static uint CreateUIntUnmask(int leastSignificantBit, int mostSignificantBit)
-    {
-        Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 32));
-        Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 32));
-        Debug.Assert(leastSignificantBit <= mostSignificantBit);
-        return ~CreateUIntMask(leastSignificantBit, mostSignificantBit);
-    }
-
-
-    public static uint CreateUIntUnMask(int[] indices)
-    {
-        Debug.Assert(indices.All(index => (index >= 0) && (index < 32)));
-        return ~CreateUIntMask(indices);
     }
 
 
@@ -133,14 +84,6 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetBit(ref uint value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        value |= 1u << index;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SetBit(ref ulong value, int index)
     {
         Debug.Assert((index >= 0) && (index < 64));
@@ -153,7 +96,7 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ClearBit(ref uint value, int index)
+    private static void ClearBit(ref uint value, int index)
     {
         Debug.Assert((index >= 0) && (index < 32));
         value &= ~(1u << index);
@@ -161,39 +104,7 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    
-    private static void ClearBit(ref ulong value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 64));
-        value &= ~(1ul << index);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ClearBit(ref ulong value, Square square) => value &= ~(1ul << (int)square);
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ToggleBit(ref uint value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        value ^= 1u << index;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ToggleBit(ref ulong value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        value ^= 1ul << index;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsBitSet(uint value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        return (value & (1u << index)) > 0;
-    }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -209,19 +120,25 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int CountSetBits(uint value) => BitOperations.PopCount(value);
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CountSetBits(ulong value) => BitOperations.PopCount(value);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int FirstSetBit(uint value) => value == 0 ? -1 : BitOperations.TrailingZeroCount(value);
+    private static int FirstSetBit(uint value) => value == 0 ? -1 : BitOperations.TrailingZeroCount(value);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Square FirstSetSquare(ulong value) => value == 0 ? Square.Illegal : (Square)BitOperations.TrailingZeroCount(value);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Square PopFirstSetSquare(ref ulong value)
+    {
+        if (value == 0) return Square.Illegal;
+        var square = (Square)BitOperations.TrailingZeroCount(value);
+        value &= (value - 1); // Clear the first set square.
+        return square;
+    }
 
 
     public static List<ulong> GetAllPermutations(ulong mask)
@@ -250,7 +167,4 @@ public static class Bitwise
         }
         return permutations;
     }
-    // ReSharper restore UnusedMember.Local
-    // ReSharper restore UnusedMember.Global
-    // ReSharper restore MemberCanBePrivate.Global
 }
