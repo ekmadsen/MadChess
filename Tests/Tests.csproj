@@ -16,28 +16,8 @@
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Library</OutputType>
 		<PackageId>MadChess.Tests</PackageId>
-		<Configurations>Release64;Release64NonPopCount;Release32;Debug</Configurations>
-		<Platforms>x64;x86</Platforms>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)'=='Release64'">
-		<PlatformTarget>x64</PlatformTarget>
-		<DefineConstants>CPU64;POPCOUNT</DefineConstants>
-		<Optimize>true</Optimize>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)'=='Release64NonPopCount'">
-		<PlatformTarget>x64</PlatformTarget>
-		<DefineConstants>CPU64</DefineConstants>
-		<Optimize>true</Optimize>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)'=='Release32'">
-		<PlatformTarget>x86</PlatformTarget>
-		<Optimize>true</Optimize>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
-		<PlatformTarget>x64</PlatformTarget>
-		<DefineConstants>CPU64;POPCOUNT;DEBUG</DefineConstants>
-		<Optimize>false</Optimize>
+		<Configurations>Debug;Release</Configurations>
+		<Platforms>AnyCPU</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>

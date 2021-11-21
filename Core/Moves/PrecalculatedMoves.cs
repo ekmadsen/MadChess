@@ -259,30 +259,22 @@ public sealed class PrecalculatedMoves
             var relevantMoveDestinations = moveDestinations & relevantOccupancyMasks[(int)square];
             var uniqueOccupancies = (int)Math.Pow(2, Bitwise.CountSetBits(relevantMoveDestinations));
             occupancyToMovesMask.EnsureCapacity(uniqueOccupancies);
-            // Generate moves mask for every permutation of relevant occupancy bits.
-            using (var occupancyPermutations = Bitwise.GetAllPermutations(relevantMoveDestinations).GetEnumerator())
+            // Generate moves mask for every permutation of occupancy of the relevant destination squares.
+            var occupancyPermutations = Bitwise.GetAllPermutations(relevantMoveDestinations);
+            foreach (var occupancy in occupancyPermutations)
             {
-                while (occupancyPermutations.MoveNext())
-                {
-                    var occupancy = occupancyPermutations.Current;
-                    if (!occupancyToMovesMask.ContainsKey(occupancy))
-                    {
-                        // Have not yet generated moves for this occupancy mask.
-                        var movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
-                        occupancyToMovesMask.Add(occupancy, movesMask);
-                        if (!uniqueMovesMasks.Contains(movesMask)) uniqueMovesMasks.Add(movesMask);
-                    }
-                }
+                var movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
+                occupancyToMovesMask.Add(occupancy, movesMask);
+                if (!uniqueMovesMasks.Contains(movesMask)) uniqueMovesMasks.Add(movesMask);
             }
-            // Validate enumerator found all permutations of relevant occupancy bits.
             Debug.Assert(occupancyToMovesMask.Count == uniqueOccupancies);
             // Determine bit shift that produces number >= unique occupancies.
             // A stricter condition is number >= unique moves but this requires more computing time to find magic multipliers.
             var shift = 64 - (int)Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
             shifts[(int)square] = shift;
             var magicMultiplier = magicMultipliers[(int)square];
-            if (magicMultiplier == 0) (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, null);
-            else (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, magicMultiplier);
+            var knownMagicMultiplier = magicMultiplier == 0 ? null : (ulong?) magicMultiplier;
+            (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, knownMagicMultiplier);
             writeMessageLine?.Invoke($"{Board.SquareLocations[(int)square],6}  {PieceHelper.GetName(colorlessPiece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[(int)square],16:X16}");
         }
     }
@@ -340,7 +332,7 @@ public sealed class PrecalculatedMoves
                 occupancy = ~Board.FileMasks[0] & ~Board.FileMasks[7];
                 break;
         }
-        // Piece is not on a corner square (handled in code above).
+        // Piece is not on a corner square (handled in above code).
         switch (rank)
         {
             case 0:
