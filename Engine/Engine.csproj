@@ -17,7 +17,7 @@
 		<OutputType>Exe</OutputType>
 		<PackageId>MadChess.Engine</PackageId>
 		<Configurations>Debug;Release</Configurations>
-		<Platforms>AnyCPU</Platforms>
+		<Platforms>AnyCPU;x64;x86</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>

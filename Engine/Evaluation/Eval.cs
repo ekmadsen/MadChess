@@ -460,8 +460,8 @@ public sealed class Eval
                 {
                     case 0 when (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
                         // K vrs KBN
-                        var enemyBishopColor = Board.SquareColors[(int)Bitwise.FirstSetSquare(enemyBishops)];
-                        var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopColor][(int)kingSquare];
+                        var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;
+                        var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
                         _staticScore.EgSimple[(int)enemyColor]  = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                         return true;
                     case 0 when (enemyMajorPieceCount == 1) && (enemyMinorPieceCount == 0):
@@ -818,20 +818,12 @@ public sealed class Eval
     {
         // Bishop Pair
         var bishops = position.GetBishops(color);
-        if (Bitwise.CountSetBits(bishops) < 2) return;
-        var whiteSquares = 0;
-        var blackSquares = 0;
-        Square square;
-        while ((square = Bitwise.PopFirstSetSquare(ref bishops)) != Square.Illegal)
+        var bishopOnWhiteSquare = (bishops & Board.SquareColors[(int)Color.White]) > 0;
+        var bishopOnBlackSquare = (bishops & Board.SquareColors[(int)Color.Black]) > 0;
+        if (bishopOnWhiteSquare && bishopOnBlackSquare)
         {
-            if (Board.SquareColors[(int)square] == Color.White) whiteSquares++;
-            else blackSquares++;
-            if ((whiteSquares > 0) && (blackSquares > 0))
-            {
-                _staticScore.MgBishopPair[(int)color] += Config.MgBishopPair;
-                _staticScore.EgBishopPair[(int)color] += Config.EgBishopPair;
-                return;
-            }
+            _staticScore.MgBishopPair[(int)color] += Config.MgBishopPair;
+            _staticScore.EgBishopPair[(int)color] += Config.EgBishopPair;
         }
     }
 
@@ -885,7 +877,7 @@ public sealed class Eval
         var whiteBishops = position.GetBishops(Color.White);
         var blackBishops = position.GetBishops(Color.Black);
         var oppositeColoredBishops = (Bitwise.CountSetBits(whiteBishops) == 1) && (Bitwise.CountSetBits(blackBishops) == 1) &&
-                                     (Board.SquareColors[(int)Bitwise.FirstSetSquare(whiteBishops)] != Board.SquareColors[(int)Bitwise.FirstSetSquare(blackBishops)]);
+                                     (Bitwise.CountSetBits(Board.SquareColors[(int)Color.White] & (whiteBishops | blackBishops)) == 1);
         if (oppositeColoredBishops && (winningPieceMaterial == Config.MgBishopMaterial) && (losingPieceMaterial == Config.MgBishopMaterial))
         {
             // Sides have opposite colored bishops and no other pieces.

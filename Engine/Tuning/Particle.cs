@@ -12,8 +12,6 @@ using System;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Evaluation;
-using ErikTheCoder.MadChess.Engine.Intelligence;
-using ErikTheCoder.MadChess.Engine.Score;
 
 
 namespace ErikTheCoder.MadChess.Engine.Tuning;
@@ -21,7 +19,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning;
 
 public sealed class Particle
 {
-    public readonly PgnGames PgnGames;
+    public readonly QuietPositions QuietPositions;
     public readonly Parameters Parameters;
     public readonly Parameters BestParameters;
     public double EvaluationError;
@@ -32,9 +30,9 @@ public sealed class Particle
     private readonly double[] _velocities;
         
         
-    public Particle(PgnGames pgnGames, Parameters parameters)
+    public Particle(QuietPositions quietPositions, Parameters parameters)
     {
-        PgnGames = pgnGames;
+        QuietPositions = quietPositions;
         Parameters = parameters;
         BestParameters = parameters.DuplicateWithSameValues();
         EvaluationError = double.MaxValue;
@@ -172,37 +170,27 @@ public sealed class Particle
         
 
     // See http://talkchess.com/forum/viewtopic.php?t=50823&postdays=0&postorder=asc&highlight=texel+tuning&topic_view=flat&start=20.
-    public void CalculateEvaluationError(Board board, Search search, int winScale)
+    public void CalculateEvaluationError(Board board, Eval eval, int winScale)
     {
-        // Sum the square of evaluation error over all games.
+        // Sum the square of evaluation error over all quiet positions.
         double evaluationError = 0;
-        for (var gameIndex = 0; gameIndex < PgnGames.Count; gameIndex++)
+        for (var positionIndex = 0; positionIndex < QuietPositions.Count; positionIndex++)
         {
-            var game = PgnGames[gameIndex];
-            if (game.Result == GameResult.Unknown) continue; // Skip games with unknown results.
-            board.SetPosition(Board.StartPositionFen, true);
-            for (var moveIndex = 0; moveIndex < game.Moves.Count; moveIndex++)
+            var quietPosition = QuietPositions[positionIndex];
+            if (quietPosition.GameResult == GameResult.Unknown) continue; // Skip positions with unknown game results.
+            board.SetPosition(quietPosition.Fen, true);
+            // Get static score and convert to win fraction and compare to game result.
+            var (staticScore, _) = eval.GetStaticScore(board.CurrentPosition);
+            var winFraction = GetWinFraction(staticScore, winScale);
+            // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
+            var result = quietPosition.GameResult switch
             {
-                var move = game.Moves[moveIndex];
-                // Play move.
-                board.PlayMove(move);
-                // Get quiet score.
-                board.NodesExamineTime = long.MaxValue;
-                search.PvInfoUpdate = false;
-                search.Continue = true;
-                var quietScore = search.GetQuietScore(board, 1, 1, -StaticScore.Max, StaticScore.Max);
-                // Convert quiet score to win fraction and compare to game result.
-                var winFraction = GetWinFraction(quietScore, winScale);
-                // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
-                var result = game.Result switch
-                {
-                    GameResult.WhiteWon => board.CurrentPosition.ColorToMove == Color.White ? 1d : 0,
-                    GameResult.Draw => 0.5d,
-                    GameResult.BlackWon => board.CurrentPosition.ColorToMove == Color.Black ? 1d : 0,
-                    _ => throw new InvalidOperationException($"{game.Result} game result not supported.")
-                };
-                evaluationError += Math.Pow(winFraction - result, 2);
-            }
+                GameResult.WhiteWon => board.CurrentPosition.ColorToMove == Color.White ? 1d : 0,
+                GameResult.Draw => 0.5d,
+                GameResult.BlackWon => board.CurrentPosition.ColorToMove == Color.Black ? 1d : 0,
+                _ => throw new InvalidOperationException($"{quietPosition.GameResult} game result not supported.")
+            };
+            evaluationError += Math.Pow(winFraction - result, 2);
         }
         EvaluationError = evaluationError;
         if (EvaluationError < BestEvaluationError)
