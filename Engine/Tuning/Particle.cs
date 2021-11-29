@@ -9,6 +9,7 @@
 
 
 using System;
+using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Evaluation;
@@ -179,7 +180,7 @@ public sealed class Particle
             var quietPosition = QuietPositions[positionIndex];
             if (quietPosition.GameResult == GameResult.Unknown) continue; // Skip positions with unknown game results.
             board.SetPosition(quietPosition.Fen, true);
-            // Get static score and convert to win fraction and compare to game result.
+            // Get static score, convert to win fraction, and compare to game result.
             var (staticScore, _) = eval.GetStaticScore(board.CurrentPosition);
             var winFraction = GetWinFraction(staticScore, winScale);
             // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
@@ -219,7 +220,8 @@ public sealed class Particle
             _velocities[index] = velocity;
         }
     }
-        
 
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static double GetWinFraction(int score, int winScale) => 1d / (1d + Math.Pow(10d, -1d * score / winScale)); // Use a sigmoid function to map score to win fraction.
 }

@@ -35,8 +35,8 @@ public sealed class UciStream : IDisposable
     public const long NodesTimeInterval = 5_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
-    private const int _minWinScale = 800;
-    private const int _maxWinScale = 1000;
+    private const int _minWinScale = 400;
+    private const int _maxWinScale = 800;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
     private Board _board;
     private Stats _stats;
@@ -1016,6 +1016,9 @@ public sealed class UciStream : IDisposable
         var moveHistory = new MoveHistory();
         var eval = new Eval(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
         var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, DisplayStats, WriteMessageLine);
+        board.NodesExamineTime = long.MaxValue;
+        search.PvInfoUpdate = false;
+        search.Continue = true;
         var quietPositions = 0;
         // Create or overwrite output file of quiet positions.
         using (var fileStream = File.Open(quietFilename, FileMode.Create, FileAccess.Write, FileShare.Read))
@@ -1033,9 +1036,6 @@ public sealed class UciStream : IDisposable
                     board.PlayMove(move);
                     if (board.CurrentPosition.KingInCheck) continue; // Do not evaluate positions with king in check.
                     // Get static and quiet scores.
-                    board.NodesExamineTime = long.MaxValue;
-                    search.PvInfoUpdate = false;
-                    search.Continue = true;
                     var (staticScore, _) = eval.GetStaticScore(board.CurrentPosition);
                     var quietScore = search.GetQuietScore(board, 1, 1, -StaticScore.Max, StaticScore.Max);
                     if (FastMath.Abs(staticScore - quietScore) <= margin)
@@ -1061,12 +1061,12 @@ public sealed class UciStream : IDisposable
     private void Tune(IList<string> tokens)
     {
         _commandStopwatch.Restart();
-        var pgnFilename = tokens[1].Trim();
+        var quietFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 895 for Engines3200EloQuiet.txt.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 731 for MadChessCompetitorsBlitzQuiet.txt.
         var iterations = int.Parse(tokens[5].Trim());
-        var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, WriteMessageLine);
+        var particleSwarms = new ParticleSwarms(quietFilename, particleSwarmsCount, particlesPerSwarm, winScale, WriteMessageLine);
         particleSwarms.Optimize(iterations);
         _commandStopwatch.Stop();
         WriteMessageLine();
