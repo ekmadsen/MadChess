@@ -882,7 +882,7 @@ public sealed class Eval
         {
             // Sides have opposite colored bishops and no other pieces.
             var winningPassedPawns = Bitwise.CountSetBits(_passedPawns[(int)winningColor]);
-            _staticScore.EgScalePer128 = (winningPassedPawns * Config.EgScaleOppBishopsPerPassedPawn);
+            _staticScore.EgScalePer128 = winningPassedPawns * Config.EgScaleOppBishopsPerPassedPawn;
             return;
         }
         // All Other Endgames
