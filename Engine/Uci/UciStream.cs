@@ -1064,7 +1064,7 @@ public sealed class UciStream : IDisposable
         var quietFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 772 for MadChessBulletCompetitorsQuiet.txt.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 774 for MadChessBulletCompetitorsQuiet.txt.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(quietFilename, particleSwarmsCount, particlesPerSwarm, winScale, WriteMessageLine);
         particleSwarms.Optimize(iterations);

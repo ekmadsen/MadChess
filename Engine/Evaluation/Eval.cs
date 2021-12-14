@@ -465,6 +465,7 @@ public sealed class Eval
                         _staticScore.EgSimple[(int)enemyColor]  = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                         return true;
                     case 0 when (enemyMajorPieceCount == 1) && (enemyMinorPieceCount == 0):
+                        // TODO: Consider simple endgame scoring for bare king (not just K vrs KQ or KR).
                         // K vrs KQ or KR
                         _staticScore.EgSimple[(int)enemyColor] = Config.SimpleEndgame - Board.DistanceToNearestCorner[(int)kingSquare] - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                         return true;
