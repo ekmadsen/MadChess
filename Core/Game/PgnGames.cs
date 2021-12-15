@@ -66,8 +66,8 @@ public sealed class PgnGames : List<PgnGame>
                         var startPosition = line.IndexOf("\"", resultTag.Length, StringComparison.OrdinalIgnoreCase) + 1;
                         var endPosition = line.IndexOf("\"", startPosition, StringComparison.OrdinalIgnoreCase) - 1;
                         var length = endPosition - startPosition + 1;
-                        var gameResultText = line.Substring(startPosition, length);
-                        result = gameResultText switch
+                        var resultText = line.Substring(startPosition, length);
+                        result = resultText switch
                         {
                             "1-0" => GameResult.WhiteWon,
                             "1/2-1/2" => GameResult.Draw,

@@ -63,6 +63,7 @@ public sealed class Eval
     private readonly int[][] _mgPieceLocations; // [colorlessPiece][square)]
     private readonly int[][] _egPieceLocations; // [colorlessPiece][square)]
     // Passed Pawns
+    private readonly ulong[] _passedPawns; // [color]
     private readonly int[] _mgPassedPawns; // [rank]
     private readonly int[] _egPassedPawns; // [rank]
     private readonly int[] _egFreePassedPawns; // [rank]
@@ -114,6 +115,7 @@ public sealed class Eval
             new int[15], // Rook
             new int[28]  // Queen
         };
+        _passedPawns = new ulong[2];
         _mgPassedPawns = new int[8];
         _egPassedPawns = new int[8];
         _egFreePassedPawns = new int[8];
@@ -382,7 +384,7 @@ public sealed class Eval
         // TODO: Handicap knowledge of checkmates and endgames when in limited strength mode.
         Debug.Assert(!position.KingInCheck);
         _stats.Evaluations++;
-        _staticScore.Reset();
+        Reset();
         if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position, Color.Black))
         {
             // Position is a simple endgame.
@@ -458,11 +460,12 @@ public sealed class Eval
                 {
                     case 0 when (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
                         // K vrs KBN
-                        var enemyBishopColor = Board.SquareColors[(int)Bitwise.FirstSetSquare(enemyBishops)];
-                        var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopColor][(int)kingSquare];
+                        var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;
+                        var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
                         _staticScore.EgSimple[(int)enemyColor]  = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                         return true;
                     case 0 when (enemyMajorPieceCount == 1) && (enemyMinorPieceCount == 0):
+                        // TODO: Consider simple endgame scoring for bare king (not just K vrs KQ or KR).
                         // K vrs KQ or KR
                         _staticScore.EgSimple[(int)enemyColor] = Config.SimpleEndgame - Board.DistanceToNearestCorner[(int)kingSquare] - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                         return true;
@@ -637,12 +640,11 @@ public sealed class Eval
             var piece = PieceHelper.GetPieceOfColor(colorlessPiece, color);
             var pieces = position.PieceBitboards[(int)piece];
             Square square;
-            while ((square = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
+            while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
                 var squareFromWhitePerspective = Board.GetSquareFromWhitePerspective(square, color);
                 _staticScore.MgPieceLocation[(int)color] += _mgPieceLocations[(int)colorlessPiece][(int)squareFromWhitePerspective];
                 _staticScore.EgPieceLocation[(int)color] += _egPieceLocations[(int)colorlessPiece][(int)squareFromWhitePerspective];
-                Bitwise.ClearBit(ref pieces, square);
             }
         }
     }
@@ -659,11 +661,11 @@ public sealed class Eval
         var enemyMinorPieces = position.GetMinorPieces(enemyColor);
         var enemyMajorPieces = position.GetMajorPieces(enemyColor);
         Square square;
-        while ((square = Bitwise.FirstSetSquare(pawns)) != Square.Illegal)
+        while ((square = Bitwise.PopFirstSetSquare(ref pawns)) != Square.Illegal)
         {
             if (IsPassedPawn(position, square, color))
             {
-                _staticScore.PassedPawnCount[(int)color]++;
+                _passedPawns[(int)color] |= Board.SquareMasks[(int)square];
                 var rank = Board.Ranks[(int)color][(int)square];
                 _staticScore.EgKingEscortedPassedPawns[(int)color] += (Board.SquareDistances[(int)square][(int)enemyKingSquare] - Board.SquareDistances[(int)square][(int)kingSquare]) * Config.EgKingEscortedPassedPawn;
                 if (IsFreePawn(position, square, color))
@@ -681,9 +683,12 @@ public sealed class Eval
             }
             // Evaluate threats.
             var pawnAttacks = Board.PawnAttackMasks[(int)color][(int)square];
-            _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pawnAttacks & enemyMinorPieces) * Config.MgPawnThreatenMinor;
-            _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pawnAttacks & enemyMajorPieces) * Config.MgPawnThreatenMajor;
-            Bitwise.ClearBit(ref pawns, square);
+            var minorPiecesAttacked = Bitwise.CountSetBits(pawnAttacks & enemyMinorPieces);
+            var majorPiecesAttacked = Bitwise.CountSetBits(pawnAttacks & enemyMajorPieces);
+            _staticScore.MgThreats[(int)color] += minorPiecesAttacked * Config.MgPawnThreatenMinor;
+            _staticScore.EgThreats[(int)color] += minorPiecesAttacked * Config.EgPawnThreatenMinor;
+            _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgPawnThreatenMajor;
+            _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgPawnThreatenMajor;
         }
     }
 
@@ -749,7 +754,7 @@ public sealed class Eval
             var pieces = position.PieceBitboards[(int)piece];
             var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
             Square square;
-            while ((square = Bitwise.FirstSetSquare(pieces)) != Square.Illegal)
+            while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
                 var pieceMovesMask = getPieceMovesMask(square, position.Occupancy);
                 var pieceDestinations = pieceMovesMask & unOrEnemyOccupiedSquares;
@@ -764,9 +769,10 @@ public sealed class Eval
                 if (colorlessPiece < ColorlessPiece.Rook)
                 {
                     // Evaluate threats.
-                    _staticScore.MgThreats[(int)color] += Bitwise.CountSetBits(pieceMovesMask & enemyMajorPieces) * Config.MgMinorThreatenMajor;
+                    var majorPiecesAttacked = Bitwise.CountSetBits(pieceMovesMask & enemyMajorPieces);
+                    _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgMinorThreatenMajor;
+                    _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgMinorThreatenMajor;
                 }
-                Bitwise.ClearBit(ref pieces, square);
             }
         }
         // Evaluate enemy king near semi-open file.
@@ -812,8 +818,10 @@ public sealed class Eval
     private void EvaluateMinorPieces(Position position, Color color)
     {
         // Bishop Pair
-        var bishopCount = Bitwise.CountSetBits(position.GetBishops(color));
-        if (bishopCount >= 2)
+        var bishops = position.GetBishops(color);
+        var bishopOnWhiteSquare = (bishops & Board.SquareColors[(int)Color.White]) > 0;
+        var bishopOnBlackSquare = (bishops & Board.SquareColors[(int)Color.Black]) > 0;
+        if (bishopOnWhiteSquare && bishopOnBlackSquare)
         {
             _staticScore.MgBishopPair[(int)color] += Config.MgBishopPair;
             _staticScore.EgBishopPair[(int)color] += Config.EgBishopPair;
@@ -846,40 +854,40 @@ public sealed class Eval
     }
 
 
-    // TODO: Prevent endgame scale > 1x.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DetermineEndgameScale(Position position)
     {
-        // Use middlegame material values because they are constant (endgame material values are tuned).
-        // Determine which color is winning the endgame.
+        // Determine which side is winning the endgame.
         var winningColor = _staticScore.GetEg(Color.White) >= _staticScore.GetEg(Color.Black) ? Color.White : Color.Black;
         var losingColor = 1 - winningColor;
+        // Count pawns and determine material difference between sides (excluding pawns).
+        // Use middlegame material values because they are constant (endgame material values are tuned).
         var winningPawnCount = Bitwise.CountSetBits(position.GetPawns(winningColor));
-        var winningPassedPawns = _staticScore.PassedPawnCount[(int)winningColor];
         var winningPieceMaterial = _staticScore.MgPieceMaterial[(int)winningColor];
         var losingPieceMaterial = _staticScore.MgPieceMaterial[(int)losingColor];
-        var whiteBishops = position.GetBishops(Color.White);
-        var blackBishops = position.GetBishops(Color.Black);
-        var oppositeColoredBishops = (Bitwise.CountSetBits(whiteBishops) == 1) && (Bitwise.CountSetBits(blackBishops) == 1) &&
-                                     (Board.SquareColors[(int)Bitwise.FirstSetSquare(whiteBishops)] != Board.SquareColors[(int)Bitwise.FirstSetSquare(blackBishops)]);
         var pieceMaterialDiff = winningPieceMaterial - losingPieceMaterial;
         if ((winningPawnCount == 0) && (pieceMaterialDiff <= Config.MgBishopMaterial))
         {
             // Winning side has no pawns and is up by a bishop or less.
             _staticScore.EgScalePer128 = winningPieceMaterial >= Config.MgRookMaterial
-                ? Config.EgBishopAdvantagePer128 // Winning side has a rook or more.
+                ? Config.EgScaleBishopAdvantagePer128 // Winning side has a rook or more.
                 : 0; // Winning side has less than a rook.
+            return;
         }
-        else if (oppositeColoredBishops && (winningPieceMaterial == Config.MgBishopMaterial) && (losingPieceMaterial == Config.MgBishopMaterial))
+        // Determine if sides have opposite colored bishops.
+        var whiteBishops = position.GetBishops(Color.White);
+        var blackBishops = position.GetBishops(Color.Black);
+        var oppositeColoredBishops = (Bitwise.CountSetBits(whiteBishops) == 1) && (Bitwise.CountSetBits(blackBishops) == 1) &&
+                                     (Bitwise.CountSetBits(Board.SquareColors[(int)Color.White] & (whiteBishops | blackBishops)) == 1);
+        if (oppositeColoredBishops && (winningPieceMaterial == Config.MgBishopMaterial) && (losingPieceMaterial == Config.MgBishopMaterial))
         {
             // Sides have opposite colored bishops and no other pieces.
-            _staticScore.EgScalePer128 = (winningPassedPawns * Config.EgOppBishopsPerPassedPawn) + Config.EgOppBishopsPer128;
+            var winningPassedPawns = Bitwise.CountSetBits(_passedPawns[(int)winningColor]);
+            _staticScore.EgScalePer128 = winningPassedPawns * Config.EgScaleOppBishopsPerPassedPawn;
+            return;
         }
-        else
-        {
-            // All Other Endgames
-            _staticScore.EgScalePer128 = (winningPawnCount * Config.EgWinningPerPawn) + 128;
-        }
+        // All Other Endgames
+        _staticScore.EgScalePer128 = (winningPawnCount * Config.EgScaleWinningPerPawn) + 128;
     }
 
 
@@ -892,7 +900,7 @@ public sealed class Eval
     {
         var plyCount = (score > 0) ? StaticScore.Max - score : -StaticScore.Max - score;
         // Convert plies to full moves.
-        var quotient = Math.DivRem(plyCount, 2, out var remainder);
+        var (quotient, remainder) = Math.DivRem(plyCount, 2);
         return quotient + remainder;
     }
 
@@ -1001,6 +1009,15 @@ public sealed class Eval
     private static void ShowParameterArray(int[] parameters, StringBuilder stringBuilder)
     {
         for (var index = 0; index < parameters.Length; index++) stringBuilder.Append(parameters[index].ToString("+000;-000").PadRight(5));
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Reset()
+    {
+        _staticScore.Reset();
+        _passedPawns[(int)Color.White] = 0;
+        _passedPawns[(int)Color.Black] = 0;
     }
 
 

@@ -8,14 +8,12 @@
 // +------------------------------------------------------------------------------+
 
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq; // Use LINQ only for Debug.Asserts.
+using System.Numerics; // Enables CPU intrinsics (popcount and bitscan).  Falls back to software implementation when CPU lacks the intrinsic operation.
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
-#if POPCOUNT
-using System.Numerics;
-#endif
 
 
 namespace ErikTheCoder.MadChess.Core.Utilities;
@@ -23,54 +21,10 @@ namespace ErikTheCoder.MadChess.Core.Utilities;
 
 public static class Bitwise
 {
-#if (!POPCOUNT)
-    private const ulong _deBruijnSequence = 0x37E84A99DAE458F;
-    private static readonly int[] _multiplyDeBruijnBitPosition;
-
-
-    static Bitwise()
-    {
-        _multiplyDeBruijnBitPosition = new[]
-        {
-            00, 01, 17, 02, 18, 50, 03, 57,
-            47, 19, 22, 51, 29, 04, 33, 58,
-            15, 48, 20, 27, 25, 23, 52, 41,
-            54, 30, 38, 05, 43, 34, 59, 08,
-            63, 16, 49, 56, 46, 21, 28, 32,
-            14, 26, 24, 40, 53, 37, 42, 07,
-            62, 55, 45, 31, 13, 39, 36, 06,
-            61, 44, 12, 35, 60, 11, 10, 09
-        };
-    }
-#endif
-
-
-    // ReSharper disable MemberCanBePrivate.Global
-    // ReSharper disable UnusedMember.Global
     public static uint CreateUIntMask(int index)
     {
         Debug.Assert((index >= 0) && (index < 32));
         return 1u << index;
-    }
-
-
-    public static uint CreateUIntMask(int leastSignificantBit, int mostSignificantBit)
-    {
-        Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 32));
-        Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 32));
-        Debug.Assert(leastSignificantBit <= mostSignificantBit);
-        var mask = 0u;
-        for (var index = leastSignificantBit; index <= mostSignificantBit; index++) SetBit(ref mask, index);
-        return mask;
-    }
-
-
-    public static uint CreateUIntMask(int[] indices)
-    {
-        var mask = 0u;
-        for (var index = 0; index < indices.Length; index++) SetBit(ref mask, indices[index]);
-        Debug.Assert(indices.All(index => (index >= 0) && (index < 32)));
-        return mask;
     }
 
 
@@ -94,7 +48,7 @@ public static class Bitwise
         return mask;
     }
 
-
+    
     public static ulong CreateULongMask(Square[] squares)
     {
         var mask = 0ul;
@@ -107,22 +61,6 @@ public static class Bitwise
     {
         Debug.Assert((index >= 0) && (index < 32));
         return ~CreateUIntMask(index);
-    }
-
-
-    public static uint CreateUIntUnmask(int leastSignificantBit, int mostSignificantBit)
-    {
-        Debug.Assert((leastSignificantBit >= 0) && (leastSignificantBit < 32));
-        Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 32));
-        Debug.Assert(leastSignificantBit <= mostSignificantBit);
-        return ~CreateUIntMask(leastSignificantBit, mostSignificantBit);
-    }
-
-
-    public static uint CreateUIntUnMask(int[] indices)
-    {
-        Debug.Assert(indices.All(index => (index >= 0) && (index < 32)));
-        return ~CreateUIntMask(indices);
     }
 
 
@@ -146,14 +84,6 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetBit(ref uint value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        value |= 1u << index;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SetBit(ref ulong value, int index)
     {
         Debug.Assert((index >= 0) && (index < 64));
@@ -166,46 +96,7 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ClearBit(ref uint value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        value &= ~(1u << index);
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ClearBit(ref ulong value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 64));
-        value &= ~(1ul << index);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ClearBit(ref ulong value, Square square) => value &= ~(1ul << (int)square);
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ToggleBit(ref uint value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        value ^= 1u << index;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ToggleBit(ref ulong value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        value ^= 1ul << index;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsBitSet(uint value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        return (value & (1u << index)) > 0;
-    }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -220,87 +111,57 @@ public static class Bitwise
     public static bool IsBitSet(ulong value, Square square) => (value & (1ul << (int)square)) > 0;
 
 
-#if POPCOUNT
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int CountSetBits(uint value) => BitOperations.PopCount(value);
-#else
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int CountSetBits(uint value)
-    {
-        var count = 0;
-        while (value > 0)
-        {
-            count++;
-            value &= value - 1u;
-        }
-        Debug.Assert((count >= 0) && (count <= _intBits));
-        return count;
-    }
-#endif
-
-
-#if POPCOUNT
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CountSetBits(ulong value) => BitOperations.PopCount(value);
-#else
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int CountSetBits(ulong value)
+    private static int PopFirstSetBit(ref uint value)
     {
-        var count = 0;
-        while (value > 0)
-        {
-            count++;
-            value &= value - 1ul;
-        }
-        Debug.Assert((count >= 0) && (count <= 64));
-        return count;
+        if (value == 0) return -1;
+        var bit = BitOperations.TrailingZeroCount(value);
+        value &= (value - 1); // Clear the first set bit.
+        return bit;
     }
-#endif
 
 
-#if POPCOUNT
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Square FirstSetSquare(ulong value) => value == 0 ? Square.Illegal : (Square)BitOperations.TrailingZeroCount(value);
-#else
-    // See https://stackoverflow.com/questions/37083402/fastest-way-to-get-last-significant-bit-position-in-a-ulong-c
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Square FirstSetSquare(ulong value)
+    public static Square PopFirstSetSquare(ref ulong value)
     {
-        return value == 0 ? Square.Illegal : (Square)_multiplyDeBruijnBitPosition[((ulong)((long)value & -(long)value) * _deBruijnSequence) >> 58];
-    }
-#endif
-
-
-    public static IEnumerable<ulong> GetAllPermutations(ulong mask)
-    {
-        var setBits = new List<int>();
-        for (var index = 0; index < 64; index++) if (IsBitSet(mask, index)) setBits.Add(index);
-        return GetAllPermutations(setBits, 0, 0);
+        if (value == 0) return Square.Illegal;
+        var square = (Square)BitOperations.TrailingZeroCount(value);
+        value &= (value - 1); // Clear the first set square.
+        return square;
     }
 
 
-    private static IEnumerable<ulong> GetAllPermutations(List<int> setBits, int index, ulong value)
+    public static List<ulong> GetAllPermutations(ulong mask)
     {
-        SetBit(ref value, setBits[index]);
-        yield return value;
-        var index2 = index + 1;
-        if (index2 < setBits.Count)
+        var maskSetBitCount = CountSetBits(mask);
+        Debug.Assert(maskSetBitCount <= 14); // Greatest number of moves in rank / file or diagonal direction.
+        // Determine which bits are set in the mask.
+        var maskSetBits = new List<int>();
+        for (var maskIndex = 0; maskIndex < 64; maskIndex++) if (IsBitSet(mask, maskIndex)) maskSetBits.Add(maskIndex);
+        // The binary representation of integers from 0 to ((2 Pow n) - 1) contains all permutations of n bits.
+        var permutationCount = (int)Math.Pow(2, maskSetBitCount);
+        var permutations = new List<ulong>(permutationCount);
+        for (var index = 0; index < permutationCount; index++)
         {
-            using (var occupancyPermutations = GetAllPermutations(setBits, index2, value).GetEnumerator())
+            var permutationIndices = (uint) index;
+            var permutation = 0ul;
+            // Map the permutation index to the mask index and set the bit located at the mask index.
+            int permutationIndex;
+            while ((permutationIndex = PopFirstSetBit(ref permutationIndices)) >= 0)
             {
-                while (occupancyPermutations.MoveNext()) yield return occupancyPermutations.Current;
+                var maskIndex = maskSetBits[permutationIndex];
+                SetBit(ref permutation, maskIndex);
             }
+            permutations.Add(permutation);
         }
-        ClearBit(ref value, setBits[index]);
-        yield return value;
-        if (index2 < setBits.Count)
-        {
-            using (var occupancyPermutations = GetAllPermutations(setBits, index2, value).GetEnumerator())
-            {
-                while (occupancyPermutations.MoveNext()) yield return occupancyPermutations.Current;
-            }
-        }
+        return permutations;
     }
-    // ReSharper restore UnusedMember.Global
-    // ReSharper restore MemberCanBePrivate.Global
 }

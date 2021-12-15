@@ -24,7 +24,6 @@ public sealed class Board
     public const string StartPositionFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     public static readonly int[] Files; // [square]
     public static readonly int[][] Ranks; // [color][square]
-    public static readonly Color[] SquareColors; // [square]
     public static readonly int[][] SquareDistances; // [square1][square2]
     public static readonly int[] DistanceToCentralSquares; // [square]
     public static readonly int[] DistanceToNearestCorner; // [square]
@@ -35,6 +34,7 @@ public sealed class Board
     public static readonly ulong[] WhiteRankMasks; // [rank]
     public static readonly ulong AllSquaresMask;
     public static readonly ulong EdgeSquaresMask;
+    public static readonly ulong[] SquareColors; // [color]
     public static readonly ulong[][] CastleEmptySquaresMask; // [color][boardSide]
     public static readonly Square[] CastleFromSquares; // [color]
     public static readonly Square[][] CastleToSquares; // [color][boardSide]
@@ -148,27 +148,16 @@ public sealed class Board
             new[] {Square.A8, Square.H1},
             new[] {Square.H8, Square.A1}
         };
-        SquareColors = new[]
-        {
-            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
-            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
-            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
-            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
-            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
-            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
-            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
-            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White
-        };
         // Determine distances between squares.
         SquareDistances = new int[64][];
-        for (var square1 = 0; square1 < 64; square1++)
+        for (var square1 = Square.A8; square1 < Square.Illegal; square1++)
         {
-            SquareDistances[square1] = new int[64];
-            for (var square2 = 0; square2 < 64; square2++)
+            SquareDistances[(int)square1] = new int[64];
+            for (var square2 = Square.A8; square2 < Square.Illegal; square2++)
             {
-                var fileDistance = Math.Abs(Files[square1] - Files[square2]);
-                var rankDistance = Math.Abs(Ranks[(int)Color.White][square1] - Ranks[(int)Color.White][square2]);
-                SquareDistances[square1][square2] = Math.Max(fileDistance, rankDistance);
+                var fileDistance = Math.Abs(Files[(int)square1] - Files[(int)square2]);
+                var rankDistance = Math.Abs(Ranks[(int)Color.White][(int)square1] - Ranks[(int)Color.White][(int)square2]);
+                SquareDistances[(int)square1][(int)square2] = Math.Max(fileDistance, rankDistance);
             }
         }
         // Determine distances to central and nearest corner squares.
@@ -231,6 +220,26 @@ public sealed class Board
         }
         AllSquaresMask = Bitwise.CreateULongMask(0, 63);
         EdgeSquaresMask = FileMasks[0] | WhiteRankMasks[7] | FileMasks[7] | WhiteRankMasks[0];
+        // Determine square colors.
+        var squareColors = new[]
+        {
+            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White
+        };
+        SquareColors = new ulong[2];
+        for (var square = Square.A8; square < Square.Illegal; square++)
+        {
+            var whiteSquare = squareColors[(int)square] == Color.White;
+            var squareMask = SquareMasks[(int)square];
+            SquareColors[(int)Color.White] |= whiteSquare ? squareMask : 0ul;
+            SquareColors[(int)Color.Black] |= whiteSquare ? 0ul : squareMask;
+        }
         // Create castling masks.
         CastleEmptySquaresMask = new[]
         {
@@ -1085,11 +1094,7 @@ public sealed class Board
                 _ => throw new Exception($"White king cannot castle to {SquareLocations[(int)toSquare]}.")
             };
         }
-        while ((toSquare = Bitwise.FirstSetSquare(attackedSquaresMask)) != Square.Illegal)
-        {
-            if (IsSquareAttacked(toSquare)) return true;
-            Bitwise.ClearBit(ref attackedSquaresMask, toSquare);
-        }
+        while ((toSquare = Bitwise.PopFirstSetSquare(ref attackedSquaresMask)) != Square.Illegal) if (IsSquareAttacked(toSquare)) return true;
         return false;
     }
 
