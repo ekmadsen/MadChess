@@ -96,14 +96,6 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ClearBit(ref uint value, int index)
-    {
-        Debug.Assert((index >= 0) && (index < 32));
-        value &= ~(1u << index);
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ClearBit(ref ulong value, Square square) => value &= ~(1ul << (int)square);
 
 
@@ -124,7 +116,13 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int FirstSetBit(uint value) => value == 0 ? -1 : BitOperations.TrailingZeroCount(value);
+    private static int PopFirstSetBit(ref uint value)
+    {
+        if (value == 0) return -1;
+        var bit = BitOperations.TrailingZeroCount(value);
+        value &= (value - 1); // Clear the first set bit.
+        return bit;
+    }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -157,11 +155,10 @@ public static class Bitwise
             var permutation = 0ul;
             // Map the permutation index to the mask index and set the bit located at the mask index.
             int permutationIndex;
-            while ((permutationIndex = FirstSetBit(permutationIndices)) >= 0)
+            while ((permutationIndex = PopFirstSetBit(ref permutationIndices)) >= 0)
             {
                 var maskIndex = maskSetBits[permutationIndex];
                 SetBit(ref permutation, maskIndex);
-                ClearBit(ref permutationIndices, permutationIndex);
             }
             permutations.Add(permutation);
         }
