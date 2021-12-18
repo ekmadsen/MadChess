@@ -29,6 +29,7 @@ public sealed class Eval
     private const int _strongSocialElo = 1400;
     private const int _clubElo = 1600;
     private const int _strongClubElo = 1800;
+    private const int _egKingCornerFactor = 32;
     private readonly Stats _stats;
     private readonly EvalConfig _defaultConfig;
     private readonly Delegates.IsRepeatPosition _isRepeatPosition;
@@ -432,45 +433,35 @@ public sealed class Eval
             _staticScore.EgScalePer128 = 0;
             return true;
         }
-        var knightCount = Bitwise.CountSetBits(position.GetKnights(color));
-        var bishopCount = Bitwise.CountSetBits(position.GetBishops(color));
-        var minorPieceCount = knightCount + bishopCount;
-        var majorPieceCount = Bitwise.CountSetBits(position.GetRooks(color) | position.GetQueens(color));
+        var minorPieceCount = Bitwise.CountSetBits(position.GetMinorPieces(color));
+        var majorPieceCount = Bitwise.CountSetBits(position.GetMajorPieces(color));
         var pawnsAndPiecesCount = pawnCount + minorPieceCount + majorPieceCount;
         var enemyKnightCount = Bitwise.CountSetBits(position.GetKnights(enemyColor));
         var enemyBishops = position.GetBishops(enemyColor);
         var enemyBishopCount = Bitwise.CountSetBits(enemyBishops);
         var enemyMinorPieceCount = enemyKnightCount + enemyBishopCount;
-        var enemyMajorPieceCount = Bitwise.CountSetBits(position.GetRooks(enemyColor) | position.GetQueens(enemyColor));
+        var enemyMajorPieceCount = Bitwise.CountSetBits(position.GetMajorPieces(enemyColor));
         var enemyPawnsAndPiecesCount = enemyPawnCount + enemyMinorPieceCount + enemyMajorPieceCount;
-        if ((pawnsAndPiecesCount > 0) && (enemyPawnsAndPiecesCount > 0)) return false; // Position is not a simple endgame.
-        var loneEnemyPawn = (enemyPawnCount == 1) && (enemyPawnsAndPiecesCount == 1);
         var kingSquare = Bitwise.FirstSetSquare(position.GetKing(color));
         var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
-        // ReSharper disable once SwitchStatementMissingSomeCases
         switch (pawnsAndPiecesCount)
         {
             // Case 0 = Lone King
-            case 0 when loneEnemyPawn:
+            case 0 when (enemyPawnCount == 1) && (enemyPawnsAndPiecesCount == 1):
+                // K vrs KP
                 EvaluateKingVersusPawn(position, enemyColor);
                 return true;
-            // ReSharper disable once SwitchStatementMissingSomeCases
+            case 0 when (enemyPawnCount == 0) && (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
+                // K vrs KBN
+                var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;
+                var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
+                _staticScore.EgSimple[(int)enemyColor] = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
+                return true;
             case 0:
-                switch (enemyPawnCount)
-                {
-                    case 0 when (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
-                        // K vrs KBN
-                        var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;
-                        var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
-                        _staticScore.EgSimple[(int)enemyColor]  = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
-                        return true;
-                    case 0 when (enemyMajorPieceCount == 1) && (enemyMinorPieceCount == 0):
-                        // TODO: Consider simple endgame scoring for bare king (not just K vrs KQ or KR).
-                        // K vrs KQ or KR
-                        _staticScore.EgSimple[(int)enemyColor] = Config.SimpleEndgame - Board.DistanceToNearestCorner[(int)kingSquare] - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
-                        return true;
-                }
-                break;
+                // K vrs K + Pawns and / or Pieces
+                EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
+                _staticScore.EgSimple[(int)enemyColor] = Config.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
+                return true;
         }
         // Use regular evaluation.
         return false;

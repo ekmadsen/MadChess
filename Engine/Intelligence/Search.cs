@@ -1050,10 +1050,7 @@ public sealed class Search : IDisposable
             var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
             if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
         }
-        // Do not reduce move with lone king on board or a tactical move.
-        if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.White]) == 1) return horizon;
-        if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.Black]) == 1) return horizon;
-        if (!Move.IsQuiet(move)) return horizon;
+        if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
         // Reduce search horizon of late move.
         var quietMoveIndex = Math.Min(quietMoveNumber, _lateMoveReductions.Length - 1);
         return horizon - _lateMoveReductions[quietMoveIndex];
