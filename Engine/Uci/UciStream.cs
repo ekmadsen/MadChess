@@ -375,9 +375,6 @@ public sealed class UciStream : IDisposable
 #else
             version = $"{version} x86";
 #endif
-#if (CPU64 && !POPCOUNT)
-            version = $"{version} Non-PopCount";
-#endif
         WriteMessageLine($"id name MadChess {version}");
         WriteMessageLine("id author Erik Madsen");
         WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
