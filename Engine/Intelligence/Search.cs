@@ -27,7 +27,6 @@ using ErikTheCoder.MadChess.Engine.Uci;
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
 
 
-
 public sealed class Search : IDisposable
 {
     public const int MaxHorizon = 64;

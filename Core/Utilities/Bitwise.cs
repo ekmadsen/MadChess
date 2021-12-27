@@ -96,10 +96,6 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ClearBit(ref ulong value, Square square) => value &= ~(1ul << (int)square);
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsBitSet(ulong value, int index)
     {
         Debug.Assert((index >= 0) && (index < 64));
