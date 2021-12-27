@@ -85,12 +85,10 @@ public sealed class Board
     private Position NextPosition => _positions[_positionIndex + 1];
 
 
-    // TODO: Split the Board class static constructor into many methods to reduce its length.
     static Board()
     {
         // The chessboard is represented as an array of 64 squares, shown here as an 8 x 8 grid of square indices.
         // Note this code uses zero-based indices, while chess literature uses one-based indices.
-        // A1 in chess literature = square index 56.  A8 = square index 00.  H8 = square index 07.  H1 = square index 63.
 
         //    A  B  C  D  E  F  G  H
         // 7  00 01 02 03 04 05 06 07  7
@@ -103,206 +101,17 @@ public sealed class Board
         // 0  56 57 58 59 60 61 62 63  0
         //    A  B  C  D  E  F  G  H
 
-        // Files are indexed West to East from 0 to 7 (white's perspective).
-        Files = new[]
-        {
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 1, 2, 3, 4, 5, 6, 7
-        };
-        // Ranks are indexed South to North from 0 to 7 (white's perspective).
-        Ranks = new[]
-        {
-            new[]
-            {
-                7, 7, 7, 7, 7, 7, 7, 7,
-                6, 6, 6, 6, 6, 6, 6, 6,
-                5, 5, 5, 5, 5, 5, 5, 5,
-                4, 4, 4, 4, 4, 4, 4, 4,
-                3, 3, 3, 3, 3, 3, 3, 3,
-                2, 2, 2, 2, 2, 2, 2, 2,
-                1, 1, 1, 1, 1, 1, 1, 1,
-                0, 0, 0, 0, 0, 0, 0, 0
-            },
-            new[]
-            {
-                0, 0, 0, 0, 0, 0, 0, 0,
-                1, 1, 1, 1, 1, 1, 1, 1,
-                2, 2, 2, 2, 2, 2, 2, 2,
-                3, 3, 3, 3, 3, 3, 3, 3,
-                4, 4, 4, 4, 4, 4, 4, 4,
-                5, 5, 5, 5, 5, 5, 5, 5,
-                6, 6, 6, 6, 6, 6, 6, 6,
-                7, 7, 7, 7, 7, 7, 7, 7
-            }
-        };
-        Square[] centralSquares = { Square.D5, Square.E5, Square.D4, Square.E4 };
-        Square[] cornerSquares = { Square.A8, Square.H8, Square.A1, Square.H1 };
-        Square[][] cornerSquaresOfColor =
-        {
-            new[] {Square.A8, Square.H1},
-            new[] {Square.H8, Square.A1}
-        };
-        // Determine distances between squares.
-        SquareDistances = new int[64][];
-        for (var square1 = Square.A8; square1 < Square.Illegal; square1++)
-        {
-            SquareDistances[(int)square1] = new int[64];
-            for (var square2 = Square.A8; square2 < Square.Illegal; square2++)
-            {
-                var fileDistance = Math.Abs(Files[(int)square1] - Files[(int)square2]);
-                var rankDistance = Math.Abs(Ranks[(int)Color.White][(int)square1] - Ranks[(int)Color.White][(int)square2]);
-                SquareDistances[(int)square1][(int)square2] = Math.Max(fileDistance, rankDistance);
-            }
-        }
-        // Determine distances to central and nearest corner squares.
-        DistanceToCentralSquares = new int[64];
-        DistanceToNearestCorner = new int[64];
-        for (var square = Square.A8; square < Square.Illegal; square++)
-        {
-            DistanceToCentralSquares[(int)square] = GetShortestDistance(square, centralSquares);
-            DistanceToNearestCorner[(int)square] = GetShortestDistance(square, cornerSquares);
-        }
-        DistanceToNearestCornerOfColor = new int[2][];
-        for (var color = Color.White; color <= Color.Black; color++)
-        {
-            DistanceToNearestCornerOfColor[(int)color] = new int[64];
-            for (var square = Square.A8; square < Square.Illegal; square++)
-            {
-                DistanceToNearestCornerOfColor[(int)color][(int)square] = GetShortestDistance(square, cornerSquaresOfColor[(int)color]);
-            }
-        }
-        SquareLocations = new[]
-        {
-            "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-            "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-            "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-            "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-            "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-            "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-            "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-            "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
-        };
-        // Square perspective factors are used to determine square from white's perspective (black's g6 = white's b3).
-        _squarePerspectiveFactors = new[] { -1, 1 };
-        // Create square, file, rank, diagonal, and edge masks.
-        SquareMasks = new ulong[64];
-        _squareUnmasks = new ulong[64];
-        for (var square = Square.A8; square < Square.Illegal; square++)
-        {
-            SquareMasks[(int)square] = Bitwise.CreateULongMask(square);
-            _squareUnmasks[(int)square] = Bitwise.CreateULongUnmask(square);
-        }
-        FileMasks = new ulong[8];
-        for (var file = 0; file < 8; file++)
-        {
-            FileMasks[file] = 0;
-            for (var rank = 0; rank < 8; rank++)
-            {
-                var square = GetSquare(file, rank);
-                FileMasks[file] |= Bitwise.CreateULongMask(square);
-            }
-        }
-        WhiteRankMasks = new ulong[8];
-        for (var rank = 0; rank < 8; rank++)
-        {
-            WhiteRankMasks[rank] = 0;
-            for (var file = 0; file < 8; file++)
-            {
-                var square = GetSquare(file, rank);
-                WhiteRankMasks[rank] |= Bitwise.CreateULongMask(square);
-            }
-        }
-        AllSquaresMask = Bitwise.CreateULongMask(0, 63);
-        EdgeSquaresMask = FileMasks[0] | WhiteRankMasks[7] | FileMasks[7] | WhiteRankMasks[0];
-        // Determine square colors.
-        var squareColors = new[]
-        {
-            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
-            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
-            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
-            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
-            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
-            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
-            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
-            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White
-        };
-        SquareColors = new ulong[2];
-        for (var square = Square.A8; square < Square.Illegal; square++)
-        {
-            var whiteSquare = squareColors[(int)square] == Color.White;
-            var squareMask = SquareMasks[(int)square];
-            SquareColors[(int)Color.White] |= whiteSquare ? squareMask : 0ul;
-            SquareColors[(int)Color.Black] |= whiteSquare ? 0ul : squareMask;
-        }
-        // Create castling masks.
-        CastleEmptySquaresMask = new[]
-        {
-            new[]
-            {
-                Bitwise.CreateULongMask(new[] { Square.B1, Square.C1, Square.D1 }),
-                Bitwise.CreateULongMask(new[] { Square.F1, Square.G1 })
-            },
-            new[]
-            {
-                Bitwise.CreateULongMask(new[] { Square.B8, Square.C8, Square.D8 }),
-                Bitwise.CreateULongMask(new[] { Square.F8, Square.G8 })
-            }
-        };
-        _castleAttackedSquareMasks = new[]
-        {
-            new[]
-            {
-                Bitwise.CreateULongMask(Square.D1),
-                Bitwise.CreateULongMask(Square.F1)
-            },
-            new[]
-            {
-                Bitwise.CreateULongMask(Square.D8),
-                Bitwise.CreateULongMask(Square.F8)
-            }
-        };
-        CastleFromSquares = new[] { Square.E1, Square.E8 };
-        CastleToSquares = new[]
-        {
-            new[]
-            {
-                Square.C1,
-                Square.G1
-            },
-            new[]
-            {
-                Square.C8,
-                Square.G8
-            }
-        };
-
-        // Use a 12 x 12 grid of square indices to calculate square legality.
-
-        //  000, 001,   002, 003, 004, 005, 006, 007, 008, 009,   010, 011,
-        //  012, 013,   014, 015, 016, 017, 018, 019, 020, 021,   022, 023,
-
-        //  024, 025,   026, 027, 028, 029, 030, 031, 032, 033,   034, 035,
-        //  036, 037,   038, 039, 040, 041, 042, 043, 044, 045,   046, 047,
-        //  048, 049,   050, 051, 052, 053, 054, 055, 056, 057,   058, 059,
-        //  060, 061,   062, 063, 064, 065, 066, 067, 068, 069,   070, 071,
-        //  072, 073,   074, 075, 076, 077, 078, 079, 080, 081,   082, 083,
-        //  084, 085,   086, 087, 088, 089, 090, 091, 092, 093,   094, 095,
-        //  096, 097,   098, 099, 100, 101, 102, 103, 104, 105,   106, 107,
-        //  108, 109,   110, 111, 112, 113, 114, 115, 116, 117,   118, 119,
-
-        //  120, 121,   122, 123, 124, 125, 126, 127, 128, 129,   130, 131,
-        //  132, 133,   134, 135, 136, 137, 138, 139, 140, 141,   142, 143 
-
-        var directionOffsets1212 = CreateDirectionOffsets1212();
-        var squareIndices1212To88 = MapSquareIndices1212To88();
-        _neighborSquares = CreateNeighborSquares(directionOffsets1212, squareIndices1212To88);
-        // Create move masks and precalculated moves.
+        (Files, Ranks) = CreateFilesAndRanks();
+        // Determine distances between squares and square locations.
+        SquareDistances = CreateSquareDistances();
+        (DistanceToCentralSquares, DistanceToNearestCorner, DistanceToNearestCornerOfColor) = CreateDistanceToKeySquares();
+        SquareLocations = CreateSquareLocations();
+        _squarePerspectiveFactors = new[] { -1, 1 }; // Used to determine square from white's perspective (black's g6 = white's b3).
+        // Create square, color, and castling masks.
+        (SquareMasks, _squareUnmasks, FileMasks, WhiteRankMasks, SquareColors, AllSquaresMask, EdgeSquaresMask) = CreateSquareMasks();
+        (CastleEmptySquaresMask, _castleAttackedSquareMasks, CastleFromSquares, CastleToSquares) = CreateCastlingMasks();
+        // Create neighbor squares, move masks, precalculated moves, and between squares.
+        _neighborSquares = CreateNeighborSquares();
         PawnMoveMasks = CreatePawnMoveMasks();
         PawnDoubleMoveMasks = CreatePawnDoubleMoveMasks();
         PawnAttackMasks = CreatePawnAttackMasks();
@@ -316,60 +125,7 @@ public sealed class Board
         PieceMoveMaskDelegates[(int)ColorlessPiece.Rook] = GetRookDestinations;
         PieceMoveMaskDelegates[(int) ColorlessPiece.Queen] = GetQueenDestinations;
         PrecalculatedMoves = new PrecalculatedMoves();
-        // Determine squares in a rank / file direction between two squares.
-        RankFileBetweenSquares = new ulong[64][];
-        for (var square1 = Square.A8; square1 < Square.Illegal; square1++)
-        {
-            RankFileBetweenSquares[(int)square1] = new ulong[64];
-            var directions = new[] {Direction.North, Direction.East, Direction.South, Direction.West};
-            for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
-            {
-                var direction = directions[directionIndex];
-                var distance = 1;
-                var square2 = square1;
-                var previousSquare2 = Square.Illegal;
-                var betweenSquares = 0ul;
-                do
-                {
-                    square2 = (Square)_neighborSquares[(int)square2][(int)direction];
-                    if (square2 == Square.Illegal) break;
-                    if (distance > 1)
-                    {
-                        betweenSquares |= SquareMasks[(int)previousSquare2];
-                        RankFileBetweenSquares[(int)square1][(int)square2] = betweenSquares;
-                    }
-                    previousSquare2 = square2;
-                    distance++;
-                } while (true);
-            }
-        }
-        // Determine squares in a diagonal direction between two squares.
-        DiagonalBetweenSquares = new ulong[64][];
-        for (var square1 = Square.A8; square1 < Square.Illegal; square1++)
-        {
-            DiagonalBetweenSquares[(int)square1] = new ulong[64];
-            var directions = new[] { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
-            for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
-            {
-                var direction = directions[directionIndex];
-                var distance = 1;
-                var square2 = square1;
-                var previousSquare2 = Square.Illegal;
-                var betweenSquares = 0ul;
-                do
-                {
-                    square2 = (Square)_neighborSquares[(int)square2][(int)direction];
-                    if (square2 == Square.Illegal) break;
-                    if (distance > 1)
-                    {
-                        betweenSquares |= SquareMasks[(int)previousSquare2];
-                        DiagonalBetweenSquares[(int)square1][(int)square2] = betweenSquares;
-                    }
-                    previousSquare2 = square2;
-                    distance++;
-                } while (true);
-            }
-        }
+        (RankFileBetweenSquares, DiagonalBetweenSquares) = DetermineBetweenSquares();
         // Create en passant, passed pawn, and free pawn masks.
         (_enPassantTargetSquares, _enPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
         PassedPawnMasks = CreatePassedPawnMasks();
@@ -406,6 +162,258 @@ public sealed class Board
         // Set nodes.
         Nodes = 0;
         NodesInfoUpdate = nodesInfoInterval;
+    }
+
+
+    private static (int[] Files, int[][] Ranks) CreateFilesAndRanks()
+    {
+        // Files are indexed West to East from 0 to 7 (white's perspective).
+        var files = new[]
+        {
+            0, 1, 2, 3, 4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5, 6, 7
+        };
+        var ranks = new[]
+        {
+            // White ranks are indexed South to North from 0 to 7.
+            new[]
+            {
+                7, 7, 7, 7, 7, 7, 7, 7,
+                6, 6, 6, 6, 6, 6, 6, 6,
+                5, 5, 5, 5, 5, 5, 5, 5,
+                4, 4, 4, 4, 4, 4, 4, 4,
+                3, 3, 3, 3, 3, 3, 3, 3,
+                2, 2, 2, 2, 2, 2, 2, 2,
+                1, 1, 1, 1, 1, 1, 1, 1,
+                0, 0, 0, 0, 0, 0, 0, 0
+            },
+            // Black ranks are indexed North to South from 0 to 7.
+            new[]
+            {
+                0, 0, 0, 0, 0, 0, 0, 0,
+                1, 1, 1, 1, 1, 1, 1, 1,
+                2, 2, 2, 2, 2, 2, 2, 2,
+                3, 3, 3, 3, 3, 3, 3, 3,
+                4, 4, 4, 4, 4, 4, 4, 4,
+                5, 5, 5, 5, 5, 5, 5, 5,
+                6, 6, 6, 6, 6, 6, 6, 6,
+                7, 7, 7, 7, 7, 7, 7, 7
+            }
+        };
+        return (files, ranks);
+    }
+
+
+    private static int[][] CreateSquareDistances()
+    {
+        var squareDistances = new int[64][];
+        for (var square1 = Square.A8; square1 < Square.Illegal; square1++)
+        {
+            squareDistances[(int)square1] = new int[64];
+            for (var square2 = Square.A8; square2 < Square.Illegal; square2++)
+            {
+                var fileDistance = Math.Abs(Files[(int)square1] - Files[(int)square2]);
+                var rankDistance = Math.Abs(Ranks[(int)Color.White][(int)square1] - Ranks[(int)Color.White][(int)square2]);
+                squareDistances[(int)square1][(int)square2] = Math.Max(fileDistance, rankDistance);
+            }
+        }
+        return squareDistances;
+    }
+
+
+    private static (int[] DistanceToCentralSquares, int[] distanceToNearestCorner, int[][] distanceToNearestCornerOfColor) CreateDistanceToKeySquares()
+    {
+        // Distance to Central and Corner Squares
+        var centralSquares = new[] { Square.D5, Square.E5, Square.D4, Square.E4 };
+        var cornerSquares = new[] { Square.A8, Square.H8, Square.A1, Square.H1 };
+        var cornerSquaresOfColor = new[]
+        {
+            new[] {Square.A8, Square.H1},
+            new[] {Square.H8, Square.A1}
+        };
+        var distanceToCentralSquares = new int[64];
+        var distanceToNearestCorner = new int[64];
+        for (var square = Square.A8; square < Square.Illegal; square++)
+        {
+            distanceToCentralSquares[(int)square] = GetShortestDistance(square, centralSquares);
+            distanceToNearestCorner[(int)square] = GetShortestDistance(square, cornerSquares);
+        }
+        // Distance to Nearest Corner of Color
+        var distanceToNearestCornerOfColor = new int[2][];
+        for (var color = Color.White; color <= Color.Black; color++)
+        {
+            distanceToNearestCornerOfColor[(int)color] = new int[64];
+            for (var square = Square.A8; square < Square.Illegal; square++)
+            {
+                distanceToNearestCornerOfColor[(int)color][(int)square] = GetShortestDistance(square, cornerSquaresOfColor[(int)color]);
+            }
+        }
+        return (distanceToCentralSquares, distanceToNearestCorner, distanceToNearestCornerOfColor);
+    }
+
+
+    private static string[] CreateSquareLocations()
+    {
+        return new[]
+        {
+            "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+            "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+            "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+            "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+            "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+            "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+            "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+            "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
+        };
+    }
+
+
+    private static (ulong[] SquareMasks, ulong[] SquareUnmasks, ulong[] FileMasks, ulong[] WhiteRankMasks, ulong[] SquareColors, ulong AllSquaresMask, ulong EdgeSquaresMask) CreateSquareMasks()
+    {
+        // Squares
+        var squareMasks = new ulong[64];
+        var squareUnmasks = new ulong[64];
+        for (var square = Square.A8; square < Square.Illegal; square++)
+        {
+            squareMasks[(int)square] = Bitwise.CreateULongMask(square);
+            squareUnmasks[(int)square] = Bitwise.CreateULongUnmask(square);
+        }
+        // Files
+        var fileMasks = new ulong[8];
+        for (var file = 0; file < 8; file++)
+        {
+            fileMasks[file] = 0;
+            for (var rank = 0; rank < 8; rank++)
+            {
+                var square = GetSquare(file, rank);
+                fileMasks[file] |= Bitwise.CreateULongMask(square);
+            }
+        }
+        // White Ranks
+        var whiteRankMasks = new ulong[8];
+        for (var rank = 0; rank < 8; rank++)
+        {
+            whiteRankMasks[rank] = 0;
+            for (var file = 0; file < 8; file++)
+            {
+                var square = GetSquare(file, rank);
+                whiteRankMasks[rank] |= Bitwise.CreateULongMask(square);
+            }
+        }
+        // Square Colors
+        var squareShades = new[]
+        {
+            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White,
+            Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black,
+            Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White, Color.Black, Color.White
+        };
+        var squareColors = new ulong[2];
+        for (var square = Square.A8; square < Square.Illegal; square++)
+        {
+            var whiteSquare = squareShades[(int)square] == Color.White;
+            var squareMask = squareMasks[(int)square];
+            squareColors[(int)Color.White] |= whiteSquare ? squareMask : 0ul;
+            squareColors[(int)Color.Black] |= whiteSquare ? 0ul : squareMask;
+        }
+        // All and Edge Squares
+        var allSquaresMask = Bitwise.CreateULongMask(0, 63);
+        var edgeSquaresMask = fileMasks[0] | whiteRankMasks[7] | fileMasks[7] | whiteRankMasks[0];
+        return (squareMasks, squareUnmasks, fileMasks, whiteRankMasks, squareColors, allSquaresMask, edgeSquaresMask);
+    }
+
+
+    private static (ulong[][] CastleEmptySquaresMask, ulong[][] CastleAttackedSquareMasks, Square[] CastleFromSquares, Square[][] CastleToSquares) CreateCastlingMasks()
+    {
+        var castleEmptySquaresMask = new[]
+        {
+            new[]
+            {
+                Bitwise.CreateULongMask(new[] { Square.B1, Square.C1, Square.D1 }),
+                Bitwise.CreateULongMask(new[] { Square.F1, Square.G1 })
+            },
+            new[]
+            {
+                Bitwise.CreateULongMask(new[] { Square.B8, Square.C8, Square.D8 }),
+                Bitwise.CreateULongMask(new[] { Square.F8, Square.G8 })
+            }
+        };
+        var castleAttackedSquareMasks = new[]
+        {
+            new[]
+            {
+                Bitwise.CreateULongMask(Square.D1),
+                Bitwise.CreateULongMask(Square.F1)
+            },
+            new[]
+            {
+                Bitwise.CreateULongMask(Square.D8),
+                Bitwise.CreateULongMask(Square.F8)
+            }
+        };
+        var castleFromSquares = new[] { Square.E1, Square.E8 };
+        var castleToSquares = new[]
+        {
+            new[]
+            {
+                Square.C1,
+                Square.G1
+            },
+            new[]
+            {
+                Square.C8,
+                Square.G8
+            }
+        };
+        return (castleEmptySquaresMask, castleAttackedSquareMasks, castleFromSquares, castleToSquares);
+    }
+
+
+    private static int[][] CreateNeighborSquares()
+    {
+        // Use a 12 x 12 grid of square indices to calculate square legality.
+
+        //  000, 001,   002, 003, 004, 005, 006, 007, 008, 009,   010, 011,
+        //  012, 013,   014, 015, 016, 017, 018, 019, 020, 021,   022, 023,
+
+        //  024, 025,   026, 027, 028, 029, 030, 031, 032, 033,   034, 035,
+        //  036, 037,   038, 039, 040, 041, 042, 043, 044, 045,   046, 047,
+        //  048, 049,   050, 051, 052, 053, 054, 055, 056, 057,   058, 059,
+        //  060, 061,   062, 063, 064, 065, 066, 067, 068, 069,   070, 071,
+        //  072, 073,   074, 075, 076, 077, 078, 079, 080, 081,   082, 083,
+        //  084, 085,   086, 087, 088, 089, 090, 091, 092, 093,   094, 095,
+        //  096, 097,   098, 099, 100, 101, 102, 103, 104, 105,   106, 107,
+        //  108, 109,   110, 111, 112, 113, 114, 115, 116, 117,   118, 119,
+
+        //  120, 121,   122, 123, 124, 125, 126, 127, 128, 129,   130, 131,
+        //  132, 133,   134, 135, 136, 137, 138, 139, 140, 141,   142, 143
+
+        var directionOffsets1212 = CreateDirectionOffsets1212();
+        var squareIndices1212To88 = MapSquareIndices1212To88();
+        var neighborSquares = new int[64][];
+        Square square88;
+        for (square88 = Square.A8; square88 < Square.Illegal; square88++) neighborSquares[(int)square88] = new int[(int)Direction.North2West1 + 1];
+        for (var square1212 = 0; square1212 < 144; square1212++)
+        {
+            square88 = (Square)squareIndices1212To88[square1212];
+            if (square88 != Square.Illegal)
+                for (var direction = 1; direction <= (int)Direction.North2West1; direction++)
+                {
+                    var directionOffset1212 = directionOffsets1212[direction];
+                    neighborSquares[(int)square88][direction] = squareIndices1212To88[square1212 + directionOffset1212];
+                }
+        }
+        return neighborSquares;
     }
 
 
@@ -453,22 +461,63 @@ public sealed class Board
     }
 
 
-    private static int[][] CreateNeighborSquares(int[] directionOffsets1212, int[] squareIndices1212To88)
+    private static (ulong[][] RankFileBetweenSquares, ulong[][] DiagonalBetweenSquares) DetermineBetweenSquares()
     {
-        var neighborSquares = new int[64][];
-        Square square88;
-        for (square88 = Square.A8; square88 < Square.Illegal; square88++) neighborSquares[(int)square88] = new int[(int)Direction.North2West1 + 1];
-        for (var square1212 = 0; square1212 < 144; square1212++)
+        // Determine squares in a rank / file direction between two squares.
+        var rankFileBetweenSquares = new ulong[64][];
+        for (var square1 = Square.A8; square1 < Square.Illegal; square1++)
         {
-            square88 = (Square)squareIndices1212To88[square1212];
-            if (square88 != Square.Illegal)
-                for (var direction = 1; direction <= (int)Direction.North2West1; direction++)
+            rankFileBetweenSquares[(int)square1] = new ulong[64];
+            var directions = new[] { Direction.North, Direction.East, Direction.South, Direction.West };
+            for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+            {
+                var direction = directions[directionIndex];
+                var distance = 1;
+                var square2 = square1;
+                var previousSquare2 = Square.Illegal;
+                var betweenSquares = 0ul;
+                do
                 {
-                    var directionOffset1212 = directionOffsets1212[direction];
-                    neighborSquares[(int)square88][direction] = squareIndices1212To88[square1212 + directionOffset1212];
-                }
+                    square2 = (Square)_neighborSquares[(int)square2][(int)direction];
+                    if (square2 == Square.Illegal) break;
+                    if (distance > 1)
+                    {
+                        betweenSquares |= SquareMasks[(int)previousSquare2];
+                        rankFileBetweenSquares[(int)square1][(int)square2] = betweenSquares;
+                    }
+                    previousSquare2 = square2;
+                    distance++;
+                } while (true);
+            }
         }
-        return neighborSquares;
+        // Determine squares in a diagonal direction between two squares.
+        var diagonalBetweenSquares = new ulong[64][];
+        for (var square1 = Square.A8; square1 < Square.Illegal; square1++)
+        {
+            diagonalBetweenSquares[(int)square1] = new ulong[64];
+            var directions = new[] { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
+            for (var directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+            {
+                var direction = directions[directionIndex];
+                var distance = 1;
+                var square2 = square1;
+                var previousSquare2 = Square.Illegal;
+                var betweenSquares = 0ul;
+                do
+                {
+                    square2 = (Square)_neighborSquares[(int)square2][(int)direction];
+                    if (square2 == Square.Illegal) break;
+                    if (distance > 1)
+                    {
+                        betweenSquares |= SquareMasks[(int)previousSquare2];
+                        diagonalBetweenSquares[(int)square1][(int)square2] = betweenSquares;
+                    }
+                    previousSquare2 = square2;
+                    distance++;
+                } while (true);
+            }
+        }
+        return (rankFileBetweenSquares, diagonalBetweenSquares);
     }
 
 
@@ -1022,6 +1071,7 @@ public sealed class Board
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public bool IsMoveLegal(ref ulong move)
     {
+        Nodes--; // Do not inflate Nodes Per Second (NPS) metric when determining move legality.
         var fromSquare = Move.From(move);
         if (!CurrentPosition.KingInCheck && !Move.IsKingMove(move) && !Move.IsEnPassantCapture(move))
         {

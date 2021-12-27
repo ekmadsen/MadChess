@@ -12,12 +12,13 @@
 	  <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 	  <RootNamespace>ErikTheCoder.MadChess.Core</RootNamespace>
 	  <LangVersion>latest</LangVersion>
+	  <Nullable>disable</Nullable>
 	  <TargetFramework>net6.0</TargetFramework>
 	  <TieredCompilation>true</TieredCompilation>
 	  <OutputType>Library</OutputType>
 	  <PackageId>MadChess.Core</PackageId>
 	  <Configurations>Debug;Release</Configurations>
-	  <Platforms>AnyCPU;x64;x86</Platforms>
+	  <Platforms>x64;x86</Platforms>
   </PropertyGroup>
 
 	<ItemGroup>

@@ -12,12 +12,21 @@
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<RootNamespace>ErikTheCoder.MadChess.Engine</RootNamespace>
 		<LangVersion>latest</LangVersion>
+		<Nullable>disable</Nullable>
 		<TargetFramework>net6.0</TargetFramework>
 		<TieredCompilation>true</TieredCompilation>
 		<OutputType>Exe</OutputType>
 		<PackageId>MadChess.Engine</PackageId>
 		<Configurations>Debug;Release</Configurations>
-		<Platforms>AnyCPU;x64;x86</Platforms>
+		<Platforms>x64;x86</Platforms>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+		<DefineConstants>TRACE;CPU64</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+		<DefineConstants>TRACE;CPU64</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup>

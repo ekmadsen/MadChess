@@ -395,11 +395,7 @@ public sealed class Position
         while ((attackerSquare = Bitwise.PopFirstSetSquare(ref enemyRankFileAttackers)) != Square.Illegal)
         {
             var betweenSquares = Board.RankFileBetweenSquares[(int)attackerSquare][(int)ownKingSquare];
-            if (betweenSquares == 0)
-            {
-                Bitwise.ClearBit(ref enemyRankFileAttackers, attackerSquare);
-                continue;
-            }
+            if (betweenSquares == 0) continue;
             if ((betweenSquares & enemyPieces) == 0)
             {
                 // No enemy pieces between enemy attacker and own king.
@@ -416,11 +412,7 @@ public sealed class Position
         while ((attackerSquare = Bitwise.PopFirstSetSquare(ref enemyDiagonalAttackers)) != Square.Illegal)
         {
             var betweenSquares = Board.DiagonalBetweenSquares[(int)attackerSquare][(int)ownKingSquare];
-            if (betweenSquares == 0)
-            {
-                Bitwise.ClearBit(ref enemyDiagonalAttackers, attackerSquare);
-                continue;
-            }
+            if (betweenSquares == 0) continue;
             if ((betweenSquares & enemyPieces) == 0)
             {
                 // No enemy pieces between enemy attacker and own king.

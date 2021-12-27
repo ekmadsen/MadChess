@@ -27,7 +27,6 @@ using ErikTheCoder.MadChess.Engine.Uci;
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
 
 
-
 public sealed class Search : IDisposable
 {
     public const int MaxHorizon = 64;
@@ -532,7 +531,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private int GetDynamicScore(Board board, int depth, int horizon, bool isNullMoveAllowed, int alpha, int beta, ulong excludedMove = 0)
+    private int GetDynamicScore(Board board, int depth, int horizon, bool isNullMovePermitted, int alpha, int beta, ulong excludedMove = 0)
     {
         if ((board.Nodes > board.NodesExamineTime) || _nodesPerSecond.HasValue)
         {
@@ -590,9 +589,9 @@ public sealed class Search : IDisposable
             UpdateBestMoveCache(board.CurrentPosition, depth, horizon, Move.Null, beta, alpha, beta);
             return beta;
         }
-        if (isNullMoveAllowed && IsNullMoveAllowed(board.CurrentPosition, beta))
+        if (isNullMovePermitted && IsNullMovePermitted(board.CurrentPosition, beta))
         {
-            // Null move is allowed.
+            // Null move is permitted.
             _stats.NullMoves++;
             if (DoesNullMoveCauseBetaCutoff(board, depth, horizon, beta))
             {
@@ -880,7 +879,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsNullMoveAllowed(Position position, int beta)
+    private static bool IsNullMovePermitted(Position position, int beta)
     {
         if ((position.StaticScore < beta) || position.KingInCheck) return false;
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.

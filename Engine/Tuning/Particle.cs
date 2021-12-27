@@ -50,7 +50,7 @@ public sealed class Particle
         {
             var parameter = Parameters[index];
             var maxVelocity = _maxInitialVelocityFraction * (parameter.MaxValue - parameter.MinValue);
-            // Allow positive or negative velocity.
+            // Permit positive or negative velocity.
             _velocities[index] = (SafeRandom.NextDouble() * maxVelocity * 2) - maxVelocity;
         }
     }
