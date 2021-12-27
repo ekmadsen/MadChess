@@ -1022,6 +1022,7 @@ public sealed class Board
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public bool IsMoveLegal(ref ulong move)
     {
+        Nodes--; // Do not inflate Nodes Per Second (NPS) metric when determining move legality.
         var fromSquare = Move.From(move);
         if (!CurrentPosition.KingInCheck && !Move.IsKingMove(move) && !Move.IsEnPassantCapture(move))
         {
