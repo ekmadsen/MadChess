@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		Design.txt = Design.txt
 		EvalError.log = EvalError.log
-		LICENSE = LICENSE
+		LICENSE.md = LICENSE.md
 		MadChess.sln.DotSettings = MadChess.sln.DotSettings
 		README.md = README.md
 	EndProjectSection
