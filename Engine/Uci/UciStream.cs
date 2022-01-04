@@ -226,6 +226,7 @@ public sealed class UciStream : IDisposable
     }
 
 
+    // TODO: Add "resetstats" UCI command.
     private void DispatchOnMainThread(List<string> tokens)
     {
         var writeMessageLine = true;
@@ -512,7 +513,7 @@ public sealed class UciStream : IDisposable
     private void GoSync(List<string> tokens)
     {
         _commandStopwatch.Restart();
-        // Reset search and evaluation.  Shift killer moves.
+        // Reset stats and search and shift killer moves.
         _stats.Reset();
         _search.Reset();
         _killerMoves.Shift(2);
@@ -865,10 +866,10 @@ public sealed class UciStream : IDisposable
                     expectedMoves[moveIndex] = expectedMove;
                     expectedMovesLongAlgebraic[moveIndex] = Move.ToLongAlgebraic(expectedMove);
                 }
-                _search.Reset();
                 _cache.Reset();
                 _killerMoves.Reset();
                 _moveHistory.Reset();
+                _search.Reset();
                 // Find best move.  Do not update node count or PV.
                 _board.NodesInfoUpdate = long.MaxValue;
                 _search.PvInfoUpdate = false;

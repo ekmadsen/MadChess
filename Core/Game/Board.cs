@@ -885,10 +885,15 @@ public sealed class Board
         Debug.Assert(rank >= 0 && rank < 8);
         return GetSquare(file, rank);
     }
-
-
+    
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Square GetSquareFromWhitePerspective(Square square, Color color) => (Square)((int)color * 63) - ((int)square * _squarePerspectiveFactors[(int)color]);
+    public static Square GetSquareFromWhitePerspective(Square square, Color color)
+    {
+        // This method violates design principle of avoiding color-specific code.
+        // However, it eliminates need for two redundant piece-location arrays (black array as a mirror-image of white array).
+        return (Square)((int)color * 63) - ((int)square * _squarePerspectiveFactors[(int)color]);
+    }
 
 
     private static int GetShortestDistance(Square square, Square[] otherSquares)
@@ -950,7 +955,7 @@ public sealed class Board
         var kingInCheck = IsSquareAttacked(kingSquare);
         UndoMove();
         CurrentPosition.KingInCheck = kingInCheck;
-        CurrentPosition.Key = GetCurrentPositionKey();
+        UpdateFullZobristKey();
     }
 
 
@@ -1260,7 +1265,7 @@ public sealed class Board
         CurrentPosition.FullMoveNumber += (int)CurrentPosition.ColorToMove;
         CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
         CurrentPosition.KingInCheck = Move.IsCheck(move);
-        CurrentPosition.Key = GetCurrentPositionKey();
+        UpdateFullZobristKey();
         Nodes++;
         Debug.Assert(AssertIntegrity());
     }
@@ -1370,7 +1375,7 @@ public sealed class Board
         CurrentPosition.KingInCheck = false;
         CurrentPosition.EnPassantSquare = Square.Illegal;
         CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
-        CurrentPosition.Key = GetCurrentPositionKey();
+        UpdateFullZobristKey();
         Nodes++;
     }
 
@@ -1440,7 +1445,7 @@ public sealed class Board
         CurrentPosition.PieceBitboards[(int)piece] |= squareMask;
         CurrentPosition.ColorOccupancy[(int)pieceColor] |= squareMask;
         CurrentPosition.Occupancy |= squareMask;
-        UpdatePiecesSquaresKey(piece, square);
+        UpdatePartialZobristKey(piece, square);
     }
 
 
@@ -1455,13 +1460,13 @@ public sealed class Board
         CurrentPosition.PieceBitboards[(int)piece] &= squareUnmask;
         CurrentPosition.ColorOccupancy[(int)pieceColor] &= squareUnmask;
         CurrentPosition.Occupancy &= squareUnmask;
-        UpdatePiecesSquaresKey(piece, square);
+        UpdatePartialZobristKey(piece, square);
         return piece;
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void UpdatePiecesSquaresKey(Piece piece, Square square)
+    private void UpdatePartialZobristKey(Piece piece, Square square)
     {
         CurrentPosition.PiecesSquaresKey ^= _pieceSquareKeys[(int)piece][(int)square];
         Debug.Assert(AssertPiecesSquaresKeyIntegrity());
@@ -1469,12 +1474,12 @@ public sealed class Board
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private ulong GetCurrentPositionKey()
+    private void UpdateFullZobristKey()
     {
         var sideToMoveKey = _sideToMoveKeys[(int)CurrentPosition.ColorToMove];
         var castlingKey = _castlingKeys[CurrentPosition.Castling];
         var enPassantKey = _enPassantKeys[(int)CurrentPosition.EnPassantSquare];
-        return CurrentPosition.PiecesSquaresKey ^ sideToMoveKey ^ castlingKey ^ enPassantKey;
+        CurrentPosition.Key = CurrentPosition.PiecesSquaresKey ^ sideToMoveKey ^ castlingKey ^ enPassantKey;
     }
 
 
