@@ -145,6 +145,11 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(evalConfig.EgKingCentrality), 0, 50),
             new(nameof(evalConfig.MgKingCorner), 0, 50),
             new(nameof(evalConfig.EgKingCorner), -50, 0),
+            // Pawn Structure
+            new(nameof(evalConfig.MgIsolatedPawn), 0, 50),
+            new(nameof(evalConfig.EgIsolatedPawn), 0, 50),
+            new(nameof(evalConfig.MgDoubledPawn), 0, 50),
+            new(nameof(evalConfig.EgDoubledPawn), 0, 50),
             // Passed Pawns
             new(nameof(evalConfig.PassedPawnPowerPer128), 192, 320),
             new(nameof(evalConfig.MgPassedPawnScalePer128), 0, 256),
@@ -238,6 +243,11 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.EgKingCentrality)].Value = evalConfig.EgKingCentrality;
         parameters[nameof(evalConfig.MgKingCorner)].Value = evalConfig.MgKingCorner;
         parameters[nameof(evalConfig.EgKingCorner)].Value = evalConfig.EgKingCorner;
+        // Pawn Structure
+        parameters[nameof(evalConfig.MgIsolatedPawn)].Value = evalConfig.MgIsolatedPawn;
+        parameters[nameof(evalConfig.EgIsolatedPawn)].Value = evalConfig.EgIsolatedPawn;
+        parameters[nameof(evalConfig.MgDoubledPawn)].Value = evalConfig.MgDoubledPawn;
+        parameters[nameof(evalConfig.EgDoubledPawn)].Value = evalConfig.EgDoubledPawn;
         // Passed Pawns
         parameters[nameof(evalConfig.PassedPawnPowerPer128)].Value = evalConfig.PassedPawnPowerPer128;
         parameters[nameof(evalConfig.MgPassedPawnScalePer128)].Value = evalConfig.MgPassedPawnScalePer128;

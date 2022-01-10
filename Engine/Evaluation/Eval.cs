@@ -654,6 +654,17 @@ public sealed class Eval
         Square square;
         while ((square = Bitwise.PopFirstSetSquare(ref pawns)) != Square.Illegal)
         {
+            var file = Board.Files[(int)square];
+            // Evaluate pawn structure.
+            var pawnsOccupyLeftFile = (file > 0) && ((Board.FileMasks[file - 1] & pawns) > 0);
+            var pawnsOccupyRightFile = (file < 7) && ((Board.FileMasks[file + 1] & pawns) > 0);
+            if (!pawnsOccupyLeftFile && !pawnsOccupyRightFile)
+            {
+                // Pawn is isolated.
+                _staticScore.MgPawnStructure[(int)color] -= Config.MgIsolatedPawn;
+                _staticScore.EgPawnStructure[(int)color] -= Config.EgIsolatedPawn;
+            }
+            // Evaluate passed pawns.
             if (IsPassedPawn(position, square, color))
             {
                 _passedPawns[(int)color] |= Board.SquareMasks[(int)square];
@@ -680,6 +691,17 @@ public sealed class Eval
             _staticScore.EgThreats[(int)color] += minorPiecesAttacked * Config.EgPawnThreatenMinor;
             _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgPawnThreatenMajor;
             _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgPawnThreatenMajor;
+        }
+        for (var file = 0; file < 8; file++)
+        {
+            var pawnCount = Bitwise.CountSetBits(Board.FileMasks[file] & pawns);
+            if (pawnCount > 1)
+            {
+                // File has double (or more) pawns.
+                var extraPawnCount = pawnCount - 1;
+                _staticScore.MgPawnStructure[(int)color] -= extraPawnCount * Config.MgDoubledPawn;
+                _staticScore.EgPawnStructure[(int)color] -= extraPawnCount * Config.EgDoubledPawn;
+            }
         }
     }
 

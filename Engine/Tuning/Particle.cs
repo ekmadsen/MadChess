@@ -124,6 +124,11 @@ public sealed class Particle
         eval.Config.EgKingCentrality = Parameters[nameof(EvalConfig.EgKingCentrality)].Value;
         eval.Config.MgKingCorner = Parameters[nameof(EvalConfig.MgKingCorner)].Value;
         eval.Config.EgKingCorner = Parameters[nameof(EvalConfig.EgKingCorner)].Value;
+        // Pawn Structure
+        eval.Config.MgIsolatedPawn = Parameters[nameof(EvalConfig.MgIsolatedPawn)].Value;
+        eval.Config.EgIsolatedPawn = Parameters[nameof(EvalConfig.EgIsolatedPawn)].Value;
+        eval.Config.MgDoubledPawn = Parameters[nameof(EvalConfig.MgDoubledPawn)].Value;
+        eval.Config.EgDoubledPawn = Parameters[nameof(EvalConfig.EgDoubledPawn)].Value;
         // Passed Pawns
         eval.Config.PassedPawnPowerPer128 = Parameters[nameof(EvalConfig.PassedPawnPowerPer128)].Value;
         eval.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvalConfig.MgPassedPawnScalePer128)].Value;

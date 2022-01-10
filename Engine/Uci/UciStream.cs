@@ -384,12 +384,9 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("option name Hash type spin default 128 min 0 max 2048");
         WriteMessageLine("option name ClearHash type button");
         WriteMessageLine("option name UCI_AnalyseMode type check default false");
-        WriteMessageLine("option name Analyze type check default false");
         WriteMessageLine($"option name MultiPV type spin default 1 min 1 max {Core.Game.Position.MaxMoves}");
         WriteMessageLine("option name UCI_LimitStrength type check default false");
-        WriteMessageLine("option name LimitStrength type check default false");
         WriteMessageLine($"option name UCI_Elo type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
-        WriteMessageLine($"option name ELO type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
         WriteMessageLine("uciok");
     }
 
@@ -435,11 +432,9 @@ public sealed class UciStream : IDisposable
                 _search.MultiPv = int.Parse(optionValue);
                 break;
             case "uci_limitstrength":
-            case "limitstrength":
                 _search.LimitedStrength = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                 break;
             case "uci_elo":
-            case "elo":
                 _search.Elo = int.Parse(optionValue);
                 break;
             default:

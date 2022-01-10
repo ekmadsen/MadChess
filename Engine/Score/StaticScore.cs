@@ -31,6 +31,8 @@ public sealed class StaticScore
     public readonly int[] EgPieceMaterial;
     public readonly int[] MgPieceLocation;
     public readonly int[] EgPieceLocation;
+    public readonly int[] MgPawnStructure;
+    public readonly int[] EgPawnStructure;
     public readonly int[] MgPassedPawns;
     public readonly int[] EgPassedPawns;
     public readonly int[] EgFreePassedPawns;
@@ -55,6 +57,8 @@ public sealed class StaticScore
         EgPieceMaterial = new int[2];
         MgPieceLocation = new int[2];
         EgPieceLocation = new int[2];
+        MgPawnStructure = new int[2];
+        EgPawnStructure = new int[2];
         MgPassedPawns = new int[2];
         EgPassedPawns = new int[2];
         EgFreePassedPawns = new int[2];
@@ -75,7 +79,7 @@ public sealed class StaticScore
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
+    private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPawnStructure[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
                                       MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgThreats[(int)color] + MgBishopPair[(int)color];
 
 
@@ -84,7 +88,7 @@ public sealed class StaticScore
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgPieceLocation[(int)color] + EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] +
+    public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgPieceLocation[(int)color] + EgPawnStructure[(int)color] + EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] +
                                      UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgThreats[(int)color] + EgBishopPair[(int)color];
 
 
@@ -134,6 +138,10 @@ public sealed class StaticScore
         MgPieceLocation[(int)Color.Black] = 0;
         EgPieceLocation[(int)Color.White] = 0;
         EgPieceLocation[(int)Color.Black] = 0;
+        MgPawnStructure[(int)Color.White] = 0;
+        MgPawnStructure[(int)Color.Black] = 0;
+        EgPawnStructure[(int)Color.White] = 0;
+        EgPawnStructure[(int)Color.Black] = 0;
         MgPassedPawns[(int)Color.White] = 0;
         MgPassedPawns[(int)Color.Black] = 0;
         EgPassedPawns[(int)Color.White] = 0;
@@ -173,6 +181,7 @@ public sealed class StaticScore
         AppendStaticScoreLine(stringBuilder, "Simple Endgame", EgSimple[(int)Color.White], EgSimple[(int)Color.Black], EgSimple[(int)Color.White], EgSimple[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Material", GetMgMaterial(Color.White), GetMgMaterial(Color.Black), GetEgMaterial(Color.White), GetEgMaterial(Color.Black), phase);
         AppendStaticScoreLine(stringBuilder, "Piece Location", MgPieceLocation[(int)Color.White], MgPieceLocation[(int)Color.Black], EgPieceLocation[(int)Color.White], EgPieceLocation[(int)Color.Black], phase);
+        AppendStaticScoreLine(stringBuilder, "Pawn Structure", MgPawnStructure[(int)Color.White], MgPawnStructure[(int)Color.Black], EgPawnStructure[(int)Color.White], EgPawnStructure[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Passed Pawns", MgPassedPawns[(int)Color.White], MgPassedPawns[(int)Color.Black], EgPassedPawns[(int)Color.White], EgPassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, EgFreePassedPawns[(int)Color.White], EgFreePassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, EgKingEscortedPassedPawns[(int)Color.White], EgKingEscortedPassedPawns[(int)Color.Black], phase);
