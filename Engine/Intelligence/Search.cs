@@ -576,12 +576,9 @@ public sealed class Search : IDisposable
         if (board.CurrentPosition.KingInCheck) board.CurrentPosition.StaticScore = -StaticScore.Max;
         // ReSharper disable once PossibleNullReferenceException
         else if (board.PreviousPosition?.PlayedMove == Move.Null) board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
-        else
-        {
-            // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
-            (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
-        }
+        else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
         // ReSharper restore PossibleNullReferenceException
+        // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         if (IsPositionFutile(board.CurrentPosition, depth, horizon, drawnEndgame, alpha, beta))
         {
             // Position is futile.
@@ -800,12 +797,9 @@ public sealed class Search : IDisposable
             else moveGenerationToSquareMask = toSquareMask;
             // ReSharper disable PossibleNullReferenceException
             if (board.PreviousPosition?.PlayedMove == Move.Null) board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
-            else
-            {
-                // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
-                (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
-            }
+            else (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
             // ReSharper restore PossibleNullReferenceException
+            // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
             if (board.CurrentPosition.StaticScore >= beta) return beta; // Prevent worsening of position by making a bad capture.  Stand pat.
             alpha = Math.Max(board.CurrentPosition.StaticScore, alpha);
         }
@@ -964,7 +958,7 @@ public sealed class Search : IDisposable
     }
 
 
-    // Pass BestMove parameter even though it isn't referenced to satisfy GetNextMove delegate signature.
+    // Pass bestMove parameter even though it isn't referenced to satisfy GetNextMove delegate signature.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static (ulong Move, int MoveIndex) GetNextCapture(Position position, ulong toSquareMask, int depth, ulong bestMove)
     {

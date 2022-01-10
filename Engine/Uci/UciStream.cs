@@ -226,6 +226,7 @@ public sealed class UciStream : IDisposable
     }
 
 
+    // TODO: Add "resetstats" UCI command.
     private void DispatchOnMainThread(List<string> tokens)
     {
         var writeMessageLine = true;
@@ -383,12 +384,9 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("option name Hash type spin default 128 min 0 max 2048");
         WriteMessageLine("option name ClearHash type button");
         WriteMessageLine("option name UCI_AnalyseMode type check default false");
-        WriteMessageLine("option name Analyze type check default false");
         WriteMessageLine($"option name MultiPV type spin default 1 min 1 max {Core.Game.Position.MaxMoves}");
         WriteMessageLine("option name UCI_LimitStrength type check default false");
-        WriteMessageLine("option name LimitStrength type check default false");
         WriteMessageLine($"option name UCI_Elo type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
-        WriteMessageLine($"option name ELO type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
         WriteMessageLine("uciok");
     }
 
@@ -434,11 +432,9 @@ public sealed class UciStream : IDisposable
                 _search.MultiPv = int.Parse(optionValue);
                 break;
             case "uci_limitstrength":
-            case "limitstrength":
                 _search.LimitedStrength = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                 break;
             case "uci_elo":
-            case "elo":
                 _search.Elo = int.Parse(optionValue);
                 break;
             default:
@@ -512,7 +508,7 @@ public sealed class UciStream : IDisposable
     private void GoSync(List<string> tokens)
     {
         _commandStopwatch.Restart();
-        // Reset search and evaluation.  Shift killer moves.
+        // Reset stats and search and shift killer moves.
         _stats.Reset();
         _search.Reset();
         _killerMoves.Shift(2);
@@ -865,10 +861,10 @@ public sealed class UciStream : IDisposable
                     expectedMoves[moveIndex] = expectedMove;
                     expectedMovesLongAlgebraic[moveIndex] = Move.ToLongAlgebraic(expectedMove);
                 }
-                _search.Reset();
                 _cache.Reset();
                 _killerMoves.Reset();
                 _moveHistory.Reset();
+                _search.Reset();
                 // Find best move.  Do not update node count or PV.
                 _board.NodesInfoUpdate = long.MaxValue;
                 _search.PvInfoUpdate = false;

@@ -13,13 +13,6 @@ namespace ErikTheCoder.MadChess.Engine.Hashtable;
 
 public struct CachedPosition
 {
-    public ulong Key;
-    public ulong Data;
-
-
-    public CachedPosition(ulong key, ulong data)
-    {
-        Key = key;
-        Data = data;
-    }
+    public ulong Key = 0;
+    public ulong Data = 0;
 }

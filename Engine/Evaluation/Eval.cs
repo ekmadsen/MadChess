@@ -654,6 +654,17 @@ public sealed class Eval
         Square square;
         while ((square = Bitwise.PopFirstSetSquare(ref pawns)) != Square.Illegal)
         {
+            var file = Board.Files[(int)square];
+            // Evaluate pawn structure.
+            var pawnsOccupyLeftFile = (file > 0) && ((Board.FileMasks[file - 1] & pawns) > 0);
+            var pawnsOccupyRightFile = (file < 7) && ((Board.FileMasks[file + 1] & pawns) > 0);
+            if (!pawnsOccupyLeftFile && !pawnsOccupyRightFile)
+            {
+                // Pawn is isolated.
+                _staticScore.MgPawnStructure[(int)color] -= Config.MgIsolatedPawn;
+                _staticScore.EgPawnStructure[(int)color] -= Config.EgIsolatedPawn;
+            }
+            // Evaluate passed pawns.
             if (IsPassedPawn(position, square, color))
             {
                 _passedPawns[(int)color] |= Board.SquareMasks[(int)square];
@@ -680,6 +691,17 @@ public sealed class Eval
             _staticScore.EgThreats[(int)color] += minorPiecesAttacked * Config.EgPawnThreatenMinor;
             _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgPawnThreatenMajor;
             _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgPawnThreatenMajor;
+        }
+        for (var file = 0; file < 8; file++)
+        {
+            var pawnCount = Bitwise.CountSetBits(Board.FileMasks[file] & pawns);
+            if (pawnCount > 1)
+            {
+                // File has double (or more) pawns.
+                var extraPawnCount = pawnCount - 1;
+                _staticScore.MgPawnStructure[(int)color] -= extraPawnCount * Config.MgDoubledPawn;
+                _staticScore.EgPawnStructure[(int)color] -= extraPawnCount * Config.EgDoubledPawn;
+            }
         }
     }
 
@@ -708,21 +730,17 @@ public sealed class Eval
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static bool IsUnstoppablePawn(Position position, Square pawnSquare, Square enemyKingSquare, Color color)
     {
-        // Pawn is free to advance to promotion square.
         var enemyColor = 1 - color;
+        var enemyPieceCount = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(enemyColor));
+        if (enemyPieceCount > 0) return false;
+        // Enemy has no minor or major pieces.
         var file = Board.Files[(int)pawnSquare];
         var rankOfPromotionSquare = (int)Piece.BlackPawn - ((int)color * (int)Piece.BlackPawn);
         var promotionSquare = Board.GetSquare(file, rankOfPromotionSquare);
-        var enemyPieceCount = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(enemyColor));
-        if (enemyPieceCount == 0)
-        {
-            // Enemy has no minor or major pieces.
-            var pawnDistanceToPromotionSquare = Board.SquareDistances[(int)pawnSquare][(int)promotionSquare];
-            var kingDistanceToPromotionSquare = Board.SquareDistances[(int)enemyKingSquare][(int)promotionSquare];
-            if (color != position.ColorToMove) kingDistanceToPromotionSquare--; // Enemy king can move one square closer to pawn.
-            return kingDistanceToPromotionSquare > pawnDistanceToPromotionSquare; // Enemy king cannot stop pawn from promoting.
-        }
-        return false;
+        var pawnDistanceToPromotionSquare = Board.SquareDistances[(int)pawnSquare][(int)promotionSquare];
+        var kingDistanceToPromotionSquare = Board.SquareDistances[(int)enemyKingSquare][(int)promotionSquare];
+        if (color != position.ColorToMove) kingDistanceToPromotionSquare--; // Enemy king can move one square closer to pawn.
+        return kingDistanceToPromotionSquare > pawnDistanceToPromotionSquare; // Enemy king cannot stop pawn from promoting.
     }
 
 
@@ -735,7 +753,9 @@ public sealed class Eval
         var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
         var enemyKingInnerRing = Board.InnerRingMasks[(int)enemyKingSquare];
         var enemyKingOuterRing = Board.OuterRingMasks[(int)enemyKingSquare];
+        var enemyKingFile = Board.Files[(int)enemyKingSquare];
         var enemyMajorPieces = position.GetMajorPieces(enemyColor);
+        var enemyPawns = position.GetPawns(enemyColor);
         var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
         var mgThreatsToEnemyKingSafety = 0;
         // Evaluate mobility of individual pieces.
@@ -766,20 +786,16 @@ public sealed class Eval
                 }
             }
         }
-        // Evaluate enemy king near semi-open file.
-        var enemyKingFile = Board.Files[(int)enemyKingSquare];
-        var leftFileMask = enemyKingFile > 0 ? Board.FileMasks[enemyKingFile - 1] : 0;
-        var enemyKingFileMask = Board.FileMasks[enemyKingFile];
-        var rightFileMask = enemyKingFile < 7 ? Board.FileMasks[enemyKingFile + 1] : 0;
-        var leftFileSemiOpen = (leftFileMask > 0) && ((position.GetPawns(enemyColor) & leftFileMask) == 0) ? 1 : 0;
-        var kingFileSemiOpen = (position.GetPawns(enemyColor) & enemyKingFileMask) == 0 ? 1 : 0;
-        var rightFileSemiOpen = (rightFileMask > 0) && ((position.GetPawns(enemyColor) & rightFileMask) == 0) ? 1 : 0;
-        var semiOpenFiles = leftFileSemiOpen + kingFileSemiOpen + rightFileSemiOpen;
-        mgThreatsToEnemyKingSafety += semiOpenFiles * Config.MgKingSafetySemiOpenFilePer8;
+        // Evaluate enemy king near semi-open files.
+        var semiOpenFilesNearEnemyKing = 0;
+        if ((enemyKingFile > 0) && ((Board.FileMasks[enemyKingFile - 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Left of Enemy King
+        if ((Board.FileMasks[enemyKingFile] & enemyPawns) == 0) semiOpenFilesNearEnemyKing++; // Enemy King File
+        if ((enemyKingFile < 7) && ((Board.FileMasks[enemyKingFile + 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Right of Enemy King
+        mgThreatsToEnemyKingSafety += semiOpenFilesNearEnemyKing * Config.MgKingSafetySemiOpenFilePer8;
         // Evaluate enemy king pawn shield.
         const int maxPawnsInShield = 3;
-        var missingPawns = maxPawnsInShield - Bitwise.CountSetBits(position.GetPawns(enemyColor) & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
-        mgThreatsToEnemyKingSafety += missingPawns * Config.MgKingSafetyPawnShieldPer8;
+        var pawnsMissingFromShield = maxPawnsInShield - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
+        mgThreatsToEnemyKingSafety += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
         // Lookup king safety score in array.
         var maxIndex = _mgKingSafety.Length - 1;
         _staticScore.MgKingSafety[(int)enemyColor] = _mgKingSafety[Math.Min(mgThreatsToEnemyKingSafety / 8, maxIndex)];
