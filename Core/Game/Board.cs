@@ -1439,9 +1439,9 @@ public sealed class Board
     private void AddPiece(Piece piece, Square square)
     {
         Debug.Assert(piece != Piece.None);
-        var squareMask = SquareMasks[(int)square];
-        var pieceColor = PieceHelper.GetColor(piece);
         // Update bitboards and Zobrist key.
+        var pieceColor = PieceHelper.GetColor(piece);
+        var squareMask = SquareMasks[(int)square];
         CurrentPosition.PieceBitboards[(int)piece] |= squareMask;
         CurrentPosition.ColorOccupancy[(int)pieceColor] |= squareMask;
         CurrentPosition.Occupancy |= squareMask;
@@ -1452,11 +1452,11 @@ public sealed class Board
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Piece RemovePiece(Square square)
     {
-        var squareUnmask = _squareUnmasks[(int)square];
         var piece = CurrentPosition.GetPiece(square);
         if (piece == Piece.None) return piece;
-        var pieceColor = PieceHelper.GetColor(piece);
         // Update bitboards and Zobrist key.
+        var pieceColor = PieceHelper.GetColor(piece);
+        var squareUnmask = _squareUnmasks[(int)square];
         CurrentPosition.PieceBitboards[(int)piece] &= squareUnmask;
         CurrentPosition.ColorOccupancy[(int)pieceColor] &= squareUnmask;
         CurrentPosition.Occupancy &= squareUnmask;

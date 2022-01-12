@@ -57,6 +57,7 @@ public sealed class Search : IDisposable
     private const int _haveTimeSearchNextPlyPer128 = 70;
     private const int _aspirationMinHorizon = 5;
     private const int _aspirationWindow = 100;
+    private const int _nullMoveMinToHorizon = 2;
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 200;
     private const int _nullStaticScoreMaxReduction = 3;
@@ -586,7 +587,7 @@ public sealed class Search : IDisposable
             UpdateBestMoveCache(board.CurrentPosition, depth, horizon, Move.Null, beta, alpha, beta);
             return beta;
         }
-        if (isNullMovePermitted && IsNullMovePermitted(board.CurrentPosition, beta))
+        if (isNullMovePermitted && IsNullMovePermitted(board.CurrentPosition, depth, horizon, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -873,8 +874,9 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsNullMovePermitted(Position position, int beta)
+    private static bool IsNullMovePermitted(Position position, int depth, int horizon, int beta)
     {
+        if ((horizon - depth) < _nullMoveMinToHorizon) return false;
         if ((position.StaticScore < beta) || position.KingInCheck) return false;
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
