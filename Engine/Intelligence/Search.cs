@@ -57,7 +57,6 @@ public sealed class Search : IDisposable
     private const int _haveTimeSearchNextPlyPer128 = 70;
     private const int _aspirationMinHorizon = 5;
     private const int _aspirationWindow = 100;
-    private const int _nullMoveMinToHorizon = 2;
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 200;
     private const int _nullStaticScoreMaxReduction = 3;
@@ -876,8 +875,8 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsNullMovePermitted(Position position, int depth, int horizon, int beta)
     {
-        if ((horizon - depth) < _nullMoveMinToHorizon) return false;
-        if ((position.StaticScore < beta) || position.KingInCheck) return false;
+        // Do not reduce directly into quiet search, nor if static score is weak, nor if king in check.
+        if (((horizon - depth) <= 1) || (position.StaticScore < beta) || position.KingInCheck) return false;
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
@@ -887,7 +886,9 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
-        var reduction = _nullMoveReduction + Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
+        // Do not reduce directly into quiet search.
+        var staticScoreReduction = Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
+        var reduction = Math.Min(_nullMoveReduction + staticScoreReduction, horizon - depth - 1);
         board.PlayNullMove();
         // Do not play two null moves consecutively.  Search with zero alpha / beta window.
         var score = -GetDynamicScore(board, depth + 1, horizon - reduction, false, -beta, -beta + 1);
