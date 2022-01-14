@@ -586,7 +586,7 @@ public sealed class Search : IDisposable
             UpdateBestMoveCache(board.CurrentPosition, depth, horizon, Move.Null, beta, alpha, beta);
             return beta;
         }
-        if (isNullMovePermitted && IsNullMovePermitted(board.CurrentPosition, beta))
+        if (isNullMovePermitted && IsNullMovePermitted(board.CurrentPosition, depth, horizon, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -873,9 +873,10 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsNullMovePermitted(Position position, int beta)
+    private static bool IsNullMovePermitted(Position position, int depth, int horizon, int beta)
     {
-        if ((position.StaticScore < beta) || position.KingInCheck) return false;
+        // Do not reduce directly into quiet search, nor if static score is weak, nor if king in check.
+        if (((horizon - depth) <= 1) || (position.StaticScore < beta) || position.KingInCheck) return false;
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
@@ -885,7 +886,9 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
-        var reduction = _nullMoveReduction + Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
+        // Do not reduce directly into quiet search.
+        var staticScoreReduction = Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
+        var reduction = Math.Min(_nullMoveReduction + staticScoreReduction, horizon - depth - 1);
         board.PlayNullMove();
         // Do not play two null moves consecutively.  Search with zero alpha / beta window.
         var score = -GetDynamicScore(board, depth + 1, horizon - reduction, false, -beta, -beta + 1);
