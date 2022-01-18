@@ -70,9 +70,10 @@ public sealed class Search : IDisposable
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
     private static MoveScoreComparer _moveScoreComparer;
     private static Delegates.GetStaticScore _getExchangeMaterialScore;
+    private static int[] _staticEvalPruningMargins;
+    private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
-    private static int[] _futilityMargins;
-    private int[] _lateMovePruning;
+    private int[] _lateMovePruningMargins;
     private int[] _lateMoveReductions;
     private ScoredMove[] _rootMoves;
     private ScoredMove[] _bestMoves;
@@ -173,10 +174,10 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        // To Horizon =            000  001  002  003  004  005
-        _futilityMargins = new[] { 050, 100, 175, 275, 400, 550 };
-        _lateMovePruning = new[] { 999, 003, 007, 013, 021, 031 };
-        Debug.Assert(_futilityMargins.Length == _lateMovePruning.Length);
+        // To Horizon =                     000  001  002  003  004  005
+        _staticEvalPruningMargins = new[] { 999, 150, 250, 400, 600, 850 };
+        _futilityPruningMargins =   new[] { 050, 100, 175, 275, 400, 550 };
+        _lateMovePruningMargins =   new[] { 999, 003, 007, 013, 021, 031 };
         // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
         _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
         // Create scored move arrays.
@@ -227,8 +228,9 @@ public sealed class Search : IDisposable
             _scoredMovePriorityComparer = null;
             _moveScoreComparer = null;
             _getExchangeMaterialScore = null;
-            _futilityMargins = null;
-            _lateMovePruning = null;
+            _staticEvalPruningMargins = null;
+            _futilityPruningMargins = null;
+            _lateMovePruningMargins = null;
             _lateMoveReductions = null;
             _rootMoves = null;
             _bestMoves = null;
@@ -373,7 +375,7 @@ public sealed class Search : IDisposable
         {
             _originalHorizon++;
             _selectiveHorizon = 0;
-            // Clear principal variations and age move history.
+            // Clear principal variations.
             // The Dictionary enumerator allocates memory which is not desirable when searching positions.
             // However, this occurs only once per ply.
             using (var pvEnumerator = _principalVariations.GetEnumerator())
@@ -807,12 +809,14 @@ public sealed class Search : IDisposable
         board.CurrentPosition.PrepareMoveGeneration();
         do
         {
-            var (move, _) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null); // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
+            var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null); // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
             if (move == Move.Null) break;
             if (board.IsMoveLegal(ref move)) legalMoveNumber++; // Move is legal.
             else continue; // Skip illegal move.
             if (considerFutility && IsMoveFutile(board, depth, horizon, move, legalMoveNumber, 0, drawnEndgame, alpha, beta)) continue; // Move is futile.  Skip move.
             // Play and search move.
+            Move.SetPlayed(ref move, true);
+            board.CurrentPosition.Moves[moveIndex] = move;
             board.PlayMove(move);
             var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, -beta, -alpha, getStaticScore, considerFutility);
             board.UndoMove();
@@ -860,15 +864,15 @@ public sealed class Search : IDisposable
     private static bool IsPositionFutile(Position position, int depth, int horizon, bool isDrawnEndgame, int alpha, int beta)
     {
         var toHorizon = horizon - depth;
-        if (toHorizon >= _futilityMargins.Length) return false; // Position far from search horizon is not futile.
+        if (toHorizon >= _staticEvalPruningMargins.Length) return false; // Position far from search horizon is not futile.
         if (isDrawnEndgame || (depth == 0) || position.KingInCheck) return false; // Position in drawn endgame, at root, or when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
         // Position with lone king on board is not futile.
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
         // Determine if any move can lower score to beta.
-        var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-        return position.StaticScore - futilityMargin > beta;
+        var staticEvalPruningMargin = toHorizon <= 0 ? _staticEvalPruningMargins[0] : _staticEvalPruningMargins[toHorizon];
+        return position.StaticScore - staticEvalPruningMargin > beta;
     }
 
 
@@ -999,9 +1003,9 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsMoveFutile(Board board, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int alpha, int beta)
     {
-        Debug.Assert(_futilityMargins.Length == _lateMovePruning.Length);
+        Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         var toHorizon = horizon - depth;
-        if (toHorizon >= _futilityMargins.Length) return false; // Move far from search horizon is not futile.
+        if (toHorizon >= _futilityPruningMargins.Length) return false; // Move far from search horizon is not futile.
         if ((depth == 0) || (legalMoveNumber == 1)) return false; // Root move or first move is not futile.
         if (drawnEndgame || Move.IsCheck(move) || board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame, checking move, or move when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
@@ -1017,11 +1021,11 @@ public sealed class Search : IDisposable
         // Move with lone king on board is not futile.
         if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.White]) == 1) return false;
         if (Bitwise.CountSetBits(board.CurrentPosition.ColorOccupancy[(int)Color.Black]) == 1) return false;
-        var lateMoveNumber = toHorizon <= 0 ? _lateMovePruning[0] : _lateMovePruning[toHorizon];
+        var lateMoveNumber = toHorizon <= 0 ? _lateMovePruningMargins[0] : _lateMovePruningMargins[toHorizon];
         if (Move.IsQuiet(move) && (quietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
         // Determine if move can raise score to alpha.
-        var futilityMargin = toHorizon <= 0 ? _futilityMargins[0] : _futilityMargins[toHorizon];
-        return board.CurrentPosition.StaticScore + _eval.TaperedMaterialScores[(int)PieceHelper.GetColorlessPiece(captureVictim)] + futilityMargin < alpha;
+        var futilityPruningMargin = toHorizon <= 0 ? _futilityPruningMargins[0] : _futilityPruningMargins[toHorizon];
+        return board.CurrentPosition.StaticScore + _eval.TaperedMaterialScores[(int)PieceHelper.GetColorlessPiece(captureVictim)] + futilityPruningMargin < alpha;
     }
 
 
