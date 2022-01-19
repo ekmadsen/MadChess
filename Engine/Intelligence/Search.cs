@@ -70,7 +70,6 @@ public sealed class Search : IDisposable
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
     private static MoveScoreComparer _moveScoreComparer;
     private static Delegates.GetStaticScore _getExchangeMaterialScore;
-    private static int[] _staticEvalPruningMargins;
     private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
     private int[] _lateMovePruningMargins;
@@ -174,10 +173,9 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        // To Horizon =                     000  001  002  003  004  005
-        _staticEvalPruningMargins = new[] { 999, 150, 250, 400, 600, 850 };
-        _futilityPruningMargins =   new[] { 050, 100, 175, 275, 400, 550 };
-        _lateMovePruningMargins =   new[] { 999, 003, 007, 013, 021, 031 };
+        // To Horizon =                   000  001  002  003  004  005
+        _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
+        _lateMovePruningMargins = new[] { 999, 003, 007, 013, 021, 031 };
         // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
         _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
         // Create scored move arrays.
@@ -228,7 +226,6 @@ public sealed class Search : IDisposable
             _scoredMovePriorityComparer = null;
             _moveScoreComparer = null;
             _getExchangeMaterialScore = null;
-            _staticEvalPruningMargins = null;
             _futilityPruningMargins = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
@@ -864,15 +861,15 @@ public sealed class Search : IDisposable
     private static bool IsPositionFutile(Position position, int depth, int horizon, bool isDrawnEndgame, int alpha, int beta)
     {
         var toHorizon = horizon - depth;
-        if (toHorizon >= _staticEvalPruningMargins.Length) return false; // Position far from search horizon is not futile.
+        if (toHorizon >= _futilityPruningMargins.Length) return false; // Position far from search horizon is not futile.
         if (isDrawnEndgame || (depth == 0) || position.KingInCheck) return false; // Position in drawn endgame, at root, or when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
         // Position with lone king on board is not futile.
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
         // Determine if any move can lower score to beta.
-        var staticEvalPruningMargin = toHorizon <= 0 ? _staticEvalPruningMargins[0] : _staticEvalPruningMargins[toHorizon];
-        return position.StaticScore - staticEvalPruningMargin > beta;
+        var futilityPruningMargin = toHorizon <= 0 ? _futilityPruningMargins[0] : _futilityPruningMargins[toHorizon];
+        return position.StaticScore - futilityPruningMargin > beta;
     }
 
 
