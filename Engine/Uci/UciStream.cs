@@ -32,7 +32,7 @@ namespace ErikTheCoder.MadChess.Engine.Uci;
 public sealed class UciStream : IDisposable
 {
     public const long NodesInfoInterval = 1_000_000;
-    public const long NodesTimeInterval = 5_000;
+    public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
     private const int _minWinScale = 400;

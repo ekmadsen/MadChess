@@ -261,7 +261,7 @@ public sealed class PrecalculatedMoves
             occupancyToMovesMask.EnsureCapacity(uniqueOccupancies);
             // Generate moves mask for every permutation of occupancy of the relevant destination squares.
             var occupancyPermutations = Bitwise.GetAllPermutations(relevantMoveDestinations);
-            for (var occupancyIndex = 0; occupancyIndex < occupancyPermutations.Capacity; occupancyIndex++)
+            for (var occupancyIndex = 0; occupancyIndex < occupancyPermutations.Count; occupancyIndex++)
             {
                 var occupancy = occupancyPermutations[occupancyIndex];
                 var movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
