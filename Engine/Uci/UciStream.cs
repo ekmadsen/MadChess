@@ -1030,7 +1030,7 @@ public sealed class UciStream : IDisposable
                     if (board.CurrentPosition.KingInCheck) continue; // Do not evaluate positions with king in check.
                     // Get static and quiet scores.
                     var (staticScore, _) = eval.GetStaticScore(board.CurrentPosition);
-                    var quietScore = search.GetQuietScore(board, 1, 1, -StaticScore.Max, StaticScore.Max);
+                    var quietScore = search.GetQuietScore(board, 1, 1, -SpecialScore.Max, SpecialScore.Max);
                     if (FastMath.Abs(staticScore - quietScore) <= margin)
                     {
                         // Write quiet position to output file.
