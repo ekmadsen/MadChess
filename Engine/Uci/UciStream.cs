@@ -32,7 +32,7 @@ namespace ErikTheCoder.MadChess.Engine.Uci;
 public sealed class UciStream : IDisposable
 {
     public const long NodesInfoInterval = 1_000_000;
-    public const long NodesTimeInterval = 5_000;
+    public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
     private const int _minWinScale = 400;
@@ -1030,7 +1030,7 @@ public sealed class UciStream : IDisposable
                     if (board.CurrentPosition.KingInCheck) continue; // Do not evaluate positions with king in check.
                     // Get static and quiet scores.
                     var (staticScore, _) = eval.GetStaticScore(board.CurrentPosition);
-                    var quietScore = search.GetQuietScore(board, 1, 1, -StaticScore.Max, StaticScore.Max);
+                    var quietScore = search.GetQuietScore(board, 1, 1, -SpecialScore.Max, SpecialScore.Max);
                     if (FastMath.Abs(staticScore - quietScore) <= margin)
                     {
                         // Write quiet position to output file.

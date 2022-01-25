@@ -20,11 +20,6 @@ namespace ErikTheCoder.MadChess.Engine.Score;
 
 public sealed class StaticScore
 {
-    public const int Max = 999_999;
-    public const int Checkmate = Max - Search.MaxHorizon;
-    public const int Interrupted = Max - Search.MaxHorizon - 1;
-    public const int NotCached = Max - Search.MaxHorizon - 2;
-    public const int MaxPlyWithoutCaptureOrPawnMove = 100;
     public readonly int[] EgSimple;
     public readonly int[] PawnMaterial;
     public readonly int[] MgPieceMaterial;
@@ -118,7 +113,7 @@ public sealed class StaticScore
     {
         var taperedScore = GetTaperedScore(color, phase);
         // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
-        return (taperedScore * (MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / MaxPlyWithoutCaptureOrPawnMove;
+        return (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
     }
 
 
@@ -200,7 +195,7 @@ public sealed class StaticScore
         var phaseFraction = (100 * phase) / Eval.MiddlegamePhase;
         var totalScore = GetTotalScore(Color.White, phase) / 100d;
         stringBuilder.AppendLine($"Middlegame   = {phase} of {Eval.MiddlegamePhase} ({phaseFraction}%)");
-        stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
+        stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
         stringBuilder.AppendLine($"Total Score  = {totalScore:0.00}");
         return stringBuilder.ToString();
     }

@@ -13,8 +13,9 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
-using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Core.Utilities;
+using ErikTheCoder.MadChess.Engine.Heuristics;
+using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Score;
 
 
@@ -359,8 +360,7 @@ public sealed class Eval
     public (bool TerminalDraw, bool RepeatPosition) IsTerminalDraw(Position position)
     {
         // Only return true if position is drawn and no sequence of moves can make game winnable.
-        if (_isRepeatPosition(DrawMoves)) return (true, true); // Draw by repetition of position.
-        if (position.PlySinceCaptureOrPawnMove >= StaticScore.MaxPlyWithoutCaptureOrPawnMove) return (true, false); // Draw by 50 moves (100 ply) without a capture or pawn move.
+        if (position.PlySinceCaptureOrPawnMove >= Search.MaxPlyWithoutCaptureOrPawnMove) return (true, false); // Draw by 50 moves (100 ply) without a capture or pawn move.
         // Determine if insufficient material remains for checkmate.
         if (Bitwise.CountSetBits(position.GetPawns(Color.White) | position.GetPawns(Color.Black)) == 0)
         {
@@ -375,7 +375,7 @@ public sealed class Eval
                 }
             }
         }
-        return (false, false);
+        return _isRepeatPosition(DrawMoves) ? (true, true) : (false, false);
     }
 
 
@@ -899,13 +899,13 @@ public sealed class Eval
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetMateScore(int depth) => -StaticScore.Max + depth;
+    public static int GetMateScore(int depth) => -SpecialScore.Max + depth;
         
         
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetMateMoveCount(int score)
     {
-        var plyCount = (score > 0) ? StaticScore.Max - score : -StaticScore.Max - score;
+        var plyCount = (score > 0) ? SpecialScore.Max - score : -SpecialScore.Max - score;
         // Convert plies to full moves.
         var (quotient, remainder) = Math.DivRem(plyCount, 2);
         return quotient + remainder;
