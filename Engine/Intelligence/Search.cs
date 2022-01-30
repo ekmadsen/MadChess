@@ -56,7 +56,7 @@ public sealed class Search : IDisposable
     private const int _adjustMoveTimeMinScoreDecrease = 33;
     private const int _adjustMoveTimePer128 = 32;
     private const int _haveTimeSearchNextPlyPer128 = 70;
-    private const int _aspirationMinToHorizon = 5;
+    private const int _aspirationMinToHorizon = 7;
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 200;
     private const int _nullStaticScoreMaxReduction = 3;
@@ -176,7 +176,7 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        _singlePvAspirationWindows = new[] { 10, 25, 50, 100, 300, 500, 1000 };
+        _singlePvAspirationWindows = new[] { 050, 100, 200, 400, 800 };
         _multiPvAspirationWindows =  new[] { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
@@ -494,10 +494,11 @@ public sealed class Search : IDisposable
     }
 
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int GetScoreWithinAspirationWindow(Board board, int principalVariations)
     {
         var bestScore = _bestMoves[0].Score;
-        if ((_originalHorizon < _aspirationMinToHorizon) || (Math.Abs(bestScore) >= SpecialScore.Checkmate))
+        if (_originalHorizon < _aspirationMinToHorizon)
         {
             // Reset move scores, then search moves with infinite aspiration window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
@@ -515,29 +516,26 @@ public sealed class Search : IDisposable
         for (var aspirationIndex = 0; aspirationIndex < aspirationWindows.Length; aspirationIndex++)
         {
             var aspirationWindow = aspirationWindows[aspirationIndex];
-            // Reset move scores.
+            // Reset move scores and adjust alpha / beta window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
-            // Adjust alpha / beta window.
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (scorePrecision)
             {
                 case ScorePrecision.LowerBound:
                     // Fail High
-                    alpha = (alpha + beta) / 2;
                     beta = Math.Min(score + aspirationWindow, SpecialScore.Max);
                     break;
                 case ScorePrecision.UpperBound:
                     // Fail Low
-                    beta = (alpha + beta) / 2;
                     alpha = Math.Max(score - aspirationWindow, -SpecialScore.Max);
                     break;
                 case ScorePrecision.Exact:
                     // Initial Aspiration Window
                     // Center aspiration window around best score from prior ply.
-                    alpha = principalVariations > 1
+                    alpha = Math.Max(principalVariations > 1
                         ? _lastAlpha
-                        : bestScore - scoreError - aspirationWindow;
-                    beta = bestScore + aspirationWindow;
+                        : bestScore - scoreError - aspirationWindow, -SpecialScore.Max);
+                    beta = Math.Min(bestScore + aspirationWindow, SpecialScore.Max);
                     break;
                 default:
                     throw new Exception(scorePrecision + " score precision not supported.");
@@ -571,6 +569,7 @@ public sealed class Search : IDisposable
     }
 
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetBestScore(Position position, int rank)
     {
         Debug.Assert(rank > 0);
