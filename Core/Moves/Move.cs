@@ -511,7 +511,6 @@ public static class Move
             piece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
                 ? char.ToUpper(standardAlgebraicNoCheck[0])
                 : char.ToLower(standardAlgebraicNoCheck[0]));
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (standardAlgebraicNoCheck[1] == 'x')
             {
                 // Piece Capture
