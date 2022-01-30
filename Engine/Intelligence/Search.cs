@@ -176,7 +176,8 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        _singlePvAspirationWindows = new[] { 050, 100, 200, 400, 800 };
+        //_singlePvAspirationWindows = new[] { 050, 100, 200, 400, 800 };
+        _singlePvAspirationWindows = Array.Empty<int>();
         _multiPvAspirationWindows =  new[] { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
@@ -498,7 +499,7 @@ public sealed class Search : IDisposable
     private int GetScoreWithinAspirationWindow(Board board, int principalVariations)
     {
         var bestScore = _bestMoves[0].Score;
-        if (_originalHorizon < _aspirationMinToHorizon)
+        if((_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
         {
             // Reset move scores, then search moves with infinite aspiration window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
