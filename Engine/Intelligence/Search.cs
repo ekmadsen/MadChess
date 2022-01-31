@@ -56,7 +56,7 @@ public sealed class Search : IDisposable
     private const int _adjustMoveTimeMinScoreDecrease = 33;
     private const int _adjustMoveTimePer128 = 32;
     private const int _haveTimeSearchNextPlyPer128 = 70;
-    private const int _aspirationMinToHorizon = 7;
+    private const int _aspirationMinToHorizon = 5;
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 200;
     private const int _nullStaticScoreMaxReduction = 3;
@@ -72,7 +72,6 @@ public sealed class Search : IDisposable
     private static Delegates.GetStaticScore _getExchangeMaterialScore;
     private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
-    private int[] _singlePvAspirationWindows;
     private int[] _multiPvAspirationWindows;
     private int[] _lateMovePruningMargins;
     private int[] _lateMoveReductions;
@@ -176,9 +175,7 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        //_singlePvAspirationWindows = new[] { 050, 100, 200, 400, 800 };
-        _singlePvAspirationWindows = Array.Empty<int>();
-        _multiPvAspirationWindows =  new[] { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 };
+        _multiPvAspirationWindows =  new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
         _lateMovePruningMargins = new[] { 999, 003, 007, 013, 021, 031 };
@@ -234,7 +231,6 @@ public sealed class Search : IDisposable
             _moveScoreComparer = null;
             _getExchangeMaterialScore = null;
             _futilityPruningMargins = null;
-            _singlePvAspirationWindows = null;
             _multiPvAspirationWindows = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
@@ -499,7 +495,7 @@ public sealed class Search : IDisposable
     private int GetScoreWithinAspirationWindow(Board board, int principalVariations)
     {
         var bestScore = _bestMoves[0].Score;
-        if((_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
+        if(CompetitivePlay || (_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
         {
             // Reset move scores, then search moves with infinite aspiration window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
@@ -509,14 +505,12 @@ public sealed class Search : IDisposable
             ? _blunderError // Blunder
             : 0;
         scoreError = Math.Max(scoreError, _moveError);
-        var aspirationWindows = CompetitivePlay ? _singlePvAspirationWindows : _multiPvAspirationWindows;
         var alpha = 0;
         var beta = 0;
-        var score = 0;
         var scorePrecision = ScorePrecision.Exact;
-        for (var aspirationIndex = 0; aspirationIndex < aspirationWindows.Length; aspirationIndex++)
+        for (var aspirationIndex = 0; aspirationIndex < _multiPvAspirationWindows.Length; aspirationIndex++)
         {
-            var aspirationWindow = aspirationWindows[aspirationIndex];
+            var aspirationWindow = _multiPvAspirationWindows[aspirationIndex];
             // Reset move scores and adjust alpha / beta window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
             // ReSharper disable once SwitchStatementMissingSomeCases
@@ -524,26 +518,26 @@ public sealed class Search : IDisposable
             {
                 case ScorePrecision.LowerBound:
                     // Fail High
-                    beta = Math.Min(score + aspirationWindow, SpecialScore.Max);
+                    beta = Math.Min(beta + aspirationWindow, SpecialScore.Max);
                     break;
                 case ScorePrecision.UpperBound:
                     // Fail Low
-                    alpha = Math.Max(score - aspirationWindow, -SpecialScore.Max);
+                    alpha = Math.Max(alpha - aspirationWindow, -SpecialScore.Max);
                     break;
                 case ScorePrecision.Exact:
                     // Initial Aspiration Window
                     // Center aspiration window around best score from prior ply.
-                    alpha = Math.Max(principalVariations > 1
-                        ? _lastAlpha
-                        : bestScore - scoreError - aspirationWindow, -SpecialScore.Max);
+                    alpha = Math.Max(_originalHorizon == _aspirationMinToHorizon
+                        ? bestScore - scoreError - aspirationWindow
+                        : _lastAlpha, -SpecialScore.Max);
                     beta = Math.Min(bestScore + aspirationWindow, SpecialScore.Max);
                     break;
                 default:
                     throw new Exception(scorePrecision + " score precision not supported.");
             }
             // Search moves with aspiration window.
-            if (_debug()) _writeMessageLine($"info string LowAspirationWindow = {aspirationWindow} Alpha = {alpha} Beta = {beta}");
-            score = GetDynamicScore(board, 0, _originalHorizon, false, alpha, beta);
+            if (_debug()) _writeMessageLine($"info string AspirationWindow = {aspirationWindow} Alpha = {alpha} Beta = {beta}");
+            var score = GetDynamicScore(board, 0, _originalHorizon, false, alpha, beta);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) return score; // Stop searching.
             if (score >= beta)
             {
@@ -772,7 +766,7 @@ public sealed class Search : IDisposable
                 _stats.MovesCausingBetaCutoff++;
                 _stats.BetaCutoffMoveNumber += legalMoveNumber;
                 if (legalMoveNumber == 1) _stats.BetaCutoffFirstMove++;
-                return score;
+                return beta;
             }
             var rootMoveWithinWindow = (depth == 0) && (score > alpha) && (score < beta);
             if (rootMoveWithinWindow || (score > bestScore))
@@ -871,7 +865,7 @@ public sealed class Search : IDisposable
             if (board.PreviousPosition?.PlayedMove == Move.Null) board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
             else (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
             // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
-            if (board.CurrentPosition.StaticScore >= beta) return board.CurrentPosition.StaticScore; // Prevent worsening of position by making a bad capture.  Stand pat.
+            if (board.CurrentPosition.StaticScore >= beta) return beta; // Prevent worsening of position by making a bad capture.  Stand pat.
             alpha = Math.Max(board.CurrentPosition.StaticScore, alpha);
         }
         var legalMoveNumber = 0;
@@ -891,7 +885,7 @@ public sealed class Search : IDisposable
             var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, -beta, -alpha, getStaticScore, considerFutility);
             board.UndoMove();
             if (FastMath.Abs(score) == SpecialScore.Interrupted) return score; // Stop searching.
-            if (score >= beta) return score; // Position is not the result of best play by both players.
+            if (score >= beta) return beta; // Position is not the result of best play by both players.
             alpha = Math.Max(score, alpha);
         } while (true);
         if ((legalMoveNumber == 0) && board.CurrentPosition.KingInCheck) return Eval.GetMateScore(depth); // Game ends on this move.
@@ -1163,13 +1157,13 @@ public sealed class Search : IDisposable
             case ScorePrecision.Exact:
                 // Score is exact.
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
-                if (dynamicScore >= beta) return dynamicScore; // Score fails high.
+                if (dynamicScore >= beta) return beta; // Score fails high.
                 return AllowedToTruncatePv ? dynamicScore : SpecialScore.NotCached;
             case ScorePrecision.UpperBound:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 break;
             case ScorePrecision.LowerBound:
-                if (dynamicScore >= beta) return dynamicScore; // Score fails high.
+                if (dynamicScore >= beta) return beta; // Score fails high.
                 break;
             default:
                 throw new Exception($"{scorePrecision} score precision not supported.");
@@ -1254,12 +1248,12 @@ public sealed class Search : IDisposable
         if (adjustedDynamicScore <= alpha)
         {
             CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.UpperBound);
-            CachedPositionData.SetDynamicScore(ref cachedPosition.Data, adjustedDynamicScore);
+            CachedPositionData.SetDynamicScore(ref cachedPosition.Data, alpha);
         }
         else if (adjustedDynamicScore >= beta)
         {
             CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.LowerBound);
-            CachedPositionData.SetDynamicScore(ref cachedPosition.Data, adjustedDynamicScore);
+            CachedPositionData.SetDynamicScore(ref cachedPosition.Data, beta);
         }
         else
         {
