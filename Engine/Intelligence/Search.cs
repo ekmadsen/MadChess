@@ -72,7 +72,7 @@ public sealed class Search : IDisposable
     private static Delegates.GetStaticScore _getExchangeMaterialScore;
     private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
-    private int[] _multiPvAspirationWindows;
+    private int[] _aspirationWindows;
     private int[] _lateMovePruningMargins;
     private int[] _lateMoveReductions;
     private ScoredMove[] _rootMoves;
@@ -175,7 +175,7 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        _multiPvAspirationWindows =  new[] { 100, 150, 200, 250, 300, 500, 1000 };
+        _aspirationWindows =  new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
         _lateMovePruningMargins = new[] { 999, 003, 007, 013, 021, 031 };
@@ -231,7 +231,7 @@ public sealed class Search : IDisposable
             _moveScoreComparer = null;
             _getExchangeMaterialScore = null;
             _futilityPruningMargins = null;
-            _multiPvAspirationWindows = null;
+            _aspirationWindows = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
             _rootMoves = null;
@@ -495,6 +495,7 @@ public sealed class Search : IDisposable
     private int GetScoreWithinAspirationWindow(Board board, int principalVariations)
     {
         var bestScore = _bestMoves[0].Score;
+        // Use aspiration windows in limited circumstances (not for competitive play).
         if(CompetitivePlay || (_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
         {
             // Reset move scores, then search moves with infinite aspiration window.
@@ -508,9 +509,9 @@ public sealed class Search : IDisposable
         var alpha = 0;
         var beta = 0;
         var scorePrecision = ScorePrecision.Exact;
-        for (var aspirationIndex = 0; aspirationIndex < _multiPvAspirationWindows.Length; aspirationIndex++)
+        for (var aspirationIndex = 0; aspirationIndex < _aspirationWindows.Length; aspirationIndex++)
         {
-            var aspirationWindow = _multiPvAspirationWindows[aspirationIndex];
+            var aspirationWindow = _aspirationWindows[aspirationIndex];
             // Reset move scores and adjust alpha / beta window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
             // ReSharper disable once SwitchStatementMissingSomeCases
