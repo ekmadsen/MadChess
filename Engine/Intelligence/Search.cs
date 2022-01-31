@@ -1156,7 +1156,6 @@ public sealed class Search : IDisposable
         switch (scorePrecision)
         {
             case ScorePrecision.Exact:
-                // Score is exact.
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 if (dynamicScore >= beta) return beta; // Score fails high.
                 return AllowedToTruncatePv ? dynamicScore : SpecialScore.NotCached;
