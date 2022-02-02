@@ -20,11 +20,12 @@ namespace ErikTheCoder.MadChess.Core.Moves;
 
 public static class Move
 {
-    // History has 48 - 21 + 1 = 28 bits.
-    // Eliminate one bit to prevent overflow caused by zero (adds one distinct value to range).
-    // 2 Pow 27 = 134_217_728.
-    // Value may be positive or negative, so max value is 134_217_728 / 2.
-    public const int HistoryMaxValue = 67_108_864;
+    // Move.History is allotted 28 bits.
+    // 2 Pow 28 = 268_435_456.
+    // Value may be positive or negative, so max value is 268_435_456 / 2 = 134_217_728.
+    // Account for zero value = 134_217_728 - 1 = 134_217_727.
+    public const int HistoryMaxValue = 134_217_727;
+
     public static readonly ulong Null;
     private static readonly int _bestShift;
     private static readonly ulong _bestMask;

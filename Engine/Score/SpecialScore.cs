@@ -15,7 +15,12 @@ namespace ErikTheCoder.MadChess.Engine.Score;
 
 public static class SpecialScore
 {
-    public const int Max = 15_000;
+    // CachedPositionData.StaticScore and CachedPositionData.DynamicScore is allotted 15 bits.
+    // 2 Pow 15 = 32_768.
+    // Value may be positive or negative, so max value is 32_768 / 2 = 16_384.
+    // Account for zero value = 16_384 - 1 = 16_383.
+    public const int Max = 16_383;
+
     public const int Checkmate = Max - Search.MaxHorizon;
     public const int Interrupted = Max - Search.MaxHorizon - 1;
     public const int NotCached = Max - Search.MaxHorizon - 2;

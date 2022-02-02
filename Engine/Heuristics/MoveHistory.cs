@@ -44,6 +44,8 @@ public sealed class MoveHistory
     }
 
 
+    // TODO: Log move history score late in games to determine if _multiplier and _divisor values are optimal.
+    // Consider aging history scores each search iteration depth.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateValue(Position position, ulong move, int increment)
     {

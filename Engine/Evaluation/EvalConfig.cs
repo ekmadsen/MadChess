@@ -26,9 +26,9 @@ public sealed class EvalConfig
     public int MgQueenMaterial = 975;
     public int EgQueenMaterial = 1468;
     // Incentivize engine to promote pawns.
-    // Also incentivize engine to eliminate enemy's last pawn in K vrs K + Pawns and / or Pieces endgames (to trigger simple endgame scoring that pushes enemy king to a corner).
-    public int UnstoppablePassedPawn => EgQueenMaterial - Eval.PawnMaterial;
-    public int SimpleEndgame => 8 * EgQueenMaterial;
+    // Also incentivize engine to eliminate enemy's last pieces and pawns (to trigger simple endgame scoring that pushes enemy king to a corner).
+    public int UnstoppablePassedPawn => EgQueenMaterial - (2 * Eval.PawnMaterial);
+    public int SimpleEndgame => 4 * EgQueenMaterial; // Winning side is unlikely to acquire this much of a material advantage before delivering checkmate.
     // Pawn Location
     public int MgPawnAdvancement = 8;
     public int EgPawnAdvancement = 4;
