@@ -377,13 +377,14 @@ public sealed class Search : IDisposable
         {
             _originalHorizon++;
             _selectiveHorizon = 0;
-            // Clear principal variations.
+            // Clear principal variations and age move history.
             // The Dictionary enumerator allocates memory which is not desirable when searching positions.
             // However, this occurs only once per ply.
             using (var pvEnumerator = _principalVariations.GetEnumerator())
             {
                 while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
             }
+            _moveHistory.Age();
             // Get score within aspiration window.
             var score = GetScoreWithinAspirationWindow(board, principalVariations);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.

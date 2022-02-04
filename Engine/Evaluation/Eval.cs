@@ -860,7 +860,8 @@ public sealed class Eval
         }
     }
 
-
+    
+    // TODO: Prevent endgame scale from exceeding 1x to keep non-mate scores < mate scores.  Also cap non-mate scores < SpecialScore.Checkmate.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DetermineEndgameScale(Position position)
     {
