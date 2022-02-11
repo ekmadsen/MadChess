@@ -80,6 +80,7 @@ public sealed class Particle
     public void ConfigureEvaluation(Eval eval)
     {
         // Endgame Material
+        eval.Config.EgPawnMaterial = Parameters[nameof(EvalConfig.EgPawnMaterial)].Value;
         eval.Config.EgKnightMaterial = Parameters[nameof(EvalConfig.EgKnightMaterial)].Value;
         eval.Config.EgBishopMaterial = Parameters[nameof(EvalConfig.EgBishopMaterial)].Value;
         eval.Config.EgRookMaterial = Parameters[nameof(EvalConfig.EgRookMaterial)].Value;

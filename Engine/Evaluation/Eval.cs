@@ -47,7 +47,6 @@ public sealed class Eval
     // Draw by Repetition
     public int DrawMoves;
     // Material
-    public const int PawnMaterial = 100;
     private static readonly int[] _exchangeMaterialScores =
     {
         0,   // None
@@ -89,7 +88,6 @@ public sealed class Eval
         _defaultConfig = new EvalConfig();
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
         TaperedMaterialScores = new int[(int)ColorlessPiece.King + 1];
-        TaperedMaterialScores[(int)ColorlessPiece.Pawn] = PawnMaterial;
         _mgMaterialScores = new int[(int)ColorlessPiece.King + 1];
         _egMaterialScores = new int[(int)ColorlessPiece.King + 1];
         _mgPieceLocations = new int[(int)ColorlessPiece.King + 1][];
@@ -141,13 +139,13 @@ public sealed class Eval
     public void CalculatePositionalFactors()
     {
         // Update material score array.
-        _mgMaterialScores[(int)ColorlessPiece.Pawn] = PawnMaterial;
+        _mgMaterialScores[(int)ColorlessPiece.Pawn] = EvalConfig.MgPawnMaterial;
         _mgMaterialScores[(int)ColorlessPiece.Knight] = Config.MgKnightMaterial;
         _mgMaterialScores[(int)ColorlessPiece.Bishop] = Config.MgBishopMaterial;
         _mgMaterialScores[(int)ColorlessPiece.Rook] = Config.MgRookMaterial;
         _mgMaterialScores[(int)ColorlessPiece.Queen] = Config.MgQueenMaterial;
         _mgMaterialScores[(int)ColorlessPiece.King] = 0;
-        _egMaterialScores[(int)ColorlessPiece.Pawn] = PawnMaterial;
+        _egMaterialScores[(int)ColorlessPiece.Pawn] = Config.EgPawnMaterial;
         _egMaterialScores[(int)ColorlessPiece.Knight] = Config.EgKnightMaterial;
         _egMaterialScores[(int)ColorlessPiece.Bishop] = Config.EgBishopMaterial;
         _egMaterialScores[(int)ColorlessPiece.Rook] = Config.EgRookMaterial;
@@ -326,7 +324,8 @@ public sealed class Eval
         }
         if (_debug())
         {
-            _writeMessageLine($"info string {nameof(PawnMaterial)} = {PawnMaterial}");
+            _writeMessageLine($"info string {nameof(EvalConfig.MgPawnMaterial)} = {EvalConfig.MgPawnMaterial}");
+            _writeMessageLine($"info string {nameof(Config.EgPawnMaterial)} = {Config.EgPawnMaterial}");
             _writeMessageLine($"info string {nameof(Config.MgKnightMaterial)} = {Config.MgKnightMaterial}");
             _writeMessageLine($"info string {nameof(Config.EgKnightMaterial)} = {Config.EgKnightMaterial}");
             _writeMessageLine($"info string {nameof(Config.MgBishopMaterial)} = {Config.MgBishopMaterial}");
@@ -397,6 +396,7 @@ public sealed class Eval
         _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
         // Update tapered material scores for current position.
         var phase = DetermineGamePhase(position);
+        TaperedMaterialScores[(int)ColorlessPiece.Pawn] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Pawn], _egMaterialScores[(int)ColorlessPiece.Pawn], phase);
         TaperedMaterialScores[(int)ColorlessPiece.Knight] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Knight], _egMaterialScores[(int)ColorlessPiece.Knight], phase);
         TaperedMaterialScores[(int)ColorlessPiece.Bishop] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Bishop], _egMaterialScores[(int)ColorlessPiece.Bishop], phase);
         TaperedMaterialScores[(int)ColorlessPiece.Rook] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Rook], _egMaterialScores[(int)ColorlessPiece.Rook], phase);
@@ -581,7 +581,10 @@ public sealed class Eval
         // Explicit piece evaluation is faster than looping through pieces due to avoiding CPU stalls and enabling out-of-order execution.
         // See https://stackoverflow.com/a/2349265/8992299.
         // Pawns
-        _staticScore.PawnMaterial[(int)color] = Bitwise.CountSetBits(position.GetPawns(color)) * PawnMaterial;
+        var pawn = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, color);
+        var pawnCount = Bitwise.CountSetBits(position.PieceBitboards[(int)pawn]);
+        _staticScore.MgPawnMaterial[(int)color] = pawnCount * _mgMaterialScores[(int)ColorlessPiece.Pawn];
+        _staticScore.EgPawnMaterial[(int)color] = pawnCount * _egMaterialScores[(int)ColorlessPiece.Pawn];
         // Knights
         var knight = PieceHelper.GetPieceOfColor(ColorlessPiece.Knight, color);
         var knightCount = Bitwise.CountSetBits(position.PieceBitboards[(int)knight]);
@@ -861,7 +864,6 @@ public sealed class Eval
     }
 
     
-    // TODO: Prevent endgame scale from exceeding 1x to keep non-mate scores < mate scores.  Also cap non-mate scores < SpecialScore.Checkmate.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DetermineEndgameScale(Position position)
     {
@@ -933,7 +935,8 @@ public sealed class Eval
         // Material
         stringBuilder.AppendLine("Material");
         stringBuilder.AppendLine("===========");
-        stringBuilder.AppendLine($"Pawn:       {PawnMaterial}");
+        stringBuilder.AppendLine($"MG Pawn:    {EvalConfig.MgPawnMaterial}");
+        stringBuilder.AppendLine($"EG Pawn:    {Config.EgPawnMaterial}");
         stringBuilder.AppendLine($"MG Knight:  {Config.MgKnightMaterial}");
         stringBuilder.AppendLine($"EG Knight:  {Config.EgKnightMaterial}");
         stringBuilder.AppendLine($"MG Bishop:  {Config.MgBishopMaterial}");

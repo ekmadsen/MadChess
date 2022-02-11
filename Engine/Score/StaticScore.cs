@@ -8,6 +8,7 @@
 // +---------------------------------------------------------------------------+
 
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
@@ -21,7 +22,8 @@ namespace ErikTheCoder.MadChess.Engine.Score;
 public sealed class StaticScore
 {
     public readonly int[] EgSimple;
-    public readonly int[] PawnMaterial;
+    public readonly int[] MgPawnMaterial;
+    public readonly int[] EgPawnMaterial;
     public readonly int[] MgPieceMaterial;
     public readonly int[] EgPieceMaterial;
     public readonly int[] MgPieceLocation;
@@ -47,7 +49,8 @@ public sealed class StaticScore
     public StaticScore()
     {
         EgSimple = new int[2];
-        PawnMaterial = new int[2];
+        MgPawnMaterial = new int[2];
+        EgPawnMaterial = new int[2];
         MgPieceMaterial = new int[2];
         EgPieceMaterial = new int[2];
         MgPieceLocation = new int[2];
@@ -70,7 +73,7 @@ public sealed class StaticScore
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetMgMaterial(Color color) => PawnMaterial[(int)color] + MgPieceMaterial[(int)color];
+    private int GetMgMaterial(Color color) => MgPawnMaterial[(int)color] + MgPieceMaterial[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -79,7 +82,7 @@ public sealed class StaticScore
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetEgMaterial(Color color) => PawnMaterial[(int)color] + EgPieceMaterial[(int)color];
+    private int GetEgMaterial(Color color) => EgPawnMaterial[(int)color] + EgPieceMaterial[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -113,7 +116,9 @@ public sealed class StaticScore
     {
         var taperedScore = GetTaperedScore(color, phase);
         // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
-        return (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
+        var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
+        // Evaluation never scores checkmate positions.  Search identifies checkmates.
+        return Math.Max(Math.Min(scaledTaperedScore, SpecialScore.LargestNonMate), -SpecialScore.LargestNonMate);
     }
 
 
@@ -123,8 +128,10 @@ public sealed class StaticScore
         // Explicit array lookups are faster than looping through colors.
         EgSimple[(int)Color.White] = 0;
         EgSimple[(int)Color.Black] = 0;
-        PawnMaterial[(int)Color.White] = 0;
-        PawnMaterial[(int)Color.Black] = 0;
+        MgPawnMaterial[(int)Color.White] = 0;
+        MgPawnMaterial[(int)Color.Black] = 0;
+        EgPawnMaterial[(int)Color.White] = 0;
+        EgPawnMaterial[(int)Color.Black] = 0;
         MgPieceMaterial[(int)Color.White] = 0;
         MgPieceMaterial[(int)Color.Black] = 0;
         EgPieceMaterial[(int)Color.White] = 0;

@@ -36,7 +36,7 @@ public sealed class UciStream : IDisposable
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
     private const int _minWinScale = 400;
-    private const int _maxWinScale = 800;
+    private const int _maxWinScale = 1200;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
     private Board _board;
     private Stats _stats;
@@ -1057,7 +1057,7 @@ public sealed class UciStream : IDisposable
         var quietFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 774 for MadChessBulletCompetitorsQuiet.txt.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 508 for StrongEnginesBulletQuiet.txt.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(quietFilename, particleSwarmsCount, particlesPerSwarm, winScale, WriteMessageLine);
         particleSwarms.Optimize(iterations);
@@ -1069,6 +1069,7 @@ public sealed class UciStream : IDisposable
 
     private void TuneWinScale(IList<string> tokens)
     {
+        _commandStopwatch.Restart();
         var quietFilename = tokens[1].Trim();
         var threads = int.Parse(tokens[2]);
         // Load quiet positions.
