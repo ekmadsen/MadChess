@@ -139,7 +139,7 @@ public sealed class Eval
     public void CalculatePositionalFactors()
     {
         // Update material score array.
-        _mgMaterialScores[(int)ColorlessPiece.Pawn] = EvalConfig.MgPawnMaterial;
+        _mgMaterialScores[(int)ColorlessPiece.Pawn] = Config.MgPawnMaterial;
         _mgMaterialScores[(int)ColorlessPiece.Knight] = Config.MgKnightMaterial;
         _mgMaterialScores[(int)ColorlessPiece.Bishop] = Config.MgBishopMaterial;
         _mgMaterialScores[(int)ColorlessPiece.Rook] = Config.MgRookMaterial;
@@ -288,43 +288,64 @@ public sealed class Eval
         Config.LimitedStrength = true;
         if (elo < _beginnerElo)
         {
-            // Undervalue rook and overvalue queen.
-            Config.MgRookMaterial = _defaultConfig.MgRookMaterial - 200;
-            Config.EgRookMaterial = _defaultConfig.EgRookMaterial - 200;
-            Config.MgQueenMaterial = _defaultConfig.MgQueenMaterial + 300;
-            Config.EgQueenMaterial = _defaultConfig.EgQueenMaterial + 300;
-            // Value knight and bishop equally.
-            Config.MgBishopMaterial = Config.MgKnightMaterial;
-            Config.EgBishopMaterial = Config.EgKnightMaterial;
+            // Undervalue pawns.
+            Config.MgPawnMaterial = GetLinearlyInterpolatedValue(0, _defaultConfig.MgPawnMaterial, elo, 0, _beginnerElo - 1);
+            Config.EgPawnMaterial = GetLinearlyInterpolatedValue(0, _defaultConfig.EgPawnMaterial, elo, 0, _beginnerElo - 1);
         }
         if (elo < _noviceElo)
         {
-            // Misplace pieces.
-            Config.LsPieceLocationPer128 = GetLinearlyInterpolatedValue(0, 128, elo, _beginnerElo, _noviceElo);
+            // Undervalue rook and overvalue queen.
+            Config.MgRookMaterial = GetLinearlyInterpolatedValue((int) (_defaultConfig.MgRookMaterial * 0.67), _defaultConfig.MgRookMaterial, elo, 0, _noviceElo - 1);
+            Config.EgRookMaterial = GetLinearlyInterpolatedValue((int) (_defaultConfig.EgRookMaterial * 0.67), _defaultConfig.EgRookMaterial, elo, 0, _noviceElo - 1);
+            Config.MgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.MgQueenMaterial * 0.67), _defaultConfig.MgQueenMaterial, elo, 0, _noviceElo - 1);
+            Config.EgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgQueenMaterial * 0.67), _defaultConfig.EgQueenMaterial, elo, 0, _noviceElo - 1);
         }
         if (elo < _socialElo)
         {
-            // Misjudge danger of passed pawns.
-            Config.LsPassedPawnsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, _noviceElo, _socialElo);
+            // Value knight and bishop equally.
+            if (_defaultConfig.MgBishopMaterial > _defaultConfig.MgKnightMaterial)
+            {
+                // Bishop worth more than knight in middlegame.
+                Config.MgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgKnightMaterial, _defaultConfig.MgBishopMaterial, elo, 0, _socialElo - 1);
+            }
+            else
+            {
+                // Knight worth more than bishop in middlegame.
+                Config.MgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgBishopMaterial, _defaultConfig.MgKnightMaterial, elo, 0, _socialElo - 1);
+            }
+            if (_defaultConfig.EgBishopMaterial > _defaultConfig.EgKnightMaterial)
+            {
+                // Bishop worth more than knight in endgame.
+                Config.EgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgKnightMaterial, _defaultConfig.EgBishopMaterial, elo, 0, _socialElo - 1);
+            }
+            else
+            {
+                // Knight worth more than bishop in endgame.
+                Config.EgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgBishopMaterial, _defaultConfig.EgKnightMaterial, elo, 0, _socialElo - 1);
+            }
+            // Misplace pieces.
+            Config.LsPieceLocationPer128 = GetLinearlyInterpolatedValue(0, 128, elo, 0, _socialElo - 1);
         }
         if (elo < _strongSocialElo)
         {
+            // Misjudge danger of passed pawns.
+            Config.LsPassedPawnsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, 0, _strongSocialElo - 1);
             // Oblivious to attacking potential of mobile pieces.
-            Config.LsPieceMobilityPer128 = GetLinearlyInterpolatedValue(0, 128, elo, _socialElo, _strongSocialElo);
+            Config.LsPieceMobilityPer128 = GetLinearlyInterpolatedValue(0, 128, elo, 0, _strongSocialElo - 1);
         }
         if (elo < _clubElo)
         {
             // Inattentive to defense of king.
-            Config.LsKingSafetyPer128 = GetLinearlyInterpolatedValue(0, 128, elo, _strongSocialElo, _clubElo);
+            Config.LsKingSafetyPer128 = GetLinearlyInterpolatedValue(0, 128, elo, 0, _clubElo - 1);
         }
         if (elo < _strongClubElo)
         {
             // Inexpert use of minor pieces.
-            Config.LsMinorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, _clubElo, _strongClubElo);
+            Config.LsMinorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, _clubElo, _strongClubElo - 1);
         }
         if (_debug())
         {
-            _writeMessageLine($"info string {nameof(EvalConfig.MgPawnMaterial)} = {EvalConfig.MgPawnMaterial}");
+            _writeMessageLine($"info string {nameof(Config.MgPawnMaterial)} = {Config.MgPawnMaterial}");
             _writeMessageLine($"info string {nameof(Config.EgPawnMaterial)} = {Config.EgPawnMaterial}");
             _writeMessageLine($"info string {nameof(Config.MgKnightMaterial)} = {Config.MgKnightMaterial}");
             _writeMessageLine($"info string {nameof(Config.EgKnightMaterial)} = {Config.EgKnightMaterial}");
@@ -345,6 +366,8 @@ public sealed class Eval
 
     private static int GetLinearlyInterpolatedValue(int minValue, int maxValue, int correlatedValue, int minCorrelatedValue, int maxCorrelatedValue)
     {
+        Debug.Assert(maxValue >= minValue);
+        Debug.Assert(maxCorrelatedValue >= minCorrelatedValue);
         var correlatedRange = maxCorrelatedValue - minCorrelatedValue;
         var fraction = (double) (Math.Max(correlatedValue, minCorrelatedValue) - minCorrelatedValue) / correlatedRange;
         var valueRange = maxValue - minValue;
@@ -935,7 +958,7 @@ public sealed class Eval
         // Material
         stringBuilder.AppendLine("Material");
         stringBuilder.AppendLine("===========");
-        stringBuilder.AppendLine($"MG Pawn:    {EvalConfig.MgPawnMaterial}");
+        stringBuilder.AppendLine($"MG Pawn:    {Config.MgPawnMaterial}");
         stringBuilder.AppendLine($"EG Pawn:    {Config.EgPawnMaterial}");
         stringBuilder.AppendLine($"MG Knight:  {Config.MgKnightMaterial}");
         stringBuilder.AppendLine($"EG Knight:  {Config.EgKnightMaterial}");
