@@ -159,7 +159,7 @@ public sealed class Eval
                 var rank = Board.Ranks[(int)Color.White][(int)square];
                 var file = Board.Files[(int)square];
                 var squareCentrality = 3 - Board.DistanceToCentralSquares[(int)square];
-                var fileCentrality = 3 - Math.Min(Math.Abs(3 - file), Math.Abs(4 - file));
+                var fileCentrality = 3 - FastMath.Min(FastMath.Abs(3 - file), FastMath.Abs(4 - file));
                 var mgCentralityMetric = squareCentrality;
                 var nearestCorner = 3 - Board.DistanceToNearestCorner[(int)square];
                 int mgAdvancement;
@@ -369,7 +369,7 @@ public sealed class Eval
         Debug.Assert(maxValue >= minValue);
         Debug.Assert(maxCorrelatedValue >= minCorrelatedValue);
         var correlatedRange = maxCorrelatedValue - minCorrelatedValue;
-        var fraction = (double) (Math.Max(correlatedValue, minCorrelatedValue) - minCorrelatedValue) / correlatedRange;
+        var fraction = (double) (FastMath.Max(correlatedValue, minCorrelatedValue) - minCorrelatedValue) / correlatedRange;
         var valueRange = maxValue - minValue;
         return (int) ((fraction * valueRange) + minValue);
     }
@@ -824,7 +824,7 @@ public sealed class Eval
         mgThreatsToEnemyKingSafety += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
         // Lookup king safety score in array.
         var maxIndex = _mgKingSafety.Length - 1;
-        _staticScore.MgKingSafety[(int)enemyColor] = _mgKingSafety[Math.Min(mgThreatsToEnemyKingSafety / 8, maxIndex)];
+        _staticScore.MgKingSafety[(int)enemyColor] = _mgKingSafety[FastMath.Min(mgThreatsToEnemyKingSafety / 8, maxIndex)];
     }
 
 
@@ -832,8 +832,8 @@ public sealed class Eval
     private static (int MiddlegameMobility, int EndgameMobility) GetPieceMobilityScore(ulong pieceDestinations, int[] mgPieceMobility, int[] egPieceMobility)
     {
         var moves = Bitwise.CountSetBits(pieceDestinations);
-        var mgMoveIndex = Math.Min(moves, mgPieceMobility.Length - 1);
-        var egMoveIndex = Math.Min(moves, egPieceMobility.Length - 1);
+        var mgMoveIndex = FastMath.Min(moves, mgPieceMobility.Length - 1);
+        var egMoveIndex = FastMath.Min(moves, egPieceMobility.Length - 1);
         return (mgPieceMobility[mgMoveIndex], egPieceMobility[egMoveIndex]);
     }
 

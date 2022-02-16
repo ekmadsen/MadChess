@@ -1390,7 +1390,7 @@ public sealed class Board
         var currentPositionKey = CurrentPosition.Key;
         var positionCount = 0;
         // Examine positions since the last capture or pawn move.
-        var firstMove = Math.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
+        var firstMove = FastMath.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
         for (var positionIndex = _positionIndex; positionIndex >= firstMove; positionIndex -= 2) // Advance by two ply to retain same side to move.
         {
             if (_positions[positionIndex].Key == currentPositionKey) positionCount++;
@@ -1406,7 +1406,7 @@ public sealed class Board
         var currentPositionKey = CurrentPosition.Key;
         var positionCount = 0;
         // Examine positions since the last capture or pawn move.
-        var firstMove = Math.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
+        var firstMove = FastMath.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
         for (var positionIndex = firstMove; positionIndex <= _positionIndex; positionIndex += 2) // Advance by two ply to retain same side to move.
         {
             if (_positions[positionIndex].Key == currentPositionKey) positionCount++;

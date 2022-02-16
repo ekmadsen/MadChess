@@ -361,12 +361,12 @@ public sealed class Search : IDisposable
             principalVariation[0] = Move.Null;
             _principalVariations.Add(Move.ToLongAlgebraic(move), principalVariation);
         }
-        var principalVariations = Math.Min(MultiPv, legalMoveIndex);
+        var principalVariations = FastMath.Min(MultiPv, legalMoveIndex);
         // Determine score error.
         var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 128) < _blunderPer128))
             ? _blunderError // Blunder
             : 0;
-        scoreError = Math.Max(scoreError, _moveError);
+        scoreError = FastMath.Max(scoreError, _moveError);
         // Determine move time.
         GetMoveTime(board.CurrentPosition);
         board.NodesExamineTime = _nodesPerSecond.HasValue ? 1 : UciStream.NodesTimeInterval;
@@ -438,7 +438,7 @@ public sealed class Search : IDisposable
             var pieces = Bitwise.CountSetBits(position.Occupancy) - 2; // Don't include kings.
             movesRemaining = (pieces * _piecesMovesPer128) / 128;
         }
-        movesRemaining = Math.Max(movesRemaining, _minMovesRemaining);
+        movesRemaining = FastMath.Max(movesRemaining, _minMovesRemaining);
         // Calculate move time.
         var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
         var milliseconds = millisecondsRemaining / movesRemaining;
@@ -506,7 +506,7 @@ public sealed class Search : IDisposable
         var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 128) < _blunderPer128))
             ? _blunderError // Blunder
             : 0;
-        scoreError = Math.Max(scoreError, _moveError);
+        scoreError = FastMath.Max(scoreError, _moveError);
         var alpha = 0;
         var beta = 0;
         var scorePrecision = ScorePrecision.Exact;
@@ -520,19 +520,19 @@ public sealed class Search : IDisposable
             {
                 case ScorePrecision.LowerBound:
                     // Fail High
-                    beta = Math.Min(beta + aspirationWindow, SpecialScore.Max);
+                    beta = FastMath.Min(beta + aspirationWindow, SpecialScore.Max);
                     break;
                 case ScorePrecision.UpperBound:
                     // Fail Low
-                    alpha = Math.Max(alpha - aspirationWindow, -SpecialScore.Max);
+                    alpha = FastMath.Max(alpha - aspirationWindow, -SpecialScore.Max);
                     break;
                 case ScorePrecision.Exact:
                     // Initial Aspiration Window
                     // Center aspiration window around best score from prior ply.
-                    alpha = Math.Max(_originalHorizon == _aspirationMinToHorizon
+                    alpha = FastMath.Max(_originalHorizon == _aspirationMinToHorizon
                         ? bestScore - scoreError - aspirationWindow
                         : _lastAlpha, -SpecialScore.Max);
-                    beta = Math.Min(bestScore + aspirationWindow, SpecialScore.Max);
+                    beta = FastMath.Min(bestScore + aspirationWindow, SpecialScore.Max);
                     break;
                 default:
                     throw new Exception(scorePrecision + " score precision not supported.");
@@ -841,7 +841,7 @@ public sealed class Search : IDisposable
         if ((depth > 0) && terminalDraw) return 0; // Game ends on this move.
         // Search for a quiet position where no captures are possible.
         var fromHorizon = depth - horizon;
-        _selectiveHorizon = Math.Max(depth, _selectiveHorizon);
+        _selectiveHorizon = FastMath.Max(depth, _selectiveHorizon);
         var drawnEndgame = false;
         Delegates.GetNextMove getNextMove;
         ulong moveGenerationToSquareMask;
@@ -868,7 +868,7 @@ public sealed class Search : IDisposable
             else (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
             // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
             if (board.CurrentPosition.StaticScore >= beta) return beta; // Prevent worsening of position by making a bad capture.  Stand pat.
-            alpha = Math.Max(board.CurrentPosition.StaticScore, alpha);
+            alpha = FastMath.Max(board.CurrentPosition.StaticScore, alpha);
         }
         var legalMoveNumber = 0;
         board.CurrentPosition.PrepareMoveGeneration();
@@ -888,7 +888,7 @@ public sealed class Search : IDisposable
             board.UndoMove();
             if (FastMath.Abs(score) == SpecialScore.Interrupted) return score; // Stop searching.
             if (score >= beta) return beta; // Position is not the result of best play by both players.
-            alpha = Math.Max(score, alpha);
+            alpha = FastMath.Max(score, alpha);
         } while (true);
         if ((legalMoveNumber == 0) && board.CurrentPosition.KingInCheck) return Eval.GetMateScore(depth); // Game ends on this move.
         // Return score of best move.
@@ -957,8 +957,8 @@ public sealed class Search : IDisposable
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
         // Do not reduce directly into quiet search.
-        var staticScoreReduction = Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
-        var reduction = Math.Min(_nullMoveReduction + staticScoreReduction, horizon - depth - 1);
+        var staticScoreReduction = FastMath.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
+        var reduction = FastMath.Min(_nullMoveReduction + staticScoreReduction, horizon - depth - 1);
         board.PlayNullMove();
         // Do not play two null moves consecutively.  Search with zero alpha / beta window.
         var score = -GetDynamicScore(board, depth + 1, horizon - reduction, false, -beta, -beta + 1);
@@ -1002,7 +1002,7 @@ public sealed class Search : IDisposable
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
                     // Prioritize and sort captures.
-                    lastMoveIndex = Math.Max(firstMoveIndex, position.MoveIndex - 1);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (lastMoveIndex > firstMoveIndex)
                     {
                         PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
@@ -1014,7 +1014,7 @@ public sealed class Search : IDisposable
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
                     // Prioritize and sort non-captures.
-                    lastMoveIndex = Math.Max(firstMoveIndex, position.MoveIndex - 1);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (lastMoveIndex > firstMoveIndex)
                     {
                         PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
@@ -1053,7 +1053,7 @@ public sealed class Search : IDisposable
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    var lastMoveIndex = Math.Max(firstMoveIndex, position.MoveIndex - 1);
+                    var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (lastMoveIndex > firstMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
                     position.MoveGenerationStage = MoveGenerationStage.End; // Skip non-captures.
                     continue;
@@ -1118,7 +1118,7 @@ public sealed class Search : IDisposable
         }
         if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
         // Reduce search horizon of late move.
-        var quietMoveIndex = Math.Min(quietMoveNumber, _lateMoveReductions.Length - 1);
+        var quietMoveIndex = FastMath.Min(quietMoveNumber, _lateMoveReductions.Length - 1);
         return horizon - _lateMoveReductions[quietMoveIndex];
     }
 
@@ -1274,7 +1274,7 @@ public sealed class Search : IDisposable
         var hashFull = (int)((1000L * _cache.Positions) / _cache.Capacity);
         if (includePrincipalVariation)
         {
-            var principalVariations = Math.Min(MultiPv, board.CurrentPosition.MoveIndex);
+            var principalVariations = FastMath.Min(MultiPv, board.CurrentPosition.MoveIndex);
             for (var pv = 0; pv < principalVariations; pv++)
             {
                 var principalVariation = _principalVariations[Move.ToLongAlgebraic(_bestMoves[pv].Move)];
@@ -1291,13 +1291,13 @@ public sealed class Search : IDisposable
                 var score = _bestMoves[pv].Score;
                 var multiPvPhrase = MultiPv > 1 ? $"multipv {pv + 1} " : null;
                 var scorePhrase = FastMath.Abs(score) >= SpecialScore.Checkmate ? $"mate {Eval.GetMateMoveCount(score)}" : $"cp {score}";
-                _writeMessageLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
+                _writeMessageLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} " +
                                   $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
             }
         }
         else
         {
-            _writeMessageLine($"info depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
+            _writeMessageLine($"info depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
         }
         _writeMessageLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
         if (_debug()) _displayStats();

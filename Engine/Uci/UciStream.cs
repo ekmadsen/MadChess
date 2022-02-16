@@ -542,7 +542,7 @@ public sealed class UciStream : IDisposable
                     _search.MovesToTimeControl = int.Parse(tokens[tokenIndex + 1]);
                     break;
                 case "depth":
-                    _search.HorizonLimit = Math.Min(int.Parse(tokens[tokenIndex + 1]), Search.MaxHorizon);
+                    _search.HorizonLimit = FastMath.Min(int.Parse(tokens[tokenIndex + 1]), Search.MaxHorizon);
                     _search.CanAdjustMoveTime = false;
                     break;
                 case "nodes":
@@ -1057,7 +1057,7 @@ public sealed class UciStream : IDisposable
         var quietFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 524 for StrongEnginesBulletQuiet.txt.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 555 for StrongEnginesBulletQuiet.txt.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(quietFilename, particleSwarmsCount, particlesPerSwarm, winScale, WriteMessageLine);
         particleSwarms.Optimize(iterations);

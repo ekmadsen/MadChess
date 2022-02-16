@@ -8,10 +8,10 @@
 // +---------------------------------------------------------------------------+
 
 
-using System;
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
@@ -117,8 +117,8 @@ public sealed class StaticScore
         var taperedScore = GetTaperedScore(color, phase);
         // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
         var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
-        // Evaluation never scores checkmate positions.  Search identifies checkmates.  Return largest (in absolute value) non-mate score.
-        return Math.Max(Math.Min(scaledTaperedScore, SpecialScore.Interrupted), -SpecialScore.Interrupted);
+        // Evaluation never scores checkmate positions.  Search identifies checkmates.
+        return FastMath.Constrain(scaledTaperedScore, -SpecialScore.LargestNonMate, SpecialScore.LargestNonMate);
     }
 
 

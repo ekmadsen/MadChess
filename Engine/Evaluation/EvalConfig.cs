@@ -18,15 +18,15 @@ public sealed class EvalConfig
     // ReSharper disable RedundantDefaultMemberInitializer
     // Material
     public int MgPawnMaterial = 100;
-    public int EgPawnMaterial = 108;
+    public int EgPawnMaterial = 109;
     public int MgKnightMaterial = 300;
-    public int EgKnightMaterial = 531;
+    public int EgKnightMaterial = 530;
     public int MgBishopMaterial = 330;
-    public int EgBishopMaterial = 536;
+    public int EgBishopMaterial = 538;
     public int MgRookMaterial = 500;
     public int EgRookMaterial = 844;
     public int MgQueenMaterial = 975;
-    public int EgQueenMaterial = 1541;
+    public int EgQueenMaterial = 1545;
     // Incentivize engine to promote pawns.
     // Also incentivize engine to eliminate enemy's last pieces and pawns (to trigger simple endgame scoring that pushes enemy king to a corner).
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial);
@@ -37,14 +37,14 @@ public sealed class EvalConfig
     public int MgPawnCentrality = 0;
     public int EgPawnCentrality = -3;
     // Knight Location 
-    public int MgKnightAdvancement = 3;
+    public int MgKnightAdvancement = 4;
     public int EgKnightAdvancement = 7;
     public int MgKnightCentrality = 11;
-    public int EgKnightCentrality = 16;
+    public int EgKnightCentrality = 17;
     public int MgKnightCorner = 0;
     public int EgKnightCorner = -26;
     // Bishop Location
-    public int MgBishopAdvancement = -5;
+    public int MgBishopAdvancement = -3;
     public int EgBishopAdvancement = 4;
     public int MgBishopCentrality = 10;
     public int EgBishopCentrality = 4;
@@ -59,16 +59,16 @@ public sealed class EvalConfig
     public int EgRookCorner = 4;
     // Queen Location
     public int MgQueenAdvancement = -23;
-    public int EgQueenAdvancement = 34;
+    public int EgQueenAdvancement = 31;
     public int MgQueenCentrality = 3;
     public int EgQueenCentrality = 8;
     public int MgQueenCorner = 0;
-    public int EgQueenCorner = -1;
+    public int EgQueenCorner = -2;
     // King Location
     public int MgKingAdvancement = 0;
     public int EgKingAdvancement = 14;
     public int MgKingCentrality = 0;
-    public int EgKingCentrality = 11;
+    public int EgKingCentrality = 12;
     public int MgKingCorner = 2;
     public int EgKingCorner = 0;
     // Pawn Structure
@@ -78,45 +78,45 @@ public sealed class EvalConfig
     public int EgDoubledPawn = 32;
     // Passed Pawns
     public int PassedPawnPowerPer128 = 315;
-    public int MgPassedPawnScalePer128 = 183;
-    public int EgPassedPawnScalePer128 = 231;
-    public int EgFreePassedPawnScalePer128 = 493;
+    public int MgPassedPawnScalePer128 = 181;
+    public int EgPassedPawnScalePer128 = 232;
+    public int EgFreePassedPawnScalePer128 = 487;
     public int EgKingEscortedPassedPawn = 16;
     // Piece Mobility
-    public int PieceMobilityPowerPer128 = 91;
+    public int PieceMobilityPowerPer128 = 94;
     public int MgKnightMobilityScale = 0;
     public int EgKnightMobilityScale = 0;
     public int MgBishopMobilityScale = 5;
     public int EgBishopMobilityScale = 122;
     public int MgRookMobilityScale = 35;
-    public int EgRookMobilityScale = 72;
-    public int MgQueenMobilityScale = 86;
-    public int EgQueenMobilityScale = 40;
+    public int EgRookMobilityScale = 75;
+    public int MgQueenMobilityScale = 84;
+    public int EgQueenMobilityScale = 51;
     // King Safety
-    public int MgKingSafetyPowerPer128 = 236;
-    public int MgKingSafetyScalePer128 = 81;
+    public int MgKingSafetyPowerPer128 = 238;
+    public int MgKingSafetyScalePer128 = 79;
     public int MgKingSafetyMinorAttackOuterRingPer8 = 7;
     public int MgKingSafetyMinorAttackInnerRingPer8 = 32;
-    public int MgKingSafetyRookAttackOuterRingPer8 = 11;
+    public int MgKingSafetyRookAttackOuterRingPer8 = 12;
     public int MgKingSafetyRookAttackInnerRingPer8 = 18;
     public int MgKingSafetyQueenAttackOuterRingPer8 = 16;
-    public int MgKingSafetyQueenAttackInnerRingPer8 = 21;
+    public int MgKingSafetyQueenAttackInnerRingPer8 = 23;
     public int MgKingSafetySemiOpenFilePer8 = 23;
     public int MgKingSafetyPawnShieldPer8 = 16;
     // Threats
     public int MgPawnThreatenMinor = 35;
     public int EgPawnThreatenMinor = 63;
     public int MgPawnThreatenMajor = 57;
-    public int EgPawnThreatenMajor = 25;
+    public int EgPawnThreatenMajor = 26;
     public int MgMinorThreatenMajor = 46;
-    public int EgMinorThreatenMajor = 29;
+    public int EgMinorThreatenMajor = 31;
     // Minor Pieces
-    public int MgBishopPair = 47;
-    public int EgBishopPair = 72;
+    public int MgBishopPair = 44;
+    public int EgBishopPair = 73;
     // Endgame Scale
     public int EgScaleBishopAdvantagePer128 = 14;
-    public int EgScaleOppBishopsPerPassedPawn = 32;
-    public int EgScaleWinningPerPawn = 24;
+    public int EgScaleOppBishopsPerPassedPawn = 33;
+    public int EgScaleWinningPerPawn = 27;
     // Limit Strength
     public bool LimitedStrength = false;
     public int LsPieceLocationPer128 = 128;
@@ -131,6 +131,8 @@ public sealed class EvalConfig
     public void Set(EvalConfig copyFromConfig)
     {
         // Copy material values.
+        MgPawnMaterial = copyFromConfig.MgPawnMaterial;
+        EgPawnMaterial = copyFromConfig.EgPawnMaterial;
         MgKnightMaterial = copyFromConfig.MgKnightMaterial;
         EgKnightMaterial = copyFromConfig.EgKnightMaterial;
         MgBishopMaterial = copyFromConfig.MgBishopMaterial;
