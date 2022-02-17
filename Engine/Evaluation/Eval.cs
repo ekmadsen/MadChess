@@ -478,12 +478,12 @@ public sealed class Eval
                 // K vrs KBN
                 var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;
                 var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
-                _staticScore.EgSimple[(int)enemyColor] = Config.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
+                _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                 return true;
             case 0:
                 // K vrs K + Pawns and / or Pieces
                 EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
-                _staticScore.EgSimple[(int)enemyColor] = Config.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
+                _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
                 return true;
         }
         // Use regular evaluation.
@@ -588,7 +588,7 @@ public sealed class Eval
             if (winningKingOnKeySquare)
             {
                 // Pawn promotes.
-                _staticScore.EgSimple[(int)lonePawnColor] = Config.SimpleEndgame + pawnRank;
+                _staticScore.EgSimple[(int)lonePawnColor] = SpecialScore.SimpleEndgame + pawnRank;
                 return;
             }
         }
