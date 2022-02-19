@@ -864,6 +864,7 @@ public sealed class Search : IDisposable
                     : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
             }
             else moveGenerationToSquareMask = toSquareMask;
+            // TODO: Get static score from cache.
             if (board.PreviousPosition?.PlayedMove == Move.Null) board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
             else (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
             // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
