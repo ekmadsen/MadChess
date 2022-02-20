@@ -35,8 +35,8 @@ public sealed class UciStream : IDisposable
     public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
-    private const int _minWinScale = 400;
-    private const int _maxWinScale = 800;
+    private const int _minWinScale = 1;
+    private const int _maxWinScale = 400;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
     private Board _board;
     private Stats _stats;
@@ -226,7 +226,6 @@ public sealed class UciStream : IDisposable
     }
 
 
-    // TODO: Add "resetstats" UCI command.
     private void DispatchOnMainThread(List<string> tokens)
     {
         var writeMessageLine = true;
@@ -279,6 +278,9 @@ public sealed class UciStream : IDisposable
                 break;
             case "shiftkillermoves":
                 _killerMoves.Shift(int.Parse(tokens[1]));
+                break;
+            case "resetstats":
+                _stats.Reset();
                 break;
             case "showevalparams":
                 WriteMessageLine(_eval.ShowParameters());
@@ -1057,7 +1059,7 @@ public sealed class UciStream : IDisposable
         var quietFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 555 for StrongEnginesBulletQuiet.txt.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 227 for MadChessRivalsBlitzQuiet.txt.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(quietFilename, particleSwarmsCount, particlesPerSwarm, winScale, WriteMessageLine);
         particleSwarms.Optimize(iterations);
@@ -1180,6 +1182,8 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("shiftkillermoves [depth]              Shift killer moves deeper by given depth.");
         WriteMessageLine("                                      Useful after go command followed by a position command that includes moves.");
         WriteMessageLine("                                      Without shifting killer moves, the listmoves command will display incorrect killer values.");
+        WriteMessageLine();
+        WriteMessageLine("resetstats                            Set NullMoves, NullMoveCutoffs, MovesCausingBetaCutoff, etc to 0.");
         WriteMessageLine();
         WriteMessageLine("showevalparams                        Display evaluation parameters used to calculate static score for a position.");
         WriteMessageLine();

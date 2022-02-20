@@ -628,13 +628,21 @@ public sealed class Search : IDisposable
             }
         }
         if (toHorizon <= 0) return GetQuietScore(board, depth, depth, Board.AllSquaresMask, alpha, beta, _getStaticScore, true); // Search for a quiet position.
-        var drawnEndgame = false;
+        bool drawnEndgame;
         var cachedStaticScore = CachedPositionData.StaticScore(cachedPosition.Data);
         if (cachedStaticScore == SpecialScore.NotCached)
         {
             // Evaluate static score.
-            if (board.CurrentPosition.KingInCheck) board.CurrentPosition.StaticScore = -SpecialScore.Max;
-            else if (board.PreviousPosition?.PlayedMove == Move.Null) board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
+            if (board.CurrentPosition.KingInCheck)
+            {
+                board.CurrentPosition.StaticScore = -SpecialScore.Max;
+                drawnEndgame = false;
+            }
+            else if (board.PreviousPosition?.PlayedMove == Move.Null)
+            {
+                board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
+                drawnEndgame = false;
+            }
             else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
             // Update cache.
             CachedPositionData.SetStaticScore(ref cachedPosition.Data, board.CurrentPosition.StaticScore);
@@ -842,7 +850,7 @@ public sealed class Search : IDisposable
         // Search for a quiet position where no captures are possible.
         var fromHorizon = depth - horizon;
         _selectiveHorizon = FastMath.Max(depth, _selectiveHorizon);
-        var drawnEndgame = false;
+        bool drawnEndgame;
         Delegates.GetNextMove getNextMove;
         ulong moveGenerationToSquareMask;
         if (board.CurrentPosition.KingInCheck)
@@ -851,6 +859,7 @@ public sealed class Search : IDisposable
             getNextMove = _getNextMove;
             moveGenerationToSquareMask = Board.AllSquaresMask;
             board.CurrentPosition.StaticScore = -SpecialScore.Max; // Don't evaluate static score since moves when king is in check are not futile.
+            drawnEndgame = false;
         }
         else
         {
@@ -864,13 +873,11 @@ public sealed class Search : IDisposable
                     : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
             }
             else moveGenerationToSquareMask = toSquareMask;
-            // TODO: Get static score from cache.
-            if (board.PreviousPosition?.PlayedMove == Move.Null) board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
-            else (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
-            // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
+            (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
             if (board.CurrentPosition.StaticScore >= beta) return beta; // Prevent worsening of position by making a bad capture.  Stand pat.
             alpha = FastMath.Max(board.CurrentPosition.StaticScore, alpha);
         }
+        // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         var legalMoveNumber = 0;
         board.CurrentPosition.PrepareMoveGeneration();
         do
