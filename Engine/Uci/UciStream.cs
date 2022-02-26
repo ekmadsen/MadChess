@@ -35,8 +35,8 @@ public sealed class UciStream : IDisposable
     public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
-    private const int _minWinScale = 1;
-    private const int _maxWinScale = 400;
+    private const int _minWinScale = 0;
+    private const int _maxWinScale = 1200;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
     private Board _board;
     private Stats _stats;
@@ -987,7 +987,6 @@ public sealed class UciStream : IDisposable
         var directory = Path.GetDirectoryName(pgnFilename) ?? string.Empty;
         var filenameNoExtension = Path.GetFileNameWithoutExtension(pgnFilename);
         var quietFilename = Path.Combine(directory, $"{filenameNoExtension}Quiet.txt");
-        var margin = int.Parse(tokens[2].Trim());
         // Load games.
         WriteMessageLine("Loading games.");
         var stopwatch = Stopwatch.StartNew();
@@ -1033,7 +1032,7 @@ public sealed class UciStream : IDisposable
                     // Get static and quiet scores.
                     var (staticScore, _) = eval.GetStaticScore(board.CurrentPosition);
                     var quietScore = search.GetQuietScore(board, 1, 1, -SpecialScore.Max, SpecialScore.Max);
-                    if (FastMath.Abs(staticScore - quietScore) <= margin)
+                    if (staticScore == quietScore)
                     {
                         // Write quiet position to output file.
                         quietPositions++;
@@ -1059,7 +1058,7 @@ public sealed class UciStream : IDisposable
         var quietFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 227 for MadChessRivalsBlitzQuiet.txt.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 283 for MadChessBlitzQuiet.txt.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(quietFilename, particleSwarmsCount, particlesPerSwarm, winScale, WriteMessageLine);
         particleSwarms.Optimize(iterations);
@@ -1201,8 +1200,8 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("analyzeexchangepositions [filename]   Determine material score after exchanging pieces on destination square of given move.");
         WriteMessageLine("                                      Pawn = 100, Knight and Bishop = 300, Rook = 500, Queen = 900.");
         WriteMessageLine();
-        WriteMessageLine("exportquietpositions [pgn] [margin]   Export quiet positions from games in given PDF file.  A quiet position is one where the");
-        WriteMessageLine("                                      static score differs from the quiet score by [margin] centipawns or less. ");
+        WriteMessageLine("exportquietpositions [pgn]            Export quiet positions from games in given PGN file.  A quiet position is one where the");
+        WriteMessageLine("                                      static score equals the quiet score.");
         WriteMessageLine();
         WriteMessageLine("tune [quiet] [ps] [pps] [ws] [i]      Tune evaluation parameters using a particle swarm algorithm.");
         WriteMessageLine("                                      quiet = quiet positions filename, ps = Particle Swarms, pps = Particles Per Swarm.");

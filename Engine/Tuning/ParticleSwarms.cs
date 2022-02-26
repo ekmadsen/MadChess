@@ -108,33 +108,33 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             // Pawn Location
             new(nameof(EvalConfig.MgPawnAdvancement), 0, 25),
             new(nameof(EvalConfig.EgPawnAdvancement), 0, 25),
-            new(nameof(EvalConfig.MgPawnCentrality), 0, 25),
+            new(nameof(EvalConfig.MgPawnCentrality), 0, 50),
             new(nameof(EvalConfig.EgPawnCentrality), -25, 25),
             // Knight Location
             new(nameof(EvalConfig.MgKnightAdvancement), -25, 25),
             new(nameof(EvalConfig.EgKnightAdvancement), 0, 50),
-            new(nameof(EvalConfig.MgKnightCentrality), 0, 25),
+            new(nameof(EvalConfig.MgKnightCentrality), 0, 50),
             new(nameof(EvalConfig.EgKnightCentrality), 0, 50),
             new(nameof(EvalConfig.MgKnightCorner), -25, 0),
             new(nameof(EvalConfig.EgKnightCorner), -50, 0),
             // Bishop Location
             new(nameof(EvalConfig.MgBishopAdvancement), -25, 25),
             new(nameof(EvalConfig.EgBishopAdvancement), 0, 50),
-            new(nameof(EvalConfig.MgBishopCentrality), 0, 25),
-            new(nameof(EvalConfig.EgBishopCentrality), 0, 25),
+            new(nameof(EvalConfig.MgBishopCentrality), 0, 50),
+            new(nameof(EvalConfig.EgBishopCentrality), 0, 50),
             new(nameof(EvalConfig.MgBishopCorner), -25, 0),
             new(nameof(EvalConfig.EgBishopCorner), -50, 0),
             // Rook Location
             new(nameof(EvalConfig.MgRookAdvancement), -25, 25),
             new(nameof(EvalConfig.EgRookAdvancement), 0, 50),
-            new(nameof(EvalConfig.MgRookCentrality), 0, 25),
+            new(nameof(EvalConfig.MgRookCentrality), 0, 50),
             new(nameof(EvalConfig.EgRookCentrality), -25, 25),
             new(nameof(EvalConfig.MgRookCorner), -25, 0),
             new(nameof(EvalConfig.EgRookCorner), -25, 25),
             // Queen Location
-            new(nameof(EvalConfig.MgQueenAdvancement), -25, 25),
+            new(nameof(EvalConfig.MgQueenAdvancement), -50, 25),
             new(nameof(EvalConfig.EgQueenAdvancement), 0, 100),
-            new(nameof(EvalConfig.MgQueenCentrality), 0, 25),
+            new(nameof(EvalConfig.MgQueenCentrality), 0, 50),
             new(nameof(EvalConfig.EgQueenCentrality), -25, 25),
             new(nameof(EvalConfig.MgQueenCorner), -25, 0),
             new(nameof(EvalConfig.EgQueenCorner), -25, 25),
@@ -146,28 +146,28 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgKingCorner), 0, 50),
             new(nameof(EvalConfig.EgKingCorner), -50, 0),
             // Pawn Structure
-            new(nameof(EvalConfig.MgIsolatedPawn), 0, 50),
-            new(nameof(EvalConfig.EgIsolatedPawn), 0, 50),
-            new(nameof(EvalConfig.MgDoubledPawn), 0, 50),
-            new(nameof(EvalConfig.EgDoubledPawn), 0, 50),
+            new(nameof(EvalConfig.MgIsolatedPawn), 0, 100),
+            new(nameof(EvalConfig.EgIsolatedPawn), 0, 100),
+            new(nameof(EvalConfig.MgDoubledPawn), 0, 100),
+            new(nameof(EvalConfig.EgDoubledPawn), 0, 100),
             // Passed Pawns
-            new(nameof(EvalConfig.PassedPawnPowerPer128), 192, 512),
+            new(nameof(EvalConfig.PassedPawnPowerPer128), 128, 512),
             new(nameof(EvalConfig.MgPassedPawnScalePer128), 0, 256),
-            new(nameof(EvalConfig.EgPassedPawnScalePer128), 64, 512),
-            new(nameof(EvalConfig.EgFreePassedPawnScalePer128), 128, 1024),
+            new(nameof(EvalConfig.EgPassedPawnScalePer128), 64, 1024),
+            new(nameof(EvalConfig.EgFreePassedPawnScalePer128), 128, 2048),
             new(nameof(EvalConfig.EgKingEscortedPassedPawn), 0, 32),
             // Piece Mobility
-            new(nameof(EvalConfig.PieceMobilityPowerPer128), 32, 256),
+            new(nameof(EvalConfig.PieceMobilityPowerPer128), 0, 128),
             new(nameof(EvalConfig.MgKnightMobilityScale), 0, 128),
             new(nameof(EvalConfig.EgKnightMobilityScale), 0, 256),
-            new(nameof(EvalConfig.MgBishopMobilityScale), 0, 128),
+            new(nameof(EvalConfig.MgBishopMobilityScale), 0, 256),
             new(nameof(EvalConfig.EgBishopMobilityScale), 0, 256),
-            new(nameof(EvalConfig.MgRookMobilityScale), 0, 128),
+            new(nameof(EvalConfig.MgRookMobilityScale), 0, 256),
             new(nameof(EvalConfig.EgRookMobilityScale), 0, 256),
-            new(nameof(EvalConfig.MgQueenMobilityScale), 0, 256),
-            new(nameof(EvalConfig.EgQueenMobilityScale), 0, 512),
+            new(nameof(EvalConfig.MgQueenMobilityScale), 0, 512),
+            new(nameof(EvalConfig.EgQueenMobilityScale), 0, 256),
             // King Safety
-            new(nameof(EvalConfig.MgKingSafetyPowerPer128), 192, 512),
+            new(nameof(EvalConfig.MgKingSafetyPowerPer128), 128, 512),
             new(nameof(EvalConfig.MgKingSafetyScalePer128), 0, 256),
             new(nameof(EvalConfig.MgKingSafetyMinorAttackOuterRingPer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetyMinorAttackInnerRingPer8), 0, 64),
@@ -177,18 +177,11 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
-            // Threats
-            new(nameof(EvalConfig.MgPawnThreatenMinor), 0, 100),
-            new(nameof(EvalConfig.EgPawnThreatenMinor), 0, 100),
-            new(nameof(EvalConfig.MgPawnThreatenMajor), 0, 100),
-            new(nameof(EvalConfig.EgPawnThreatenMajor), 0, 100),
-            new(nameof(EvalConfig.MgMinorThreatenMajor), 0, 100),
-            new(nameof(EvalConfig.EgMinorThreatenMajor), 0, 100),
             // Minor Pieces
             new(nameof(EvalConfig.MgBishopPair), 0, 100),
-            new(nameof(EvalConfig.EgBishopPair), 50, 200),
+            new(nameof(EvalConfig.EgBishopPair), 0, 150),
             // Endgame Scale
-            new(nameof(EvalConfig.EgScaleBishopAdvantagePer128), 0, 64),
+            new(nameof(EvalConfig.EgScaleBishopAdvantagePer128), 0, 128),
             new(nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn), 0, 64),
             new(nameof(EvalConfig.EgScaleWinningPerPawn), 0, 64)
         };
@@ -276,13 +269,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackInnerRingPer8;
         parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
         parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
-        // Threats
-        parameters[nameof(evalConfig.MgPawnThreatenMinor)].Value = evalConfig.MgPawnThreatenMinor;
-        parameters[nameof(evalConfig.EgPawnThreatenMinor)].Value = evalConfig.EgPawnThreatenMinor;
-        parameters[nameof(evalConfig.MgPawnThreatenMajor)].Value = evalConfig.MgPawnThreatenMajor;
-        parameters[nameof(evalConfig.EgPawnThreatenMajor)].Value = evalConfig.EgPawnThreatenMajor;
-        parameters[nameof(evalConfig.MgMinorThreatenMajor)].Value = evalConfig.MgMinorThreatenMajor;
-        parameters[nameof(evalConfig.EgMinorThreatenMajor)].Value = evalConfig.EgMinorThreatenMajor;
         // Minor Pieces
         parameters[nameof(evalConfig.MgBishopPair)].Value = evalConfig.MgBishopPair;
         parameters[nameof(evalConfig.EgBishopPair)].Value = evalConfig.EgBishopPair;
