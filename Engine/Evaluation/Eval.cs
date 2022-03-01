@@ -447,6 +447,7 @@ public sealed class Eval
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool EvaluateSimpleEndgame(Position position, Color color)
     {
+        // TODO: Add detection of unwinnable KBPk endgame, where enemy king prevents pawn from promoting, and bishop is wrong color.
         var enemyColor = 1 - color;
         var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
         var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));

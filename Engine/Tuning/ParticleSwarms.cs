@@ -10,11 +10,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Engine.Evaluation;
+using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Heuristics;
+using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Uci;
 
 
@@ -24,59 +25,52 @@ namespace ErikTheCoder.MadChess.Engine.Tuning;
 public sealed class ParticleSwarms : List<ParticleSwarm>
 {
     public const double Influence = 0.375d;
+    private readonly Delegates.DisplayStats _displayStats;
     private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
     private readonly double _originalEvaluationError;
     private int _iterations;
 
 
-    public ParticleSwarms(string quietFilename, int particleSwarms, int particlesPerSwarm, int winScale, Core.Delegates.WriteMessageLine writeMessageLine)
+    public ParticleSwarms(string pgnFilename, int particleSwarms, int particlesPerSwarm, int winScale, Delegates.DisplayStats displayStats, Core.Delegates.WriteMessageLine writeMessageLine)
     {
+        _displayStats = displayStats;
         _writeMessageLine = writeMessageLine;
-        // Load quiet positions.
-        writeMessageLine("Loading quiet positions.");
-        var stopwatch = Stopwatch.StartNew();
-        var quietPositions = new QuietPositions();
-        using (var streamReader = File.OpenText(quietFilename))
+        // Load games.
+        writeMessageLine("Loading games.");
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        var board = new Board(writeMessageLine, UciStream.NodesInfoInterval);
+        var pgnGames = new PgnGames();
+        pgnGames.Load(board, pgnFilename, writeMessageLine);
+        stopwatch.Stop();
+        // Count positions.
+        long positions = 0;
+        for (var gameIndex = 0; gameIndex < pgnGames.Count; gameIndex++)
         {
-            while (!streamReader.EndOfStream)
-            {
-                var line = streamReader.ReadLine();
-                if (line == null) continue;
-                var lineSegments = line.Split('|');
-                if (lineSegments.Length < 2) continue;
-                var fen = lineSegments[0];
-                var resultText = lineSegments[1];
-                var result = resultText switch
-                {
-                    "1-0" => GameResult.WhiteWon,
-                    "1/2-1/2" => GameResult.Draw,
-                    "0-1" => GameResult.BlackWon,
-                    _ => GameResult.Unknown
-                };
-                var quietPosition = new QuietPosition(fen, result);
-                quietPositions.Add(quietPosition);
-                if ((quietPositions.Count % 10_000) == 0) writeMessageLine($"Loaded {quietPositions.Count:n0} quiet positions.");
-            }
-            writeMessageLine($"Loaded {quietPositions.Count:n0} quiet positions.");
+            var pgnGame = pgnGames[gameIndex];
+            positions += pgnGame.Moves.Count;
         }
-        var positionsPerSecond = (int)(quietPositions.Count / stopwatch.Elapsed.TotalSeconds);
-        writeMessageLine($"Loaded {quietPositions.Count:n0} quiet positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
+        var positionsPerSecond = (int)(positions / stopwatch.Elapsed.TotalSeconds);
+        writeMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
         stopwatch.Restart();
         writeMessageLine("Creating data structures.");
         // Create parameters and particle swarms.
         var parameters = CreateParameters();
         for (var particleSwarmsIndex = 0; particleSwarmsIndex < particleSwarms; particleSwarmsIndex++)
         {
-            var particleSwarm = new ParticleSwarm(quietPositions, parameters, particlesPerSwarm, winScale);
+            var particleSwarm = new ParticleSwarm(pgnGames, parameters, particlesPerSwarm, winScale);
             Add(particleSwarm);
             // Set parameter values of all particles in swarm to known best.
             for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++) SetDefaultParameters(particleSwarm.Particles[particleIndex].Parameters);
         }
-        var board = new Board(writeMessageLine, UciStream.NodesInfoInterval);
         var stats = new Stats();
+        var cache = new Cache(1, stats, board.ValidateMove);
+        var killerMoves = new KillerMoves(Search.MaxHorizon);
+        var moveHistory = new MoveHistory();
         var eval = new Eval(stats, board.IsRepeatPosition, () => false, writeMessageLine);
+        var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, displayStats, writeMessageLine);
         var firstParticleInFirstSwarm = this[0].Particles[0];
-        firstParticleInFirstSwarm.CalculateEvaluationError(board, eval, winScale);
+        firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
         _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
         stopwatch.Stop();
         writeMessageLine($"Created data structures in {stopwatch.Elapsed.TotalSeconds:0.000} seconds.");
@@ -292,16 +286,22 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         _writeMessageLine($"Optimizing {firstParticleInFirstSwarm.Parameters.Count} parameters in a space of {parameterSpace:e2} discrete parameter combinations.");
         // Create game objects for each particle swarm.
         var boards = new Board[Count];
+        var searches = new Search[Count];
         var evals = new Eval[Count];
         for (var index = 0; index < Count; index++)
         {
             var board = new Board(_writeMessageLine, UciStream.NodesInfoInterval);
             boards[index] = board;
             var stats = new Stats();
+            var cache = new Cache(1, stats, board.ValidateMove);
+            var killerMoves = new KillerMoves(Search.MaxHorizon);
+            var moveHistory = new MoveHistory();
             var eval = new Eval(stats, board.IsRepeatPosition, () => false, _writeMessageLine);
             evals[index] = eval;
+            searches[index] = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, _displayStats, _writeMessageLine);
         }
         var tasks = new Task[Count];
+        var bestEvaluationError = double.MaxValue;
         for (var iteration = 1; iteration <= iterations; iteration++)
         {
             // Run iteration tasks on threadpool.
@@ -310,11 +310,14 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             {
                 var particleSwarm = this[index];
                 var board = boards[index];
-                var eval = evals[index];
-                tasks[index] = Task.Run(() => particleSwarm.Iterate(board, eval));
+                var search = searches[index];
+                var evaluation = evals[index];
+                tasks[index] = Task.Run(() => particleSwarm.Iterate(board, search, evaluation));
             }
             // Wait for all particle swarms to complete an iteration.
             Task.WaitAll(tasks);
+            var bestParticle = GetBestParticle();
+            if (bestParticle.EvaluationError < bestEvaluationError) bestEvaluationError = bestParticle.BestEvaluationError;
             UpdateVelocity();
             UpdateStatus();
         }
