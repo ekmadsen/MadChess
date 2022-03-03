@@ -34,8 +34,8 @@ public sealed class UciStream : IDisposable
     public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
-    private const int _minWinScale = 1;
-    private const int _maxWinScale = 400;
+    private const int _minWinScale = 800;
+    private const int _maxWinScale = 1200;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
     private Board _board;
     private Stats _stats;
@@ -983,7 +983,7 @@ public sealed class UciStream : IDisposable
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 270 for MadChessCompetitorsCcrlBlitz.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 824 for MadChessTuning.pgn.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
         particleSwarms.Optimize(iterations);

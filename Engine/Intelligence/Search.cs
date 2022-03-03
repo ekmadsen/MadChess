@@ -978,6 +978,7 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
+        // TODO: Try prioritizing moves each iteration and returning highest priority.
         while (true)
         {
             int firstMoveIndex;
