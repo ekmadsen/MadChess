@@ -622,36 +622,19 @@ public sealed class Search : IDisposable
             }
         }
         if (toHorizon <= 0) return GetQuietScore(board, depth, depth, Board.AllSquaresMask, alpha, beta, _getStaticScore, true); // Search for a quiet position.
+        // Evaluate static score.
         bool drawnEndgame;
-        var cachedStaticScore = CachedPositionData.StaticScore(cachedPosition.Data);
-        _stats.CacheStaticScoreProbes++;
-        if (cachedStaticScore == SpecialScore.NotCached)
+        if (board.CurrentPosition.KingInCheck)
         {
-            // Evaluate static score.
-            if (board.CurrentPosition.KingInCheck)
-            {
-                board.CurrentPosition.StaticScore = -SpecialScore.Max;
-                drawnEndgame = false;
-            }
-            else if (board.PreviousPosition?.PlayedMove == Move.Null)
-            {
-                board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
-                drawnEndgame = false;
-            }
-            else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
-            // Update cache.
-            cachedPosition.Key = board.CurrentPosition.Key;
-            CachedPositionData.SetStaticScore(ref cachedPosition.Data, board.CurrentPosition.StaticScore);
-            CachedPositionData.SetIsStaticDrawnEndgame(ref cachedPosition.Data, drawnEndgame);
-            _cache[cachedPosition.Key] = cachedPosition;
+            board.CurrentPosition.StaticScore = -SpecialScore.Max;
+            drawnEndgame = false;
         }
-        else
+        else if (board.PreviousPosition?.PlayedMove == Move.Null)
         {
-            // Update position's static score from cache.
-            _stats.CacheStaticScoreHits++;
-            board.CurrentPosition.StaticScore = cachedStaticScore;
-            drawnEndgame = CachedPositionData.IsStaticDrawnEndgame(cachedPosition.Data);
+            board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
+            drawnEndgame = false;
         }
+        else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         if (IsPositionFutile(board.CurrentPosition, depth, horizon, drawnEndgame, alpha, beta))
         {

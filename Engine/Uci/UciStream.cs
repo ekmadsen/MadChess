@@ -928,10 +928,7 @@ public sealed class UciStream : IDisposable
         var cacheHitFraction = (100d * _stats.CacheHits) / _stats.CacheProbes;
         var scoreCutoffFraction = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
         var bestMoveHitFraction = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
-        var cacheStaticScoreHitFraction = (100d * _stats.CacheStaticScoreHits) / _stats.CacheStaticScoreProbes;
-        WriteMessageLine($"info string Cache Hit = {cacheHitFraction:0.00}% Score Cutoff = {scoreCutoffFraction:0.00}%");
-        WriteMessageLine($"info string Cache Best Move Hit = {bestMoveHitFraction:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
-        WriteMessageLine($"info string Cache Static Score Hit = {cacheStaticScoreHitFraction:0.00}%");
+        WriteMessageLine($"info string Cache Hit = {cacheHitFraction:0.00}% Score Cutoff = {scoreCutoffFraction:0.00}% Best Move Hit = {bestMoveHitFraction:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
         WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffFraction:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMoveFraction:0.00}%");
         WriteMessageLine($"info string Evals = {_stats.Evaluations:n0}");
     }
