@@ -597,11 +597,11 @@ public sealed class Search : IDisposable
         // Get cached position.
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
-        var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key);
+        var cachedPosition = _cache[board.CurrentPosition.Key];
         ulong bestMove;
         if ((cachedPosition.Key != _cache.NullPosition.Key) && (depth > 0) && !repeatPosition)
         {
-            // Not a root or repeat position.
+            // Position is cached and is not a root or repeat position.
             // Determine if dynamic score is cached.
             var cachedDynamicScore = GetCachedDynamicScore(cachedPosition.Data, depth, horizon, alpha, beta);
             if (cachedDynamicScore != SpecialScore.NotCached)
@@ -614,7 +614,7 @@ public sealed class Search : IDisposable
                     {
                         // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
                         // Update history heuristic.
-                        _moveHistory.UpdateValue(board.CurrentPosition, bestMove, historyIncrement);
+                        _moveHistory.Update(board.CurrentPosition, bestMove, historyIncrement);
                     }
                 }
                 _stats.CacheScoreCutoff++;
@@ -624,6 +624,7 @@ public sealed class Search : IDisposable
         if (toHorizon <= 0) return GetQuietScore(board, depth, depth, Board.AllSquaresMask, alpha, beta, _getStaticScore, true); // Search for a quiet position.
         bool drawnEndgame;
         var cachedStaticScore = CachedPositionData.StaticScore(cachedPosition.Data);
+        _stats.CacheStaticScoreProbes++;
         if (cachedStaticScore == SpecialScore.NotCached)
         {
             // Evaluate static score.
@@ -639,13 +640,15 @@ public sealed class Search : IDisposable
             }
             else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
             // Update cache.
+            cachedPosition.Key = board.CurrentPosition.Key;
             CachedPositionData.SetStaticScore(ref cachedPosition.Data, board.CurrentPosition.StaticScore);
             CachedPositionData.SetIsStaticDrawnEndgame(ref cachedPosition.Data, drawnEndgame);
-            _cache.SetPosition(cachedPosition);
+            _cache[cachedPosition.Key] = cachedPosition;
         }
         else
         {
             // Update position's static score from cache.
+            _stats.CacheStaticScoreHits++;
             board.CurrentPosition.StaticScore = cachedStaticScore;
             drawnEndgame = CachedPositionData.IsStaticDrawnEndgame(cachedPosition.Data);
         }
@@ -678,7 +681,7 @@ public sealed class Search : IDisposable
             // Cached position in a principal variation does not specify a best move.
             // Find best move via Internal Iterative Deepening.
             GetDynamicScore(board, depth, horizon - _iidReduction, false, alpha, beta);
-            cachedPosition = _cache.GetPosition(board.CurrentPosition.Key);
+            cachedPosition = _cache[board.CurrentPosition.Key];
             bestMove = _cache.GetBestMove(cachedPosition.Data);
         }
         var originalAlpha = alpha;
@@ -751,8 +754,8 @@ public sealed class Search : IDisposable
                 if (Move.IsQuiet(move))
                 {
                     // Update move heuristics.
-                    _killerMoves.UpdateValue(board.CurrentPosition, depth, move);
-                    _moveHistory.UpdateValue(board.CurrentPosition, move, historyIncrement);
+                    _killerMoves.Update(board.CurrentPosition, depth, move);
+                    _moveHistory.Update(board.CurrentPosition, move, historyIncrement);
                     // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
                     moveIndex--;
                     while (moveIndex >= 0)
@@ -761,7 +764,7 @@ public sealed class Search : IDisposable
                         if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                         {
                             // Update history of prior quiet move that failed to produce cutoff.
-                            _moveHistory.UpdateValue(board.CurrentPosition, priorMove, -historyIncrement);
+                            _moveHistory.Update(board.CurrentPosition, priorMove, -historyIncrement);
                         }
                         moveIndex--;
                     }
@@ -1179,9 +1182,9 @@ public sealed class Search : IDisposable
             // Prioritize best move.
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             // Prioritize killer moves.
-            Move.SetKiller(ref move, _killerMoves.GetValue(position, depth, move));
+            Move.SetKiller(ref move, _killerMoves[position, depth, move]);
             // Prioritize by move history.
-            Move.SetHistory(ref move, _moveHistory.GetValue(position, move));
+            Move.SetHistory(ref move, _moveHistory[position, move]);
             moves[moveIndex].Move = move;
         }
     }
@@ -1200,9 +1203,9 @@ public sealed class Search : IDisposable
             // Prioritize best move.
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             // Prioritize killer moves.
-            Move.SetKiller(ref move, _killerMoves.GetValue(position, depth, move));
+            Move.SetKiller(ref move, _killerMoves[position, depth, move]);
             // Prioritize by move history.
-            Move.SetHistory(ref move, _moveHistory.GetValue(position, move));
+            Move.SetHistory(ref move, _moveHistory[position, move]);
             moves[moveIndex] = move;
         }
     }
@@ -1258,7 +1261,7 @@ public sealed class Search : IDisposable
             CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.Exact);
             CachedPositionData.SetDynamicScore(ref cachedPosition.Data, adjustedDynamicScore);
         }
-        _cache.SetPosition(cachedPosition);
+        _cache[cachedPosition.Key] = cachedPosition;
     }
 
 

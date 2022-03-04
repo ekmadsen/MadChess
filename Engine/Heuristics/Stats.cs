@@ -25,6 +25,8 @@ public sealed class Stats
     public long CacheBestMoveProbes;
     public long CacheValidBestMove;
     public long CacheInvalidBestMove;
+    public long CacheStaticScoreProbes;
+    public long CacheStaticScoreHits;
 
 
     public void Reset()
@@ -41,5 +43,7 @@ public sealed class Stats
         CacheBestMoveProbes = 0;
         CacheValidBestMove = 0;
         CacheInvalidBestMove = 0;
+        CacheStaticScoreProbes = 0;
+        CacheStaticScoreHits = 0;
     }
 }

@@ -706,7 +706,7 @@ public sealed class UciStream : IDisposable
     private void ListMoves()
     {
         // Get cached position.
-        var cachedPosition = _cache.GetPosition(_board.CurrentPosition.Key);
+        var cachedPosition = _cache[_board.CurrentPosition.Key];
         var bestMove = _cache.GetBestMove(cachedPosition.Data);
         // Generate and sort moves.
         _board.CurrentPosition.GenerateMoves();
@@ -928,7 +928,10 @@ public sealed class UciStream : IDisposable
         var cacheHitFraction = (100d * _stats.CacheHits) / _stats.CacheProbes;
         var scoreCutoffFraction = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
         var bestMoveHitFraction = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
-        WriteMessageLine($"info string Cache Hit = {cacheHitFraction:0.00}% Score Cutoff = {scoreCutoffFraction:0.00}% Best Move Hit = {bestMoveHitFraction:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
+        var cacheStaticScoreHitFraction = (100d * _stats.CacheStaticScoreHits) / _stats.CacheStaticScoreProbes;
+        WriteMessageLine($"info string Cache Hit = {cacheHitFraction:0.00}% Score Cutoff = {scoreCutoffFraction:0.00}%");
+        WriteMessageLine($"info string Cache Best Move Hit = {bestMoveHitFraction:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
+        WriteMessageLine($"info string Cache Static Score Hit = {cacheStaticScoreHitFraction:0.00}%");
         WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffFraction:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMoveFraction:0.00}%");
         WriteMessageLine($"info string Evals = {_stats.Evaluations:n0}");
     }

@@ -28,16 +28,19 @@ public sealed class KillerMoves
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetValue(Position position, int depth, ulong move)
+    public int this[Position position, int depth, ulong move]
     {
-        if (Equals(position, _killerMoves[depth][0], move)) return 2;
-        return Equals(position, _killerMoves[depth][1], move) ? 1 : 0;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get
+        {
+            if (Equals(position, _killerMoves[depth][0], move)) return 2;
+            return Equals(position, _killerMoves[depth][1], move) ? 1 : 0;
+        }
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void UpdateValue(Position position, int depth, ulong move)
+    public void Update(Position position, int depth, ulong move)
     {
         if (Equals(position, _killerMoves[depth][0], move)) return; // Move already is the best killer move.
         // Shift killer move.
