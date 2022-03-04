@@ -226,9 +226,6 @@ public sealed class Search : IDisposable
             _movePriorityComparer = null;
             _scoredMovePriorityComparer = null;
             _moveScoreComparer = null;
-            _movePriorityComparer = null;
-            _scoredMovePriorityComparer = null;
-            _moveScoreComparer = null;
             _getExchangeMaterialScore = null;
             _futilityPruningMargins = null;
             _aspirationWindows = null;
@@ -237,9 +234,6 @@ public sealed class Search : IDisposable
             _rootMoves = null;
             _bestMoves = null;
             _bestMovePlies = null;
-            _movePriorityComparer = null;
-            _scoredMovePriorityComparer = null;
-            _moveScoreComparer = null;
             _possibleVariations = null;
             _possibleVariationLength = null;
             _principalVariations = null;
@@ -978,7 +972,6 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
-        // TODO: Try prioritizing moves each iteration and returning highest priority.
         while (true)
         {
             int firstMoveIndex;
@@ -1010,13 +1003,8 @@ public sealed class Search : IDisposable
                 case MoveGenerationStage.Captures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort captures.
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (lastMoveIndex > firstMoveIndex)
-                    {
-                        PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
-                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
-                    }
+                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
                     position.MoveGenerationStage++;
                     continue;
                 case MoveGenerationStage.NonCaptures:
@@ -1024,7 +1012,7 @@ public sealed class Search : IDisposable
                     position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
                     // Prioritize and sort non-captures.
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (lastMoveIndex > firstMoveIndex)
+                    if (firstMoveIndex < lastMoveIndex)
                     {
                         PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
@@ -1063,7 +1051,7 @@ public sealed class Search : IDisposable
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (lastMoveIndex > firstMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
+                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
                     position.MoveGenerationStage = MoveGenerationStage.End; // Skip non-captures.
                     continue;
                 case MoveGenerationStage.End:
@@ -1225,15 +1213,15 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SortMovesByScore(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _moveScoreComparer);
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void SortMovesByPriority(ulong[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _movePriorityComparer);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SortMovesByPriority(ulong[] moves, int firstMoveIndex, int lastMoveIndex) => Array.Sort(moves, firstMoveIndex, lastMoveIndex - firstMoveIndex + 1, _movePriorityComparer);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SortMovesByScore(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _moveScoreComparer);
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
