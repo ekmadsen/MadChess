@@ -53,13 +53,14 @@ public static class CachedPositionData
         
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // To Horizon |Best From    |Best To      |BMP    |Static Score                 |D|Dynamic Score                |SP |Last Accessed
+    // To Horizon |Best From    |Best To      |BMP    |Static Score                   |D|Dynamic Score                  |SP |Last
 
     // Best From = Best Move From (one extra bit for illegal square)
     // Best To =   Best Move To   (one extra bit for illegal square)
     // BMP =       Best Move Promoted Piece
     // D =         Static Score Drawn Endgame
     // SP =        Dynamic Score Precision
+    // Last =      Last Accessed
 
 
     static CachedPositionData()
@@ -77,20 +78,20 @@ public static class CachedPositionData
         _bestMovePromotedPieceShift = 40;
         _bestMovePromotedPieceMask = Bitwise.CreateULongMask(40, 43);
         _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(40, 43);
-        _staticScoreShift = 25;
-        _staticScoreMask = Bitwise.CreateULongMask(25, 39);
-        _staticScoreUnmask = Bitwise.CreateULongUnmask(25, 39);
-        _drawnEndgameShift = 24;
-        _drawnEndgameMask = Bitwise.CreateULongMask(24);
-        _drawnEndgameUnmask = Bitwise.CreateULongUnmask(24);
-        _dynamicScoreShift = 9;
-        _dynamicScoreMask = Bitwise.CreateULongMask(9, 23);
-        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(9, 23);
-        _scorePrecisionShift = 7;
-        _scorePrecisionMask = Bitwise.CreateULongMask(7, 8);
-        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(7, 8);
-        _lastAccessedMask = Bitwise.CreateULongMask(0, 6);
-        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 6);
+        _staticScoreShift = 24;
+        _staticScoreMask = Bitwise.CreateULongMask(24, 39);
+        _staticScoreUnmask = Bitwise.CreateULongUnmask(24, 39);
+        _drawnEndgameShift = 23;
+        _drawnEndgameMask = Bitwise.CreateULongMask(23);
+        _drawnEndgameUnmask = Bitwise.CreateULongUnmask(23);
+        _dynamicScoreShift = 7;
+        _dynamicScoreMask = Bitwise.CreateULongMask(7, 22);
+        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(7, 22);
+        _scorePrecisionShift = 5;
+        _scorePrecisionMask = Bitwise.CreateULongMask(5, 6);
+        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(5, 6);
+        _lastAccessedMask = Bitwise.CreateULongMask(0, 4);
+        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 4);
     }
 
 

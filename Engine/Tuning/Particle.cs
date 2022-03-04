@@ -13,6 +13,8 @@ using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Evaluation;
+using ErikTheCoder.MadChess.Engine.Intelligence;
+using ErikTheCoder.MadChess.Engine.Score;
 
 
 namespace ErikTheCoder.MadChess.Engine.Tuning;
@@ -20,7 +22,7 @@ namespace ErikTheCoder.MadChess.Engine.Tuning;
 
 public sealed class Particle
 {
-    public readonly QuietPositions QuietPositions;
+    public readonly PgnGames PgnGames;
     public readonly Parameters Parameters;
     public readonly Parameters BestParameters;
     public double EvaluationError;
@@ -29,11 +31,11 @@ public sealed class Particle
     private const double _inertia = 0.75d;
     private const double _influence = 1.50d;
     private readonly double[] _velocities;
-        
-        
-    public Particle(QuietPositions quietPositions, Parameters parameters)
+
+
+    public Particle(PgnGames pgnGames, Parameters parameters)
     {
-        QuietPositions = quietPositions;
+        PgnGames = pgnGames;
         Parameters = parameters;
         BestParameters = parameters.DuplicateWithSameValues();
         EvaluationError = double.MaxValue;
@@ -80,6 +82,7 @@ public sealed class Particle
     public void ConfigureEvaluation(Eval eval)
     {
         // Endgame Material
+        eval.Config.EgPawnMaterial = Parameters[nameof(EvalConfig.EgPawnMaterial)].Value;
         eval.Config.EgKnightMaterial = Parameters[nameof(EvalConfig.EgKnightMaterial)].Value;
         eval.Config.EgBishopMaterial = Parameters[nameof(EvalConfig.EgBishopMaterial)].Value;
         eval.Config.EgRookMaterial = Parameters[nameof(EvalConfig.EgRookMaterial)].Value;
@@ -156,13 +159,6 @@ public sealed class Particle
         eval.Config.MgKingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value;
         eval.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvalConfig.MgKingSafetySemiOpenFilePer8)].Value;
         eval.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvalConfig.MgKingSafetyPawnShieldPer8)].Value;
-        // Threats
-        eval.Config.MgPawnThreatenMinor = Parameters[nameof(EvalConfig.MgPawnThreatenMinor)].Value;
-        eval.Config.EgPawnThreatenMinor = Parameters[nameof(EvalConfig.EgPawnThreatenMinor)].Value;
-        eval.Config.MgPawnThreatenMajor = Parameters[nameof(EvalConfig.MgPawnThreatenMajor)].Value;
-        eval.Config.EgPawnThreatenMajor = Parameters[nameof(EvalConfig.EgPawnThreatenMajor)].Value;
-        eval.Config.MgMinorThreatenMajor = Parameters[nameof(EvalConfig.MgMinorThreatenMajor)].Value;
-        eval.Config.EgMinorThreatenMajor = Parameters[nameof(EvalConfig.EgMinorThreatenMajor)].Value;
         // Minor Pieces
         eval.Config.MgBishopPair = Parameters[nameof(EvalConfig.MgBishopPair)].Value;
         eval.Config.EgBishopPair = Parameters[nameof(EvalConfig.EgBishopPair)].Value;
@@ -173,32 +169,41 @@ public sealed class Particle
         // Calculate positional factors after updating evaluation config.
         eval.CalculatePositionalFactors();
     }
-        
+
 
     // See http://talkchess.com/forum/viewtopic.php?t=50823&postdays=0&postorder=asc&highlight=texel+tuning&topic_view=flat&start=20.
-    public void CalculateEvaluationError(Board board, Eval eval, int winScale)
+    public void CalculateEvaluationError(Board board, Search search, int winScale)
     {
-        // Sum the square of evaluation error over all quiet positions.
-        double evaluationError = 0;
-        for (var positionIndex = 0; positionIndex < QuietPositions.Count; positionIndex++)
+        board.NodesExamineTime = long.MaxValue;
+        search.PvInfoUpdate = false;
+        search.Continue = true;
+        // Sum the square of evaluation error over all games.
+        EvaluationError = 0;
+        for (var gameIndex = 0; gameIndex < PgnGames.Count; gameIndex++)
         {
-            var quietPosition = QuietPositions[positionIndex];
-            if (quietPosition.GameResult == GameResult.Unknown) continue; // Skip positions with unknown game results.
-            board.SetPosition(quietPosition.Fen, true);
-            // Get static score, convert to win fraction, and compare to game result.
-            var (staticScore, _) = eval.GetStaticScore(board.CurrentPosition);
-            var winFraction = GetWinFraction(staticScore, winScale);
-            // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
-            var result = quietPosition.GameResult switch
+            var game = PgnGames[gameIndex];
+            if (game.Result == GameResult.Unknown) continue; // Skip games with unknown results.
+            board.SetPosition(Board.StartPositionFen);
+            for (var moveIndex = 0; moveIndex < game.Moves.Count; moveIndex++)
             {
-                GameResult.WhiteWon => board.CurrentPosition.ColorToMove == Color.White ? 1d : 0,
-                GameResult.Draw => 0.5d,
-                GameResult.BlackWon => board.CurrentPosition.ColorToMove == Color.Black ? 1d : 0,
-                _ => throw new InvalidOperationException($"{quietPosition.GameResult} game result not supported.")
-            };
-            evaluationError += Math.Pow(winFraction - result, 2);
+                var move = game.Moves[moveIndex];
+                // Play move and get quiet score.
+                board.PlayMove(move);
+                var quietScore = search.GetQuietScore(board, 1, 1, -SpecialScore.Max, SpecialScore.Max);
+                // Convert quiet score to win fraction and compare to game result.
+                var winFraction = GetWinFraction(quietScore, winScale);
+                // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
+                var result = game.Result switch
+                {
+                    GameResult.WhiteWon => board.CurrentPosition.ColorToMove == Color.White ? 1d : 0,
+                    GameResult.Draw => 0.5d,
+                    GameResult.BlackWon => board.CurrentPosition.ColorToMove == Color.Black ? 1d : 0,
+                    _ => throw new InvalidOperationException($"{game.Result} game result not supported.")
+                };
+                var evalError = winFraction - result;
+                EvaluationError += evalError * evalError;
+            }
         }
-        EvaluationError = evaluationError;
         if (EvaluationError < BestEvaluationError)
         {
             BestEvaluationError = EvaluationError;

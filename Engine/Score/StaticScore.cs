@@ -11,6 +11,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
@@ -21,7 +22,8 @@ namespace ErikTheCoder.MadChess.Engine.Score;
 public sealed class StaticScore
 {
     public readonly int[] EgSimple;
-    public readonly int[] PawnMaterial;
+    public readonly int[] MgPawnMaterial;
+    public readonly int[] EgPawnMaterial;
     public readonly int[] MgPieceMaterial;
     public readonly int[] EgPieceMaterial;
     public readonly int[] MgPieceLocation;
@@ -36,8 +38,6 @@ public sealed class StaticScore
     public readonly int[] MgPieceMobility;
     public readonly int[] EgPieceMobility;
     public readonly int[] MgKingSafety;
-    public readonly int[] MgThreats;
-    public readonly int[] EgThreats;
     public readonly int[] MgBishopPair;
     public readonly int[] EgBishopPair;
     public int PlySinceCaptureOrPawnMove;
@@ -47,7 +47,8 @@ public sealed class StaticScore
     public StaticScore()
     {
         EgSimple = new int[2];
-        PawnMaterial = new int[2];
+        MgPawnMaterial = new int[2];
+        EgPawnMaterial = new int[2];
         MgPieceMaterial = new int[2];
         EgPieceMaterial = new int[2];
         MgPieceLocation = new int[2];
@@ -62,29 +63,27 @@ public sealed class StaticScore
         MgPieceMobility = new int[2];
         EgPieceMobility = new int[2];
         MgKingSafety = new int[2];
-        MgThreats = new int[2];
-        EgThreats = new int[2];
         MgBishopPair = new int[2];
         EgBishopPair = new int[2];
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetMgMaterial(Color color) => PawnMaterial[(int)color] + MgPieceMaterial[(int)color];
+    private int GetMgMaterial(Color color) => MgPawnMaterial[(int)color] + MgPieceMaterial[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPawnStructure[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
-                                      MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgThreats[(int)color] + MgBishopPair[(int)color];
+                                      MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgBishopPair[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetEgMaterial(Color color) => PawnMaterial[(int)color] + EgPieceMaterial[(int)color];
+    private int GetEgMaterial(Color color) => EgPawnMaterial[(int)color] + EgPieceMaterial[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgPieceLocation[(int)color] + EgPawnStructure[(int)color] + EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] +
-                                     UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgThreats[(int)color] + EgBishopPair[(int)color];
+                                     UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgBishopPair[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -113,7 +112,9 @@ public sealed class StaticScore
     {
         var taperedScore = GetTaperedScore(color, phase);
         // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
-        return (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
+        var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
+        // Evaluation never scores checkmate positions.  Search identifies checkmates.
+        return FastMath.Constrain(scaledTaperedScore, -SpecialScore.LargestNonMate, SpecialScore.LargestNonMate);
     }
 
 
@@ -123,8 +124,10 @@ public sealed class StaticScore
         // Explicit array lookups are faster than looping through colors.
         EgSimple[(int)Color.White] = 0;
         EgSimple[(int)Color.Black] = 0;
-        PawnMaterial[(int)Color.White] = 0;
-        PawnMaterial[(int)Color.Black] = 0;
+        MgPawnMaterial[(int)Color.White] = 0;
+        MgPawnMaterial[(int)Color.Black] = 0;
+        EgPawnMaterial[(int)Color.White] = 0;
+        EgPawnMaterial[(int)Color.Black] = 0;
         MgPieceMaterial[(int)Color.White] = 0;
         MgPieceMaterial[(int)Color.Black] = 0;
         EgPieceMaterial[(int)Color.White] = 0;
@@ -151,10 +154,6 @@ public sealed class StaticScore
         MgPieceMobility[(int)Color.Black] = 0;
         EgPieceMobility[(int)Color.White] = 0;
         EgPieceMobility[(int)Color.Black] = 0;
-        MgThreats[(int)Color.White] = 0;
-        MgThreats[(int)Color.Black] = 0;
-        EgThreats[(int)Color.White] = 0;
-        EgThreats[(int)Color.Black] = 0;
         MgKingSafety[(int)Color.White] = 0;
         MgKingSafety[(int)Color.Black] = 0;
         MgBishopPair[(int)Color.White] = 0;
@@ -183,7 +182,6 @@ public sealed class StaticScore
         AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Piece Mobility", MgPieceMobility[(int)Color.White], MgPieceMobility[(int)Color.Black], EgPieceMobility[(int)Color.White], EgPieceMobility[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
-        AppendStaticScoreLine(stringBuilder, "Threats", MgThreats[(int)Color.White], MgThreats[(int)Color.Black], EgThreats[(int)Color.White], EgThreats[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Bishop Pair", MgBishopPair[(int)Color.White], MgBishopPair[(int)Color.Black], EgBishopPair[(int)Color.White], EgBishopPair[(int)Color.Black], phase);
         stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
         var mgWhite = GetMg(Color.White);

@@ -10,11 +10,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Engine.Evaluation;
+using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Heuristics;
+using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Uci;
 
 
@@ -24,59 +25,52 @@ namespace ErikTheCoder.MadChess.Engine.Tuning;
 public sealed class ParticleSwarms : List<ParticleSwarm>
 {
     public const double Influence = 0.375d;
+    private readonly Delegates.DisplayStats _displayStats;
     private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
     private readonly double _originalEvaluationError;
     private int _iterations;
 
 
-    public ParticleSwarms(string quietFilename, int particleSwarms, int particlesPerSwarm, int winScale, Core.Delegates.WriteMessageLine writeMessageLine)
+    public ParticleSwarms(string pgnFilename, int particleSwarms, int particlesPerSwarm, int winScale, Delegates.DisplayStats displayStats, Core.Delegates.WriteMessageLine writeMessageLine)
     {
+        _displayStats = displayStats;
         _writeMessageLine = writeMessageLine;
-        // Load quiet positions.
-        writeMessageLine("Loading quiet positions.");
-        var stopwatch = Stopwatch.StartNew();
-        var quietPositions = new QuietPositions();
-        using (var streamReader = File.OpenText(quietFilename))
+        // Load games.
+        writeMessageLine("Loading games.");
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        var board = new Board(writeMessageLine, UciStream.NodesInfoInterval);
+        var pgnGames = new PgnGames();
+        pgnGames.Load(board, pgnFilename, writeMessageLine);
+        stopwatch.Stop();
+        // Count positions.
+        long positions = 0;
+        for (var gameIndex = 0; gameIndex < pgnGames.Count; gameIndex++)
         {
-            while (!streamReader.EndOfStream)
-            {
-                var line = streamReader.ReadLine();
-                if (line == null) continue;
-                var lineSegments = line.Split('|');
-                if (lineSegments.Length < 2) continue;
-                var fen = lineSegments[0];
-                var resultText = lineSegments[1];
-                var result = resultText switch
-                {
-                    "1-0" => GameResult.WhiteWon,
-                    "1/2-1/2" => GameResult.Draw,
-                    "0-1" => GameResult.BlackWon,
-                    _ => GameResult.Unknown
-                };
-                var quietPosition = new QuietPosition(fen, result);
-                quietPositions.Add(quietPosition);
-                if ((quietPositions.Count % 10_000) == 0) writeMessageLine($"Loaded {quietPositions.Count:n0} quiet positions.");
-            }
-            writeMessageLine($"Loaded {quietPositions.Count:n0} quiet positions.");
+            var pgnGame = pgnGames[gameIndex];
+            positions += pgnGame.Moves.Count;
         }
-        var positionsPerSecond = (int)(quietPositions.Count / stopwatch.Elapsed.TotalSeconds);
-        writeMessageLine($"Loaded {quietPositions.Count:n0} quiet positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
+        var positionsPerSecond = (int)(positions / stopwatch.Elapsed.TotalSeconds);
+        writeMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
         stopwatch.Restart();
         writeMessageLine("Creating data structures.");
         // Create parameters and particle swarms.
         var parameters = CreateParameters();
         for (var particleSwarmsIndex = 0; particleSwarmsIndex < particleSwarms; particleSwarmsIndex++)
         {
-            var particleSwarm = new ParticleSwarm(quietPositions, parameters, particlesPerSwarm, winScale);
+            var particleSwarm = new ParticleSwarm(pgnGames, parameters, particlesPerSwarm, winScale);
             Add(particleSwarm);
             // Set parameter values of all particles in swarm to known best.
             for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++) SetDefaultParameters(particleSwarm.Particles[particleIndex].Parameters);
         }
-        var board = new Board(writeMessageLine, UciStream.NodesInfoInterval);
         var stats = new Stats();
+        var cache = new Cache(1, stats, board.ValidateMove);
+        var killerMoves = new KillerMoves(Search.MaxHorizon);
+        var moveHistory = new MoveHistory();
         var eval = new Eval(stats, board.IsRepeatPosition, () => false, writeMessageLine);
+        var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, displayStats, writeMessageLine);
         var firstParticleInFirstSwarm = this[0].Particles[0];
-        firstParticleInFirstSwarm.CalculateEvaluationError(board, eval, winScale);
+        firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
         _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
         stopwatch.Stop();
         writeMessageLine($"Created data structures in {stopwatch.Elapsed.TotalSeconds:0.000} seconds.");
@@ -97,100 +91,93 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 
     public static Parameters CreateParameters()
     {
-        var evalConfig = new EvalConfig();
         return new Parameters
         {
             // Endgame Material
-            new(nameof(evalConfig.EgKnightMaterial), evalConfig.MgKnightMaterial, evalConfig.MgKnightMaterial + 200),
-            new(nameof(evalConfig.EgBishopMaterial), evalConfig.MgBishopMaterial, evalConfig.MgBishopMaterial + 300),
-            new(nameof(evalConfig.EgRookMaterial), evalConfig.MgRookMaterial, evalConfig.MgRookMaterial + 400),
-            new(nameof(evalConfig.EgQueenMaterial), evalConfig.MgQueenMaterial, evalConfig.MgQueenMaterial + 600), 
+            new(nameof(EvalConfig.EgPawnMaterial), 50, 200),
+            new(nameof(EvalConfig.EgKnightMaterial), 100, 600),
+            new(nameof(EvalConfig.EgBishopMaterial), 100, 700),
+            new(nameof(EvalConfig.EgRookMaterial), 100, 1000),
+            new(nameof(EvalConfig.EgQueenMaterial), 100, 2000),
             // Pawn Location
-            new(nameof(evalConfig.MgPawnAdvancement), 0, 25),
-            new(nameof(evalConfig.EgPawnAdvancement), 0, 25),
-            new(nameof(evalConfig.MgPawnCentrality), 0, 25),
-            new(nameof(evalConfig.EgPawnCentrality), -25, 25),
+            new(nameof(EvalConfig.MgPawnAdvancement), 0, 25),
+            new(nameof(EvalConfig.EgPawnAdvancement), 0, 25),
+            new(nameof(EvalConfig.MgPawnCentrality), 0, 50),
+            new(nameof(EvalConfig.EgPawnCentrality), -25, 25),
             // Knight Location
-            new(nameof(evalConfig.MgKnightAdvancement), -25, 25),
-            new(nameof(evalConfig.EgKnightAdvancement), 0, 50),
-            new(nameof(evalConfig.MgKnightCentrality), 0, 25),
-            new(nameof(evalConfig.EgKnightCentrality), 0, 50),
-            new(nameof(evalConfig.MgKnightCorner), -25, 0),
-            new(nameof(evalConfig.EgKnightCorner), -50, 0),
+            new(nameof(EvalConfig.MgKnightAdvancement), -25, 25),
+            new(nameof(EvalConfig.EgKnightAdvancement), 0, 50),
+            new(nameof(EvalConfig.MgKnightCentrality), 0, 50),
+            new(nameof(EvalConfig.EgKnightCentrality), 0, 50),
+            new(nameof(EvalConfig.MgKnightCorner), -25, 0),
+            new(nameof(EvalConfig.EgKnightCorner), -50, 0),
             // Bishop Location
-            new(nameof(evalConfig.MgBishopAdvancement), -25, 25),
-            new(nameof(evalConfig.EgBishopAdvancement), 0, 50),
-            new(nameof(evalConfig.MgBishopCentrality), 0, 25),
-            new(nameof(evalConfig.EgBishopCentrality), 0, 25),
-            new(nameof(evalConfig.MgBishopCorner), -25, 0),
-            new(nameof(evalConfig.EgBishopCorner), -50, 0),
+            new(nameof(EvalConfig.MgBishopAdvancement), -25, 25),
+            new(nameof(EvalConfig.EgBishopAdvancement), 0, 50),
+            new(nameof(EvalConfig.MgBishopCentrality), 0, 50),
+            new(nameof(EvalConfig.EgBishopCentrality), 0, 50),
+            new(nameof(EvalConfig.MgBishopCorner), -25, 0),
+            new(nameof(EvalConfig.EgBishopCorner), -50, 0),
             // Rook Location
-            new(nameof(evalConfig.MgRookAdvancement), -25, 25),
-            new(nameof(evalConfig.EgRookAdvancement), 0, 50),
-            new(nameof(evalConfig.MgRookCentrality), 0, 25),
-            new(nameof(evalConfig.EgRookCentrality), -25, 25),
-            new(nameof(evalConfig.MgRookCorner), -25, 0),
-            new(nameof(evalConfig.EgRookCorner), -25, 25),
+            new(nameof(EvalConfig.MgRookAdvancement), -25, 25),
+            new(nameof(EvalConfig.EgRookAdvancement), 0, 50),
+            new(nameof(EvalConfig.MgRookCentrality), 0, 50),
+            new(nameof(EvalConfig.EgRookCentrality), -25, 25),
+            new(nameof(EvalConfig.MgRookCorner), -25, 0),
+            new(nameof(EvalConfig.EgRookCorner), -25, 25),
             // Queen Location
-            new(nameof(evalConfig.MgQueenAdvancement), -25, 25),
-            new(nameof(evalConfig.EgQueenAdvancement), 0, 50),
-            new(nameof(evalConfig.MgQueenCentrality), 0, 25),
-            new(nameof(evalConfig.EgQueenCentrality), -25, 25),
-            new(nameof(evalConfig.MgQueenCorner), -25, 0),
-            new(nameof(evalConfig.EgQueenCorner), -25, 25),
+            new(nameof(EvalConfig.MgQueenAdvancement), -50, 25),
+            new(nameof(EvalConfig.EgQueenAdvancement), 0, 100),
+            new(nameof(EvalConfig.MgQueenCentrality), 0, 50),
+            new(nameof(EvalConfig.EgQueenCentrality), -25, 25),
+            new(nameof(EvalConfig.MgQueenCorner), -25, 0),
+            new(nameof(EvalConfig.EgQueenCorner), -25, 25),
             // King Location
-            new(nameof(evalConfig.MgKingAdvancement), -50, 0),
-            new(nameof(evalConfig.EgKingAdvancement), 0, 50),
-            new(nameof(evalConfig.MgKingCentrality), -50, 0),
-            new(nameof(evalConfig.EgKingCentrality), 0, 50),
-            new(nameof(evalConfig.MgKingCorner), 0, 50),
-            new(nameof(evalConfig.EgKingCorner), -50, 0),
+            new(nameof(EvalConfig.MgKingAdvancement), -50, 0),
+            new(nameof(EvalConfig.EgKingAdvancement), 0, 50),
+            new(nameof(EvalConfig.MgKingCentrality), -50, 0),
+            new(nameof(EvalConfig.EgKingCentrality), 0, 50),
+            new(nameof(EvalConfig.MgKingCorner), 0, 50),
+            new(nameof(EvalConfig.EgKingCorner), -50, 0),
             // Pawn Structure
-            new(nameof(evalConfig.MgIsolatedPawn), 0, 50),
-            new(nameof(evalConfig.EgIsolatedPawn), 0, 50),
-            new(nameof(evalConfig.MgDoubledPawn), 0, 50),
-            new(nameof(evalConfig.EgDoubledPawn), 0, 50),
+            new(nameof(EvalConfig.MgIsolatedPawn), 0, 100),
+            new(nameof(EvalConfig.EgIsolatedPawn), 0, 100),
+            new(nameof(EvalConfig.MgDoubledPawn), 0, 100),
+            new(nameof(EvalConfig.EgDoubledPawn), 0, 100),
             // Passed Pawns
-            new(nameof(evalConfig.PassedPawnPowerPer128), 192, 320),
-            new(nameof(evalConfig.MgPassedPawnScalePer128), 0, 256),
-            new(nameof(evalConfig.EgPassedPawnScalePer128), 256, 768),
-            new(nameof(evalConfig.EgFreePassedPawnScalePer128), 512, 1280),
-            new(nameof(evalConfig.EgKingEscortedPassedPawn), 0, 32),
+            new(nameof(EvalConfig.PassedPawnPowerPer128), 128, 512),
+            new(nameof(EvalConfig.MgPassedPawnScalePer128), 0, 256),
+            new(nameof(EvalConfig.EgPassedPawnScalePer128), 64, 1024),
+            new(nameof(EvalConfig.EgFreePassedPawnScalePer128), 128, 2048),
+            new(nameof(EvalConfig.EgKingEscortedPassedPawn), 0, 32),
             // Piece Mobility
-            new(nameof(evalConfig.PieceMobilityPowerPer128), 32, 96),
-            new(nameof(evalConfig.MgKnightMobilityScale), 0, 128),
-            new(nameof(evalConfig.EgKnightMobilityScale), 0, 256),
-            new(nameof(evalConfig.MgBishopMobilityScale), 0, 128),
-            new(nameof(evalConfig.EgBishopMobilityScale), 0, 512),
-            new(nameof(evalConfig.MgRookMobilityScale), 0, 256),
-            new(nameof(evalConfig.EgRookMobilityScale), 0, 512),
-            new(nameof(evalConfig.MgQueenMobilityScale), 0, 256),
-            new(nameof(evalConfig.EgQueenMobilityScale), 0, 1024),
+            new(nameof(EvalConfig.PieceMobilityPowerPer128), 0, 128),
+            new(nameof(EvalConfig.MgKnightMobilityScale), 0, 128),
+            new(nameof(EvalConfig.EgKnightMobilityScale), 0, 256),
+            new(nameof(EvalConfig.MgBishopMobilityScale), 0, 256),
+            new(nameof(EvalConfig.EgBishopMobilityScale), 0, 256),
+            new(nameof(EvalConfig.MgRookMobilityScale), 0, 256),
+            new(nameof(EvalConfig.EgRookMobilityScale), 0, 256),
+            new(nameof(EvalConfig.MgQueenMobilityScale), 0, 512),
+            new(nameof(EvalConfig.EgQueenMobilityScale), 0, 256),
             // King Safety
-            new(nameof(evalConfig.MgKingSafetyPowerPer128), 192, 320),
-            new(nameof(evalConfig.MgKingSafetyScalePer128), 0, 128),
-            new(nameof(evalConfig.MgKingSafetyMinorAttackOuterRingPer8), 0, 64),
-            new(nameof(evalConfig.MgKingSafetyMinorAttackInnerRingPer8), 0, 64),
-            new(nameof(evalConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 64),
-            new(nameof(evalConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 64),
-            new(nameof(evalConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 64),
-            new(nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
-            new(nameof(evalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
-            new(nameof(evalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
-            // Threats
-            new(nameof(evalConfig.MgPawnThreatenMinor), 0, 100),
-            new(nameof(evalConfig.EgPawnThreatenMinor), 0, 100),
-            new(nameof(evalConfig.MgPawnThreatenMajor), 0, 100),
-            new(nameof(evalConfig.EgPawnThreatenMajor), 0, 100),
-            new(nameof(evalConfig.MgMinorThreatenMajor), 0, 100),
-            new(nameof(evalConfig.EgMinorThreatenMajor), 0, 100),
+            new(nameof(EvalConfig.MgKingSafetyPowerPer128), 128, 512),
+            new(nameof(EvalConfig.MgKingSafetyScalePer128), 0, 256),
+            new(nameof(EvalConfig.MgKingSafetyMinorAttackOuterRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyMinorAttackInnerRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
             // Minor Pieces
-            new(nameof(evalConfig.MgBishopPair), 0, 50),
-            new(nameof(evalConfig.EgBishopPair), 50, 200),
+            new(nameof(EvalConfig.MgBishopPair), 0, 100),
+            new(nameof(EvalConfig.EgBishopPair), 0, 150),
             // Endgame Scale
-            new(nameof(evalConfig.EgScaleBishopAdvantagePer128), 0, 64),
-            new(nameof(evalConfig.EgScaleOppBishopsPerPassedPawn), 0, 64),
-            new(nameof(evalConfig.EgScaleWinningPerPawn), 0, 64)
+            new(nameof(EvalConfig.EgScaleBishopAdvantagePer128), 0, 128),
+            new(nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn), 0, 64),
+            new(nameof(EvalConfig.EgScaleWinningPerPawn), 0, 64)
         };
     }
 
@@ -199,6 +186,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
     {
         var evalConfig = new EvalConfig();
         // Endgame Material
+        parameters[nameof(evalConfig.EgPawnMaterial)].Value = evalConfig.EgPawnMaterial;
         parameters[nameof(evalConfig.EgKnightMaterial)].Value = evalConfig.EgKnightMaterial;
         parameters[nameof(evalConfig.EgBishopMaterial)].Value = evalConfig.EgBishopMaterial;
         parameters[nameof(evalConfig.EgRookMaterial)].Value = evalConfig.EgRookMaterial;
@@ -275,13 +263,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackInnerRingPer8;
         parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
         parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
-        // Threats
-        parameters[nameof(evalConfig.MgPawnThreatenMinor)].Value = evalConfig.MgPawnThreatenMinor;
-        parameters[nameof(evalConfig.EgPawnThreatenMinor)].Value = evalConfig.EgPawnThreatenMinor;
-        parameters[nameof(evalConfig.MgPawnThreatenMajor)].Value = evalConfig.MgPawnThreatenMajor;
-        parameters[nameof(evalConfig.EgPawnThreatenMajor)].Value = evalConfig.EgPawnThreatenMajor;
-        parameters[nameof(evalConfig.MgMinorThreatenMajor)].Value = evalConfig.MgMinorThreatenMajor;
-        parameters[nameof(evalConfig.EgMinorThreatenMajor)].Value = evalConfig.EgMinorThreatenMajor;
         // Minor Pieces
         parameters[nameof(evalConfig.MgBishopPair)].Value = evalConfig.MgBishopPair;
         parameters[nameof(evalConfig.EgBishopPair)].Value = evalConfig.EgBishopPair;
@@ -305,16 +286,22 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         _writeMessageLine($"Optimizing {firstParticleInFirstSwarm.Parameters.Count} parameters in a space of {parameterSpace:e2} discrete parameter combinations.");
         // Create game objects for each particle swarm.
         var boards = new Board[Count];
+        var searches = new Search[Count];
         var evals = new Eval[Count];
         for (var index = 0; index < Count; index++)
         {
             var board = new Board(_writeMessageLine, UciStream.NodesInfoInterval);
             boards[index] = board;
             var stats = new Stats();
+            var cache = new Cache(1, stats, board.ValidateMove);
+            var killerMoves = new KillerMoves(Search.MaxHorizon);
+            var moveHistory = new MoveHistory();
             var eval = new Eval(stats, board.IsRepeatPosition, () => false, _writeMessageLine);
             evals[index] = eval;
+            searches[index] = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, _displayStats, _writeMessageLine);
         }
         var tasks = new Task[Count];
+        var bestEvaluationError = double.MaxValue;
         for (var iteration = 1; iteration <= iterations; iteration++)
         {
             // Run iteration tasks on threadpool.
@@ -323,11 +310,14 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             {
                 var particleSwarm = this[index];
                 var board = boards[index];
-                var eval = evals[index];
-                tasks[index] = Task.Run(() => particleSwarm.Iterate(board, eval));
+                var search = searches[index];
+                var evaluation = evals[index];
+                tasks[index] = Task.Run(() => particleSwarm.Iterate(board, search, evaluation));
             }
             // Wait for all particle swarms to complete an iteration.
             Task.WaitAll(tasks);
+            var bestParticle = GetBestParticle();
+            if (bestParticle.EvaluationError < bestEvaluationError) bestEvaluationError = bestParticle.BestEvaluationError;
             UpdateVelocity();
             UpdateStatus();
         }

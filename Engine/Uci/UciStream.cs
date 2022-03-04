@@ -23,7 +23,6 @@ using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Intelligence;
-using ErikTheCoder.MadChess.Engine.Score;
 
 
 namespace ErikTheCoder.MadChess.Engine.Uci;
@@ -35,8 +34,8 @@ public sealed class UciStream : IDisposable
     public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
-    private const int _minWinScale = 400;
-    private const int _maxWinScale = 800;
+    private const int _minWinScale = 800;
+    private const int _maxWinScale = 1200;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
     private Board _board;
     private Stats _stats;
@@ -226,7 +225,6 @@ public sealed class UciStream : IDisposable
     }
 
 
-    // TODO: Add "resetstats" UCI command.
     private void DispatchOnMainThread(List<string> tokens)
     {
         var writeMessageLine = true;
@@ -280,6 +278,9 @@ public sealed class UciStream : IDisposable
             case "shiftkillermoves":
                 _killerMoves.Shift(int.Parse(tokens[1]));
                 break;
+            case "resetstats":
+                _stats.Reset();
+                break;
             case "showevalparams":
                 WriteMessageLine(_eval.ShowParameters());
                 break;
@@ -297,9 +298,6 @@ public sealed class UciStream : IDisposable
                 break;
             case "analyzeexchangepositions":
                 AnalyzeExchangePositions(tokens);
-                break;
-            case "exportquietpositions":
-                ExportQuietPositions(tokens);
                 break;
             case "tune":
                 Tune(tokens);
@@ -418,12 +416,12 @@ public sealed class UciStream : IDisposable
                 var analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                 if (analysisMode)
                 {
-                    _search.TruncatePrincipalVariation = false;
+                    _search.AllowedToTruncatePv = false;
                     _eval.DrawMoves = 3;
                 }
                 else
                 {
-                    _search.TruncatePrincipalVariation = true;
+                    _search.AllowedToTruncatePv = true;
                     _eval.DrawMoves = 2;
                 }
                 break;
@@ -542,7 +540,7 @@ public sealed class UciStream : IDisposable
                     _search.MovesToTimeControl = int.Parse(tokens[tokenIndex + 1]);
                     break;
                 case "depth":
-                    _search.HorizonLimit = Math.Min(int.Parse(tokens[tokenIndex + 1]), Search.MaxHorizon);
+                    _search.HorizonLimit = FastMath.Min(int.Parse(tokens[tokenIndex + 1]), Search.MaxHorizon);
                     _search.CanAdjustMoveTime = false;
                     break;
                 case "nodes":
@@ -979,87 +977,15 @@ public sealed class UciStream : IDisposable
     }
 
 
-    private void ExportQuietPositions(IList<string> tokens)
-    {
-        var pgnFilename = tokens[1].Trim();
-        var directory = Path.GetDirectoryName(pgnFilename) ?? string.Empty;
-        var filenameNoExtension = Path.GetFileNameWithoutExtension(pgnFilename);
-        var quietFilename = Path.Combine(directory, $"{filenameNoExtension}Quiet.txt");
-        var margin = int.Parse(tokens[2].Trim());
-        // Load games.
-        WriteMessageLine("Loading games.");
-        var stopwatch = Stopwatch.StartNew();
-        var board = new Board(WriteMessageLine, NodesInfoInterval);
-        var pgnGames = new PgnGames();
-        pgnGames.Load(board, pgnFilename, WriteMessageLine);
-        stopwatch.Stop();
-        // Count positions.
-        var positions = 0;
-        for (var gameIndex = 0; gameIndex < pgnGames.Count; gameIndex++)
-        {
-            var pgnGame = pgnGames[gameIndex];
-            positions += pgnGame.Moves.Count;
-        }
-        var positionsPerSecond = (int)(positions / stopwatch.Elapsed.TotalSeconds);
-        WriteMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
-        // Create game objects.
-        var stats = new Stats();
-        var cache = new Cache(1, stats, board.ValidateMove);
-        var killerMoves = new KillerMoves(Search.MaxHorizon);
-        var moveHistory = new MoveHistory();
-        var eval = new Eval(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
-        var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, DisplayStats, WriteMessageLine);
-        board.NodesExamineTime = long.MaxValue;
-        search.PvInfoUpdate = false;
-        search.Continue = true;
-        var quietPositions = 0;
-        // Create or overwrite output file of quiet positions.
-        using (var fileStream = File.Open(quietFilename, FileMode.Create, FileAccess.Write, FileShare.Read))
-        using (var streamWriter = new StreamWriter(fileStream) { AutoFlush = true })
-        {
-            for (var gameIndex = 0; gameIndex < pgnGames.Count; gameIndex++)
-            {
-                var game = pgnGames[gameIndex];
-                if (game.Result == GameResult.Unknown) continue; // Skip games with unknown results.
-                board.SetPosition(Board.StartPositionFen, true);
-                for (var moveIndex = 0; moveIndex < game.Moves.Count; moveIndex++)
-                {
-                    var move = game.Moves[moveIndex];
-                    // Play move.
-                    board.PlayMove(move);
-                    if (board.CurrentPosition.KingInCheck) continue; // Do not evaluate positions with king in check.
-                    // Get static and quiet scores.
-                    var (staticScore, _) = eval.GetStaticScore(board.CurrentPosition);
-                    var quietScore = search.GetQuietScore(board, 1, 1, -SpecialScore.Max, SpecialScore.Max);
-                    if (FastMath.Abs(staticScore - quietScore) <= margin)
-                    {
-                        // Write quiet position to output file.
-                        quietPositions++;
-                        var result = game.Result switch
-                        {
-                            GameResult.WhiteWon => "1-0",
-                            GameResult.BlackWon => "0-1",
-                            _ => "1/2-1/2"
-                        };
-                        streamWriter.WriteLine($"{board.CurrentPosition.ToFen()}|{result}");
-                        if ((quietPositions % 10_000) == 0) WriteMessageLine($"Exported {quietPositions:n0} quiet positions.");
-                    }
-                }
-            }
-            WriteMessageLine($"Exported {quietPositions:n0} quiet positions.");
-        }
-    }
-
-
     private void Tune(IList<string> tokens)
     {
         _commandStopwatch.Restart();
-        var quietFilename = tokens[1].Trim();
+        var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 774 for MadChessBulletCompetitorsQuiet.txt.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 824 for MadChessTuning.pgn.
         var iterations = int.Parse(tokens[5].Trim());
-        var particleSwarms = new ParticleSwarms(quietFilename, particleSwarmsCount, particlesPerSwarm, winScale, WriteMessageLine);
+        var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
         particleSwarms.Optimize(iterations);
         _commandStopwatch.Stop();
         WriteMessageLine();
@@ -1069,49 +995,39 @@ public sealed class UciStream : IDisposable
 
     private void TuneWinScale(IList<string> tokens)
     {
-        var quietFilename = tokens[1].Trim();
+        var pgnFilename = tokens[1].Trim();
         var threads = int.Parse(tokens[2]);
-        // Load quiet positions.
-        WriteMessageLine("Loading quiet positions.");
-        var stopwatch = Stopwatch.StartNew();
-        var quietPositions = new QuietPositions();
-        using (var streamReader = File.OpenText(quietFilename))
+        // Load games.
+        _commandStopwatch.Restart();
+        WriteMessageLine("Loading games.");
+        var pgnGames = new PgnGames();
+        pgnGames.Load(_board, pgnFilename, WriteMessageLine);
+        // Count positions.
+        long positions = 0;
+        for (var index = 0; index < pgnGames.Count; index++)
         {
-            while (!streamReader.EndOfStream)
-            {
-                var line = streamReader.ReadLine();
-                if (line == null) continue;
-                var lineSegments = line.Split('|');
-                if (lineSegments.Length < 2) continue;
-                var fen = lineSegments[0];
-                var resultText = lineSegments[1];
-                var result = resultText switch
-                {
-                    "1-0" => GameResult.WhiteWon,
-                    "1/2-1/2" => GameResult.Draw,
-                    "0-1" => GameResult.BlackWon,
-                    _ => GameResult.Unknown
-                };
-                var quietPosition = new QuietPosition(fen, result);
-                quietPositions.Add(quietPosition);
-                if ((quietPositions.Count % 10_000) == 0) WriteMessageLine($"Loaded {quietPositions.Count:n0} quiet positions.");
-            }
-            WriteMessageLine($"Loaded {quietPositions.Count:n0} quiet positions.");
+            var pgnGame = pgnGames[index];
+            positions += pgnGame.Moves.Count;
         }
-        var positionsPerSecond = (int)(quietPositions.Count / stopwatch.Elapsed.TotalSeconds);
-        WriteMessageLine($"Loaded {quietPositions.Count:n0} quiet positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
-        stopwatch.Restart();
+        var positionsPerSecond = (int)(positions / _commandStopwatch.Elapsed.TotalSeconds);
+        WriteMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
+        WriteMessageLine("Tuning win scale.");
+        WriteMessageLine();
         // Create game objects.
         var parameters = ParticleSwarms.CreateParameters();
-        var gameObjects = new (Particle Particle, Board Board, Eval Eval)[threads];
+        var gameObjects = new (Particle Particle, Board Board, Search Search)[threads];
         int thread;
         for (thread = 0; thread < threads; thread++)
         {
-            var particle = new Particle(quietPositions, parameters);
+            var particle = new Particle(pgnGames, parameters);
             var board = new Board(WriteMessageLine, NodesInfoInterval);
             var stats = new Stats();
+            var cache = new Cache(1, stats, board.ValidateMove);
+            var killerMoves = new KillerMoves(Search.MaxHorizon);
+            var moveHistory = new MoveHistory();
             var eval = new Eval(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
-            gameObjects[thread] = (particle, board, eval);
+            var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, DisplayStats, WriteMessageLine);
+            gameObjects[thread] = (particle, board, search);
         }
         // Calculate evaluation error of all win scales.
         WriteMessageLine("Tuning win scale.");
@@ -1126,11 +1042,11 @@ public sealed class UciStream : IDisposable
             thread = 0;
             while ((winScales.Count > 0) && (thread < threads))
             {
-                var (particle, board, eval) = gameObjects[thread];
+                var (particle, board, search) = gameObjects[thread];
                 var winScale = winScales.Pop();
                 tasks[thread] = Task.Run(() =>
                 {
-                    particle.CalculateEvaluationError(board, eval, winScale);
+                    particle.CalculateEvaluationError(board, search, winScale);
                     return winScale;
                 });
                 thread++;
@@ -1180,6 +1096,8 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("                                      Useful after go command followed by a position command that includes moves.");
         WriteMessageLine("                                      Without shifting killer moves, the listmoves command will display incorrect killer values.");
         WriteMessageLine();
+        WriteMessageLine("resetstats                            Set NullMoves, NullMoveCutoffs, MovesCausingBetaCutoff, etc to 0.");
+        WriteMessageLine();
         WriteMessageLine("showevalparams                        Display evaluation parameters used to calculate static score for a position.");
         WriteMessageLine();
         WriteMessageLine("staticscore                           Display evaluation details of current position.");
@@ -1196,11 +1114,8 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("analyzeexchangepositions [filename]   Determine material score after exchanging pieces on destination square of given move.");
         WriteMessageLine("                                      Pawn = 100, Knight and Bishop = 300, Rook = 500, Queen = 900.");
         WriteMessageLine();
-        WriteMessageLine("exportquietpositions [pgn] [margin]   Export quiet positions from games in given PDF file.  A quiet position is one where the");
-        WriteMessageLine("                                      static score differs from the quiet score by [margin] centipawns or less. ");
-        WriteMessageLine();
-        WriteMessageLine("tune [quiet] [ps] [pps] [ws] [i]      Tune evaluation parameters using a particle swarm algorithm.");
-        WriteMessageLine("                                      quiet = quiet positions filename, ps = Particle Swarms, pps = Particles Per Swarm.");
+        WriteMessageLine("tune [pgn] [ps] [pps] [ws] [i]        Tune evaluation parameters using a particle swarm algorithm.");
+        WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");
         WriteMessageLine("                                      ws = Win Scale, i = Iterations.");
         WriteMessageLine();
         WriteMessageLine("tunewinscale [filename] [threads]     Compute a scale constant used in the sigmoid function of the tuning algorithm.");

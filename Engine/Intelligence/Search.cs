@@ -46,7 +46,7 @@ public sealed class Search : IDisposable
     public TimeSpan MoveTimeSoftLimit;
     public TimeSpan MoveTimeHardLimit;
     public bool CanAdjustMoveTime;
-    public bool TruncatePrincipalVariation;
+    public bool AllowedToTruncatePv;
     public int MultiPv;
     public bool Continue;
     private const int _minMovesRemaining = 8;
@@ -56,8 +56,7 @@ public sealed class Search : IDisposable
     private const int _adjustMoveTimeMinScoreDecrease = 33;
     private const int _adjustMoveTimePer128 = 32;
     private const int _haveTimeSearchNextPlyPer128 = 70;
-    private const int _aspirationMinHorizon = 5;
-    private const int _aspirationWindow = 100;
+    private const int _aspirationMinToHorizon = 5;
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 200;
     private const int _nullStaticScoreMaxReduction = 3;
@@ -73,6 +72,7 @@ public sealed class Search : IDisposable
     private static Delegates.GetStaticScore _getExchangeMaterialScore;
     private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
+    private int[] _aspirationWindows;
     private int[] _lateMovePruningMargins;
     private int[] _lateMoveReductions;
     private ScoredMove[] _rootMoves;
@@ -97,6 +97,7 @@ public sealed class Search : IDisposable
     private int _selectiveHorizon;
     private ulong _rootMove;
     private int _rootMoveNumber;
+    private int _lastAlpha;
     private bool _limitedStrength;
     private int _elo;
     private int? _nodesPerSecond;
@@ -174,6 +175,7 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
+        _aspirationWindows =  new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
         _lateMovePruningMargins = new[] { 999, 003, 007, 013, 021, 031 };
@@ -192,7 +194,7 @@ public sealed class Search : IDisposable
         _disposed = false;
         // Set Multi PV, PV truncation, and search strength.
         MultiPv = 1;
-        TruncatePrincipalVariation = true;
+        AllowedToTruncatePv = true;
         ConfigureFullStrength();
     }
 
@@ -229,6 +231,7 @@ public sealed class Search : IDisposable
             _moveScoreComparer = null;
             _getExchangeMaterialScore = null;
             _futilityPruningMargins = null;
+            _aspirationWindows = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
             _rootMoves = null;
@@ -358,12 +361,12 @@ public sealed class Search : IDisposable
             principalVariation[0] = Move.Null;
             _principalVariations.Add(Move.ToLongAlgebraic(move), principalVariation);
         }
-        var principalVariations = Math.Min(MultiPv, legalMoveIndex);
+        var principalVariations = FastMath.Min(MultiPv, legalMoveIndex);
         // Determine score error.
         var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 128) < _blunderPer128))
             ? _blunderError // Blunder
             : 0;
-        scoreError = Math.Max(scoreError, _moveError);
+        scoreError = FastMath.Max(scoreError, _moveError);
         // Determine move time.
         GetMoveTime(board.CurrentPosition);
         board.NodesExamineTime = _nodesPerSecond.HasValue ? 1 : UciStream.NodesTimeInterval;
@@ -374,61 +377,19 @@ public sealed class Search : IDisposable
         {
             _originalHorizon++;
             _selectiveHorizon = 0;
-            // Clear principal variations.
+            // Clear principal variations and age move history.
             // The Dictionary enumerator allocates memory which is not desirable when searching positions.
             // However, this occurs only once per ply.
             using (var pvEnumerator = _principalVariations.GetEnumerator())
             {
                 while (pvEnumerator.MoveNext()) pvEnumerator.Current.Value[0] = Move.Null;
             }
-            int alpha;
-            int beta;
-            if (CompetitivePlay || (_originalHorizon < _aspirationMinHorizon))
-            {
-                // Search with full alpha / beta window.
-                alpha = -SpecialScore.Max;
-                beta = SpecialScore.Max;
-            }
-            else
-            {
-                // Search with aspiration window.
-                // This speeds up Multi-PV searches (for analysis and UCI_LimitStrength) but slows down Single-PV searches (competitive play).
-                if (LimitedStrength)
-                {
-                    alpha = _rootMoves[0].Score - scoreError - 1;
-                    beta = _rootMoves[0].Score + _aspirationWindow;
-                }
-                else
-                {
-                    alpha = _rootMoves[principalVariations - 1].Score - _aspirationWindow;
-                    beta = _rootMoves[0].Score + _aspirationWindow;
-                }
-                alpha = Math.Max(alpha, -SpecialScore.Max);
-                beta = Math.Min(beta, SpecialScore.Max);
-            }
-            // Reset move scores then search moves.
-            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
-            var score = GetDynamicScore(board, 0, _originalHorizon, false, alpha, beta);
+            _moveHistory.Age();
+            // Get score within aspiration window.
+            var score = GetScoreWithinAspirationWindow(board, principalVariations);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
-            SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
-            var failHigh = _rootMoves[0].Score >= beta;
-            var failHighScore = score;
-            var failLow = !failHigh && (_rootMoves[principalVariations - 1].Score <= alpha);
-            var failLowScore = MultiPv > 1 ? _rootMoves[principalVariations - 1].Score : score;
-            if (failHigh || failLow)
-            {
-                if (PvInfoUpdate)
-                {
-                    if (failHigh) UpdateStatusFailHigh(board.Nodes, failHighScore);
-                    if (failLow) UpdateStatusFailLow(board.Nodes, failLowScore);
-                }
-                // Reset move scores then search moves within infinite alpha / beta window.
-                for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
-                score = GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
-                if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
-                SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
-            }
             // Find best move.
+            SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
             bestMove = _bestMoves[0];
             _bestMovePlies[_originalHorizon] = bestMove;
@@ -477,7 +438,7 @@ public sealed class Search : IDisposable
             var pieces = Bitwise.CountSetBits(position.Occupancy) - 2; // Don't include kings.
             movesRemaining = (pieces * _piecesMovesPer128) / 128;
         }
-        movesRemaining = Math.Max(movesRemaining, _minMovesRemaining);
+        movesRemaining = FastMath.Max(movesRemaining, _minMovesRemaining);
         // Calculate move time.
         var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
         var milliseconds = millisecondsRemaining / movesRemaining;
@@ -531,7 +492,100 @@ public sealed class Search : IDisposable
     }
 
 
-    // TODO: Prevent duplicate static evaluation of position when researched due to LMR fail high.
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private int GetScoreWithinAspirationWindow(Board board, int principalVariations)
+    {
+        var bestScore = _bestMoves[0].Score;
+        // Use aspiration windows in limited circumstances (not for competitive play).
+        if(CompetitivePlay || (_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
+        {
+            // Reset move scores, then search moves with infinite aspiration window.
+            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
+            return GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
+        }
+        var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 128) < _blunderPer128))
+            ? _blunderError // Blunder
+            : 0;
+        scoreError = FastMath.Max(scoreError, _moveError);
+        var alpha = 0;
+        var beta = 0;
+        var scorePrecision = ScorePrecision.Exact;
+        for (var aspirationIndex = 0; aspirationIndex < _aspirationWindows.Length; aspirationIndex++)
+        {
+            var aspirationWindow = _aspirationWindows[aspirationIndex];
+            // Reset move scores and adjust alpha / beta window.
+            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
+            // ReSharper disable once SwitchStatementMissingSomeCases
+            switch (scorePrecision)
+            {
+                case ScorePrecision.LowerBound:
+                    // Fail High
+                    beta = FastMath.Min(beta + aspirationWindow, SpecialScore.Max);
+                    break;
+                case ScorePrecision.UpperBound:
+                    // Fail Low
+                    alpha = FastMath.Max(alpha - aspirationWindow, -SpecialScore.Max);
+                    break;
+                case ScorePrecision.Exact:
+                    // Initial Aspiration Window
+                    // Center aspiration window around best score from prior ply.
+                    alpha = FastMath.Max(_originalHorizon == _aspirationMinToHorizon
+                        ? bestScore - scoreError - aspirationWindow
+                        : _lastAlpha, -SpecialScore.Max);
+                    beta = FastMath.Min(bestScore + aspirationWindow, SpecialScore.Max);
+                    break;
+                default:
+                    throw new Exception(scorePrecision + " score precision not supported.");
+            }
+            // Search moves with aspiration window.
+            if (_debug()) _writeMessageLine($"info string AspirationWindow = {aspirationWindow} Alpha = {alpha} Beta = {beta}");
+            var score = GetDynamicScore(board, 0, _originalHorizon, false, alpha, beta);
+            if (FastMath.Abs(score) == SpecialScore.Interrupted) return score; // Stop searching.
+            if (score >= beta)
+            {
+                // Search failed high.
+                scorePrecision = ScorePrecision.LowerBound;
+                if (PvInfoUpdate) UpdateStatusFailHigh(board.Nodes, score);
+                continue;
+            }
+            // Find lowest score.
+            var lowestScore = principalVariations == 1 ? score : GetBestScore(board.CurrentPosition, principalVariations);
+            if (lowestScore <= alpha)
+            {
+                // Search failed low.
+                scorePrecision = ScorePrecision.UpperBound;
+                if (PvInfoUpdate) UpdateStatusFailLow(board.Nodes, score);
+                continue;
+            }
+            // Score within aspiration window.
+            _lastAlpha = alpha;
+            return score;
+        }
+        // Search moves with infinite aspiration window.
+        return GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int GetBestScore(Position position, int rank)
+    {
+        Debug.Assert(rank > 0);
+        if (rank == 1)
+        {
+            var bestScore = -SpecialScore.Max;
+            for (var moveIndex = 0; moveIndex < position.MoveIndex; moveIndex++)
+            {
+                var score = _rootMoves[moveIndex].Score;
+                if (score > bestScore) bestScore = score;
+            }
+            return bestScore;
+        }
+        // Sort moves and return Rank best move (1 based index).
+        Array.Sort(_rootMoves, 0, position.MoveIndex, _moveScoreComparer);
+        return _rootMoves[rank - 1].Score;
+    }
+
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int GetDynamicScore(Board board, int depth, int horizon, bool isNullMovePermitted, int alpha, int beta, ulong excludedMove = 0)
     {
@@ -574,13 +628,21 @@ public sealed class Search : IDisposable
             }
         }
         if (toHorizon <= 0) return GetQuietScore(board, depth, depth, Board.AllSquaresMask, alpha, beta, _getStaticScore, true); // Search for a quiet position.
-        var drawnEndgame = false;
+        bool drawnEndgame;
         var cachedStaticScore = CachedPositionData.StaticScore(cachedPosition.Data);
         if (cachedStaticScore == SpecialScore.NotCached)
         {
             // Evaluate static score.
-            if (board.CurrentPosition.KingInCheck) board.CurrentPosition.StaticScore = -SpecialScore.Max;
-            else if (board.PreviousPosition?.PlayedMove == Move.Null) board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
+            if (board.CurrentPosition.KingInCheck)
+            {
+                board.CurrentPosition.StaticScore = -SpecialScore.Max;
+                drawnEndgame = false;
+            }
+            else if (board.PreviousPosition?.PlayedMove == Move.Null)
+            {
+                board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
+                drawnEndgame = false;
+            }
             else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
             // Update cache.
             CachedPositionData.SetStaticScore(ref cachedPosition.Data, board.CurrentPosition.StaticScore);
@@ -753,7 +815,7 @@ public sealed class Search : IDisposable
             bestScore = board.CurrentPosition.KingInCheck ? Eval.GetMateScore(depth) : 0;
             _possibleVariationLength[depth] = 0;
         }
-        if (bestScore <= originalAlpha) UpdateBestMoveCache(board.CurrentPosition, depth, horizon, Move.Null, bestScore, originalAlpha, beta); // Score fails low.
+        if (bestScore <= originalAlpha) UpdateBestMoveCache(board.CurrentPosition, depth, horizon, Move.Null, bestScore, originalAlpha, beta); // Score failed low.
         return bestScore;
     }
 
@@ -787,8 +849,8 @@ public sealed class Search : IDisposable
         if ((depth > 0) && terminalDraw) return 0; // Game ends on this move.
         // Search for a quiet position where no captures are possible.
         var fromHorizon = depth - horizon;
-        _selectiveHorizon = Math.Max(depth, _selectiveHorizon);
-        var drawnEndgame = false;
+        _selectiveHorizon = FastMath.Max(depth, _selectiveHorizon);
+        bool drawnEndgame;
         Delegates.GetNextMove getNextMove;
         ulong moveGenerationToSquareMask;
         if (board.CurrentPosition.KingInCheck)
@@ -797,6 +859,7 @@ public sealed class Search : IDisposable
             getNextMove = _getNextMove;
             moveGenerationToSquareMask = Board.AllSquaresMask;
             board.CurrentPosition.StaticScore = -SpecialScore.Max; // Don't evaluate static score since moves when king is in check are not futile.
+            drawnEndgame = false;
         }
         else
         {
@@ -810,12 +873,11 @@ public sealed class Search : IDisposable
                     : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
             }
             else moveGenerationToSquareMask = toSquareMask;
-            if (board.PreviousPosition?.PlayedMove == Move.Null) board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
-            else (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
-            // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
+            (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
             if (board.CurrentPosition.StaticScore >= beta) return beta; // Prevent worsening of position by making a bad capture.  Stand pat.
-            alpha = Math.Max(board.CurrentPosition.StaticScore, alpha);
+            alpha = FastMath.Max(board.CurrentPosition.StaticScore, alpha);
         }
+        // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         var legalMoveNumber = 0;
         board.CurrentPosition.PrepareMoveGeneration();
         do
@@ -834,7 +896,7 @@ public sealed class Search : IDisposable
             board.UndoMove();
             if (FastMath.Abs(score) == SpecialScore.Interrupted) return score; // Stop searching.
             if (score >= beta) return beta; // Position is not the result of best play by both players.
-            alpha = Math.Max(score, alpha);
+            alpha = FastMath.Max(score, alpha);
         } while (true);
         if ((legalMoveNumber == 0) && board.CurrentPosition.KingInCheck) return Eval.GetMateScore(depth); // Game ends on this move.
         // Return score of best move.
@@ -903,8 +965,8 @@ public sealed class Search : IDisposable
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
         // Do not reduce directly into quiet search.
-        var staticScoreReduction = Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
-        var reduction = Math.Min(_nullMoveReduction + staticScoreReduction, horizon - depth - 1);
+        var staticScoreReduction = FastMath.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
+        var reduction = FastMath.Min(_nullMoveReduction + staticScoreReduction, horizon - depth - 1);
         board.PlayNullMove();
         // Do not play two null moves consecutively.  Search with zero alpha / beta window.
         var score = -GetDynamicScore(board, depth + 1, horizon - reduction, false, -beta, -beta + 1);
@@ -916,6 +978,7 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
+        // TODO: Try prioritizing moves each iteration and returning highest priority.
         while (true)
         {
             int firstMoveIndex;
@@ -948,7 +1011,7 @@ public sealed class Search : IDisposable
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
                     // Prioritize and sort captures.
-                    lastMoveIndex = Math.Max(firstMoveIndex, position.MoveIndex - 1);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (lastMoveIndex > firstMoveIndex)
                     {
                         PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
@@ -960,7 +1023,7 @@ public sealed class Search : IDisposable
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
                     // Prioritize and sort non-captures.
-                    lastMoveIndex = Math.Max(firstMoveIndex, position.MoveIndex - 1);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (lastMoveIndex > firstMoveIndex)
                     {
                         PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
@@ -999,7 +1062,7 @@ public sealed class Search : IDisposable
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    var lastMoveIndex = Math.Max(firstMoveIndex, position.MoveIndex - 1);
+                    var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (lastMoveIndex > firstMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
                     position.MoveGenerationStage = MoveGenerationStage.End; // Skip non-captures.
                     continue;
@@ -1064,7 +1127,7 @@ public sealed class Search : IDisposable
         }
         if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
         // Reduce search horizon of late move.
-        var quietMoveIndex = Math.Min(quietMoveNumber, _lateMoveReductions.Length - 1);
+        var quietMoveIndex = FastMath.Min(quietMoveNumber, _lateMoveReductions.Length - 1);
         return horizon - _lateMoveReductions[quietMoveIndex];
     }
 
@@ -1095,28 +1158,21 @@ public sealed class Search : IDisposable
         var toHorizon = horizon - depth;
         var cachedToHorizon = CachedPositionData.ToHorizon(cachedPositionData);
         if (cachedToHorizon < toHorizon) return SpecialScore.NotCached; // Cached position is shallower than current horizon. Do not use cached score.
-        if (FastMath.Abs(dynamicScore) >= SpecialScore.Checkmate)
-        {
-            // Adjust checkmate score.
-            if (dynamicScore > 0) dynamicScore -= depth;
-            else dynamicScore += depth;
-        }
+        // Adjust checkmate score.
+        if (dynamicScore >= SpecialScore.Checkmate) dynamicScore -= depth;
+        else if (dynamicScore <= -SpecialScore.Checkmate) dynamicScore += depth;
         var scorePrecision = CachedPositionData.ScorePrecision(cachedPositionData);
         // ReSharper disable once SwitchStatementMissingSomeCases
         switch (scorePrecision)
         {
             case ScorePrecision.Exact:
-                // Score is exact.
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 if (dynamicScore >= beta) return beta; // Score fails high.
-                // If necessary, avoid truncating the principal variation by returning a cached score.
-                return TruncatePrincipalVariation ? dynamicScore : SpecialScore.NotCached;
+                return AllowedToTruncatePv ? dynamicScore : SpecialScore.NotCached;
             case ScorePrecision.UpperBound:
-                // Score is upper bound.
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 break;
             case ScorePrecision.LowerBound:
-                // Score is lower bound.
                 if (dynamicScore >= beta) return beta; // Score fails high.
                 break;
             default:
@@ -1194,15 +1250,17 @@ public sealed class Search : IDisposable
             CachedPositionData.SetBestMoveTo(ref cachedPosition.Data, Move.To(bestMove));
             CachedPositionData.SetBestMovePromotedPiece(ref cachedPosition.Data, Move.PromotedPiece(bestMove));
         }
-        var adjustedScore = dynamicScore;
-        if (FastMath.Abs(adjustedScore) >= SpecialScore.Checkmate) adjustedScore += adjustedScore > 0 ? depth : -depth; // Adjust checkmate score.
+        var adjustedDynamicScore = dynamicScore;
+        // Adjust checkmate score.
+        if (adjustedDynamicScore >= SpecialScore.Checkmate) adjustedDynamicScore += depth;
+        else if (adjustedDynamicScore <= -SpecialScore.Checkmate) adjustedDynamicScore -= depth;
         // Update score.
-        if (adjustedScore <= alpha)
+        if (adjustedDynamicScore <= alpha)
         {
             CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.UpperBound);
             CachedPositionData.SetDynamicScore(ref cachedPosition.Data, alpha);
         }
-        else if (adjustedScore >= beta)
+        else if (adjustedDynamicScore >= beta)
         {
             CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.LowerBound);
             CachedPositionData.SetDynamicScore(ref cachedPosition.Data, beta);
@@ -1210,7 +1268,7 @@ public sealed class Search : IDisposable
         else
         {
             CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.Exact);
-            CachedPositionData.SetDynamicScore(ref cachedPosition.Data, adjustedScore);
+            CachedPositionData.SetDynamicScore(ref cachedPosition.Data, adjustedDynamicScore);
         }
         _cache.SetPosition(cachedPosition);
     }
@@ -1225,7 +1283,7 @@ public sealed class Search : IDisposable
         var hashFull = (int)((1000L * _cache.Positions) / _cache.Capacity);
         if (includePrincipalVariation)
         {
-            var principalVariations = Math.Min(MultiPv, board.CurrentPosition.MoveIndex);
+            var principalVariations = FastMath.Min(MultiPv, board.CurrentPosition.MoveIndex);
             for (var pv = 0; pv < principalVariations; pv++)
             {
                 var principalVariation = _principalVariations[Move.ToLongAlgebraic(_bestMoves[pv].Move)];
@@ -1242,13 +1300,13 @@ public sealed class Search : IDisposable
                 var score = _bestMoves[pv].Score;
                 var multiPvPhrase = MultiPv > 1 ? $"multipv {pv + 1} " : null;
                 var scorePhrase = FastMath.Abs(score) >= SpecialScore.Checkmate ? $"mate {Eval.GetMateMoveCount(score)}" : $"cp {score}";
-                _writeMessageLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} " +
+                _writeMessageLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} " +
                                   $"time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
             }
         }
         else
         {
-            _writeMessageLine($"info depth {_originalHorizon} seldepth {Math.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
+            _writeMessageLine($"info depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
         }
         _writeMessageLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
         if (_debug()) _displayStats();
@@ -1287,11 +1345,12 @@ public sealed class Search : IDisposable
         MoveTimeSoftLimit = TimeSpan.MaxValue;
         MoveTimeHardLimit = TimeSpan.MaxValue;
         CanAdjustMoveTime = true;
-        // Reset best moves, possible and principal variations, and stats.
+        // Reset best moves, possible and principal variations, and last alpha.
         for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -SpecialScore.Max);
         for (var depth = 0; depth < _bestMovePlies.Length; depth++) _bestMovePlies[depth] = new ScoredMove(Move.Null, -SpecialScore.Max);
         for (var depth = 0; depth < _possibleVariationLength.Length; depth++) _possibleVariationLength[depth] = 0;
         _principalVariations.Clear();
+        _lastAlpha = 0;
         // Enable PV update, increment search counter, and continue search.
         PvInfoUpdate = true;
         _cache.Searches++;

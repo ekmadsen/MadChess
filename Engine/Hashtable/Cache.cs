@@ -54,7 +54,7 @@ public sealed class Cache
         _stats = stats;
         _validateMove = validateMove;
         // Set null position.
-        NullPosition = new CachedPosition();
+        NullPosition = new CachedPosition(0, 0);
         CachedPositionData.SetToHorizon(ref NullPosition.Data, 0);
         CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
         CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.Illegal);

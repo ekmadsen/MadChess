@@ -1021,7 +1021,6 @@ public sealed class Board
         var castling = (attacker == king) && (distance == 2);
         if (castling)
         {
-            // ReSharper disable ConvertIfStatementToSwitchStatement
             if (CurrentPosition.ColorToMove == Color.White)
             {
                 // White Castling
@@ -1056,7 +1055,6 @@ public sealed class Board
                     if ((CurrentPosition.Occupancy & CastleEmptySquaresMask[(int)Color.Black][(int)BoardSide.King]) > 0) return false; // Castle squares occupied.
                 }
             }
-            // ReSharper restore ConvertIfStatementToSwitchStatement
         }
         // Set move properties.
         var capture = victim != Piece.None;
@@ -1257,7 +1255,6 @@ public sealed class Board
             }
             // ReSharper restore SwitchStatementMissingSomeEnumCasesNoDefault
         }
-        // ReSharper restore ConvertIfStatementToSwitchStatement
         // Update current position.
         CurrentPosition.EnPassantSquare = Move.IsDoublePawnMove(move) ? _enPassantTargetSquares[(int)toSquare] : Square.Illegal;
         if ((captureVictim != Piece.None) || Move.IsPawnMove(move)) CurrentPosition.PlySinceCaptureOrPawnMove = 0;
@@ -1306,7 +1303,6 @@ public sealed class Board
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void Castle(Piece piece, Square toSquare)
     {
-        // ReSharper disable once ConvertIfStatementToSwitchStatement
         if (piece == Piece.WhiteKing)
             // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             switch (toSquare)
@@ -1394,7 +1390,7 @@ public sealed class Board
         var currentPositionKey = CurrentPosition.Key;
         var positionCount = 0;
         // Examine positions since the last capture or pawn move.
-        var firstMove = Math.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
+        var firstMove = FastMath.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
         for (var positionIndex = _positionIndex; positionIndex >= firstMove; positionIndex -= 2) // Advance by two ply to retain same side to move.
         {
             if (_positions[positionIndex].Key == currentPositionKey) positionCount++;
@@ -1410,7 +1406,7 @@ public sealed class Board
         var currentPositionKey = CurrentPosition.Key;
         var positionCount = 0;
         // Examine positions since the last capture or pawn move.
-        var firstMove = Math.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
+        var firstMove = FastMath.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
         for (var positionIndex = firstMove; positionIndex <= _positionIndex; positionIndex += 2) // Advance by two ply to retain same side to move.
         {
             if (_positions[positionIndex].Key == currentPositionKey) positionCount++;

@@ -11,6 +11,7 @@
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Evaluation;
+using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
 namespace ErikTheCoder.MadChess.Engine.Tuning;
@@ -25,12 +26,12 @@ public sealed class ParticleSwarm
     private readonly int _winScale;
         
 
-    public ParticleSwarm(QuietPositions quietPositions, Parameters parameters, int particles, int winScale)
+    public ParticleSwarm(PgnGames pgnGames, Parameters parameters, int particles, int winScale)
     {
         // Create particles at random locations.
         Particles = new Particles();
         _winScale = winScale;
-        for (var particle = 0; particle < particles; particle++) Particles.Add(new Particle(quietPositions, parameters.DuplicateWithRandomValues()));
+        for (var particle = 0; particle < particles; particle++) Particles.Add(new Particle(pgnGames, parameters.DuplicateWithRandomValues()));
     }
 
 
@@ -46,7 +47,7 @@ public sealed class ParticleSwarm
     }
 
 
-    public void Iterate(Board board, Eval eval)
+    public void Iterate(Board board, Search search, Eval eval)
     {
         var bestParticle = GetBestParticle();
         for (var index = 0; index < Particles.Count; index++)
@@ -55,12 +56,12 @@ public sealed class ParticleSwarm
             if ((particle != bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
             {
                 // Recreate particle at random location.
-                particle = new Particle(particle.QuietPositions, particle.Parameters.DuplicateWithRandomValues());
+                particle = new Particle(particle.PgnGames, particle.Parameters.DuplicateWithRandomValues());
                 Particles[index] = particle;
             }
             particle.Move();
             particle.ConfigureEvaluation(eval);
-            particle.CalculateEvaluationError(board, eval, _winScale);
+            particle.CalculateEvaluationError(board, search, _winScale);
         }
     }
 
