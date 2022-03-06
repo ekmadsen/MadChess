@@ -196,6 +196,7 @@ public sealed class Position
             {
                 // Capture pawn en passant.
                 move = Move.Null;
+                Move.SetPiece(ref move, attacker);
                 Move.SetFrom(ref move, fromSquare);
                 Move.SetTo(ref move, EnPassantSquare);
                 Move.SetCaptureAttacker(ref move, attacker);
@@ -223,6 +224,7 @@ public sealed class Position
                     if (toSquareRank < 7)
                     {
                         move = Move.Null;
+                        Move.SetPiece(ref move, attacker);
                         Move.SetFrom(ref move, fromSquare);
                         Move.SetTo(ref move, toSquare);
                         Move.SetIsDoublePawnMove(ref move, doubleMove);
@@ -236,6 +238,7 @@ public sealed class Position
                         {
                             // Promote pawn.
                             move = Move.Null;
+                            Move.SetPiece(ref move, attacker);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetPromotedPiece(ref move, promotedPiece);
@@ -257,6 +260,7 @@ public sealed class Position
                     if (toSquareRank < 7)
                     {
                         move = Move.Null;
+                        Move.SetPiece(ref move, attacker);
                         Move.SetFrom(ref move, fromSquare);
                         Move.SetTo(ref move, toSquare);
                         Move.SetCaptureAttacker(ref move, attacker);
@@ -271,6 +275,7 @@ public sealed class Position
                         {
                             // Promote pawn.
                             move = Move.Null;
+                            Move.SetPiece(ref move, attacker);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
                             Move.SetCaptureAttacker(ref move, attacker);
@@ -313,6 +318,7 @@ public sealed class Position
                 {
                     var victim = GetPiece(toSquare);
                     var move = Move.Null;
+                    Move.SetPiece(ref move, attacker);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
@@ -348,6 +354,7 @@ public sealed class Position
         {
             var victim = GetPiece(toSquare);
             move = Move.Null;
+            Move.SetPiece(ref move, attacker);
             Move.SetFrom(ref move, fromSquare);
             Move.SetTo(ref move, toSquare);
             if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
@@ -368,6 +375,7 @@ public sealed class Position
                     if ((Board.SquareMasks[(int)toSquare] & toSquareMask) > 0)
                     {
                         move = Move.Null;
+                        Move.SetPiece(ref move, attacker);
                         Move.SetFrom(ref move, fromSquare);
                         Move.SetTo(ref move, toSquare);
                         Move.SetIsCastling(ref move, true);

@@ -226,9 +226,6 @@ public sealed class Search : IDisposable
             _movePriorityComparer = null;
             _scoredMovePriorityComparer = null;
             _moveScoreComparer = null;
-            _movePriorityComparer = null;
-            _scoredMovePriorityComparer = null;
-            _moveScoreComparer = null;
             _getExchangeMaterialScore = null;
             _futilityPruningMargins = null;
             _aspirationWindows = null;
@@ -237,9 +234,6 @@ public sealed class Search : IDisposable
             _rootMoves = null;
             _bestMoves = null;
             _bestMovePlies = null;
-            _movePriorityComparer = null;
-            _scoredMovePriorityComparer = null;
-            _moveScoreComparer = null;
             _possibleVariations = null;
             _possibleVariationLength = null;
             _principalVariations = null;
@@ -603,11 +597,11 @@ public sealed class Search : IDisposable
         // Get cached position.
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
-        var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key);
+        var cachedPosition = _cache[board.CurrentPosition.Key];
         ulong bestMove;
         if ((cachedPosition.Key != _cache.NullPosition.Key) && (depth > 0) && !repeatPosition)
         {
-            // Not a root or repeat position.
+            // Position is cached and is not a root or repeat position.
             // Determine if dynamic score is cached.
             var cachedDynamicScore = GetCachedDynamicScore(cachedPosition.Data, depth, horizon, alpha, beta);
             if (cachedDynamicScore != SpecialScore.NotCached)
@@ -620,7 +614,7 @@ public sealed class Search : IDisposable
                     {
                         // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
                         // Update history heuristic.
-                        _moveHistory.UpdateValue(board.CurrentPosition, bestMove, historyIncrement);
+                        _moveHistory.UpdateValue(bestMove, historyIncrement);
                     }
                 }
                 _stats.CacheScoreCutoff++;
@@ -628,33 +622,19 @@ public sealed class Search : IDisposable
             }
         }
         if (toHorizon <= 0) return GetQuietScore(board, depth, depth, Board.AllSquaresMask, alpha, beta, _getStaticScore, true); // Search for a quiet position.
+        // Evaluate static score.
         bool drawnEndgame;
-        var cachedStaticScore = CachedPositionData.StaticScore(cachedPosition.Data);
-        if (cachedStaticScore == SpecialScore.NotCached)
+        if (board.CurrentPosition.KingInCheck)
         {
-            // Evaluate static score.
-            if (board.CurrentPosition.KingInCheck)
-            {
-                board.CurrentPosition.StaticScore = -SpecialScore.Max;
-                drawnEndgame = false;
-            }
-            else if (board.PreviousPosition?.PlayedMove == Move.Null)
-            {
-                board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
-                drawnEndgame = false;
-            }
-            else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
-            // Update cache.
-            CachedPositionData.SetStaticScore(ref cachedPosition.Data, board.CurrentPosition.StaticScore);
-            CachedPositionData.SetIsStaticDrawnEndgame(ref cachedPosition.Data, drawnEndgame);
-            _cache.SetPosition(cachedPosition);
+            board.CurrentPosition.StaticScore = -SpecialScore.Max;
+            drawnEndgame = false;
         }
-        else
+        else if (board.PreviousPosition?.PlayedMove == Move.Null)
         {
-            // Update position's static score from cache.
-            board.CurrentPosition.StaticScore = cachedStaticScore;
-            drawnEndgame = CachedPositionData.IsStaticDrawnEndgame(cachedPosition.Data);
+            board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
+            drawnEndgame = false;
         }
+        else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         if (IsPositionFutile(board.CurrentPosition, depth, horizon, drawnEndgame, alpha, beta))
         {
@@ -684,7 +664,7 @@ public sealed class Search : IDisposable
             // Cached position in a principal variation does not specify a best move.
             // Find best move via Internal Iterative Deepening.
             GetDynamicScore(board, depth, horizon - _iidReduction, false, alpha, beta);
-            cachedPosition = _cache.GetPosition(board.CurrentPosition.Key);
+            cachedPosition = _cache[board.CurrentPosition.Key];
             bestMove = _cache.GetBestMove(cachedPosition.Data);
         }
         var originalAlpha = alpha;
@@ -703,7 +683,7 @@ public sealed class Search : IDisposable
                 moveIndex++;
                 if (moveIndex == 0)
                 {
-                    PrioritizeMoves(board.CurrentPosition, _rootMoves, lastMoveIndex, bestMove, depth);
+                    PrioritizeMoves(_rootMoves, lastMoveIndex, bestMove, depth);
                     SortMovesByPriority(_rootMoves, lastMoveIndex);
                 }
                 if (moveIndex > lastMoveIndex) break;
@@ -757,8 +737,8 @@ public sealed class Search : IDisposable
                 if (Move.IsQuiet(move))
                 {
                     // Update move heuristics.
-                    _killerMoves.UpdateValue(board.CurrentPosition, depth, move);
-                    _moveHistory.UpdateValue(board.CurrentPosition, move, historyIncrement);
+                    _killerMoves.Update(depth, move);
+                    _moveHistory.UpdateValue(move, historyIncrement);
                     // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
                     moveIndex--;
                     while (moveIndex >= 0)
@@ -767,7 +747,7 @@ public sealed class Search : IDisposable
                         if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                         {
                             // Update history of prior quiet move that failed to produce cutoff.
-                            _moveHistory.UpdateValue(board.CurrentPosition, priorMove, -historyIncrement);
+                            _moveHistory.UpdateValue(priorMove, -historyIncrement);
                         }
                         moveIndex--;
                     }
@@ -978,7 +958,6 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
-        // TODO: Try prioritizing moves each iteration and returning highest priority.
         while (true)
         {
             int firstMoveIndex;
@@ -1010,13 +989,8 @@ public sealed class Search : IDisposable
                 case MoveGenerationStage.Captures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort captures.
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (lastMoveIndex > firstMoveIndex)
-                    {
-                        PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
-                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
-                    }
+                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
                     position.MoveGenerationStage++;
                     continue;
                 case MoveGenerationStage.NonCaptures:
@@ -1024,9 +998,9 @@ public sealed class Search : IDisposable
                     position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
                     // Prioritize and sort non-captures.
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (lastMoveIndex > firstMoveIndex)
+                    if (firstMoveIndex < lastMoveIndex)
                     {
-                        PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        PrioritizeMoves(position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
                     position.MoveGenerationStage++;
@@ -1063,7 +1037,7 @@ public sealed class Search : IDisposable
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (lastMoveIndex > firstMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
+                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
                     position.MoveGenerationStage = MoveGenerationStage.End; // Skip non-captures.
                     continue;
                 case MoveGenerationStage.End:
@@ -1183,7 +1157,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void PrioritizeMoves(Position position, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
+    private void PrioritizeMoves(ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
         {
@@ -1191,20 +1165,20 @@ public sealed class Search : IDisposable
             // Prioritize best move.
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             // Prioritize killer moves.
-            Move.SetKiller(ref move, _killerMoves.GetValue(position, depth, move));
+            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
             // Prioritize by move history.
-            Move.SetHistory(ref move, _moveHistory.GetValue(position, move));
+            Move.SetHistory(ref move, _moveHistory.GetValue(move));
             moves[moveIndex].Move = move;
         }
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void PrioritizeMoves(Position position, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(position, moves, 0, lastMoveIndex, bestMove, depth);
+    public void PrioritizeMoves(ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(moves, 0, lastMoveIndex, bestMove, depth);
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void PrioritizeMoves(Position position, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
+    private void PrioritizeMoves(ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
         {
@@ -1212,9 +1186,9 @@ public sealed class Search : IDisposable
             // Prioritize best move.
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             // Prioritize killer moves.
-            Move.SetKiller(ref move, _killerMoves.GetValue(position, depth, move));
+            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
             // Prioritize by move history.
-            Move.SetHistory(ref move, _moveHistory.GetValue(position, move));
+            Move.SetHistory(ref move, _moveHistory.GetValue(move));
             moves[moveIndex] = move;
         }
     }
@@ -1225,15 +1199,15 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SortMovesByScore(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _moveScoreComparer);
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void SortMovesByPriority(ulong[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _movePriorityComparer);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SortMovesByPriority(ulong[] moves, int firstMoveIndex, int lastMoveIndex) => Array.Sort(moves, firstMoveIndex, lastMoveIndex - firstMoveIndex + 1, _movePriorityComparer);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SortMovesByScore(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _moveScoreComparer);
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -1270,7 +1244,7 @@ public sealed class Search : IDisposable
             CachedPositionData.SetScorePrecision(ref cachedPosition.Data, ScorePrecision.Exact);
             CachedPositionData.SetDynamicScore(ref cachedPosition.Data, adjustedDynamicScore);
         }
-        _cache.SetPosition(cachedPosition);
+        _cache[cachedPosition.Key] = cachedPosition;
     }
 
 

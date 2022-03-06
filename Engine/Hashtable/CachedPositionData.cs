@@ -35,12 +35,6 @@ public static class CachedPositionData
     private static readonly int _bestMovePromotedPieceShift;
     private static readonly ulong _bestMovePromotedPieceMask;
     private static readonly ulong _bestMovePromotedPieceUnmask;
-    private static readonly int _staticScoreShift;
-    private static readonly ulong _staticScoreMask;
-    private static readonly ulong _staticScoreUnmask;
-    private static readonly int _drawnEndgameShift;
-    private static readonly ulong _drawnEndgameMask;
-    private static readonly ulong _drawnEndgameUnmask;
     private static readonly int _dynamicScoreShift;
     private static readonly ulong _dynamicScoreMask;
     private static readonly ulong _dynamicScoreUnmask;
@@ -53,13 +47,12 @@ public static class CachedPositionData
         
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // To Horizon |Best From    |Best To      |BMP    |Static Score                   |D|Dynamic Score                  |SP |Last
+    // To Horizon |Best From    |Best To      |BMP    |Dynamic Score                                              |DSP|Last
 
     // Best From = Best Move From (one extra bit for illegal square)
     // Best To =   Best Move To   (one extra bit for illegal square)
     // BMP =       Best Move Promoted Piece
-    // D =         Static Score Drawn Endgame
-    // SP =        Dynamic Score Precision
+    // DSP =       Dynamic Score Precision
     // Last =      Last Accessed
 
 
@@ -78,20 +71,14 @@ public static class CachedPositionData
         _bestMovePromotedPieceShift = 40;
         _bestMovePromotedPieceMask = Bitwise.CreateULongMask(40, 43);
         _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(40, 43);
-        _staticScoreShift = 24;
-        _staticScoreMask = Bitwise.CreateULongMask(24, 39);
-        _staticScoreUnmask = Bitwise.CreateULongUnmask(24, 39);
-        _drawnEndgameShift = 23;
-        _drawnEndgameMask = Bitwise.CreateULongMask(23);
-        _drawnEndgameUnmask = Bitwise.CreateULongUnmask(23);
-        _dynamicScoreShift = 7;
-        _dynamicScoreMask = Bitwise.CreateULongMask(7, 22);
-        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(7, 22);
-        _scorePrecisionShift = 5;
-        _scorePrecisionMask = Bitwise.CreateULongMask(5, 6);
-        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(5, 6);
-        _lastAccessedMask = Bitwise.CreateULongMask(0, 4);
-        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 4);
+        _dynamicScoreShift = 10;
+        _dynamicScoreMask = Bitwise.CreateULongMask(10, 39);
+        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(10, 39);
+        _scorePrecisionShift = 8;
+        _scorePrecisionMask = Bitwise.CreateULongMask(8, 9);
+        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(8, 9);
+        _lastAccessedMask = Bitwise.CreateULongMask(0, 7);
+        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 7);
     }
 
 
@@ -160,41 +147,6 @@ public static class CachedPositionData
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int StaticScore(ulong cachedPositionData) => (int)((cachedPositionData & _staticScoreMask) >> _staticScoreShift) - SpecialScore.Max; // Cached score is a positive number.
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetStaticScore(ref ulong cachedPositionData, int staticScore)
-    {
-        // Ensure cached score is a positive number.
-        var positiveScore = staticScore + SpecialScore.Max;
-        // Clear
-        cachedPositionData &= _staticScoreUnmask;
-        // Set
-        cachedPositionData |= ((ulong)positiveScore << _staticScoreShift) & _staticScoreMask;
-        // Validate cached position.
-        Debug.Assert(StaticScore(cachedPositionData) == staticScore);
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsStaticDrawnEndgame(ulong cachedPositionData) => (cachedPositionData & _drawnEndgameMask) >> _drawnEndgameShift > 0;
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetIsStaticDrawnEndgame(ref ulong cachedPositionData, bool isStaticDrawnEndgame)
-    {
-        var value = isStaticDrawnEndgame ? 1ul : 0;
-        // Clear
-        cachedPositionData &= _drawnEndgameUnmask;
-        // Set
-        cachedPositionData |= (value << _drawnEndgameShift) & _drawnEndgameMask;
-        // Validate move.
-        Debug.Assert(IsStaticDrawnEndgame(cachedPositionData) == isStaticDrawnEndgame);
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int DynamicScore(ulong cachedPositionData) => (int)((cachedPositionData & _dynamicScoreMask) >> _dynamicScoreShift) - SpecialScore.Max; // Cached score is a positive number.
 
 
@@ -255,8 +207,6 @@ public static class CachedPositionData
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) != Piece.WhiteKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.WhiteKing = {Piece.WhiteKing}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) != Piece.BlackPawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.BlackPawn = {Piece.BlackPawn}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) < Piece.BlackKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.BlackKing = {Piece.BlackKing}{Environment.NewLine}{ToString(cachedPositionData)}");
-        Debug.Assert(StaticScore(cachedPositionData) >= -SpecialScore.Max, $"StaticScore(CachedPosition) = {StaticScore(cachedPositionData)}, -SpecialScore.Max = {-SpecialScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
-        Debug.Assert(StaticScore(cachedPositionData) <= SpecialScore.Max, $"StaticScore(CachedPosition) = {StaticScore(cachedPositionData)}, SpecialScore.Max = {SpecialScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(DynamicScore(cachedPositionData) >= -SpecialScore.Max, $"DynamicScore(CachedPosition) = {DynamicScore(cachedPositionData)}, -SpecialScore.Max = {-SpecialScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(DynamicScore(cachedPositionData) <= SpecialScore.Max, $"DynamicScore(CachedPosition) = {DynamicScore(cachedPositionData)}, SpecialScore.Max = {SpecialScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
         return true;
@@ -270,8 +220,6 @@ public static class CachedPositionData
         stringBuilder.AppendLine($"Best Move From = {BestMoveFrom(cachedPositionData)}");
         stringBuilder.AppendLine($"Best Move To = {BestMoveTo(cachedPositionData)}");
         stringBuilder.AppendLine($"Best Move Promoted Piece = {BestMovePromotedPiece(cachedPositionData)}");
-        stringBuilder.AppendLine($"Static Score = {StaticScore(cachedPositionData)}");
-        stringBuilder.AppendLine($"IsStaticDrawnEndgame = {IsStaticDrawnEndgame(cachedPositionData)}");
         stringBuilder.AppendLine($"Dynamic Score = {DynamicScore(cachedPositionData)}");
         stringBuilder.AppendLine($"Score Precision = {ScorePrecision(cachedPositionData)}");
         stringBuilder.AppendLine($"Last Accessed = {LastAccessed(cachedPositionData)}");

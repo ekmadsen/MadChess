@@ -37,20 +37,20 @@ public sealed class MoveHistory
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetValue(Position position, ulong move)
+    public int GetValue(ulong move)
     {
-        var piece = position.GetPiece(Move.From(move));
+        var piece = Move.Piece(move);
         var toSquare = Move.To(move);
         return _moveHistory[(int)piece][(int)toSquare];
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void UpdateValue(Position position, ulong move, int increment)
+    public void UpdateValue(ulong move, int increment)
     {
         // Update value with decay.  Idea from Ethereal chess engine.
         // This function approaches an asymptotic limit of +/- Move.HistoryMaxValue.
-        var piece = position.GetPiece(Move.From(move));
+        var piece = Move.Piece(move);
         var toSquare = Move.To(move);
         var value = _moveHistory[(int)piece][(int)toSquare];
         value += (increment * _multiplier) - ((value * FastMath.Abs(increment)) / _divisor);
@@ -62,7 +62,10 @@ public sealed class MoveHistory
     {
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
-            for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++) _moveHistory[(int)piece][(int)toSquare] = (_agePer256 * _moveHistory[(int)piece][(int)toSquare]) / 256;
+            for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
+            {
+                _moveHistory[(int)piece][(int)toSquare] = (_agePer256 * _moveHistory[(int)piece][(int)toSquare]) / 256;
+            }
         }
     }
 
