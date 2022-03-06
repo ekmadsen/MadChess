@@ -35,5 +35,5 @@ public readonly struct KillerMove
     public bool Equals(KillerMove otherKillerMove) => (_piece == otherKillerMove._piece) && (_toSquare == otherKillerMove._toSquare);
     public override bool Equals(object other) => (other is KillerMove otherKillerMove) && Equals(otherKillerMove);
     public override int GetHashCode() => HashCode.Combine((int)_piece, (int)_toSquare);
-    public static KillerMove Parse(Position position, ulong move) => new(position.GetPiece(Move.From(move)), Move.To(move));
+    public static KillerMove Parse(ulong move) => new(Move.Piece(move), Move.To(move));
 }

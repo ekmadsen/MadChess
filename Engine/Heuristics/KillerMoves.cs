@@ -35,18 +35,18 @@ public sealed class KillerMoves
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetValue(Position position, int depth, ulong move)
+    public int GetValue(int depth, ulong move)
     {
-        var killerMove = KillerMove.Parse(position, move);
+        var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return 2;
         return killerMove == _killerMoves[depth][1] ? 1 : 0;
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Update(Position position, int depth, ulong move)
+    public void Update(int depth, ulong move)
     {
-        var killerMove = KillerMove.Parse(position, move);
+        var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return; // Move already is the best killer move.
         // Shift and update killer move.
         _killerMoves[depth][1] = _killerMoves[depth][0];

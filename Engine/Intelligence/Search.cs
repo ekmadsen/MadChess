@@ -614,7 +614,7 @@ public sealed class Search : IDisposable
                     {
                         // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
                         // Update history heuristic.
-                        _moveHistory.UpdateValue(board.CurrentPosition, bestMove, historyIncrement);
+                        _moveHistory.UpdateValue(bestMove, historyIncrement);
                     }
                 }
                 _stats.CacheScoreCutoff++;
@@ -683,7 +683,7 @@ public sealed class Search : IDisposable
                 moveIndex++;
                 if (moveIndex == 0)
                 {
-                    PrioritizeMoves(board.CurrentPosition, _rootMoves, lastMoveIndex, bestMove, depth);
+                    PrioritizeMoves(_rootMoves, lastMoveIndex, bestMove, depth);
                     SortMovesByPriority(_rootMoves, lastMoveIndex);
                 }
                 if (moveIndex > lastMoveIndex) break;
@@ -737,8 +737,8 @@ public sealed class Search : IDisposable
                 if (Move.IsQuiet(move))
                 {
                     // Update move heuristics.
-                    _killerMoves.Update(board.CurrentPosition, depth, move);
-                    _moveHistory.UpdateValue(board.CurrentPosition, move, historyIncrement);
+                    _killerMoves.Update(depth, move);
+                    _moveHistory.UpdateValue(move, historyIncrement);
                     // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
                     moveIndex--;
                     while (moveIndex >= 0)
@@ -747,7 +747,7 @@ public sealed class Search : IDisposable
                         if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                         {
                             // Update history of prior quiet move that failed to produce cutoff.
-                            _moveHistory.UpdateValue(board.CurrentPosition, priorMove, -historyIncrement);
+                            _moveHistory.UpdateValue(priorMove, -historyIncrement);
                         }
                         moveIndex--;
                     }
@@ -1000,7 +1000,7 @@ public sealed class Search : IDisposable
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
-                        PrioritizeMoves(position, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        PrioritizeMoves(position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
                     position.MoveGenerationStage++;
@@ -1157,7 +1157,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void PrioritizeMoves(Position position, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
+    private void PrioritizeMoves(ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
         {
@@ -1165,20 +1165,20 @@ public sealed class Search : IDisposable
             // Prioritize best move.
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             // Prioritize killer moves.
-            Move.SetKiller(ref move, _killerMoves.GetValue(position, depth, move));
+            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
             // Prioritize by move history.
-            Move.SetHistory(ref move, _moveHistory.GetValue(position, move));
+            Move.SetHistory(ref move, _moveHistory.GetValue(move));
             moves[moveIndex].Move = move;
         }
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void PrioritizeMoves(Position position, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(position, moves, 0, lastMoveIndex, bestMove, depth);
+    public void PrioritizeMoves(ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(moves, 0, lastMoveIndex, bestMove, depth);
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void PrioritizeMoves(Position position, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
+    private void PrioritizeMoves(ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
         {
@@ -1186,9 +1186,9 @@ public sealed class Search : IDisposable
             // Prioritize best move.
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             // Prioritize killer moves.
-            Move.SetKiller(ref move, _killerMoves.GetValue(position, depth, move));
+            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
             // Prioritize by move history.
-            Move.SetHistory(ref move, _moveHistory.GetValue(position, move));
+            Move.SetHistory(ref move, _moveHistory.GetValue(move));
             moves[moveIndex] = move;
         }
     }

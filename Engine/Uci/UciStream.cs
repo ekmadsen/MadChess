@@ -711,7 +711,7 @@ public sealed class UciStream : IDisposable
         // Generate and sort moves.
         _board.CurrentPosition.GenerateMoves();
         var lastMoveIndex = _board.CurrentPosition.MoveIndex - 1;
-        _search.PrioritizeMoves(_board.CurrentPosition, _board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
+        _search.PrioritizeMoves(_board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
         Search.SortMovesByPriority(_board.CurrentPosition.Moves, lastMoveIndex);
         WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer   History              Priority");
         WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  ========  ====================");
@@ -1118,9 +1118,8 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");
         WriteMessageLine("                                      ws = Win Scale, i = Iterations.");
         WriteMessageLine();
-        WriteMessageLine("tunewinscale [filename] [threads]     Compute a scale constant used in the sigmoid function of the tuning algorithm.");
+        WriteMessageLine("tunewinscale [pgn] [threads]          Compute a scale constant used in the sigmoid function of the tuning algorithm.");
         WriteMessageLine("                                      The sigmoid function maps evaluation score to expected win fraction.");
-        WriteMessageLine("                                      Each line of file must be formatted as [FEN]|[GameResult].");
     }
 
 

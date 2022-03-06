@@ -20,11 +20,11 @@ namespace ErikTheCoder.MadChess.Core.Moves;
 
 public static class Move
 {
-    // Move.History is allotted 28 bits.
-    // 2 Pow 28 = 268_435_456.
-    // Value may be positive or negative, so max value is 268_435_456 / 2 = 134_217_728.
-    // Account for zero value = 134_217_728 - 1 = 134_217_727.
-    public const int HistoryMaxValue = 134_217_727;
+    // Move.History is allotted 24 bits.
+    // 2 Pow 24 = 16_777_216.
+    // Value may be positive or negative, so max value is 16_777_216 / 2 = 8_388_608.
+    // Account for zero value = 8_388_608 - 1 = 8_388_607.
+    public const int HistoryMaxValue = 8_388_607;
 
     public static readonly ulong Null;
     private static readonly int _bestShift;
@@ -66,20 +66,22 @@ public static class Move
     private static readonly int _doublePawnMoveShift;
     private static readonly ulong _doublePawnMoveMask;
     private static readonly ulong _doublePawnMoveUnmask;
+    private static readonly int _toShift;
+    private static readonly ulong _toMask;
+    private static readonly ulong _toUnmask;
     private static readonly int _fromShift;
     private static readonly ulong _fromMask;
     private static readonly ulong _fromUnmask;
-    private static readonly ulong _toMask;
-    private static readonly ulong _toUnmask;
+    private static readonly ulong _pieceMask;
+    private static readonly ulong _pieceUnmask;
 
-    // TODO: Add piece below history.
-
+    
     // Move Bits
     // Higher priority moves have higher ulong value.
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // B|CapV   |CapA   |Promo  |Kil|History                                                |!|O|K|E|2|P|C|From         |To
+    // B|CapV   |CapA   |Promo  |Kil|History                                        |!|O|K|E|2|P|C|To           |From         |Piece
 
     // B =     Best Move
     // CapV =  Capture Victim
@@ -115,41 +117,44 @@ public static class Move
         _killerShift = 49;
         _killerMask = Bitwise.CreateULongMask(49, 50);
         _killerUnmask = Bitwise.CreateULongUnmask(49, 50);
-        _historyShift = 21;
-        _historyMask = Bitwise.CreateULongMask(21, 48);
-        _historyUnmask = Bitwise.CreateULongUnmask(21, 48);
-        _playedShift = 20;
-        _playedMask = Bitwise.CreateULongMask(20);
-        _playedUnmask = Bitwise.CreateULongUnmask(20);
-        _castlingShift = 19;
-        _castlingMask = Bitwise.CreateULongMask(19);
-        _castlingUnmask = Bitwise.CreateULongUnmask(19);
-        _kingMoveShift = 18;
-        _kingMoveMask = Bitwise.CreateULongMask(18);
-        _kingMoveUnmask = Bitwise.CreateULongUnmask(18);
-        _enPassantShift = 17;
-        _enPassantMask = Bitwise.CreateULongMask(17);
-        _enPassantUnmask = Bitwise.CreateULongUnmask(17);
-        _doublePawnMoveShift = 16;
-        _doublePawnMoveMask = Bitwise.CreateULongMask(16);
-        _doublePawnMoveUnmask = Bitwise.CreateULongUnmask(16);
-        _pawnMoveShift = 15;
-        _pawnMoveMask = Bitwise.CreateULongMask(15);
-        _pawnMoveUnmask = Bitwise.CreateULongUnmask(15);
-        _checkShift = 14;
-        _checkMask = Bitwise.CreateULongMask(14);
-        _checkUnmask = Bitwise.CreateULongUnmask(14);
-        _fromShift = 7;
-        _fromMask = Bitwise.CreateULongMask(7, 13);
-        _fromUnmask = Bitwise.CreateULongUnmask(7, 13);
-        _toMask = Bitwise.CreateULongMask(0, 6);
-        _toUnmask = Bitwise.CreateULongUnmask(0, 6);
+        _historyShift = 25;
+        _historyMask = Bitwise.CreateULongMask(25, 48);
+        _historyUnmask = Bitwise.CreateULongUnmask(25, 48);
+        _playedShift = 24;
+        _playedMask = Bitwise.CreateULongMask(24);
+        _playedUnmask = Bitwise.CreateULongUnmask(24);
+        _castlingShift = 23;
+        _castlingMask = Bitwise.CreateULongMask(23);
+        _castlingUnmask = Bitwise.CreateULongUnmask(23);
+        _kingMoveShift = 22;
+        _kingMoveMask = Bitwise.CreateULongMask(22);
+        _kingMoveUnmask = Bitwise.CreateULongUnmask(22);
+        _enPassantShift = 21;
+        _enPassantMask = Bitwise.CreateULongMask(21);
+        _enPassantUnmask = Bitwise.CreateULongUnmask(21);
+        _doublePawnMoveShift = 20;
+        _doublePawnMoveMask = Bitwise.CreateULongMask(20);
+        _doublePawnMoveUnmask = Bitwise.CreateULongUnmask(20);
+        _pawnMoveShift = 19;
+        _pawnMoveMask = Bitwise.CreateULongMask(19);
+        _pawnMoveUnmask = Bitwise.CreateULongUnmask(19);
+        _checkShift = 18;
+        _checkMask = Bitwise.CreateULongMask(18);
+        _checkUnmask = Bitwise.CreateULongUnmask(18);
+        _toShift = 11;
+        _toMask = Bitwise.CreateULongMask(11, 17);
+        _toUnmask = Bitwise.CreateULongUnmask(11, 17);
+        _fromShift = 4;
+        _fromMask = Bitwise.CreateULongMask(4, 10);
+        _fromUnmask = Bitwise.CreateULongUnmask(4, 10);
+        _pieceMask = Bitwise.CreateULongMask(0, 3);
+        _pieceUnmask = Bitwise.CreateULongUnmask(0, 3);
         // Set null move.
         Null = 0;
         SetIsBest(ref Null, false);
-        SetCaptureVictim(ref Null, Piece.None);
-        SetCaptureAttacker(ref Null, Piece.None);
-        SetPromotedPiece(ref Null, Piece.None);
+        SetCaptureVictim(ref Null, Game.Piece.None);
+        SetCaptureAttacker(ref Null, Game.Piece.None);
+        SetPromotedPiece(ref Null, Game.Piece.None);
         SetKiller(ref Null, 0);
         SetHistory(ref Null, 0);
         SetPlayed(ref Null, false);
@@ -159,8 +164,9 @@ public static class Move
         SetIsDoublePawnMove(ref Null, false);
         SetIsPawnMove(ref Null, false);
         SetIsCheck(ref Null, false);
-        SetFrom(ref Null, Square.Illegal);
         SetTo(ref Null, Square.Illegal);
+        SetFrom(ref Null, Square.Illegal);
+        SetPiece(ref Null, Game.Piece.None);
     }
 
 
@@ -202,7 +208,7 @@ public static class Move
     {
         // Value is inverted.
         var storedPiece = (int)((move & _captureAttackerMask) >> _captureAttackerShift);
-        return Piece.BlackKing - storedPiece;
+        return Game.Piece.BlackKing - storedPiece;
     }
 
 
@@ -210,7 +216,7 @@ public static class Move
     public static void SetCaptureAttacker(ref ulong move, Piece captureAttacker)
     {
         // Invert piece value so P x Q captures are given a higher priority than Q x Q.
-        var storedPiece = (ulong)(Piece.BlackKing - captureAttacker);
+        var storedPiece = (ulong)(Game.Piece.BlackKing - captureAttacker);
         // Clear
         move &= _captureAttackerUnmask;
         // Set
@@ -394,6 +400,22 @@ public static class Move
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Square To(ulong move) => (Square)((move & _toMask) >> _toShift);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void SetTo(ref ulong move, Square to)
+    {
+        // Clear
+        move &= _toUnmask;
+        // Set
+        move |= ((ulong)to << _toShift) & _toMask;
+        // Validate move.
+        Debug.Assert(To(move) == to);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Square From(ulong move) => (Square)((move & _fromMask) >> _fromShift);
 
 
@@ -410,18 +432,18 @@ public static class Move
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Square To(ulong move) => (Square)(move & _toMask);
+    public static Piece Piece(ulong move) => (Piece)(move & _pieceMask);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetTo(ref ulong move, Square to)
+    public static void SetPiece(ref ulong move, Piece piece)
     {
         // Clear
-        move &= _toUnmask;
+        move &= _pieceUnmask;
         // Set
-        move |= (ulong)to & _toMask;
+        move |= (ulong)piece & _pieceMask;
         // Validate move.
-        Debug.Assert(To(move) == to);
+        Debug.Assert(Piece(move) == piece);
     }
 
 
@@ -436,7 +458,7 @@ public static class Move
         // Set case of promoted piece character based on side to move.
         var promotedPiece = longAlgebraic.Length == 5
             ? PieceHelper.ParseChar(colorToMove == Color.White ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
-            : Piece.None;
+            : Game.Piece.None;
         var move = Null;
         SetFrom(ref move, fromSquare);
         SetTo(ref move, toSquare);
@@ -471,7 +493,7 @@ public static class Move
         var length = standardAlgebraicNoCheck.Length;
         var fromFile = -1;
         var fromRank = -1;
-        var promotedPiece = Piece.None;
+        var promotedPiece = Game.Piece.None;
         Piece piece;
         Square toSquare;
         if (char.IsLower(standardAlgebraicNoCheck, 0))
@@ -564,7 +586,7 @@ public static class Move
         {
             move = board.CurrentPosition.Moves[moveIndex];
             if (!board.IsMoveLegal(ref move)) continue; // Skip illegal move.
-            var movePiece = board.CurrentPosition.GetPiece(From(move));
+            var movePiece = Piece(move);
             if (movePiece != piece) continue; // Wrong Piece
             var moveToSquare = To(move);
             if (moveToSquare != toSquare) continue; // Wrong Square
@@ -591,18 +613,18 @@ public static class Move
 
     public static bool IsValid(ulong move)
     {
-        Debug.Assert(CaptureVictim(move) >= Piece.None, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.None = {Piece.None}");
-        Debug.Assert(CaptureVictim(move) < Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.BlackKing = {Piece.BlackKing}");
-        Debug.Assert(CaptureVictim(move) != Piece.WhiteKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.WhiteKing = {Piece.WhiteKing}");
-        Debug.Assert(CaptureVictim(move) != Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.BlackKing = {Piece.BlackKing}");
-        Debug.Assert(CaptureAttacker(move) >= Piece.None, $"CaptureAttacker(Move) = {CaptureAttacker(move)}, Piece.None = {Piece.None}");
-        Debug.Assert(CaptureAttacker(move) <= Piece.BlackKing, $"CaptureAttacker(Move) = {CaptureAttacker(move)}, Piece.BlackKing = {Piece.BlackKing}");
-        Debug.Assert(PromotedPiece(move) >= Piece.None, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.None = {Piece.None}");
-        Debug.Assert(PromotedPiece(move) < Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Piece.BlackKing}");
-        Debug.Assert(PromotedPiece(move) != Piece.WhitePawn, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.WhitePawn = {Piece.WhitePawn}");
-        Debug.Assert(PromotedPiece(move) != Piece.BlackPawn, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackPawn = {Piece.BlackPawn}");
-        Debug.Assert(PromotedPiece(move) != Piece.WhiteKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.WhiteKing = {Piece.WhiteKing}");
-        Debug.Assert(PromotedPiece(move) != Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Piece.BlackKing}");
+        Debug.Assert(CaptureVictim(move) >= Game.Piece.None, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.None = {Game.Piece.None}");
+        Debug.Assert(CaptureVictim(move) < Game.Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
+        Debug.Assert(CaptureVictim(move) != Game.Piece.WhiteKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.WhiteKing = {Game.Piece.WhiteKing}");
+        Debug.Assert(CaptureVictim(move) != Game.Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
+        Debug.Assert(CaptureAttacker(move) >= Game.Piece.None, $"CaptureAttacker(Move) = {CaptureAttacker(move)}, Piece.None = {Game.Piece.None}");
+        Debug.Assert(CaptureAttacker(move) <= Game.Piece.BlackKing, $"CaptureAttacker(Move) = {CaptureAttacker(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
+        Debug.Assert(PromotedPiece(move) >= Game.Piece.None, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.None = {Game.Piece.None}");
+        Debug.Assert(PromotedPiece(move) < Game.Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
+        Debug.Assert(PromotedPiece(move) != Game.Piece.WhitePawn, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.WhitePawn = {Game.Piece.WhitePawn}");
+        Debug.Assert(PromotedPiece(move) != Game.Piece.BlackPawn, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackPawn = {Game.Piece.BlackPawn}");
+        Debug.Assert(PromotedPiece(move) != Game.Piece.WhiteKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.WhiteKing = {Game.Piece.WhiteKing}");
+        Debug.Assert(PromotedPiece(move) != Game.Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
         Debug.Assert(Killer(move) >= 0, $"Killer(Move) = {Killer(move)}");
         Debug.Assert(Killer(move) <= 2, $"Killer(Move) = {Killer(move)}");
         Debug.Assert(From(move) >= Square.A8, $"From(Move) = {From(move)}");
@@ -619,7 +641,7 @@ public static class Move
         var fromSquare = From(move);
         var toSquare = To(move);
         var promotedPiece = PromotedPiece(move);
-        return $"{Board.SquareLocations[(int)fromSquare]}{Board.SquareLocations[(int)toSquare]}{(promotedPiece == Piece.None ? string.Empty : PieceHelper.GetChar(promotedPiece).ToString().ToLower())}";
+        return $"{Board.SquareLocations[(int)fromSquare]}{Board.SquareLocations[(int)toSquare]}{(promotedPiece == Game.Piece.None ? string.Empty : PieceHelper.GetChar(promotedPiece).ToString().ToLower())}";
     }
 
 
