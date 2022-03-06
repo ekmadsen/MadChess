@@ -614,7 +614,7 @@ public sealed class Search : IDisposable
                     {
                         // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
                         // Update history heuristic.
-                        _moveHistory.Update(board.CurrentPosition, bestMove, historyIncrement);
+                        _moveHistory.UpdateValue(board.CurrentPosition, bestMove, historyIncrement);
                     }
                 }
                 _stats.CacheScoreCutoff++;
@@ -738,7 +738,7 @@ public sealed class Search : IDisposable
                 {
                     // Update move heuristics.
                     _killerMoves.Update(board.CurrentPosition, depth, move);
-                    _moveHistory.Update(board.CurrentPosition, move, historyIncrement);
+                    _moveHistory.UpdateValue(board.CurrentPosition, move, historyIncrement);
                     // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
                     moveIndex--;
                     while (moveIndex >= 0)
@@ -747,7 +747,7 @@ public sealed class Search : IDisposable
                         if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                         {
                             // Update history of prior quiet move that failed to produce cutoff.
-                            _moveHistory.Update(board.CurrentPosition, priorMove, -historyIncrement);
+                            _moveHistory.UpdateValue(board.CurrentPosition, priorMove, -historyIncrement);
                         }
                         moveIndex--;
                     }
@@ -1165,9 +1165,9 @@ public sealed class Search : IDisposable
             // Prioritize best move.
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             // Prioritize killer moves.
-            Move.SetKiller(ref move, _killerMoves[position, depth, move]);
+            Move.SetKiller(ref move, _killerMoves.GetValue(position, depth, move));
             // Prioritize by move history.
-            Move.SetHistory(ref move, _moveHistory[position, move]);
+            Move.SetHistory(ref move, _moveHistory.GetValue(position, move));
             moves[moveIndex].Move = move;
         }
     }
@@ -1186,9 +1186,9 @@ public sealed class Search : IDisposable
             // Prioritize best move.
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             // Prioritize killer moves.
-            Move.SetKiller(ref move, _killerMoves[position, depth, move]);
+            Move.SetKiller(ref move, _killerMoves.GetValue(position, depth, move));
             // Prioritize by move history.
-            Move.SetHistory(ref move, _moveHistory[position, move]);
+            Move.SetHistory(ref move, _moveHistory.GetValue(position, move));
             moves[moveIndex] = move;
         }
     }
