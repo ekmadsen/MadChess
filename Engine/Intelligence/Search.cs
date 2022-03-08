@@ -178,10 +178,10 @@ public sealed class Search : IDisposable
         _aspirationWindows =  new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
-        _lateMovePruningMargins = new[] { 999, 003, 007, 013, 021, 031 };
+        _lateMovePruningMargins = new[] { 999, 002, 006, 012, 020, 030 };
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
-        // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
-        _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
+        // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030
+        _lateMoveReductions = new[] { 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
         // Create scored move arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
         _bestMoves = new ScoredMove[Position.MaxMoves];
@@ -331,13 +331,15 @@ public sealed class Search : IDisposable
         {
             var move = board.CurrentPosition.Moves[moveIndex];
             if (!ShouldSearchMove(move)) continue;
-            if (board.IsMoveLegal(ref move))
+            var legalMove = board.PlayMove(move);
+            if (legalMove)
             {
                 // Move is legal.
                 Move.SetPlayed(ref move, true); // All root moves will be played so set this in advance.
-                board.CurrentPosition.Moves[legalMoveIndex] = move;
+                board.PreviousPosition.Moves[legalMoveIndex] = move;
                 legalMoveIndex++;
             }
+            board.UndoMove();
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
         if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0))
@@ -688,30 +690,34 @@ public sealed class Search : IDisposable
                 }
                 if (moveIndex > lastMoveIndex) break;
                 move = _rootMoves[moveIndex].Move;
-                legalMoveNumber++;
                 _rootMove = move;
-                _rootMoveNumber = legalMoveNumber;
+                _rootMoveNumber = legalMoveNumber + 1; // All root moves are legal.
             }
             else
             {
                 // Search moves at current position.
                 (move, moveIndex) = GetNextMove(board.CurrentPosition, Board.AllSquaresMask, depth, bestMove);
-                if (move == Move.Null) break;
-                if (board.IsMoveLegal(ref move)) legalMoveNumber++;
-                else continue; // Skip illegal move.
-                board.CurrentPosition.Moves[moveIndex] = move;
+                if (move == Move.Null) break; // All moves have been searched.
             }
             if (Move.Equals(move, excludedMove)) continue;
-            if (IsMoveFutile(board, depth, horizon, move, legalMoveNumber, quietMoveNumber, drawnEndgame, alpha, beta)) continue; // Move is futile.  Skip move.
-            if (Move.IsQuiet(move)) quietMoveNumber++;
+            var futileMove = IsMoveFutile(board, depth, horizon, move, legalMoveNumber, quietMoveNumber, drawnEndgame, alpha, beta);
             var searchHorizon = GetSearchHorizon(board, depth, horizon, move, cachedPosition, quietMoveNumber, drawnEndgame);
+            // Play and search move.
+            var legalMove = board.PlayMove(move, futileMove); // Futile move must deliver check or it's skipped.
+            if (!legalMove)
+            {
+                // Skip illegal move.
+                board.UndoMove();
+                continue;
+            }
+            legalMoveNumber++;
+            Move.SetPlayed(ref move, true);
+            board.PreviousPosition.Moves[moveIndex] = move;
+            if (Move.IsQuiet(move)) quietMoveNumber++;
+            if (board.CurrentPosition.KingInCheck) searchHorizon = horizon; // Do not reduce checking move.
             var moveBeta = (legalMoveNumber == 1) || ((MultiPv > 1) && (depth == 0))
                 ? beta // Search with full alpha / beta window.
                 : bestScore + 1; // Search with zero alpha / beta window.
-            // Play and search move.
-            Move.SetPlayed(ref move, true);
-            board.CurrentPosition.Moves[moveIndex] = move;
-            board.PlayMove(move);
             var score = -GetDynamicScore(board, depth + 1, searchHorizon, true, -moveBeta, -alpha);
             if (FastMath.Abs(score) == SpecialScore.Interrupted)
             {
@@ -803,7 +809,8 @@ public sealed class Search : IDisposable
     public int GetExchangeScore(Board board, ulong move)
     {
         var (scoreBeforeMove, _) = _getExchangeMaterialScore(board.CurrentPosition);
-        board.PlayMove(move);
+        var legalMove = board.PlayMove(move);
+        if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {board.PreviousPosition.ToFen()}.");
         var scoreAfterMove = -GetQuietScore(board, 0, 0, Board.SquareMasks[(int)Move.To(move)], -SpecialScore.Max, SpecialScore.Max, _getExchangeMaterialScore, false);
         board.UndoMove();
         return scoreAfterMove - scoreBeforeMove;
@@ -864,14 +871,19 @@ public sealed class Search : IDisposable
         {
             // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
             var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
-            if (move == Move.Null) break;
-            if (board.IsMoveLegal(ref move)) legalMoveNumber++; // Move is legal.
-            else continue; // Skip illegal move.
-            if (considerFutility && IsMoveFutile(board, depth, horizon, move, legalMoveNumber, 0, drawnEndgame, alpha, beta)) continue; // Move is futile.  Skip move.
+            if (move == Move.Null) break; // All moves have been searched.
+            var futileMove = considerFutility && IsMoveFutile(board, depth, horizon, move, legalMoveNumber, 0, drawnEndgame, alpha, beta);
             // Play and search move.
+            var legalMove = board.PlayMove(move, futileMove); // Futile move must deliver check or it's skipped.
+            if (!legalMove)
+            {
+                // Skip illegal move.
+                board.UndoMove();
+                continue;
+            }
+            legalMoveNumber++;
             Move.SetPlayed(ref move, true);
-            board.CurrentPosition.Moves[moveIndex] = move;
-            board.PlayMove(move);
+            board.PreviousPosition.Moves[moveIndex] = move;
             var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, -beta, -alpha, getStaticScore, considerFutility);
             board.UndoMove();
             if (FastMath.Abs(score) == SpecialScore.Interrupted) return score; // Stop searching.
@@ -1055,8 +1067,8 @@ public sealed class Search : IDisposable
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         var toHorizon = horizon - depth;
         if (toHorizon >= _futilityPruningMargins.Length) return false; // Move far from search horizon is not futile.
-        if ((depth == 0) || (legalMoveNumber == 1)) return false; // Root move or first move is not futile.
-        if (drawnEndgame || Move.IsCheck(move) || board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame, checking move, or move when king is in check is not futile.
+        if ((depth == 0) || (legalMoveNumber == 0)) return false; // Root move or first move is not futile.
+        if (drawnEndgame || board.CurrentPosition.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= SpecialScore.Checkmate) || (FastMath.Abs(beta) >= SpecialScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
         var captureVictim = Move.CaptureVictim(move);
         var capture = captureVictim != Piece.None;
@@ -1092,7 +1104,7 @@ public sealed class Search : IDisposable
         if ((depth == 0) && !CompetitivePlay) return horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
         var capture = Move.CaptureVictim(move) != Piece.None;
         if (capture) return horizon; // Do not reduce capture.
-        if (drawnEndgame || Move.IsCheck(move) || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame, checking move, or move when king is in check.
+        if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
         if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return horizon; // Do not reduce killer move, pawn promotion, or castling.
         if (Move.IsPawnMove(move))
         {

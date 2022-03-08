@@ -22,6 +22,7 @@ using ErikTheCoder.MadChess.Engine.Score;
 namespace ErikTheCoder.MadChess.Engine.Evaluation;
 
 
+// TODO: Restore threat eval params.
 public sealed class Eval
 {
     private const int _egKingCornerFactor = 32;
@@ -431,8 +432,8 @@ public sealed class Eval
         EvaluatePieceLocation(position, Color.Black);
         EvaluatePawns(position, Color.White);
         EvaluatePawns(position, Color.Black);
-        EvaluateMobilityKingSafety(position, Color.White);
-        EvaluateMobilityKingSafety(position, Color.Black);
+        EvaluateMobilityKingSafetyThreats(position, Color.White);
+        EvaluateMobilityKingSafetyThreats(position, Color.Black);
         EvaluateMinorPieces(position, Color.White);
         EvaluateMinorPieces(position, Color.Black);
         // Limit strength, determine endgame scale, phase, and total score.
@@ -676,6 +677,8 @@ public sealed class Eval
         var enemyColor = 1 - color;
         var kingSquare = Bitwise.FirstSetSquare(position.GetKing(color));
         var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
+        var enemyMinorPieces = position.GetMinorPieces(enemyColor);
+        var enemyMajorPieces = position.GetMajorPieces(enemyColor);
         Square square;
         while ((square = Bitwise.PopFirstSetSquare(ref pawns)) != Square.Illegal)
         {
@@ -708,6 +711,14 @@ public sealed class Eval
                     _staticScore.EgPassedPawns[(int)color] += _egPassedPawns[rank];
                 }
             }
+            // Evaluate threats.
+            var pawnAttacks = Board.PawnAttackMasks[(int)color][(int)square];
+            var minorPiecesAttacked = Bitwise.CountSetBits(pawnAttacks & enemyMinorPieces);
+            var majorPiecesAttacked = Bitwise.CountSetBits(pawnAttacks & enemyMajorPieces);
+            _staticScore.MgThreats[(int)color] += minorPiecesAttacked * Config.MgPawnThreatenMinor;
+            _staticScore.EgThreats[(int)color] += minorPiecesAttacked * Config.EgPawnThreatenMinor;
+            _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgPawnThreatenMajor;
+            _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgPawnThreatenMajor;
         }
         for (var file = 0; file < 8; file++)
         {
@@ -764,13 +775,14 @@ public sealed class Eval
 
     // TODO: Include stacked attacks on same square via x-rays.  For example, a rook behind a queen.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void EvaluateMobilityKingSafety(Position position, Color color)
+    private void EvaluateMobilityKingSafetyThreats(Position position, Color color)
     {
         var enemyColor = 1 - color;
         var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
         var enemyKingInnerRing = Board.InnerRingMasks[(int)enemyKingSquare];
         var enemyKingOuterRing = Board.OuterRingMasks[(int)enemyKingSquare];
         var enemyKingFile = Board.Files[(int)enemyKingSquare];
+        var enemyMajorPieces = position.GetMajorPieces(enemyColor);
         var enemyPawns = position.GetPawns(enemyColor);
         var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
         var mgThreatsToEnemyKingSafety = 0;
@@ -793,6 +805,13 @@ public sealed class Eval
                 var outerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Outer];
                 var innerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Inner];
                 mgThreatsToEnemyKingSafety += GetKingSafetyIndexIncrement(pieceDestinations, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
+                if (colorlessPiece < ColorlessPiece.Rook)
+                {
+                    // Evaluate threats.
+                    var majorPiecesAttacked = Bitwise.CountSetBits(pieceMovesMask & enemyMajorPieces);
+                    _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgMinorThreatenMajor;
+                    _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgMinorThreatenMajor;
+                }
             }
         }
         // Evaluate enemy king near semi-open files.

@@ -101,6 +101,13 @@ public sealed class EvalConfig
     public int MgKingSafetyQueenAttackInnerRingPer8 = 20;
     public int MgKingSafetySemiOpenFilePer8 = 22;
     public int MgKingSafetyPawnShieldPer8 = 21;
+    // Threats
+    public int MgPawnThreatenMinor = 36;
+    public int EgPawnThreatenMinor = 51;
+    public int MgPawnThreatenMajor = 72;
+    public int EgPawnThreatenMajor = 26;
+    public int MgMinorThreatenMajor = 78;
+    public int EgMinorThreatenMajor = 28;
     // Minor Pieces
     public int MgBishopPair = 42;
     public int EgBishopPair = 65;
@@ -198,6 +205,13 @@ public sealed class EvalConfig
         MgKingSafetyQueenAttackInnerRingPer8 = copyFromConfig.MgKingSafetyQueenAttackInnerRingPer8;
         MgKingSafetySemiOpenFilePer8 = copyFromConfig.MgKingSafetySemiOpenFilePer8;
         MgKingSafetyPawnShieldPer8 = copyFromConfig.MgKingSafetyPawnShieldPer8;
+        // Copy threat values.
+        MgPawnThreatenMinor = copyFromConfig.MgPawnThreatenMinor;
+        EgPawnThreatenMinor = copyFromConfig.EgPawnThreatenMinor;
+        MgPawnThreatenMajor = copyFromConfig.MgPawnThreatenMajor;
+        EgPawnThreatenMajor = copyFromConfig.EgPawnThreatenMajor;
+        MgMinorThreatenMajor = copyFromConfig.MgMinorThreatenMajor;
+        EgMinorThreatenMajor = copyFromConfig.EgMinorThreatenMajor;
         // Copy minor piece values.
         MgBishopPair = copyFromConfig.MgBishopPair;
         EgBishopPair = copyFromConfig.EgBishopPair;

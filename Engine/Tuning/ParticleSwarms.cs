@@ -171,6 +171,13 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
+            // Threats
+            new(nameof(EvalConfig.MgPawnThreatenMinor), 0, 100),
+            new(nameof(EvalConfig.EgPawnThreatenMinor), 0, 100),
+            new(nameof(EvalConfig.MgPawnThreatenMajor), 0, 100),
+            new(nameof(EvalConfig.EgPawnThreatenMajor), 0, 100),
+            new(nameof(EvalConfig.MgMinorThreatenMajor), 0, 100),
+            new(nameof(EvalConfig.EgMinorThreatenMajor), 0, 100),
             // Minor Pieces
             new(nameof(EvalConfig.MgBishopPair), 0, 100),
             new(nameof(EvalConfig.EgBishopPair), 0, 150),
@@ -263,6 +270,13 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackInnerRingPer8;
         parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
         parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
+        // Threats
+        parameters[nameof(evalConfig.MgPawnThreatenMinor)].Value = evalConfig.MgPawnThreatenMinor;
+        parameters[nameof(evalConfig.EgPawnThreatenMinor)].Value = evalConfig.EgPawnThreatenMinor;
+        parameters[nameof(evalConfig.MgPawnThreatenMajor)].Value = evalConfig.MgPawnThreatenMajor;
+        parameters[nameof(evalConfig.EgPawnThreatenMajor)].Value = evalConfig.EgPawnThreatenMajor;
+        parameters[nameof(evalConfig.MgMinorThreatenMajor)].Value = evalConfig.MgMinorThreatenMajor;
+        parameters[nameof(evalConfig.EgMinorThreatenMajor)].Value = evalConfig.EgMinorThreatenMajor;
         // Minor Pieces
         parameters[nameof(evalConfig.MgBishopPair)].Value = evalConfig.MgBishopPair;
         parameters[nameof(evalConfig.EgBishopPair)].Value = evalConfig.EgBishopPair;

@@ -20,11 +20,11 @@ namespace ErikTheCoder.MadChess.Core.Moves;
 
 public static class Move
 {
-    // Move.History is allotted 24 bits.
-    // 2 Pow 24 = 16_777_216.
-    // Value may be positive or negative, so max value is 16_777_216 / 2 = 8_388_608.
-    // Account for zero value = 8_388_608 - 1 = 8_388_607.
-    public const int HistoryMaxValue = 8_388_607;
+    // Move.History is allotted 25 bits.
+    // 2 Pow 25 = 33_554_432.
+    // Value may be positive or negative, so max value is 33_554_432 / 2 = 16_777_216.
+    // Account for zero value = 16_777_216 - 1 = 16_777_215.
+    public const int HistoryMaxValue = 16_777_215;
 
     public static readonly ulong Null;
     private static readonly int _bestShift;
@@ -60,9 +60,6 @@ public static class Move
     private static readonly int _pawnMoveShift;
     private static readonly ulong _pawnMoveMask;
     private static readonly ulong _pawnMoveUnmask;
-    private static readonly int _checkShift;
-    private static readonly ulong _checkMask;
-    private static readonly ulong _checkUnmask;
     private static readonly int _doublePawnMoveShift;
     private static readonly ulong _doublePawnMoveMask;
     private static readonly ulong _doublePawnMoveUnmask;
@@ -81,7 +78,7 @@ public static class Move
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // B|CapV   |CapA   |Promo  |Kil|History                                        |!|O|K|E|2|P|C|To           |From         |Piece
+    // B|CapV   |CapA   |Promo  |Kil|History                                          |!|O|K|E|2|P|To           |From         |Piece
 
     // B =     Best Move
     // CapV =  Capture Victim
@@ -94,7 +91,6 @@ public static class Move
     // E =     En Passant Capture
     // 2 =     Double Pawn Move
     // P =     Pawn Move
-    // C =     Check
     // From =  From (one extra bit for illegal square)
     // To =    To (one extra bit for illegal square)
 
@@ -117,30 +113,27 @@ public static class Move
         _killerShift = 49;
         _killerMask = Bitwise.CreateULongMask(49, 50);
         _killerUnmask = Bitwise.CreateULongUnmask(49, 50);
-        _historyShift = 25;
-        _historyMask = Bitwise.CreateULongMask(25, 48);
-        _historyUnmask = Bitwise.CreateULongUnmask(25, 48);
-        _playedShift = 24;
-        _playedMask = Bitwise.CreateULongMask(24);
-        _playedUnmask = Bitwise.CreateULongUnmask(24);
-        _castlingShift = 23;
-        _castlingMask = Bitwise.CreateULongMask(23);
-        _castlingUnmask = Bitwise.CreateULongUnmask(23);
-        _kingMoveShift = 22;
-        _kingMoveMask = Bitwise.CreateULongMask(22);
-        _kingMoveUnmask = Bitwise.CreateULongUnmask(22);
-        _enPassantShift = 21;
-        _enPassantMask = Bitwise.CreateULongMask(21);
-        _enPassantUnmask = Bitwise.CreateULongUnmask(21);
-        _doublePawnMoveShift = 20;
-        _doublePawnMoveMask = Bitwise.CreateULongMask(20);
-        _doublePawnMoveUnmask = Bitwise.CreateULongUnmask(20);
-        _pawnMoveShift = 19;
-        _pawnMoveMask = Bitwise.CreateULongMask(19);
-        _pawnMoveUnmask = Bitwise.CreateULongUnmask(19);
-        _checkShift = 18;
-        _checkMask = Bitwise.CreateULongMask(18);
-        _checkUnmask = Bitwise.CreateULongUnmask(18);
+        _historyShift = 24;
+        _historyMask = Bitwise.CreateULongMask(24, 48);
+        _historyUnmask = Bitwise.CreateULongUnmask(24, 48);
+        _playedShift = 23;
+        _playedMask = Bitwise.CreateULongMask(23);
+        _playedUnmask = Bitwise.CreateULongUnmask(23);
+        _castlingShift = 22;
+        _castlingMask = Bitwise.CreateULongMask(22);
+        _castlingUnmask = Bitwise.CreateULongUnmask(22);
+        _kingMoveShift = 21;
+        _kingMoveMask = Bitwise.CreateULongMask(21);
+        _kingMoveUnmask = Bitwise.CreateULongUnmask(21);
+        _enPassantShift = 20;
+        _enPassantMask = Bitwise.CreateULongMask(20);
+        _enPassantUnmask = Bitwise.CreateULongUnmask(20);
+        _doublePawnMoveShift = 19;
+        _doublePawnMoveMask = Bitwise.CreateULongMask(19);
+        _doublePawnMoveUnmask = Bitwise.CreateULongUnmask(19);
+        _pawnMoveShift = 18;
+        _pawnMoveMask = Bitwise.CreateULongMask(18);
+        _pawnMoveUnmask = Bitwise.CreateULongUnmask(18);
         _toShift = 11;
         _toMask = Bitwise.CreateULongMask(11, 17);
         _toUnmask = Bitwise.CreateULongUnmask(11, 17);
@@ -163,7 +156,6 @@ public static class Move
         SetIsEnPassantCapture(ref Null, false);
         SetIsDoublePawnMove(ref Null, false);
         SetIsPawnMove(ref Null, false);
-        SetIsCheck(ref Null, false);
         SetTo(ref Null, Square.Illegal);
         SetFrom(ref Null, Square.Illegal);
         SetPiece(ref Null, Game.Piece.None);
@@ -358,23 +350,6 @@ public static class Move
         move |= (value << _pawnMoveShift) & _pawnMoveMask;
         // Validate move.
         Debug.Assert(IsPawnMove(move) == isPawnMove);
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsCheck(ulong move) => (move & _checkMask) >> _checkShift > 0;
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetIsCheck(ref ulong move, bool isCheck)
-    {
-        var value = isCheck ? 1ul : 0;
-        // Clear
-        move &= _checkUnmask;
-        // Set
-        move |= (value << _checkShift) & _checkMask;
-        // Validate move.
-        Debug.Assert(IsCheck(move) == isCheck);
     }
 
 
@@ -585,7 +560,9 @@ public static class Move
         for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
         {
             move = board.CurrentPosition.Moves[moveIndex];
-            if (!board.IsMoveLegal(ref move)) continue; // Skip illegal move.
+            var legalMove = board.PlayMove(move);
+            board.UndoMove();
+            if (!legalMove) continue; // Skip illegal move.
             var movePiece = Piece(move);
             if (movePiece != piece) continue; // Wrong Piece
             var moveToSquare = To(move);
@@ -648,7 +625,7 @@ public static class Move
     public static string ToString(ulong move)
     {
         return $"{ToLongAlgebraic(move)} (B = {IsBest(move)}, CapV = {PieceHelper.GetChar(CaptureVictim(move))}, CapA = {PieceHelper.GetChar(CaptureAttacker(move))}, Promo = {PieceHelper.GetChar(PromotedPiece(move))}, Kil = {Killer(move)}, " +
-               $"! = {Played(move)},  O = {IsCastling(move)}, K = {IsKingMove(move)}, E = {IsEnPassantCapture(move)}, 2 = {IsDoublePawnMove(move)}, P = {IsPawnMove(move)}, C = {IsCheck(move)}, Q = {IsQuiet(move)} " +
+               $"! = {Played(move)},  O = {IsCastling(move)}, K = {IsKingMove(move)}, E = {IsEnPassantCapture(move)}, 2 = {IsDoublePawnMove(move)}, P = {IsPawnMove(move)}, Q = {IsQuiet(move)} " +
                $"From = {From(move)}, To = {To(move)})";
     }
 }

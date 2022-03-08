@@ -496,8 +496,9 @@ public sealed class UciStream : IDisposable
         {
             var move = Move.ParseLongAlgebraic(tokens[moveIndex], _board.CurrentPosition.ColorToMove);
             var validMove = _board.ValidateMove(ref move);
-            if (!validMove || !_board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
-            _board.PlayMove(move);
+            if (!validMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
+            var legalMove = _board.PlayMove(move);
+            if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.PreviousPosition.ToFen()}.");
             moveIndex++;
         }
     }
@@ -646,10 +647,15 @@ public sealed class UciStream : IDisposable
         {
             var (move, moveIndex) = _search.GetNextMove(_board.CurrentPosition, Board.AllSquaresMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
-            if (!_board.IsMoveLegal(ref move)) continue; // Skip illegal move.
+            var legalMove = _board.PlayMove(move);
+            if (!legalMove)
+            {
+                // Skip illegal move.
+                _board.UndoMove();
+                continue;
+            }
             Move.SetPlayed(ref move, true);
-            _board.CurrentPosition.Moves[moveIndex] = move;
-            _board.PlayMove(move);
+            _board.PreviousPosition.Moves[moveIndex] = move;
             if (toHorizon > 1) moves += CountMoves(depth + 1, horizon);
             else moves++;
             _board.UndoMove();
@@ -671,13 +677,15 @@ public sealed class UciStream : IDisposable
         for (var moveIndex = 0; moveIndex < _board.CurrentPosition.MoveIndex; moveIndex++)
         {
             var move = _board.CurrentPosition.Moves[moveIndex];
-            if (_board.IsMoveLegal(ref move))
+            var legalMove = _board.PlayMove(move);
+            if (legalMove)
             {
                 // Move is legal.
                 Move.SetPlayed(ref move, true); // All root moves will be played so set this in advance.
-                _board.CurrentPosition.Moves[legalMoveIndex] = move;
+                _board.PreviousPosition.Moves[legalMoveIndex] = move;
                 legalMoveIndex++;
             }
+            _board.UndoMove();
         }
         _board.CurrentPosition.MoveIndex = legalMoveIndex;
         // Count moves for each root move.
@@ -720,7 +728,9 @@ public sealed class UciStream : IDisposable
         for (var moveIndex = 0; moveIndex < _board.CurrentPosition.MoveIndex; moveIndex++)
         {
             var move = _board.CurrentPosition.Moves[moveIndex];
-            if (!_board.IsMoveLegal(ref move)) continue; // Skip illegal move.
+            var legalMove = _board.PlayMove(move);
+            _board.UndoMove();
+            if (!legalMove) continue; // Skip illegal move.
             legalMoveNumber++;
             stringBuilder.Clear();
             stringBuilder.Append(legalMoveNumber.ToString("00").PadLeft(4));
@@ -744,7 +754,10 @@ public sealed class UciStream : IDisposable
     {
         var move = Move.ParseLongAlgebraic(tokens[1].Trim(), _board.CurrentPosition.ColorToMove);
         var validMove = _board.ValidateMove(ref move);
-        if (!validMove || !_board.IsMoveLegal(ref move)) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
+        if (!validMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
+        var legalMove = _board.PlayMove(move);
+        if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.PreviousPosition.ToFen()}.");
+        _board.UndoMove();
         var exchangeScore = _search.GetExchangeScore(_board, move);
         WriteMessageLine(exchangeScore.ToString());
     }

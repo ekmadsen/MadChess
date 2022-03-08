@@ -123,11 +123,10 @@ public sealed class PgnGame
                 throw new Exception($"Error updating {standardAlgebraicMove} move in game {Number}.{Environment.NewLine}{board.CurrentPosition}", exception);
             }
             var longAlgebraicMove = Move.ToLongAlgebraic(move);
-            // Determine if move is legal.
-            if (!board.IsMoveLegal(ref move)) throw new Exception($"Move {longAlgebraicMove} is illegal in position {board.CurrentPosition.ToFen()}."); // Move is illegal.
             _longAlgebraicMoves.Add(longAlgebraicMove);
             Moves.Add(move);
-            board.PlayMove(move);
+            var legalMove = board.PlayMove(move);
+            if (!legalMove) throw new Exception($"Move {longAlgebraicMove} is illegal in position {board.PreviousPosition.ToFen()}.");
         }
         _cleanNotation = null;
         _standardAlgebraicMoves = null;
