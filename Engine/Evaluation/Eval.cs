@@ -22,7 +22,6 @@ using ErikTheCoder.MadChess.Engine.Score;
 namespace ErikTheCoder.MadChess.Engine.Evaluation;
 
 
-// TODO: Restore threat eval params.
 public sealed class Eval
 {
     private const int _egKingCornerFactor = 32;

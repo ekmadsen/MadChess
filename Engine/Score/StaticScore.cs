@@ -76,6 +76,7 @@ public sealed class StaticScore
     private int GetMgMaterial(Color color) => MgPawnMaterial[(int)color] + MgPieceMaterial[(int)color];
 
 
+    // TODO: Restore threat eval params.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPawnStructure[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
                                       MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgBishopPair[(int)color];

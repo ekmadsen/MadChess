@@ -1030,7 +1030,7 @@ public sealed class Board
     
     
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public bool PlayMove(ulong move, bool mustDeliverCheck = false)
+    public (bool isLegal, bool deliversCheck) PlayMove(ulong move)
     {
         Debug.Assert(Move.IsValid(move));
         Debug.Assert(AssertMoveIntegrity(move));
@@ -1065,15 +1065,14 @@ public sealed class Board
         }
         // Determine if moving piece exposed king to check.
         var kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
-        if (IsSquareAttacked(kingSquare)) return false;
-        if (Move.IsCastling(move) && IsCastlePathAttacked(move)) return false;
+        if (IsSquareAttacked(kingSquare)) return (false, false);
+        if (Move.IsCastling(move) && IsCastlePathAttacked(move)) return (false, false);
         ChecksEnemyKing:
         // Move is legal.
         // Determine if move checks enemy king.
         CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
         kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
         var check = IsSquareAttacked(kingSquare);
-        if (mustDeliverCheck && !check) return false;
         CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
         if (Castling.Permitted(CurrentPosition.Castling))
         {
@@ -1128,7 +1127,7 @@ public sealed class Board
         UpdateFullZobristKey();
         Debug.Assert(AssertIntegrity());
         Nodes++;
-        return true;
+        return (true, check);
     }
 
 

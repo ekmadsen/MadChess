@@ -560,7 +560,7 @@ public static class Move
         for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
         {
             move = board.CurrentPosition.Moves[moveIndex];
-            var legalMove = board.PlayMove(move);
+            var (legalMove, _) = board.PlayMove(move);
             board.UndoMove();
             if (!legalMove) continue; // Skip illegal move.
             var movePiece = Piece(move);

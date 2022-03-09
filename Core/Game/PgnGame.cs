@@ -125,7 +125,7 @@ public sealed class PgnGame
             var longAlgebraicMove = Move.ToLongAlgebraic(move);
             _longAlgebraicMoves.Add(longAlgebraicMove);
             Moves.Add(move);
-            var legalMove = board.PlayMove(move);
+            var (legalMove, _) = board.PlayMove(move);
             if (!legalMove) throw new Exception($"Move {longAlgebraicMove} is illegal in position {board.PreviousPosition.ToFen()}.");
         }
         _cleanNotation = null;

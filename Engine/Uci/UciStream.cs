@@ -497,7 +497,7 @@ public sealed class UciStream : IDisposable
             var move = Move.ParseLongAlgebraic(tokens[moveIndex], _board.CurrentPosition.ColorToMove);
             var validMove = _board.ValidateMove(ref move);
             if (!validMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
-            var legalMove = _board.PlayMove(move);
+            var (legalMove, _) = _board.PlayMove(move);
             if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.PreviousPosition.ToFen()}.");
             moveIndex++;
         }
@@ -647,7 +647,7 @@ public sealed class UciStream : IDisposable
         {
             var (move, moveIndex) = _search.GetNextMove(_board.CurrentPosition, Board.AllSquaresMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
-            var legalMove = _board.PlayMove(move);
+            var (legalMove, _) = _board.PlayMove(move);
             if (!legalMove)
             {
                 // Skip illegal move.
@@ -677,7 +677,7 @@ public sealed class UciStream : IDisposable
         for (var moveIndex = 0; moveIndex < _board.CurrentPosition.MoveIndex; moveIndex++)
         {
             var move = _board.CurrentPosition.Moves[moveIndex];
-            var legalMove = _board.PlayMove(move);
+            var (legalMove, _) = _board.PlayMove(move);
             if (legalMove)
             {
                 // Move is legal.
@@ -728,7 +728,7 @@ public sealed class UciStream : IDisposable
         for (var moveIndex = 0; moveIndex < _board.CurrentPosition.MoveIndex; moveIndex++)
         {
             var move = _board.CurrentPosition.Moves[moveIndex];
-            var legalMove = _board.PlayMove(move);
+            var (legalMove, _) = _board.PlayMove(move);
             _board.UndoMove();
             if (!legalMove) continue; // Skip illegal move.
             legalMoveNumber++;
@@ -755,7 +755,7 @@ public sealed class UciStream : IDisposable
         var move = Move.ParseLongAlgebraic(tokens[1].Trim(), _board.CurrentPosition.ColorToMove);
         var validMove = _board.ValidateMove(ref move);
         if (!validMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
-        var legalMove = _board.PlayMove(move);
+        var (legalMove, _) = _board.PlayMove(move);
         if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.PreviousPosition.ToFen()}.");
         _board.UndoMove();
         var exchangeScore = _search.GetExchangeScore(_board, move);
