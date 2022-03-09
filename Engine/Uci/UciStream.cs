@@ -678,14 +678,14 @@ public sealed class UciStream : IDisposable
         {
             var move = _board.CurrentPosition.Moves[moveIndex];
             var (legalMove, _) = _board.PlayMove(move);
+            _board.UndoMove();
             if (legalMove)
             {
                 // Move is legal.
                 Move.SetPlayed(ref move, true); // All root moves will be played so set this in advance.
-                _board.PreviousPosition.Moves[legalMoveIndex] = move;
+                _board.CurrentPosition.Moves[legalMoveIndex] = move;
                 legalMoveIndex++;
             }
-            _board.UndoMove();
         }
         _board.CurrentPosition.MoveIndex = legalMoveIndex;
         // Count moves for each root move.
@@ -756,8 +756,8 @@ public sealed class UciStream : IDisposable
         var validMove = _board.ValidateMove(ref move);
         if (!validMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
         var (legalMove, _) = _board.PlayMove(move);
-        if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.PreviousPosition.ToFen()}.");
         _board.UndoMove();
+        if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
         var exchangeScore = _search.GetExchangeScore(_board, move);
         WriteMessageLine(exchangeScore.ToString());
     }

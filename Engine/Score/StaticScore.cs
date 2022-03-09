@@ -76,10 +76,9 @@ public sealed class StaticScore
     private int GetMgMaterial(Color color) => MgPawnMaterial[(int)color] + MgPieceMaterial[(int)color];
 
 
-    // TODO: Restore threat eval params.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPawnStructure[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
-                                      MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgBishopPair[(int)color];
+                                      MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgThreats[(int)color] + MgBishopPair[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -88,7 +87,7 @@ public sealed class StaticScore
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgPieceLocation[(int)color] + EgPawnStructure[(int)color] + EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] +
-                                     UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgBishopPair[(int)color];
+                                     UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgThreats[(int)color] + EgBishopPair[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
