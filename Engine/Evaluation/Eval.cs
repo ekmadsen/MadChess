@@ -482,6 +482,7 @@ public sealed class Eval
                 _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                 return true;
             case 0:
+                // TODO: Consider scoring K vrs K + Pawns and / or Pieces endgame as "simple" only if strong side has major piece or minor + pawn.
                 // K vrs K + Pawns and / or Pieces
                 EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
                 _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));

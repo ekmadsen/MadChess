@@ -996,7 +996,7 @@ public sealed class UciStream : IDisposable
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 824 for MadChessTuning.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 829 for MadChessTuning.pgn.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
         particleSwarms.Optimize(iterations);
@@ -1043,8 +1043,6 @@ public sealed class UciStream : IDisposable
             gameObjects[thread] = (particle, board, search);
         }
         // Calculate evaluation error of all win scales.
-        WriteMessageLine("Tuning win scale.");
-        WriteMessageLine();
         var winScales = new Stack<int>(_maxWinScale - _minWinScale + 1);
         for (var winScale = _minWinScale; winScale <= _maxWinScale; winScale++) winScales.Push(winScale);
         var tasks = new Task<int>[threads];

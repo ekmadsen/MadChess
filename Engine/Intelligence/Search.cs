@@ -178,10 +178,10 @@ public sealed class Search : IDisposable
         _aspirationWindows =  new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
-        _lateMovePruningMargins = new[] { 999, 005, 011, 019, 029, 041 };
+        _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
-        // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031
-        _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 001, 001, 002, 002, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
+        // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031  032  033
+        _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
         // Create scored move arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
         _bestMoves = new ScoredMove[Position.MaxMoves];
