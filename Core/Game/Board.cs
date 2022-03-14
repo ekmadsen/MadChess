@@ -1027,10 +1027,10 @@ public sealed class Board
         else Move.SetCaptureVictim(ref move, victim);
         return true;
     }
-    
-    
+
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public (bool isLegal, bool deliversCheck) PlayMove(ulong move)
+    public (bool isLegal, bool deliversCheck) PlayMove(ulong move, bool mustDeliverCheck = false)
     {
         Debug.Assert(Move.IsValid(move));
         Debug.Assert(AssertMoveIntegrity(move));
@@ -1074,6 +1074,7 @@ public sealed class Board
         kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
         var check = IsSquareAttacked(kingSquare);
         CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
+        if (mustDeliverCheck && !check) return (true, false);
         if (Castling.Permitted(CurrentPosition.Castling))
         {
             // Update castling rights.
