@@ -175,7 +175,7 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        _aspirationWindows =  new[] { 100, 150, 200, 250, 300, 500, 1000 };
+        _aspirationWindows = new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
         _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
@@ -269,7 +269,7 @@ public sealed class Search : IDisposable
         var scale = 512d; //                                                                              |
         var power = 4d; //                                                                                |
         var constant = 100; //                                                                            |
-        var ratingClass = (double) (_elo - MinElo) / 200; //                                              |
+        var ratingClass = (double)(_elo - MinElo) / 200; //                                              |
         _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //                 |
         // Rating               600  800  1000   1200    1400    1600    1800     2000     2200     2400  |
         // Nodes Per Second     100  612  8292  41572  131172  320100  663652  1229412  2097252  3359332  |
@@ -280,7 +280,7 @@ public sealed class Search : IDisposable
         scale = 2d; //                                                                          |
         power = 2d; //                                                                          |
         constant = 10; //                                                                       |
-        ratingClass = (double) (MaxElo - _elo) / 200; //                                        |
+        ratingClass = (double)(MaxElo - _elo) / 200; //                                        |
         _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //            |
         // Rating          600  800  1000  1200  1400  1600  1800  2000  2200  2400             |
         // Move Error      172  138   108    82    60    42    28    18    12    10             |
@@ -493,7 +493,7 @@ public sealed class Search : IDisposable
     {
         var bestScore = _bestMoves[0].Score;
         // Use aspiration windows in limited circumstances (not for competitive play).
-        if(CompetitivePlay || (_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
+        if (CompetitivePlay || (_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
         {
             // Reset move scores, then search moves with infinite aspiration window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
@@ -588,7 +588,7 @@ public sealed class Search : IDisposable
         if ((board.Nodes > board.NodesExamineTime) || _nodesPerSecond.HasValue)
         {
             ExamineTimeAndNodes(board.Nodes);
-            var intervals = (int) (board.Nodes / UciStream.NodesTimeInterval);
+            var intervals = (int)(board.Nodes / UciStream.NodesTimeInterval);
             board.NodesExamineTime = _nodesPerSecond.HasValue
                 ? board.Nodes + 1
                 : UciStream.NodesTimeInterval * (intervals + 1);
@@ -703,9 +703,8 @@ public sealed class Search : IDisposable
             if (Move.IsQuiet(move)) quietMoveNumber++;
             var futileMove = IsMoveFutile(board.CurrentPosition, depth, horizon, move, quietMoveNumber, drawnEndgame, alpha, beta);
             var searchHorizon = GetSearchHorizon(board, depth, horizon, move, cachedPosition, quietMoveNumber, drawnEndgame);
-            var mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
             // Play and search move.
-            var (legalMove, checkingMove) = board.PlayMove(move, mustDeliverCheck);
+            var (legalMove, checkingMove) = board.PlayMove(move);
             if (!legalMove)
             {
                 // Skip illegal move.
@@ -714,8 +713,7 @@ public sealed class Search : IDisposable
                 continue;
             }
             legalMoveNumber++;
-            mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
-            if (mustDeliverCheck && !checkingMove)
+            if ((legalMoveNumber > 1) && futileMove && !checkingMove)
             {
                 // Skip futile move that doesn't deliver check.
                 board.UndoMove();
@@ -800,7 +798,7 @@ public sealed class Search : IDisposable
             {
                 // Update status.
                 UpdateStatus(board, false);
-                var intervals = (int) (board.Nodes / UciStream.NodesInfoInterval);
+                var intervals = (int)(board.Nodes / UciStream.NodesInfoInterval);
                 board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
             }
         } while (true);
@@ -882,9 +880,8 @@ public sealed class Search : IDisposable
             var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
             var futileMove = considerFutility && IsMoveFutile(board.CurrentPosition, depth, horizon, move, 0, drawnEndgame, alpha, beta);
-            var mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
             // Play and search move.
-            var (legalMove, checkingMove) = board.PlayMove(move, mustDeliverCheck);
+            var (legalMove, checkingMove) = board.PlayMove(move);
             if (!legalMove)
             {
                 // Skip illegal move.
@@ -892,8 +889,7 @@ public sealed class Search : IDisposable
                 continue;
             }
             legalMoveNumber++;
-            mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
-            if (mustDeliverCheck && !checkingMove)
+            if ((legalMoveNumber > 1) && futileMove && !checkingMove)
             {
                 // Skip futile move that doesn't deliver check.
                 board.UndoMove();
@@ -1310,7 +1306,7 @@ public sealed class Search : IDisposable
         }
         _writeMessageLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
         if (_debug()) _displayStats();
-        var intervals = (int) (board.Nodes / UciStream.NodesInfoInterval);
+        var intervals = (int)(board.Nodes / UciStream.NodesInfoInterval);
         board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
     }
 

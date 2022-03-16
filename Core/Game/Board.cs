@@ -123,7 +123,7 @@ public sealed class Board
         PieceMoveMaskDelegates[(int)ColorlessPiece.Knight] = GetKnightDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Bishop] = GetBishopDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Rook] = GetRookDestinations;
-        PieceMoveMaskDelegates[(int) ColorlessPiece.Queen] = GetQueenDestinations;
+        PieceMoveMaskDelegates[(int)ColorlessPiece.Queen] = GetQueenDestinations;
         PrecalculatedMoves = new PrecalculatedMoves();
         (RankFileBetweenSquares, DiagonalBetweenSquares) = DetermineBetweenSquares();
         // Create en passant, passed pawn, and free pawn masks.
@@ -446,17 +446,17 @@ public sealed class Board
         var square1212 = 0;
         var square88 = 0;
         for (var file = -2; file <= 9; file++)
-        for (var rank = -2; rank <= 9; rank++)
-        {
-            if (file >= 0 && file <= 7 && rank >= 0 && rank <= 7)
+            for (var rank = -2; rank <= 9; rank++)
             {
-                // Legal Square
-                squareIndices1212To88[square1212] = square88;
-                square88++;
+                if (file >= 0 && file <= 7 && rank >= 0 && rank <= 7)
+                {
+                    // Legal Square
+                    squareIndices1212To88[square1212] = square88;
+                    square88++;
+                }
+                else squareIndices1212To88[square1212] = (int)Square.Illegal;
+                square1212++;
             }
-            else squareIndices1212To88[square1212] = (int)Square.Illegal;
-            square1212++;
-        }
         return squareIndices1212To88;
     }
 
@@ -553,13 +553,13 @@ public sealed class Board
         for (var color = Color.White; color <= Color.Black; color++)
         {
             masks[(int)color] = new ulong[64];
-            var direction = directions[(int) color];
+            var direction = directions[(int)color];
             for (var square = Square.A8; square < Square.Illegal; square++)
             {
                 var mask = 0ul;
                 if (Ranks[(int)color][(int)square] == 1)
                 {
-                    var otherSquare = (Square) _neighborSquares[(int)square][(int)direction];
+                    var otherSquare = (Square)_neighborSquares[(int)square][(int)direction];
                     Bitwise.SetBit(ref mask, otherSquare);
                 }
                 masks[(int)color][(int)square] = mask;
@@ -885,8 +885,8 @@ public sealed class Board
         Debug.Assert(rank >= 0 && rank < 8);
         return GetSquare(file, rank);
     }
-    
-    
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Square GetSquareFromWhitePerspective(Square square, Color color)
     {
@@ -1030,7 +1030,7 @@ public sealed class Board
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public (bool isLegal, bool deliversCheck) PlayMove(ulong move, bool mustDeliverCheck = false)
+    public (bool isLegal, bool deliversCheck) PlayMove(ulong move)
     {
         Debug.Assert(Move.IsValid(move));
         Debug.Assert(AssertMoveIntegrity(move));
@@ -1074,7 +1074,6 @@ public sealed class Board
         kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
         var check = IsSquareAttacked(kingSquare);
         CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
-        if (mustDeliverCheck && !check) return (true, false);
         if (Castling.Permitted(CurrentPosition.Castling))
         {
             // Update castling rights.
@@ -1197,7 +1196,7 @@ public sealed class Board
         var piece = CurrentPosition.GetPiece(fromSquare);
         var pawn = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, CurrentPosition.ColorToMove);
         var king = PieceHelper.GetPieceOfColor(ColorlessPiece.King, CurrentPosition.ColorToMove);
-        var toRank = Ranks[(int)CurrentPosition.ColorToMove][(int) toSquare];
+        var toRank = Ranks[(int)CurrentPosition.ColorToMove][(int)toSquare];
         // EnPassantVictim variable only used in Debug builds.
         // ReSharper disable RedundantAssignment
         var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, CurrentPosition.ColorLastMoved);
