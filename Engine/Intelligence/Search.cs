@@ -702,8 +702,8 @@ public sealed class Search : IDisposable
             if (Move.Equals(move, excludedMove)) continue;
             if (Move.IsQuiet(move)) quietMoveNumber++;
             var futileMove = IsMoveFutile(board.CurrentPosition, depth, horizon, move, quietMoveNumber, drawnEndgame, alpha, beta);
-            var mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
             var searchHorizon = GetSearchHorizon(board, depth, horizon, move, cachedPosition, quietMoveNumber, drawnEndgame);
+            var mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
             // Play and search move.
             var (legalMove, checkingMove) = board.PlayMove(move, mustDeliverCheck);
             if (!legalMove)
@@ -714,6 +714,7 @@ public sealed class Search : IDisposable
                 continue;
             }
             legalMoveNumber++;
+            mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
             if (mustDeliverCheck && !checkingMove)
             {
                 // Skip futile move that doesn't deliver check.
@@ -881,8 +882,9 @@ public sealed class Search : IDisposable
             var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
             var futileMove = considerFutility && IsMoveFutile(board.CurrentPosition, depth, horizon, move, 0, drawnEndgame, alpha, beta);
+            var mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
             // Play and search move.
-            var (legalMove, checkingMove) = board.PlayMove(move);
+            var (legalMove, checkingMove) = board.PlayMove(move, mustDeliverCheck);
             if (!legalMove)
             {
                 // Skip illegal move.
@@ -890,7 +892,8 @@ public sealed class Search : IDisposable
                 continue;
             }
             legalMoveNumber++;
-            if ((legalMoveNumber > 1) && futileMove && !checkingMove)
+            mustDeliverCheck = (legalMoveNumber > 1) && futileMove;
+            if (mustDeliverCheck && !checkingMove)
             {
                 // Skip futile move that doesn't deliver check.
                 board.UndoMove();
