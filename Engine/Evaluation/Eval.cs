@@ -435,9 +435,9 @@ public sealed class Eval
         EvaluateMobilityKingSafetyThreats(position, Color.Black);
         EvaluateMinorPieces(position, Color.White);
         EvaluateMinorPieces(position, Color.Black);
-        // Limit strength, determine endgame scale, phase, and total score.
+        // Limit strength and determine endgame scale and total score.
         if (Config.LimitedStrength) LimitStrength();
-        DetermineEndgameScale(position); // Scale down scores for difficult to win endgames.
+        DetermineEndgameScale(position); // Scale endgame score based on difficulty to win.
         return _staticScore.EgScalePer128 == 0
             ? (0, true) // Drawn Endgame
             : (_staticScore.GetTotalScore(position.ColorToMove, phase), false);
@@ -771,8 +771,7 @@ public sealed class Eval
         return kingDistanceToPromotionSquare > pawnDistanceToPromotionSquare; // Enemy king cannot stop pawn from promoting.
     }
 
-
-
+    
     // TODO: Include stacked attacks on same square via x-rays.  For example, a rook behind a queen.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateMobilityKingSafetyThreats(Position position, Color color)
@@ -852,14 +851,47 @@ public sealed class Eval
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void EvaluateMinorPieces(Position position, Color color)
     {
-        // Bishop Pair
+        var enemyColor = 1 - color;
+        var knights = position.GetKnights(color);
         var bishops = position.GetBishops(color);
+        var pawns = position.GetPawns(color);
+        var enemyPawns = position.GetPawns(enemyColor);
+        // Bishop Pair
         var bishopOnWhiteSquare = (bishops & Board.SquareColors[(int)Color.White]) > 0;
         var bishopOnBlackSquare = (bishops & Board.SquareColors[(int)Color.Black]) > 0;
         if (bishopOnWhiteSquare && bishopOnBlackSquare)
         {
             _staticScore.MgBishopPair[(int)color] += Config.MgBishopPair;
             _staticScore.EgBishopPair[(int)color] += Config.EgBishopPair;
+        }
+        // Outposts
+        var outpostMask = (Board.RankMasks[(int)color][4] | Board.RankMasks[(int)color][5] | Board.RankMasks[(int)color][6]) & ~(Board.FileMasks[0] | Board.FileMasks[7]);
+        ulong supportingPawnsMask;
+        ulong potentialAttackMask;
+        Square square;
+        // Knight Outposts
+        while ((square = Bitwise.PopFirstSetSquare(ref knights)) != Square.Illegal)
+        {
+            if ((Board.SquareMasks[(int)square] & outpostMask) == 0) continue; // Knight is not in enemy outpost territory.
+            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+            if ((pawns & supportingPawnsMask) == 0) continue; // Knight is unsupported by own pawns.
+            potentialAttackMask = Board.PassedPawnMasks[(int)color][(int)square] & ~Board.FreePawnMasks[(int)color][(int)square];
+            if ((enemyPawns & potentialAttackMask) > 0) continue; // Knight can be attacked by enemy pawns.
+            // Knight is positioned safely in enemy territory on an outpost square.
+            _staticScore.MgOutposts[(int)color] += Config.MgKnightOutpost;
+            _staticScore.EgOutposts[(int)color] += Config.EgKnightOutpost;
+        }
+        // Bishop Outposts
+        while ((square = Bitwise.PopFirstSetSquare(ref bishops)) != Square.Illegal)
+        {
+            if ((Board.SquareMasks[(int)square] & outpostMask) == 0) continue; // Bishop is not in enemy outpost territory.
+            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+            if ((pawns & supportingPawnsMask) == 0) continue; // Bishop is unsupported by own pawns.
+            potentialAttackMask = Board.PassedPawnMasks[(int)color][(int)square] & ~Board.FreePawnMasks[(int)color][(int)square];
+            if ((enemyPawns & potentialAttackMask) > 0) continue; // Bishop can be attacked by enemy pawns.
+            // Bishop is positioned safely in enemy territory on an outpost square.
+            _staticScore.MgOutposts[(int)color] += Config.MgBishopOutpost;
+            _staticScore.EgOutposts[(int)color] += Config.EgBishopOutpost;
         }
     }
 

@@ -31,7 +31,7 @@ public sealed class Board
     public static readonly string[] SquareLocations; // [square]
     public static readonly ulong[] SquareMasks; // [square]
     public static readonly ulong[] FileMasks; // [file]
-    public static readonly ulong[] WhiteRankMasks; // [rank]
+    public static readonly ulong[][] RankMasks; // [color][rank]
     public static readonly ulong AllSquaresMask;
     public static readonly ulong EdgeSquaresMask;
     public static readonly ulong[] SquareColors; // [color]
@@ -108,7 +108,7 @@ public sealed class Board
         SquareLocations = CreateSquareLocations();
         _squarePerspectiveFactors = new[] { -1, 1 }; // Used to determine square from white's perspective (black's g6 = white's b3).
         // Create square, color, and castling masks.
-        (SquareMasks, _squareUnmasks, FileMasks, WhiteRankMasks, SquareColors, AllSquaresMask, EdgeSquaresMask) = CreateSquareMasks();
+        (SquareMasks, _squareUnmasks, FileMasks, RankMasks, SquareColors, AllSquaresMask, EdgeSquaresMask) = CreateSquareMasks();
         (CastleEmptySquaresMask, _castleAttackedSquareMasks, CastleFromSquares, CastleToSquares) = CreateCastlingMasks();
         // Create neighbor squares, move masks, precalculated moves, and between squares.
         _neighborSquares = CreateNeighborSquares();
@@ -274,7 +274,7 @@ public sealed class Board
     }
 
 
-    private static (ulong[] SquareMasks, ulong[] SquareUnmasks, ulong[] FileMasks, ulong[] WhiteRankMasks, ulong[] SquareColors, ulong AllSquaresMask, ulong EdgeSquaresMask) CreateSquareMasks()
+    private static (ulong[] SquareMasks, ulong[] SquareUnmasks, ulong[] FileMasks, ulong[][] RankMasks, ulong[] SquareColors, ulong AllSquaresMask, ulong EdgeSquaresMask) CreateSquareMasks()
     {
         // Squares
         var squareMasks = new ulong[64];
@@ -295,15 +295,16 @@ public sealed class Board
                 fileMasks[file] |= Bitwise.CreateULongMask(square);
             }
         }
-        // White Ranks
-        var whiteRankMasks = new ulong[8];
+        // Ranks
+        var rankMasks = new ulong[2][];
+        rankMasks[(int)Color.White] = new ulong[8];
+        rankMasks[(int)Color.Black] = new ulong[8];
         for (var rank = 0; rank < 8; rank++)
         {
-            whiteRankMasks[rank] = 0;
             for (var file = 0; file < 8; file++)
             {
-                var square = GetSquare(file, rank);
-                whiteRankMasks[rank] |= Bitwise.CreateULongMask(square);
+                rankMasks[(int)Color.White][rank] |= Bitwise.CreateULongMask(GetSquare(file, rank));
+                rankMasks[(int)Color.Black][rank] |= Bitwise.CreateULongMask(GetSquare(file, 7 - rank));
             }
         }
         // Square Colors
@@ -328,8 +329,8 @@ public sealed class Board
         }
         // All and Edge Squares
         var allSquaresMask = Bitwise.CreateULongMask(0, 63);
-        var edgeSquaresMask = fileMasks[0] | whiteRankMasks[7] | fileMasks[7] | whiteRankMasks[0];
-        return (squareMasks, squareUnmasks, fileMasks, whiteRankMasks, squareColors, allSquaresMask, edgeSquaresMask);
+        var edgeSquaresMask = fileMasks[0] | rankMasks[(int)Color.White][7] | fileMasks[7] | rankMasks[(int)Color.White][0];
+        return (squareMasks, squareUnmasks, fileMasks, rankMasks, squareColors, allSquaresMask, edgeSquaresMask);
     }
 
 

@@ -42,6 +42,8 @@ public sealed class StaticScore
     public readonly int[] EgThreats;
     public readonly int[] MgBishopPair;
     public readonly int[] EgBishopPair;
+    public readonly int[] MgOutposts;
+    public readonly int[] EgOutposts;
     public int PlySinceCaptureOrPawnMove;
     public int EgScalePer128;
 
@@ -69,6 +71,8 @@ public sealed class StaticScore
         EgThreats = new int[2];
         MgBishopPair = new int[2];
         EgBishopPair = new int[2];
+        MgOutposts = new int[2];
+        EgOutposts = new int[2];
     }
 
 
@@ -78,7 +82,7 @@ public sealed class StaticScore
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetMg(Color color) => GetMgMaterial(color) + MgPieceLocation[(int)color] + MgPawnStructure[(int)color] + MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
-                                      MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgThreats[(int)color] + MgBishopPair[(int)color];
+                                      MgPieceMobility[(int)color] + MgKingSafety[(int)color] + MgThreats[(int)color] + MgBishopPair[(int)color] + MgOutposts[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -86,8 +90,8 @@ public sealed class StaticScore
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgPieceLocation[(int)color] + EgPawnStructure[(int)color] + EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] +
-                                     UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgThreats[(int)color] + EgBishopPair[(int)color];
+    public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgPieceLocation[(int)color] + EgPawnStructure[(int)color] + EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] +
+                                     EgKingEscortedPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] + EgPieceMobility[(int)color] + EgThreats[(int)color] + EgBishopPair[(int)color] + EgOutposts[(int)color];
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -168,6 +172,10 @@ public sealed class StaticScore
         MgBishopPair[(int)Color.Black] = 0;
         EgBishopPair[(int)Color.White] = 0;
         EgBishopPair[(int)Color.Black] = 0;
+        MgOutposts[(int)Color.White] = 0;
+        MgOutposts[(int)Color.Black] = 0;
+        EgOutposts[(int)Color.White] = 0;
+        EgOutposts[(int)Color.Black] = 0;
         PlySinceCaptureOrPawnMove = 0;
         EgScalePer128 = 128;
     }
@@ -192,6 +200,7 @@ public sealed class StaticScore
         AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
         AppendStaticScoreLine(stringBuilder, "Threats", MgThreats[(int)Color.White], MgThreats[(int)Color.Black], EgThreats[(int)Color.White], EgThreats[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Bishop Pair", MgBishopPair[(int)Color.White], MgBishopPair[(int)Color.Black], EgBishopPair[(int)Color.White], EgBishopPair[(int)Color.Black], phase);
+        AppendStaticScoreLine(stringBuilder, "Outposts", MgOutposts[(int)Color.White], MgOutposts[(int)Color.Black], EgOutposts[(int)Color.White], EgOutposts[(int)Color.Black], phase);
         stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
         var mgWhite = GetMg(Color.White);
         var mgBlack = GetMg(Color.Black);
