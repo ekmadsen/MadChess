@@ -182,9 +182,9 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgBishopPair), 0, 100),
             new(nameof(EvalConfig.EgBishopPair), 0, 150),
             new(nameof(EvalConfig.MgKnightOutpost), 0, 150),
-            new(nameof(EvalConfig.EgKnightOutpost), 0, 100),
-            new(nameof(EvalConfig.MgBishopOutpost), 0, 100),
-            new(nameof(EvalConfig.EgBishopOutpost), 0, 100),
+            new(nameof(EvalConfig.EgKnightOutpost), 0, 150),
+            new(nameof(EvalConfig.MgBishopOutpost), 0, 150),
+            new(nameof(EvalConfig.EgBishopOutpost), 0, 150),
             // Endgame Scale
             new(nameof(EvalConfig.EgScaleBishopAdvantagePer128), 0, 128),
             new(nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn), 0, 64),

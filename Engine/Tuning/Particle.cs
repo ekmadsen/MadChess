@@ -178,7 +178,7 @@ public sealed class Particle
         eval.Config.EgScaleOppBishopsPerPassedPawn = Parameters[nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn)].Value;
         eval.Config.EgScaleWinningPerPawn = Parameters[nameof(EvalConfig.EgScaleWinningPerPawn)].Value;
         // Calculate positional factors after updating evaluation config.
-       eval.CalculatePositionalFactors();
+        eval.CalculatePositionalFactors();
     }
 
 

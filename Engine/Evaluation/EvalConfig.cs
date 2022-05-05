@@ -18,15 +18,15 @@ public sealed class EvalConfig
     // ReSharper disable RedundantDefaultMemberInitializer
     // Material
     public int MgPawnMaterial = 100;
-    public int EgPawnMaterial = 107;
+    public int EgPawnMaterial = 105;
     public int MgKnightMaterial = 300;
-    public int EgKnightMaterial = 480;
+    public int EgKnightMaterial = 471;
     public int MgBishopMaterial = 330;
-    public int EgBishopMaterial = 506;
+    public int EgBishopMaterial = 501;
     public int MgRookMaterial = 500;
-    public int EgRookMaterial = 793;
+    public int EgRookMaterial = 790;
     public int MgQueenMaterial = 975;
-    public int EgQueenMaterial = 1520;
+    public int EgQueenMaterial = 1515;
     // Incentivize engine to promote pawns.
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial);
     // Pawn Location
@@ -36,89 +36,89 @@ public sealed class EvalConfig
     public int EgPawnCentrality = -7;
     // Knight Location 
     public int MgKnightAdvancement = 4;
-    public int EgKnightAdvancement = 5;
+    public int EgKnightAdvancement = 6;
     public int MgKnightCentrality = 20;
     public int EgKnightCentrality = 14;
     public int MgKnightCorner = 0;
-    public int EgKnightCorner = -21;
+    public int EgKnightCorner = -20;
     // Bishop Location
-    public int MgBishopAdvancement = -6;
-    public int EgBishopAdvancement = 3;
-    public int MgBishopCentrality = 23;
-    public int EgBishopCentrality = 0;
+    public int MgBishopAdvancement = -5;
+    public int EgBishopAdvancement = 4;
+    public int MgBishopCentrality = 21;
+    public int EgBishopCentrality = 1;
     public int MgBishopCorner = 0;
     public int EgBishopCorner = 0;
     // Rook Location
     public int MgRookAdvancement = 0;
     public int EgRookAdvancement = 12;
     public int MgRookCentrality = 7;
-    public int EgRookCentrality = -3;
-    public int MgRookCorner = -19;
-    public int EgRookCorner = 3;
+    public int EgRookCentrality = -4;
+    public int MgRookCorner = -18;
+    public int EgRookCorner = 2;
     // Queen Location
-    public int MgQueenAdvancement = -27;
-    public int EgQueenAdvancement = 26;
+    public int MgQueenAdvancement = -25;
+    public int EgQueenAdvancement = 24;
     public int MgQueenCentrality = 4;
     public int EgQueenCentrality = 7;
     public int MgQueenCorner = -1;
-    public int EgQueenCorner = -6;
+    public int EgQueenCorner = -5;
     // King Location
     public int MgKingAdvancement = 0;
     public int EgKingAdvancement = 16;
     public int MgKingCentrality = 0;
     public int EgKingCentrality = 12;
-    public int MgKingCorner = 1;
+    public int MgKingCorner = 0;
     public int EgKingCorner = -8;
     // Pawn Structure
-    public int MgIsolatedPawn = 21;
+    public int MgIsolatedPawn = 22;
     public int EgIsolatedPawn = 27;
-    public int MgDoubledPawn = 19;
-    public int EgDoubledPawn = 18;
+    public int MgDoubledPawn = 28;
+    public int EgDoubledPawn = 16;
     // Passed Pawns
     public int PassedPawnPowerPer128 = 313;
-    public int MgPassedPawnScalePer128 = 183;
-    public int EgPassedPawnScalePer128 = 244;
-    public int EgFreePassedPawnScalePer128 = 496;
+    public int MgPassedPawnScalePer128 = 187;
+    public int EgPassedPawnScalePer128 = 246;
+    public int EgFreePassedPawnScalePer128 = 502;
     public int EgKingEscortedPassedPawn = 10;
     // Piece Mobility
     public int PieceMobilityPowerPer128 = 88;
-    public int MgKnightMobilityScale = 2;
-    public int EgKnightMobilityScale = 18;
-    public int MgBishopMobilityScale = 43;
-    public int EgBishopMobilityScale = 112;
+    public int MgKnightMobilityScale = 0;
+    public int EgKnightMobilityScale = 22;
+    public int MgBishopMobilityScale = 41;
+    public int EgBishopMobilityScale = 104;
     public int MgRookMobilityScale = 79;
     public int EgRookMobilityScale = 91;
-    public int MgQueenMobilityScale = 101;
-    public int EgQueenMobilityScale = 53;
+    public int MgQueenMobilityScale = 99;
+    public int EgQueenMobilityScale = 50;
     // King Safety
-    public int MgKingSafetyPowerPer128 = 244;
-    public int MgKingSafetyScalePer128 = 92;
+    public int MgKingSafetyPowerPer128 = 243;
+    public int MgKingSafetyScalePer128 = 97;
     public int MgKingSafetyMinorAttackOuterRingPer8 = 9;
     public int MgKingSafetyMinorAttackInnerRingPer8 = 29;
     public int MgKingSafetyRookAttackOuterRingPer8 = 11;
     public int MgKingSafetyRookAttackInnerRingPer8 = 17;
-    public int MgKingSafetyQueenAttackOuterRingPer8 = 13;
-    public int MgKingSafetyQueenAttackInnerRingPer8 = 21;
+    public int MgKingSafetyQueenAttackOuterRingPer8 = 14;
+    public int MgKingSafetyQueenAttackInnerRingPer8 = 20;
     public int MgKingSafetySemiOpenFilePer8 = 22;
     public int MgKingSafetyPawnShieldPer8 = 21;
     // Threats
     public int MgPawnThreatenMinor = 43;
-    public int EgPawnThreatenMinor = 47;
-    public int MgPawnThreatenMajor = 66;
-    public int EgPawnThreatenMajor = 31;
-    public int MgMinorThreatenMajor = 39;
-    public int EgMinorThreatenMajor = 29;
+    public int EgPawnThreatenMinor = 49;
+    public int MgPawnThreatenMajor = 68;
+    public int EgPawnThreatenMajor = 30;
+    public int MgMinorThreatenMajor = 40;
+    public int EgMinorThreatenMajor = 27;
     // Minor Pieces
-    public int MgBishopPair = 53;
-    public int EgBishopPair = 63;
-    public int MgKnightOutpost = 113;
-    public int EgKnightOutpost = 14;
-    public int MgBishopOutpost = 58;
+    public int MgBishopPair = 47;
+    public int EgBishopPair = 66;
+    public int MgKnightOutpost = 121;
+    public int EgKnightOutpost = 3;
+    public int MgBishopOutpost = 1;
     public int EgBishopOutpost = 11;
     // Endgame Scale
     public int EgScaleBishopAdvantagePer128 = 12;
-    public int EgScaleOppBishopsPerPassedPawn = 46;
-    public int EgScaleWinningPerPawn = 53;
+    public int EgScaleOppBishopsPerPassedPawn = 47;
+    public int EgScaleWinningPerPawn = 54;
     // Limit Strength
     public bool LimitedStrength = false;
     public int LsPieceLocationPer128 = 128;

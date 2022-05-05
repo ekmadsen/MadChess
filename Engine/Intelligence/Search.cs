@@ -255,7 +255,7 @@ public sealed class Search : IDisposable
         Signal = null;
         _disposed = true;
     }
-
+    
 
     private void ConfigureLimitedStrength()
     {
@@ -582,6 +582,7 @@ public sealed class Search : IDisposable
     }
 
 
+    // TODO: Add mate distance pruning.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int GetDynamicScore(Board board, int depth, int horizon, bool isNullMovePermitted, int alpha, int beta, ulong excludedMove = 0)
     {
