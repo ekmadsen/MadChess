@@ -20,7 +20,7 @@ public sealed class EvalConfig
     public int MgPawnMaterial = 100;
     public int EgPawnMaterial = 105;
     public int MgKnightMaterial = 300;
-    public int EgKnightMaterial = 472;
+    public int EgKnightMaterial = 471;
     public int MgBishopMaterial = 330;
     public int EgBishopMaterial = 501;
     public int MgRookMaterial = 500;
@@ -35,17 +35,17 @@ public sealed class EvalConfig
     public int MgPawnCentrality = 0;
     public int EgPawnCentrality = -7;
     // Knight Location 
-    public int MgKnightAdvancement = 7;
-    public int EgKnightAdvancement = 7;
-    public int MgKnightCentrality = 18;
-    public int EgKnightCentrality = 15;
+    public int MgKnightAdvancement = 4;
+    public int EgKnightAdvancement = 6;
+    public int MgKnightCentrality = 20;
+    public int EgKnightCentrality = 14;
     public int MgKnightCorner = 0;
-    public int EgKnightCorner = -23;
+    public int EgKnightCorner = -20;
     // Bishop Location
     public int MgBishopAdvancement = -5;
     public int EgBishopAdvancement = 4;
     public int MgBishopCentrality = 21;
-    public int EgBishopCentrality = 2;
+    public int EgBishopCentrality = 1;
     public int MgBishopCorner = 0;
     public int EgBishopCorner = 0;
     // Rook Location
@@ -54,14 +54,14 @@ public sealed class EvalConfig
     public int MgRookCentrality = 7;
     public int EgRookCentrality = -4;
     public int MgRookCorner = -18;
-    public int EgRookCorner = 1;
+    public int EgRookCorner = 2;
     // Queen Location
     public int MgQueenAdvancement = -25;
     public int EgQueenAdvancement = 24;
     public int MgQueenCentrality = 4;
     public int EgQueenCentrality = 7;
     public int MgQueenCorner = -1;
-    public int EgQueenCorner = -6;
+    public int EgQueenCorner = -5;
     // King Location
     public int MgKingAdvancement = 0;
     public int EgKingAdvancement = 16;
@@ -72,19 +72,19 @@ public sealed class EvalConfig
     // Pawn Structure
     public int MgIsolatedPawn = 22;
     public int EgIsolatedPawn = 27;
-    public int MgDoubledPawn = 26;
+    public int MgDoubledPawn = 28;
     public int EgDoubledPawn = 16;
     // Passed Pawns
     public int PassedPawnPowerPer128 = 313;
-    public int MgPassedPawnScalePer128 = 188;
-    public int EgPassedPawnScalePer128 = 247;
-    public int EgFreePassedPawnScalePer128 = 504;
+    public int MgPassedPawnScalePer128 = 187;
+    public int EgPassedPawnScalePer128 = 246;
+    public int EgFreePassedPawnScalePer128 = 502;
     public int EgKingEscortedPassedPawn = 10;
     // Piece Mobility
     public int PieceMobilityPowerPer128 = 88;
-    public int MgKnightMobilityScale = 2;
-    public int EgKnightMobilityScale = 21;
-    public int MgBishopMobilityScale = 43;
+    public int MgKnightMobilityScale = 0;
+    public int EgKnightMobilityScale = 22;
+    public int MgBishopMobilityScale = 41;
     public int EgBishopMobilityScale = 104;
     public int MgRookMobilityScale = 79;
     public int EgRookMobilityScale = 91;
@@ -105,12 +105,16 @@ public sealed class EvalConfig
     public int MgPawnThreatenMinor = 43;
     public int EgPawnThreatenMinor = 49;
     public int MgPawnThreatenMajor = 68;
-    public int EgPawnThreatenMajor = 31;
+    public int EgPawnThreatenMajor = 30;
     public int MgMinorThreatenMajor = 40;
-    public int EgMinorThreatenMajor = 28;
+    public int EgMinorThreatenMajor = 27;
     // Minor Pieces
-    public int MgBishopPair = 45;
-    public int EgBishopPair = 65;
+    public int MgBishopPair = 47;
+    public int EgBishopPair = 66;
+    public int MgKnightOutpost = 121;
+    public int EgKnightOutpost = 3;
+    public int MgBishopOutpost = 1;
+    public int EgBishopOutpost = 11;
     // Endgame Scale
     public int EgScaleBishopAdvantagePer128 = 12;
     public int EgScaleOppBishopsPerPassedPawn = 47;
@@ -215,6 +219,10 @@ public sealed class EvalConfig
         // Copy minor piece values.
         MgBishopPair = copyFromConfig.MgBishopPair;
         EgBishopPair = copyFromConfig.EgBishopPair;
+        MgKnightOutpost = copyFromConfig.MgKnightOutpost;
+        EgKnightOutpost = copyFromConfig.EgKnightOutpost;
+        MgBishopOutpost = copyFromConfig.MgBishopOutpost;
+        EgBishopOutpost = copyFromConfig.EgBishopOutpost;
         // Copy endgame scale values.
         EgScaleBishopAdvantagePer128 = copyFromConfig.EgScaleBishopAdvantagePer128;
         EgScaleOppBishopsPerPassedPawn = copyFromConfig.EgScaleOppBishopsPerPassedPawn;

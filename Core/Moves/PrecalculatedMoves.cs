@@ -308,7 +308,7 @@ public sealed class PrecalculatedMoves
                     default:
                         // Piece is not on edge rank.
                         // Occupancy of edge ranks and opposite edge file does not affect pseudo-legal moves.
-                        return ~Board.WhiteRankMasks[0] & ~Board.WhiteRankMasks[7] & ~Board.FileMasks[7];
+                        return ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7] & ~Board.FileMasks[7];
                 }
             case 7:
                 // Piece is on Easternmost edge file.
@@ -325,7 +325,7 @@ public sealed class PrecalculatedMoves
                     default:
                         // Piece is not on edge rank.
                         // Occupancy of edge ranks and opposite edge file does not affect pseudo-legal moves.
-                        return ~Board.WhiteRankMasks[0] & ~Board.WhiteRankMasks[7] & ~Board.FileMasks[0];
+                        return ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7] & ~Board.FileMasks[0];
                 }
             default:
                 // Piece is not on edge file.
@@ -339,15 +339,15 @@ public sealed class PrecalculatedMoves
             case 0:
                 // Piece is on Southernmost edge rank.
                 // Occupancy of opposite rank does not affect pseudo-legal moves.
-                return occupancy & ~Board.WhiteRankMasks[7];
+                return occupancy & ~Board.RankMasks[(int)Color.White][7];
             case 7:
                 // Piece is on Northernmost edge rank.
                 // Occupancy of opposite rank does not affect pseudo-legal moves.
-                return occupancy & ~Board.WhiteRankMasks[0];
+                return occupancy & ~Board.RankMasks[(int)Color.White][0];
             default:
                 // Piece is not on edge rank.
                 // Occupancy of edge ranks does not affect pseudo-legal moves.
-                return occupancy & ~Board.WhiteRankMasks[0] & ~Board.WhiteRankMasks[7];
+                return occupancy & ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7];
         }
         // ReSharper restore ConvertSwitchStatementToSwitchExpression
     }

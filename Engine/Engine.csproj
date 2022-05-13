@@ -18,15 +18,23 @@
 		<OutputType>Exe</OutputType>
 		<PackageId>MadChess.Engine</PackageId>
 		<Configurations>Debug;Release</Configurations>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;x86</Platforms>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
 		<DefineConstants>TRACE;CPU64</DefineConstants>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+	  <DefineConstants>TRACE;CPU64</DefineConstants>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
 		<DefineConstants>TRACE;CPU64</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+	  <DefineConstants>TRACE;CPU64</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup>

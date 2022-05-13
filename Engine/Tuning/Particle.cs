@@ -169,6 +169,10 @@ public sealed class Particle
         // Minor Pieces
         eval.Config.MgBishopPair = Parameters[nameof(EvalConfig.MgBishopPair)].Value;
         eval.Config.EgBishopPair = Parameters[nameof(EvalConfig.EgBishopPair)].Value;
+        eval.Config.MgKnightOutpost = Parameters[nameof(EvalConfig.MgKnightOutpost)].Value;
+        eval.Config.EgKnightOutpost = Parameters[nameof(EvalConfig.EgKnightOutpost)].Value;
+        eval.Config.MgBishopOutpost = Parameters[nameof(EvalConfig.MgBishopOutpost)].Value;
+        eval.Config.EgBishopOutpost = Parameters[nameof(EvalConfig.EgBishopOutpost)].Value;
         // Endgame Scale
         eval.Config.EgScaleBishopAdvantagePer128 = Parameters[nameof(EvalConfig.EgScaleBishopAdvantagePer128)].Value;
         eval.Config.EgScaleOppBishopsPerPassedPawn = Parameters[nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn)].Value;

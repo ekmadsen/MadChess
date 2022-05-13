@@ -177,7 +177,7 @@ public sealed class Search : IDisposable
         TimeIncrement = new TimeSpan?[2];
         _aspirationWindows = new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
-        _futilityPruningMargins = new[] { 050, 100, 175, 275, 400, 550 };
+        _futilityPruningMargins = new[] { 060, 160, 220, 280, 340, 400 };
         _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031  032  033
@@ -255,7 +255,7 @@ public sealed class Search : IDisposable
         Signal = null;
         _disposed = true;
     }
-
+    
 
     private void ConfigureLimitedStrength()
     {
@@ -595,7 +595,23 @@ public sealed class Search : IDisposable
         }
         if (!Continue && (_bestMoves[0].Move != Move.Null)) return SpecialScore.Interrupted; // Search was interrupted.
         var (terminalDraw, repeatPosition) = _eval.IsTerminalDraw(board.CurrentPosition);
-        if ((depth > 0) && terminalDraw) return 0; // Game ends on this move.
+        if (depth > 0)
+        {
+            // Mate Distance Pruning
+            var lowestPossibleScore = Eval.GetMatedScore(depth);
+            if (alpha < lowestPossibleScore)
+            {
+                alpha = lowestPossibleScore;
+                if (lowestPossibleScore >= beta) return beta;
+            }
+            var highestPossibleScore = Eval.GetMatingScore(depth);
+            if (beta > highestPossibleScore)
+            {
+                beta = highestPossibleScore;
+                if (highestPossibleScore <= alpha) return alpha;
+            }
+            if (terminalDraw) return 0; // Game ends on this move.
+        }
         // Get cached position.
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
@@ -626,17 +642,20 @@ public sealed class Search : IDisposable
         if (toHorizon <= 0) return GetQuietScore(board, depth, depth, Board.AllSquaresMask, alpha, beta, _getStaticScore, true); // Search for a quiet position.
         // Evaluate static score.
         bool drawnEndgame;
+        int phase;
         if (board.CurrentPosition.KingInCheck)
         {
-            board.CurrentPosition.StaticScore = -SpecialScore.Max;
+            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Don't evaluate static score because no moves are futile when king is in check.
             drawnEndgame = false;
+            phase = Eval.DetermineGamePhase(board.CurrentPosition);
         }
         else if (board.PreviousPosition?.PlayedMove == Move.Null)
         {
             board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
             drawnEndgame = false;
+            phase = Eval.DetermineGamePhase(board.CurrentPosition);
         }
-        else (board.CurrentPosition.StaticScore, drawnEndgame) = _eval.GetStaticScore(board.CurrentPosition);
+        else (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _eval.GetStaticScore(board.CurrentPosition);
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         if (IsPositionFutile(board.CurrentPosition, depth, horizon, drawnEndgame, alpha, beta))
         {
@@ -701,7 +720,7 @@ public sealed class Search : IDisposable
             }
             if (Move.Equals(move, excludedMove)) continue;
             if (Move.IsQuiet(move)) quietMoveNumber++;
-            var futileMove = IsMoveFutile(board.CurrentPosition, depth, horizon, move, quietMoveNumber, drawnEndgame, alpha, beta);
+            var futileMove = IsMoveFutile(board.CurrentPosition, depth, horizon, move, quietMoveNumber, drawnEndgame, phase, alpha, beta);
             var searchHorizon = GetSearchHorizon(board, depth, horizon, move, cachedPosition, quietMoveNumber, drawnEndgame);
             // Play and search move.
             var (legalMove, checkingMove) = board.PlayMove(move);
@@ -805,7 +824,7 @@ public sealed class Search : IDisposable
         if (legalMoveNumber == 0)
         {
             // Checkmate or Stalemate
-            bestScore = board.CurrentPosition.KingInCheck ? Eval.GetMateScore(depth) : 0;
+            bestScore = board.CurrentPosition.KingInCheck ? Eval.GetMatedScore(depth) : 0;
             _possibleVariationLength[depth] = 0;
         }
         if (bestScore <= originalAlpha) UpdateBestMoveCache(board.CurrentPosition, depth, horizon, Move.Null, bestScore, originalAlpha, beta); // Score failed low.
@@ -815,7 +834,7 @@ public sealed class Search : IDisposable
 
     public int GetExchangeScore(Board board, ulong move)
     {
-        var (scoreBeforeMove, _) = _getExchangeMaterialScore(board.CurrentPosition);
+        var (scoreBeforeMove, _, _) = _getExchangeMaterialScore(board.CurrentPosition);
         var (legalMove, _) = board.PlayMove(move);
         if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {board.PreviousPosition.ToFen()}.");
         var scoreAfterMove = -GetQuietScore(board, 0, 0, Board.SquareMasks[(int)Move.To(move)], -SpecialScore.Max, SpecialScore.Max, _getExchangeMaterialScore, false);
@@ -840,11 +859,28 @@ public sealed class Search : IDisposable
         }
         if (!Continue && (_bestMoves[0].Move != Move.Null)) return SpecialScore.Interrupted; // Search was interrupted.
         var (terminalDraw, _) = _eval.IsTerminalDraw(board.CurrentPosition);
-        if ((depth > 0) && terminalDraw) return 0; // Game ends on this move.
+        if (depth > 0)
+        {
+            // Mate Distance Pruning
+            var lowestPossibleScore = Eval.GetMatedScore(depth);
+            if (alpha < lowestPossibleScore)
+            {
+                alpha = lowestPossibleScore;
+                if (lowestPossibleScore >= beta) return beta;
+            }
+            var highestPossibleScore = Eval.GetMatingScore(depth);
+            if (beta > highestPossibleScore)
+            {
+                beta = highestPossibleScore;
+                if (highestPossibleScore <= alpha) return alpha;
+            }
+            if (terminalDraw) return 0; // Game ends on this move.
+        }
         // Search for a quiet position where no captures are possible.
         var fromHorizon = depth - horizon;
         _selectiveHorizon = FastMath.Max(depth, _selectiveHorizon);
         bool drawnEndgame;
+        int phase;
         Delegates.GetNextMove getNextMove;
         ulong moveGenerationToSquareMask;
         if (board.CurrentPosition.KingInCheck)
@@ -852,8 +888,9 @@ public sealed class Search : IDisposable
             // King is in check.  Search all moves.
             getNextMove = _getNextMove;
             moveGenerationToSquareMask = Board.AllSquaresMask;
-            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Don't evaluate static score since moves when king is in check are not futile.
+            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Don't evaluate static score because no moves are futile when king is in check.
             drawnEndgame = false;
+            phase = Eval.DetermineGamePhase(board.CurrentPosition);
         }
         else
         {
@@ -867,7 +904,7 @@ public sealed class Search : IDisposable
                     : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
             }
             else moveGenerationToSquareMask = toSquareMask;
-            (board.CurrentPosition.StaticScore, drawnEndgame) = getStaticScore(board.CurrentPosition);
+            (board.CurrentPosition.StaticScore, drawnEndgame, phase) = getStaticScore(board.CurrentPosition);
             if (board.CurrentPosition.StaticScore >= beta) return beta; // Prevent worsening of position by making a bad capture.  Stand pat.
             alpha = FastMath.Max(board.CurrentPosition.StaticScore, alpha);
         }
@@ -879,7 +916,7 @@ public sealed class Search : IDisposable
             // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
             var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
-            var futileMove = considerFutility && IsMoveFutile(board.CurrentPosition, depth, horizon, move, 0, drawnEndgame, alpha, beta);
+            var futileMove = considerFutility && IsMoveFutile(board.CurrentPosition, depth, horizon, move, 0, drawnEndgame, phase, alpha, beta);
             // Play and search move.
             var (legalMove, checkingMove) = board.PlayMove(move);
             if (!legalMove)
@@ -903,7 +940,7 @@ public sealed class Search : IDisposable
             if (score >= beta) return beta; // Position is not the result of best play by both players.
             alpha = FastMath.Max(score, alpha);
         } while (true);
-        if ((legalMoveNumber == 0) && board.CurrentPosition.KingInCheck) return Eval.GetMateScore(depth); // Game ends on this move.
+        if ((legalMoveNumber == 0) && board.CurrentPosition.KingInCheck) return Eval.GetMatedScore(depth); // Game ends on this move.
         // Return score of best move.
         return alpha;
     }
@@ -1073,7 +1110,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private bool IsMoveFutile(Position position, int depth, int horizon, ulong move, int quietMoveNumber, bool drawnEndgame, int alpha, int beta)
+    private bool IsMoveFutile(Position position, int depth, int horizon, ulong move, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         var toHorizon = horizon - depth;
@@ -1095,8 +1132,12 @@ public sealed class Search : IDisposable
         var lateMoveNumber = toHorizon <= 0 ? _lateMovePruningMargins[0] : _lateMovePruningMargins[toHorizon];
         if (Move.IsQuiet(move) && (quietMoveNumber >= lateMoveNumber)) return true; // Quiet move is too late to be worth searching.
         // Determine if move can raise score to alpha.
+        var materialImprovement = captureVictim == Piece.None
+            ? 0
+            : _eval.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
+        var locationImprovement = _eval.GetPieceLocationImprovement(move, phase);
         var futilityPruningMargin = toHorizon <= 0 ? _futilityPruningMargins[0] : _futilityPruningMargins[toHorizon];
-        return position.StaticScore + _eval.TaperedMaterialScores[(int)PieceHelper.GetColorlessPiece(captureVictim)] + futilityPruningMargin < alpha;
+        return position.StaticScore + materialImprovement + locationImprovement + futilityPruningMargin < alpha;
     }
 
 
