@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Intelligence;
@@ -57,7 +58,6 @@ public sealed class Eval
         900, // Queen
         0    // King
     };
-    public readonly int[] TaperedMaterialScores; // [colorlessPiece]
     private readonly int[] _mgMaterialScores; // [colorlessPiece]
     private readonly int[] _egMaterialScores; // [colorlessPiece]
     // Piece Location
@@ -87,7 +87,6 @@ public sealed class Eval
         Config = new EvalConfig();
         _defaultConfig = new EvalConfig();
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
-        TaperedMaterialScores = new int[(int)ColorlessPiece.King + 1];
         _mgMaterialScores = new int[(int)ColorlessPiece.King + 1];
         _egMaterialScores = new int[(int)ColorlessPiece.King + 1];
         _mgPieceLocations = new int[(int)ColorlessPiece.King + 1][];
@@ -401,29 +400,57 @@ public sealed class Eval
     }
 
 
+    public int GetPieceMaterialScore(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
+
+
+    public int GetPieceLocationImprovement(ulong move, int phase)
+    {
+        var piece = Move.Piece(move);
+        var color = PieceHelper.GetColor(piece);
+        var colorlessPiece = PieceHelper.GetColorlessPiece(piece);
+        var fromSquare = Move.From(move);
+        var fromSquareWhitePerspective = Board.GetSquareFromWhitePerspective(fromSquare, color);
+        var toSquare = Move.To(move);
+        var toSquareWhitePerspective = Board.GetSquareFromWhitePerspective(toSquare, color);
+        var mgImprovement = _mgPieceLocations[(int)colorlessPiece][(int)toSquareWhitePerspective] - _mgPieceLocations[(int)colorlessPiece][(int)fromSquareWhitePerspective];
+        var egImprovement = _egPieceLocations[(int)colorlessPiece][(int)toSquareWhitePerspective] - _egPieceLocations[(int)colorlessPiece][(int)fromSquareWhitePerspective];
+        return StaticScore.GetTaperedScore(mgImprovement, egImprovement, phase);
+    }
+
+
+    public static (int StaticScore, bool DrawnEndgame, int phase) GetExchangeMaterialScore(Position position)
+    {
+        var phase = DetermineGamePhase(position);
+        var score = 0;
+        for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
+        {
+            var piece = PieceHelper.GetPieceOfColor(colorlessPiece, position.ColorToMove);
+            var enemyPiece = PieceHelper.GetPieceOfColor(colorlessPiece, position.ColorLastMoved);
+            var pieceCount = Bitwise.CountSetBits(position.PieceBitboards[(int)piece]);
+            var enemyPieceCount = Bitwise.CountSetBits(position.PieceBitboards[(int)enemyPiece]);
+            score += (pieceCount - enemyPieceCount) * _exchangeMaterialScores[(int)colorlessPiece];
+        }
+        return (score, false, phase);
+    }
+
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public (int StaticScore, bool DrawnEndgame) GetStaticScore(Position position)
+    public (int StaticScore, bool DrawnEndgame, int phase) GetStaticScore(Position position)
     {
         // TODO: Handicap knowledge of checkmates and endgames when in limited strength mode.
         Debug.Assert(!position.KingInCheck);
         _stats.Evaluations++;
         Reset();
+        var phase = DetermineGamePhase(position);
         if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position, Color.Black))
         {
             // Position is a simple endgame.
             return _staticScore.EgScalePer128 == 0
-                ? (0, true) // Drawn Endgame
-                : (_staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved), false);
+                ? (0, true, phase) // Drawn Endgame
+                : (_staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved), false, phase);
         }
         // Position is not a simple endgame.
         _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
-        // Update tapered material scores for current position.
-        var phase = DetermineGamePhase(position);
-        TaperedMaterialScores[(int)ColorlessPiece.Pawn] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Pawn], _egMaterialScores[(int)ColorlessPiece.Pawn], phase);
-        TaperedMaterialScores[(int)ColorlessPiece.Knight] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Knight], _egMaterialScores[(int)ColorlessPiece.Knight], phase);
-        TaperedMaterialScores[(int)ColorlessPiece.Bishop] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Bishop], _egMaterialScores[(int)ColorlessPiece.Bishop], phase);
-        TaperedMaterialScores[(int)ColorlessPiece.Rook] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Rook], _egMaterialScores[(int)ColorlessPiece.Rook], phase);
-        TaperedMaterialScores[(int)ColorlessPiece.Queen] = StaticScore.GetTaperedScore(_mgMaterialScores[(int)ColorlessPiece.Queen], _egMaterialScores[(int)ColorlessPiece.Queen], phase);
         // Explicit array lookups are faster than looping through colors.
         EvaluateMaterial(position, Color.White);
         EvaluateMaterial(position, Color.Black);
@@ -439,8 +466,8 @@ public sealed class Eval
         if (Config.LimitedStrength) LimitStrength();
         DetermineEndgameScale(position); // Scale endgame score based on difficulty to win.
         return _staticScore.EgScalePer128 == 0
-            ? (0, true) // Drawn Endgame
-            : (_staticScore.GetTotalScore(position.ColorToMove, phase), false);
+            ? (0, true, phase) // Drawn Endgame
+            : (_staticScore.GetTotalScore(position.ColorToMove, phase), false, phase);
     }
 
 
@@ -633,21 +660,6 @@ public sealed class Eval
         // Total
         _staticScore.MgPieceMaterial[(int)color] = mgKnightMaterial + mgBishopMaterial + mgRookMaterial + mgQueenMaterial;
         _staticScore.EgPieceMaterial[(int)color] = egKnightMaterial + egBishopMaterial + egRookMaterial + egQueenMaterial;
-    }
-
-
-    public static (int StaticScore, bool DrawnEndgame) GetExchangeMaterialScore(Position position)
-    {
-        var score = 0;
-        for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
-        {
-            var piece = PieceHelper.GetPieceOfColor(colorlessPiece, position.ColorToMove);
-            var enemyPiece = PieceHelper.GetPieceOfColor(colorlessPiece, position.ColorLastMoved);
-            var pieceCount = Bitwise.CountSetBits(position.PieceBitboards[(int)piece]);
-            var enemyPieceCount = Bitwise.CountSetBits(position.PieceBitboards[(int)enemyPiece]);
-            score += (pieceCount - enemyPieceCount) * _exchangeMaterialScores[(int)colorlessPiece];
-        }
-        return (score, false);
     }
 
 
@@ -959,9 +971,13 @@ public sealed class Eval
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetMateScore(int depth) => -SpecialScore.Max + depth;
-        
-        
+    public static int GetMatedScore(int depth) => -SpecialScore.Max + depth;
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int GetMatingScore(int depth) => SpecialScore.Max - depth;
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetMateMoveCount(int score)
     {
@@ -973,7 +989,7 @@ public sealed class Eval
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int DetermineGamePhase(Position position)
+    public static int DetermineGamePhase(Position position)
     {
         var phase = (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Knight)) * _knightPhaseWeight) +
                     (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Bishop)) * _bishopPhaseWeight) +
@@ -1091,8 +1107,7 @@ public sealed class Eval
 
     public string ToString(Position position)
     {
-        GetStaticScore(position);
-        var phase = DetermineGamePhase(position);
+        var (_, _, phase) = GetStaticScore(position);
         return _staticScore.ToString(phase);
     }
 }
