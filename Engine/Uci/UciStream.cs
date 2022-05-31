@@ -185,6 +185,7 @@ public sealed class UciStream : IDisposable
 
     private void MonitorInputStream()
     {
+        // TODO: Determine why engine hangs in Hiarcs Chess Explorer Pro GUI after stopping search, changing number of PV lines, clearing hash, then restarting search.
         try
         {
             string command;

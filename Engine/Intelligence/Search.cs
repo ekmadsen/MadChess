@@ -65,6 +65,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveMaxInsufficientDraft = 3;
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
+    private const int _lmrScalePer128 = 64;
+    private const int _lmrConstPer128 = 96;
     private const int _quietSearchMaxFromHorizon = 3;
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -74,7 +76,7 @@ public sealed class Search : IDisposable
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
     private int[] _aspirationWindows;
     private int[] _lateMovePruningMargins;
-    private int[] _lateMoveReductions;
+    private int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
     private ScoredMove[] _rootMoves;
     private ScoredMove[] _bestMoves;
     private ScoredMove[] _bestMovePlies;
@@ -178,10 +180,9 @@ public sealed class Search : IDisposable
         _aspirationWindows = new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 060, 160, 220, 280, 340, 400 };
-        _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
+        _lateMovePruningMargins = new[] { 999, 003, 007, 015, 031, 063 };
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
-        // Quiet Move Number =        000  001  002  003  004  005  006  007  008  009  010  011  012  013  014  015  016  017  018  019  020  021  022  023  024  025  026  027  028  029  030  031  032  033
-        _lateMoveReductions = new[] { 000, 000, 000, 001, 001, 002, 002, 002, 002, 003, 003, 003, 003, 003, 003, 003, 003, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 004, 005 };
+        _lateMoveReductions = GetLateMoveReductions();
         // Create scored move arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
         _bestMoves = new ScoredMove[Position.MaxMoves];
@@ -254,6 +255,21 @@ public sealed class Search : IDisposable
         Signal?.Dispose();
         Signal = null;
         _disposed = true;
+    }
+
+
+    private static int[][] GetLateMoveReductions()
+    {
+        var lateMoveReductions = new int[Position.MaxMoves + 1][];
+        for (var quietMoveNumber = 0; quietMoveNumber <= Position.MaxMoves; quietMoveNumber++)
+        {
+            lateMoveReductions[quietMoveNumber] = new int[MaxHorizon + 1];
+            for (var toHorizon = 0; toHorizon <= MaxHorizon; toHorizon++)
+            {
+                lateMoveReductions[quietMoveNumber][toHorizon] = (int) ((_lmrScalePer128 * Math.Log(quietMoveNumber) * Math.Log(toHorizon) / 128) + ((double)_lmrConstPer128 / 128));
+            }
+        }
+        return lateMoveReductions;
     }
     
 
@@ -1118,8 +1134,7 @@ public sealed class Search : IDisposable
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= SpecialScore.Checkmate) || (FastMath.Abs(beta) >= SpecialScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
         var captureVictim = Move.CaptureVictim(move);
-        var capture = captureVictim != Piece.None;
-        if (capture && (toHorizon > 0)) return false; // Capture in main search is not futile.
+        if ((captureVictim != Piece.None) && (toHorizon > 0)) return false; // Capture in main search is not futile.
         if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return false; // Killer move, pawn promotion, or castling is not futile.
         if (Move.IsPawnMove(move))
         {
@@ -1153,8 +1168,7 @@ public sealed class Search : IDisposable
             return horizon + 1;
         }
         if ((depth == 0) && !CompetitivePlay) return horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
-        var capture = Move.CaptureVictim(move) != Piece.None;
-        if (capture) return horizon; // Do not reduce capture.
+        if (Move.CaptureVictim(move) != Piece.None) return horizon; // Do not reduce capture.
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
         if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return horizon; // Do not reduce killer move, pawn promotion, or castling.
         if (Move.IsPawnMove(move))
@@ -1164,8 +1178,7 @@ public sealed class Search : IDisposable
         }
         if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
         // Reduce search horizon of late move.
-        var quietMoveIndex = FastMath.Min(quietMoveNumber, _lateMoveReductions.Length - 1);
-        return horizon - _lateMoveReductions[quietMoveIndex];
+        return horizon - _lateMoveReductions[quietMoveNumber][horizon - depth];
     }
 
 
