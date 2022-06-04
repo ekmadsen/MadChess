@@ -65,8 +65,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveMaxInsufficientDraft = 3;
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
-    private const int _lmrScalePer128 = 64;
-    private const int _lmrConstPer128 = 96;
+    private const int _lmrScalePer128 = 48;
+    private const int _lmrConstPer128 = -24;
     private const int _quietSearchMaxFromHorizon = 3;
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -180,7 +180,7 @@ public sealed class Search : IDisposable
         _aspirationWindows = new[] { 100, 150, 200, 250, 300, 500, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 060, 160, 220, 280, 340, 400 };
-        _lateMovePruningMargins = new[] { 999, 003, 007, 015, 031, 063 };
+        _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         _lateMoveReductions = GetLateMoveReductions();
         // Create scored move arrays.
@@ -261,12 +261,14 @@ public sealed class Search : IDisposable
     private static int[][] GetLateMoveReductions()
     {
         var lateMoveReductions = new int[Position.MaxMoves + 1][];
+        const double constReduction =  (double)_lmrConstPer128 / 128;
         for (var quietMoveNumber = 0; quietMoveNumber <= Position.MaxMoves; quietMoveNumber++)
         {
             lateMoveReductions[quietMoveNumber] = new int[MaxHorizon + 1];
             for (var toHorizon = 0; toHorizon <= MaxHorizon; toHorizon++)
             {
-                lateMoveReductions[quietMoveNumber][toHorizon] = (int) ((_lmrScalePer128 * Math.Log(quietMoveNumber) * Math.Log(toHorizon) / 128) + ((double)_lmrConstPer128 / 128));
+                var logReduction = (double)_lmrScalePer128 / 128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon);
+                lateMoveReductions[quietMoveNumber][toHorizon] = (int)Math.Max(logReduction + constReduction, 0);
             }
         }
         return lateMoveReductions;
