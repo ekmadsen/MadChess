@@ -65,8 +65,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveMaxInsufficientDraft = 3;
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
-    private const int _lmrScalePer128 = 48;
-    private const int _lmrConstPer128 = -24;
+    private const int _lmrScalePer128 = 40;
+    private const int _lmrConstPer128 = -96;
     private const int _quietSearchMaxFromHorizon = 3;
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
