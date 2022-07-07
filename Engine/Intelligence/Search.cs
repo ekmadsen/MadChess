@@ -65,6 +65,7 @@ public sealed class Search : IDisposable
     private const int _singularMoveMaxInsufficientDraft = 3;
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
+    private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 40;
     private const int _lmrConstPer128 = -96;
     private const int _quietSearchMaxFromHorizon = 3;
@@ -1184,7 +1185,7 @@ public sealed class Search : IDisposable
     }
 
 
-    // Idea from Stockfish chess engine.
+    // Singular move idea from Stockfish chess engine.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong move, CachedPosition cachedPosition)
     {

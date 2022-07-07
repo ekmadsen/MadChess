@@ -1135,56 +1135,34 @@ public sealed class Board
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsSquareAttacked(Square square)
     {
-        var pawnAttackMask = PawnAttackMasks[(int)CurrentPosition.ColorLastMoved][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice-versa.
-        var pawns = CurrentPosition.GetPawns(CurrentPosition.ColorToMove);
         // Determine if square is attacked by pawns.
-        if ((pawnAttackMask & pawns) > 0) return true;
+        // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+        var pawns = CurrentPosition.GetPawns(CurrentPosition.ColorToMove);
+        if ((pawns & PawnAttackMasks[(int)CurrentPosition.ColorLastMoved][(int)square]) > 0) return true;
         // Determine if square is attacked by knights.
         var knights = CurrentPosition.GetKnights(CurrentPosition.ColorToMove);
-        if ((KnightMoveMasks[(int)square] & knights) > 0) return true;
+        if ((knights & KnightMoveMasks[(int)square]) > 0) return true;
         // Determine if square is attacked by diagonal sliding piece.
-        var bishopDestinations = PrecalculatedMoves.GetBishopMovesMask(square, CurrentPosition.Occupancy);
         var bishops = CurrentPosition.GetBishops(CurrentPosition.ColorToMove);
         var queens = CurrentPosition.GetQueens(CurrentPosition.ColorToMove);
-        if ((bishopDestinations & (bishops | queens)) > 0) return true;
+        if (((bishops | queens) & PrecalculatedMoves.GetBishopMovesMask(square, CurrentPosition.Occupancy)) > 0) return true;
         // Determine if square is attacked by file / rank sliding pieces.
-        var rookDestinations = PrecalculatedMoves.GetRookMovesMask(square, CurrentPosition.Occupancy);
         var rooks = CurrentPosition.GetRooks(CurrentPosition.ColorToMove);
-        if ((rookDestinations & (rooks | queens)) > 0) return true;
+        if (((rooks | queens) & PrecalculatedMoves.GetRookMovesMask(square, CurrentPosition.Occupancy)) > 0) return true;
         // Determine if square is attacked by king.
         var king = CurrentPosition.GetKing(CurrentPosition.ColorToMove);
-        return (KingMoveMasks[(int)square] & king) > 0;
+        return (king & KingMoveMasks[(int)square]) > 0;
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsCastlePathAttacked(ulong move)
     {
-        // TODO: Determine if IsCastlePathAttacked code can be made color-agnostic.
         var toSquare = Move.To(move);
         ulong attackedSquaresMask;
-        if (CurrentPosition.ColorToMove == Color.White)
-        {
-            // Black castled, now white move.
-            // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
-            attackedSquaresMask = toSquare switch
-            {
-                Square.C8 => _castleAttackedSquareMasks[(int)Color.Black][(int)BoardSide.Queen],
-                Square.G8 => _castleAttackedSquareMasks[(int)Color.Black][(int)BoardSide.King],
-                _ => throw new Exception($"Black king cannot castle to {SquareLocations[(int)toSquare]}.")
-            };
-        }
-        else
-        {
-            // White castled, now black move.
-            // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
-            attackedSquaresMask = toSquare switch
-            {
-                Square.C1 => _castleAttackedSquareMasks[(int)Color.White][(int)BoardSide.Queen],
-                Square.G1 => _castleAttackedSquareMasks[(int)Color.White][(int)BoardSide.King],
-                _ => throw new Exception($"White king cannot castle to {SquareLocations[(int)toSquare]}.")
-            };
-        }
+        if (toSquare == CastleToSquares[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.Queen]) attackedSquaresMask = _castleAttackedSquareMasks[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.Queen];
+        else if (toSquare == CastleToSquares[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.King]) attackedSquaresMask = _castleAttackedSquareMasks[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.King];
+        else throw new Exception($"{CurrentPosition.ColorToMove} king cannot castle to {SquareLocations[(int)toSquare]}.");
         while ((toSquare = Bitwise.PopFirstSetSquare(ref attackedSquaresMask)) != Square.Illegal) if (IsSquareAttacked(toSquare)) return true;
         return false;
     }

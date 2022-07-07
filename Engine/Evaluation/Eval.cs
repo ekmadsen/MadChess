@@ -32,6 +32,12 @@ public sealed class Eval
     private const int _strongSocialElo = 1400;
     private const int _clubElo = 1600;
     private const int _strongClubElo = 1800;
+    private const int _egScaleOnlyOppBishopsPerPassedPawn = 8;
+    private const int _egScaleOnlyOppBishops = 36;
+    private const int _egScaleOppBishopsPerPiece = 6;
+    private const int _egScaleOppBishops = 44;
+    private const int _egScalePerPawn = 14;
+    private const int _egScale = 72;
     private readonly Stats _stats;
     private readonly EvalConfig _defaultConfig;
     private readonly Delegates.IsRepeatPosition _isRepeatPosition;
@@ -504,13 +510,14 @@ public sealed class Eval
                 return true;
             case 0 when (enemyPawnCount == 0) && (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
                 // K vrs KBN
+                // Push lone king to corner with same color square as occupied by bishop.  Push winning king close to lone king.
                 var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;
                 var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
                 _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                 return true;
             case 0:
-                // TODO: Consider scoring K vrs K + Pawns and / or Pieces endgame as "simple" only if strong side has major piece or minor + pawn.
                 // K vrs K + Pawns and / or Pieces
+                // Push lone king to corner.  Push winning king close to lone king.
                 EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
                 _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
                 return true;
@@ -932,7 +939,8 @@ public sealed class Eval
         }
     }
 
-    
+
+    // Endgame scaling idea from Stockfish chess engine.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DetermineEndgameScale(Position position)
     {
@@ -940,17 +948,14 @@ public sealed class Eval
         var winningColor = _staticScore.GetEg(Color.White) >= _staticScore.GetEg(Color.Black) ? Color.White : Color.Black;
         var losingColor = 1 - winningColor;
         // Count pawns and determine material difference between sides (excluding pawns).
-        // Use middlegame material values because they are constant (endgame material values are tuned).
         var winningPawnCount = Bitwise.CountSetBits(position.GetPawns(winningColor));
-        var winningPieceMaterial = _staticScore.MgPieceMaterial[(int)winningColor];
-        var losingPieceMaterial = _staticScore.MgPieceMaterial[(int)losingColor];
+        var winningPieceMaterial = _staticScore.EgPieceMaterial[(int)winningColor];
+        var losingPieceMaterial = _staticScore.EgPieceMaterial[(int)losingColor];
         var pieceMaterialDiff = winningPieceMaterial - losingPieceMaterial;
-        if ((winningPawnCount == 0) && (pieceMaterialDiff <= Config.MgBishopMaterial))
+        if ((winningPawnCount == 0) && ((pieceMaterialDiff == Config.EgKnightMaterial) || (pieceMaterialDiff == Config.EgBishopMaterial)))
         {
-            // Winning side has no pawns and is up by a bishop or less.
-            _staticScore.EgScalePer128 = winningPieceMaterial >= Config.MgRookMaterial
-                ? Config.EgScaleBishopAdvantagePer128 // Winning side has a rook or more.
-                : 0; // Winning side has less than a rook.
+            // Winning side has no pawns and is up by a minor piece.
+            _staticScore.EgScalePer128 = 0;
             return;
         }
         // Determine if sides have opposite colored bishops.
@@ -958,15 +963,23 @@ public sealed class Eval
         var blackBishops = position.GetBishops(Color.Black);
         var oppositeColoredBishops = (Bitwise.CountSetBits(whiteBishops) == 1) && (Bitwise.CountSetBits(blackBishops) == 1) &&
                                      (Bitwise.CountSetBits(Board.SquareColors[(int)Color.White] & (whiteBishops | blackBishops)) == 1);
-        if (oppositeColoredBishops && (winningPieceMaterial == Config.MgBishopMaterial) && (losingPieceMaterial == Config.MgBishopMaterial))
+        if (oppositeColoredBishops)
         {
-            // Sides have opposite colored bishops and no other pieces.
-            var winningPassedPawns = Bitwise.CountSetBits(_passedPawns[(int)winningColor]);
-            _staticScore.EgScalePer128 = winningPassedPawns * Config.EgScaleOppBishopsPerPassedPawn;
+            // Sides have opposite colored bishops.
+            if ((winningPieceMaterial == Config.EgBishopMaterial) && (losingPieceMaterial == Config.EgBishopMaterial))
+            {
+                // Sides have no other pieces but may have pawns.
+                var winningPassedPawnCount = Bitwise.CountSetBits(_passedPawns[(int)winningColor]);
+                _staticScore.EgScalePer128 = (winningPassedPawnCount * _egScaleOnlyOppBishopsPerPassedPawn) + _egScaleOnlyOppBishops;
+                return;
+            }
+            // Sides have other pieces and may have pawns.
+            var winningPieceCount = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(winningColor));
+            _staticScore.EgScalePer128 = (winningPieceCount * _egScaleOppBishopsPerPiece) + _egScaleOppBishops;
             return;
         }
         // All Other Endgames
-        _staticScore.EgScalePer128 = (winningPawnCount * Config.EgScaleWinningPerPawn) + 128;
+        _staticScore.EgScalePer128 = FastMath.Min((winningPawnCount * _egScalePerPawn) + _egScale, 128);
     }
 
 
