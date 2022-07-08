@@ -34,8 +34,8 @@ public sealed class UciStream : IDisposable
     public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
-    private const int _minWinScale = 400;
-    private const int _maxWinScale = 600;
+    private const int _minWinScale = 800;
+    private const int _maxWinScale = 1000;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
     private Board _board;
     private Stats _stats;

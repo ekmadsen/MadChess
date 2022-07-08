@@ -32,12 +32,12 @@ public sealed class Eval
     private const int _strongSocialElo = 1400;
     private const int _clubElo = 1600;
     private const int _strongClubElo = 1800;
-    private const int _egScaleOnlyOppBishopsPerPassedPawn = 8;
-    private const int _egScaleOnlyOppBishops = 36;
-    private const int _egScaleOppBishopsPerPiece = 6;
-    private const int _egScaleOppBishops = 44;
-    private const int _egScalePerPawn = 14;
-    private const int _egScale = 72;
+    private const int _egScaleOnlyOppBishopsPerPassedPawn = 32;
+    private const int _egScaleOnlyOppBishops = 32;
+    private const int _egScaleOppBishopsPerPiece = 8;
+    private const int _egScaleOppBishops = 40;
+    private const int _egScalePerPawn = 54;
+    private const int _egScale = 128;
     private readonly Stats _stats;
     private readonly EvalConfig _defaultConfig;
     private readonly Delegates.IsRepeatPosition _isRepeatPosition;
@@ -979,7 +979,7 @@ public sealed class Eval
             return;
         }
         // All Other Endgames
-        _staticScore.EgScalePer128 = FastMath.Min((winningPawnCount * _egScalePerPawn) + _egScale, 128);
+        _staticScore.EgScalePer128 = (winningPawnCount * _egScalePerPawn) + _egScale;
     }
 
 
