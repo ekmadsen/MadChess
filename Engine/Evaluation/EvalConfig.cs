@@ -115,6 +115,12 @@ public sealed class EvalConfig
     public int EgKnightOutpost = 3;
     public int MgBishopOutpost = 1;
     public int EgBishopOutpost = 11;
+    // Endgame Scale
+    public int EgScaleOnlyOppBishopsPerPassedPawn = 46;
+    public int EgScaleOppBishopsPerPiece = 32;
+    public int EgScaleOppBishops = 128;
+    public int EgScalePerPawn = 52;
+    public int EgScale = 128;
     // Limit Strength
     public bool LimitedStrength = false;
     public int LsPieceLocationPer128 = 128;
@@ -219,6 +225,12 @@ public sealed class EvalConfig
         EgKnightOutpost = copyFromConfig.EgKnightOutpost;
         MgBishopOutpost = copyFromConfig.MgBishopOutpost;
         EgBishopOutpost = copyFromConfig.EgBishopOutpost;
+        // Copy endgame scale values.
+        EgScaleOnlyOppBishopsPerPassedPawn = copyFromConfig.EgScaleOnlyOppBishopsPerPassedPawn;
+        EgScaleOppBishopsPerPiece = copyFromConfig.EgScaleOppBishopsPerPiece;
+        EgScaleOppBishops = copyFromConfig.EgScaleOppBishops;
+        EgScalePerPawn = copyFromConfig.EgScalePerPawn;
+        EgScale = copyFromConfig.EgScale;
         // Copy limit strength values.
         LimitedStrength = copyFromConfig.LimitedStrength;
         LsPieceLocationPer128 = copyFromConfig.LsPieceLocationPer128;

@@ -32,12 +32,6 @@ public sealed class Eval
     private const int _strongSocialElo = 1400;
     private const int _clubElo = 1600;
     private const int _strongClubElo = 1800;
-    private const int _egScaleOnlyOppBishopsPerPassedPawn = 32;
-    private const int _egScaleOnlyOppBishops = 32;
-    private const int _egScaleOppBishopsPerPiece = 8;
-    private const int _egScaleOppBishops = 40;
-    private const int _egScalePerPawn = 54;
-    private const int _egScale = 128;
     private readonly Stats _stats;
     private readonly EvalConfig _defaultConfig;
     private readonly Delegates.IsRepeatPosition _isRepeatPosition;
@@ -369,6 +363,9 @@ public sealed class Eval
     }
 
 
+    public void ConfigureFullStrength() => Config.Set(_defaultConfig);
+
+
     private static int GetLinearlyInterpolatedValue(int minValue, int maxValue, int correlatedValue, int minCorrelatedValue, int maxCorrelatedValue)
     {
         Debug.Assert(maxValue >= minValue);
@@ -378,9 +375,6 @@ public sealed class Eval
         var valueRange = maxValue - minValue;
         return (int) ((fraction * valueRange) + minValue);
     }
-
-
-    public void ConfigureFullStrength() => Config.Set(_defaultConfig);
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -409,21 +403,6 @@ public sealed class Eval
     public int GetPieceMaterialScore(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
 
 
-    public int GetPieceLocationImprovement(ulong move, int phase)
-    {
-        var piece = Move.Piece(move);
-        var color = PieceHelper.GetColor(piece);
-        var colorlessPiece = PieceHelper.GetColorlessPiece(piece);
-        var fromSquare = Move.From(move);
-        var fromSquareWhitePerspective = Board.GetSquareFromWhitePerspective(fromSquare, color);
-        var toSquare = Move.To(move);
-        var toSquareWhitePerspective = Board.GetSquareFromWhitePerspective(toSquare, color);
-        var mgImprovement = _mgPieceLocations[(int)colorlessPiece][(int)toSquareWhitePerspective] - _mgPieceLocations[(int)colorlessPiece][(int)fromSquareWhitePerspective];
-        var egImprovement = _egPieceLocations[(int)colorlessPiece][(int)toSquareWhitePerspective] - _egPieceLocations[(int)colorlessPiece][(int)fromSquareWhitePerspective];
-        return StaticScore.GetTaperedScore(mgImprovement, egImprovement, phase);
-    }
-
-
     public static (int StaticScore, bool DrawnEndgame, int phase) GetExchangeMaterialScore(Position position)
     {
         var phase = DetermineGamePhase(position);
@@ -437,6 +416,21 @@ public sealed class Eval
             score += (pieceCount - enemyPieceCount) * _exchangeMaterialScores[(int)colorlessPiece];
         }
         return (score, false, phase);
+    }
+
+
+    public int GetPieceLocationImprovement(ulong move, int phase)
+    {
+        var piece = Move.Piece(move);
+        var color = PieceHelper.GetColor(piece);
+        var colorlessPiece = PieceHelper.GetColorlessPiece(piece);
+        var fromSquare = Move.From(move);
+        var fromSquareWhitePerspective = Board.GetSquareFromWhitePerspective(fromSquare, color);
+        var toSquare = Move.To(move);
+        var toSquareWhitePerspective = Board.GetSquareFromWhitePerspective(toSquare, color);
+        var mgImprovement = _mgPieceLocations[(int)colorlessPiece][(int)toSquareWhitePerspective] - _mgPieceLocations[(int)colorlessPiece][(int)fromSquareWhitePerspective];
+        var egImprovement = _egPieceLocations[(int)colorlessPiece][(int)toSquareWhitePerspective] - _egPieceLocations[(int)colorlessPiece][(int)fromSquareWhitePerspective];
+        return StaticScore.GetTaperedScore(mgImprovement, egImprovement, phase);
     }
 
 
@@ -474,6 +468,17 @@ public sealed class Eval
         return _staticScore.EgScalePer128 == 0
             ? (0, true, phase) // Drawn Endgame
             : (_staticScore.GetTotalScore(position.ColorToMove, phase), false, phase);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int DetermineGamePhase(Position position)
+    {
+        var phase = (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Knight)) * _knightPhaseWeight) +
+                    (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Bishop)) * _bishopPhaseWeight) +
+                    (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Rook)) * _rookPhaseWeight) +
+                    (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Queen)) * _queenPhaseWeight);
+        return Math.Min(phase, MiddlegamePhase);
     }
 
 
@@ -915,32 +920,7 @@ public sealed class Eval
     }
 
 
-    private void LimitStrength()
-    {
-        for (var color = Color.White; color <= Color.Black; color++)
-        {
-            // Limit understanding of piece location.
-            _staticScore.MgPieceLocation[(int)color] = (_staticScore.MgPieceLocation[(int)color] * Config.LsPieceLocationPer128) / 128;
-            _staticScore.EgPieceLocation[(int)color] = (_staticScore.EgPieceLocation[(int)color] * Config.LsPieceLocationPer128) / 128;
-            // Limit understanding of passed pawns.
-            _staticScore.MgPassedPawns[(int)color] = (_staticScore.MgPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
-            _staticScore.EgPassedPawns[(int)color] = (_staticScore.EgPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
-            _staticScore.EgFreePassedPawns[(int)color] = (_staticScore.EgFreePassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
-            _staticScore.EgKingEscortedPassedPawns[(int)color] = (_staticScore.EgKingEscortedPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
-            _staticScore.UnstoppablePassedPawns[(int)color] = (_staticScore.UnstoppablePassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
-            // Limit understanding of piece mobility.
-            _staticScore.MgPieceMobility[(int)color] = (_staticScore.MgPieceMobility[(int)color] * Config.LsPieceMobilityPer128) / 128;
-            _staticScore.EgPieceMobility[(int)color] = (_staticScore.EgPieceMobility[(int)color] * Config.LsPieceMobilityPer128) / 128;
-            // Limit understanding of king safety.
-            _staticScore.MgKingSafety[(int)color] = (_staticScore.MgKingSafety[(int)color] * Config.LsKingSafetyPer128) / 128;
-            // Limit understanding of minor pieces.
-            _staticScore.MgBishopPair[(int)color] = (_staticScore.MgBishopPair[(int)color] * Config.LsMinorPiecesPer128) / 128;
-            _staticScore.EgBishopPair[(int)color] = (_staticScore.EgBishopPair[(int)color] * Config.LsMinorPiecesPer128) / 128;
-        }
-    }
-
-
-    // Endgame scaling idea from Stockfish chess engine.
+    // Endgame scale idea from Stockfish chess engine.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DetermineEndgameScale(Position position)
     {
@@ -970,16 +950,41 @@ public sealed class Eval
             {
                 // Sides have no other pieces but may have pawns.
                 var winningPassedPawnCount = Bitwise.CountSetBits(_passedPawns[(int)winningColor]);
-                _staticScore.EgScalePer128 = (winningPassedPawnCount * _egScaleOnlyOppBishopsPerPassedPawn) + _egScaleOnlyOppBishops;
+                _staticScore.EgScalePer128 = winningPassedPawnCount * Config.EgScaleOnlyOppBishopsPerPassedPawn;
                 return;
             }
             // Sides have other pieces and may have pawns.
             var winningPieceCount = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(winningColor));
-            _staticScore.EgScalePer128 = (winningPieceCount * _egScaleOppBishopsPerPiece) + _egScaleOppBishops;
+            _staticScore.EgScalePer128 = (winningPieceCount * Config.EgScaleOppBishopsPerPiece) + Config.EgScaleOppBishops;
             return;
         }
         // All Other Endgames
-        _staticScore.EgScalePer128 = (winningPawnCount * _egScalePerPawn) + _egScale;
+        _staticScore.EgScalePer128 = (winningPawnCount * Config.EgScalePerPawn) + Config.EgScale;
+    }
+
+
+    private void LimitStrength()
+    {
+        for (var color = Color.White; color <= Color.Black; color++)
+        {
+            // Limit understanding of piece location.
+            _staticScore.MgPieceLocation[(int)color] = (_staticScore.MgPieceLocation[(int)color] * Config.LsPieceLocationPer128) / 128;
+            _staticScore.EgPieceLocation[(int)color] = (_staticScore.EgPieceLocation[(int)color] * Config.LsPieceLocationPer128) / 128;
+            // Limit understanding of passed pawns.
+            _staticScore.MgPassedPawns[(int)color] = (_staticScore.MgPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.EgPassedPawns[(int)color] = (_staticScore.EgPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.EgFreePassedPawns[(int)color] = (_staticScore.EgFreePassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.EgKingEscortedPassedPawns[(int)color] = (_staticScore.EgKingEscortedPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
+            _staticScore.UnstoppablePassedPawns[(int)color] = (_staticScore.UnstoppablePassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
+            // Limit understanding of piece mobility.
+            _staticScore.MgPieceMobility[(int)color] = (_staticScore.MgPieceMobility[(int)color] * Config.LsPieceMobilityPer128) / 128;
+            _staticScore.EgPieceMobility[(int)color] = (_staticScore.EgPieceMobility[(int)color] * Config.LsPieceMobilityPer128) / 128;
+            // Limit understanding of king safety.
+            _staticScore.MgKingSafety[(int)color] = (_staticScore.MgKingSafety[(int)color] * Config.LsKingSafetyPer128) / 128;
+            // Limit understanding of minor pieces.
+            _staticScore.MgBishopPair[(int)color] = (_staticScore.MgBishopPair[(int)color] * Config.LsMinorPiecesPer128) / 128;
+            _staticScore.EgBishopPair[(int)color] = (_staticScore.EgBishopPair[(int)color] * Config.LsMinorPiecesPer128) / 128;
+        }
     }
 
 
@@ -998,17 +1003,6 @@ public sealed class Eval
         // Convert plies to full moves.
         var (quotient, remainder) = Math.DivRem(plyCount, 2);
         return quotient + remainder;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int DetermineGamePhase(Position position)
-    {
-        var phase = (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Knight)) * _knightPhaseWeight) +
-                    (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Bishop)) * _bishopPhaseWeight) +
-                    (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Rook)) * _rookPhaseWeight) +
-                    (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Queen)) * _queenPhaseWeight);
-        return Math.Min(phase, MiddlegamePhase);
     }
 
 
