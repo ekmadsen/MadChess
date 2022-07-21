@@ -478,7 +478,7 @@ public sealed class Eval
                     (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Bishop)) * _bishopPhaseWeight) +
                     (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Rook)) * _rookPhaseWeight) +
                     (Bitwise.CountSetBits(position.GetPieces(ColorlessPiece.Queen)) * _queenPhaseWeight);
-        return Math.Min(phase, MiddlegamePhase);
+        return FastMath.Min(phase, MiddlegamePhase);
     }
 
 
@@ -935,7 +935,9 @@ public sealed class Eval
         if ((winningPawnCount == 0) && ((pieceMaterialDiff == Config.EgKnightMaterial) || (pieceMaterialDiff == Config.EgBishopMaterial)))
         {
             // Winning side has no pawns and is up by a minor piece.
-            _staticScore.EgScalePer128 = 0;
+            _staticScore.EgScalePer128 = winningPieceMaterial >= Config.EgRookMaterial
+                ? Config.EgScaleMinorAdvantage // Winning side has a rook or more.
+                : 0; // Winning side has less than a rook.
             return;
         }
         // Determine if sides have opposite colored bishops.
@@ -943,19 +945,11 @@ public sealed class Eval
         var blackBishops = position.GetBishops(Color.Black);
         var oppositeColoredBishops = (Bitwise.CountSetBits(whiteBishops) == 1) && (Bitwise.CountSetBits(blackBishops) == 1) &&
                                      (Bitwise.CountSetBits(Board.SquareColors[(int)Color.White] & (whiteBishops | blackBishops)) == 1);
-        if (oppositeColoredBishops)
+        if (oppositeColoredBishops && (winningPieceMaterial == Config.EgBishopMaterial) && (losingPieceMaterial == Config.EgBishopMaterial))
         {
-            // Sides have opposite colored bishops.
-            if ((winningPieceMaterial == Config.EgBishopMaterial) && (losingPieceMaterial == Config.EgBishopMaterial))
-            {
-                // Sides have no other pieces but may have pawns.
-                var winningPassedPawnCount = Bitwise.CountSetBits(_passedPawns[(int)winningColor]);
-                _staticScore.EgScalePer128 = winningPassedPawnCount * Config.EgScaleOnlyOppBishopsPerPassedPawn;
-                return;
-            }
-            // Sides have other pieces and may have pawns.
-            var winningPieceCount = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(winningColor));
-            _staticScore.EgScalePer128 = (winningPieceCount * Config.EgScaleOppBishopsPerPiece) + Config.EgScaleOppBishops;
+            // Sides have opposite colored bishops and no other pieces, but may have pawns.
+            var winningPassedPawnCount = Bitwise.CountSetBits(_passedPawns[(int)winningColor]);
+            _staticScore.EgScalePer128 = winningPassedPawnCount * Config.EgScaleOppBishopsPerPassedPawn;
             return;
         }
         // All Other Endgames
