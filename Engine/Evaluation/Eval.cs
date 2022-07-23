@@ -462,6 +462,8 @@ public sealed class Eval
         EvaluateMobilityKingSafetyThreats(position, Color.Black);
         EvaluateMinorPieces(position, Color.White);
         EvaluateMinorPieces(position, Color.Black);
+        EvaluateMajorPieces(position, Color.White);
+        EvaluateMajorPieces(position, Color.Black);
         // Limit strength and determine endgame scale and total score.
         if (Config.LimitedStrength) LimitStrength();
         DetermineEndgameScale(position); // Scale endgame score based on difficulty to win.
@@ -872,7 +874,7 @@ public sealed class Eval
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateMinorPieces(Position position, Color color)
     {
         var enemyColor = 1 - color;
@@ -920,7 +922,36 @@ public sealed class Eval
     }
 
 
-    // Endgame scale idea from Stockfish chess engine.
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private void EvaluateMajorPieces(Position position, Color color)
+    {
+        var enemyColor = 1 - color;
+        var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
+        if (Board.Ranks[(int)enemyColor][(int)enemyKingSquare] != 0) return; // Enemy king is not on back rank.
+        // Rooks on 7th Rank
+        var rooks = position.GetRooks(color);
+        Square square;
+        while ((square = Bitwise.PopFirstSetSquare(ref rooks)) != Square.Illegal)
+        {
+            if (Board.Ranks[(int)color][(int)square] == 6)
+            {
+                _staticScore.MgMajorOn7thRank[(int)color] += Config.MgRook7thRank;
+                _staticScore.EgMajorOn7thRank[(int)color] += Config.EgRook7thRank;
+            }
+        }
+        // Queens on 7th Rank
+        var queens = position.GetQueens(color);
+        while ((square = Bitwise.PopFirstSetSquare(ref queens)) != Square.Illegal)
+        {
+            if (Board.Ranks[(int)color][(int)square] == 6)
+            {
+                _staticScore.MgMajorOn7thRank[(int)color] += Config.MgQueen7thRank;
+                _staticScore.EgMajorOn7thRank[(int)color] += Config.EgQueen7thRank;
+            }
+        }
+    }
+
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DetermineEndgameScale(Position position)
     {

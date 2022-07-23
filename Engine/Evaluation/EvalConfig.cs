@@ -115,6 +115,13 @@ public sealed class EvalConfig
     public int EgKnightOutpost = 3;
     public int MgBishopOutpost = 9;
     public int EgBishopOutpost = 11;
+    // Major Pieces
+    // ReSharper disable InconsistentNaming
+    public int MgRook7thRank = 20;
+    public int EgRook7thRank = 40;
+    public int MgQueen7thRank = 10;
+    public int EgQueen7thRank = 20;
+    // ReSharper restore InconsistentNaming
     // Endgame Scale
     public int EgScaleMinorAdvantage = 11;
     public int EgScaleOppBishopsPerPassedPawn = 46;
@@ -224,6 +231,11 @@ public sealed class EvalConfig
         EgKnightOutpost = copyFromConfig.EgKnightOutpost;
         MgBishopOutpost = copyFromConfig.MgBishopOutpost;
         EgBishopOutpost = copyFromConfig.EgBishopOutpost;
+        // Copy major piece values.
+        MgRook7thRank = copyFromConfig.MgRook7thRank;
+        EgRook7thRank = copyFromConfig.EgRook7thRank;
+        MgQueen7thRank = copyFromConfig.MgQueen7thRank;
+        EgQueen7thRank = copyFromConfig.EgQueen7thRank;
         // Copy endgame scale values.
         EgScaleMinorAdvantage = copyFromConfig.EgScaleMinorAdvantage;
         EgScaleOppBishopsPerPassedPawn = copyFromConfig.EgScaleOppBishopsPerPassedPawn;
