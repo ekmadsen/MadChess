@@ -24,9 +24,9 @@ public sealed class EvalConfig
     public int MgBishopMaterial = 330;
     public int EgBishopMaterial = 501;
     public int MgRookMaterial = 500;
-    public int EgRookMaterial = 788;
+    public int EgRookMaterial = 787;
     public int MgQueenMaterial = 975;
-    public int EgQueenMaterial = 1514;
+    public int EgQueenMaterial = 1504;
     // Incentivize engine to promote pawns.
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial);
     // Pawn Location
@@ -49,25 +49,25 @@ public sealed class EvalConfig
     public int MgBishopCorner = 0;
     public int EgBishopCorner = 0;
     // Rook Location
-    public int MgRookAdvancement = 0;
+    public int MgRookAdvancement = -2;
     public int EgRookAdvancement = 11;
-    public int MgRookCentrality = 7;
-    public int EgRookCentrality = -3;
-    public int MgRookCorner = -18;
-    public int EgRookCorner = 2;
+    public int MgRookCentrality = 5;
+    public int EgRookCentrality = -2;
+    public int MgRookCorner = -20;
+    public int EgRookCorner = 3;
     // Queen Location
-    public int MgQueenAdvancement = -25;
-    public int EgQueenAdvancement = 24;
+    public int MgQueenAdvancement = -27;
+    public int EgQueenAdvancement = 25;
     public int MgQueenCentrality = 4;
     public int EgQueenCentrality = 7;
-    public int MgQueenCorner = -2;
-    public int EgQueenCorner = -5;
+    public int MgQueenCorner = -1;
+    public int EgQueenCorner = -6;
     // King Location
     public int MgKingAdvancement = 0;
-    public int EgKingAdvancement = 16;
+    public int EgKingAdvancement = 15;
     public int MgKingCentrality = 0;
-    public int EgKingCentrality = 12;
-    public int MgKingCorner = 0;
+    public int EgKingCentrality = 11;
+    public int MgKingCorner = 2;
     public int EgKingCorner = -8;
     // Pawn Structure
     public int MgIsolatedPawn = 21;
@@ -117,10 +117,10 @@ public sealed class EvalConfig
     public int EgBishopOutpost = 11;
     // Major Pieces
     // ReSharper disable InconsistentNaming
-    public int MgRook7thRank = 20;
-    public int EgRook7thRank = 40;
-    public int MgQueen7thRank = 10;
-    public int EgQueen7thRank = 20;
+    public int MgRook7thRank = 58;
+    public int EgRook7thRank = 18;
+    public int MgQueen7thRank = 4;
+    public int EgQueen7thRank = 5;
     // ReSharper restore InconsistentNaming
     // Endgame Scale
     public int EgScaleMinorAdvantage = 11;
