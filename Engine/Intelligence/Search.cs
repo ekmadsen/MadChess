@@ -1200,7 +1200,7 @@ public sealed class Search : IDisposable
         if (CachedPositionData.ToHorizon(cachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientDraft)) return false;
         var beta = dynamicScore - (_singularMoveMargin * toHorizon);
         var searchHorizon = depth + ((toHorizon * _singularMoveReductionPer128) / 128);
-        dynamicScore = GetDynamicScore(board, depth, searchHorizon, false, beta - 1, beta, move);
+        dynamicScore = GetDynamicScore(board, depth, searchHorizon, false, beta - 1, beta, move); // Exclude best move from search.
         return dynamicScore < beta;
     }
 
