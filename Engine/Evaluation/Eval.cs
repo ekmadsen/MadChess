@@ -400,6 +400,7 @@ public sealed class Eval
     }
 
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetPieceMaterialScore(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
 
 
@@ -419,6 +420,7 @@ public sealed class Eval
     }
 
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetPieceLocationImprovement(ulong move, int phase)
     {
         var piece = Move.Piece(move);
@@ -781,7 +783,7 @@ public sealed class Eval
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsUnstoppablePawn(Position position, Square pawnSquare, Square enemyKingSquare, Color color)
     {
         var enemyColor = 1 - color;
@@ -797,7 +799,7 @@ public sealed class Eval
         return kingDistanceToPromotionSquare > pawnDistanceToPromotionSquare; // Enemy king cannot stop pawn from promoting.
     }
 
-    
+
     // TODO: Include stacked attacks on same square via x-rays.  For example, a rook behind a queen.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateMobilityKingSafetyThreats(Position position, Color color)
