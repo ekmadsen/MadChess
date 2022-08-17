@@ -185,10 +185,16 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.EgKnightOutpost), 0, 150),
             new(nameof(EvalConfig.MgBishopOutpost), 0, 150),
             new(nameof(EvalConfig.EgBishopOutpost), 0, 150),
+            // Major Pieces
+            new(nameof(EvalConfig.MgRook7thRank), 0, 100),
+            new(nameof(EvalConfig.EgRook7thRank), 0, 100),
+            new(nameof(EvalConfig.MgQueen7thRank), 0, 100),
+            new(nameof(EvalConfig.EgQueen7thRank), 0, 100),
             // Endgame Scale
-            new(nameof(EvalConfig.EgScaleBishopAdvantagePer128), 0, 128),
-            new(nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn), 0, 64),
-            new(nameof(EvalConfig.EgScaleWinningPerPawn), 0, 64)
+            new(nameof(EvalConfig.EgScaleMinorAdvantage), 0, 128),
+            new(nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn), 0, 128),
+            new(nameof(EvalConfig.EgScalePerPawn), 0, 128),
+            new(nameof(EvalConfig.EgScale), 0, 128)
         };
     }
 
@@ -288,10 +294,16 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.EgKnightOutpost)].Value = evalConfig.EgKnightOutpost;
         parameters[nameof(evalConfig.MgBishopOutpost)].Value = evalConfig.MgBishopOutpost;
         parameters[nameof(evalConfig.EgBishopOutpost)].Value = evalConfig.EgBishopOutpost;
+        // Major Pieces
+        parameters[nameof(evalConfig.MgRook7thRank)].Value = evalConfig.MgRook7thRank;
+        parameters[nameof(evalConfig.EgRook7thRank)].Value = evalConfig.EgRook7thRank;
+        parameters[nameof(evalConfig.MgQueen7thRank)].Value = evalConfig.MgQueen7thRank;
+        parameters[nameof(evalConfig.EgQueen7thRank)].Value = evalConfig.EgQueen7thRank;
         // Endgame Scale
-        parameters[nameof(evalConfig.EgScaleBishopAdvantagePer128)].Value = evalConfig.EgScaleBishopAdvantagePer128;
+        parameters[nameof(evalConfig.EgScaleMinorAdvantage)].Value = evalConfig.EgScaleMinorAdvantage;
         parameters[nameof(evalConfig.EgScaleOppBishopsPerPassedPawn)].Value = evalConfig.EgScaleOppBishopsPerPassedPawn;
-        parameters[nameof(evalConfig.EgScaleWinningPerPawn)].Value = evalConfig.EgScaleWinningPerPawn;
+        parameters[nameof(evalConfig.EgScalePerPawn)].Value = evalConfig.EgScalePerPawn;
+        parameters[nameof(evalConfig.EgScale)].Value = evalConfig.EgScale;
     }
 
 

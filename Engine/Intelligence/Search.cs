@@ -65,6 +65,7 @@ public sealed class Search : IDisposable
     private const int _singularMoveMaxInsufficientDraft = 3;
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
+    private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 40;
     private const int _lmrConstPer128 = -96;
     private const int _quietSearchMaxFromHorizon = 3;
@@ -260,12 +261,12 @@ public sealed class Search : IDisposable
 
     private static int[][] GetLateMoveReductions()
     {
-        var lateMoveReductions = new int[Position.MaxMoves + 1][];
+        var lateMoveReductions = new int[_lmrMaxIndex + 1][];
         const double constReduction =  (double)_lmrConstPer128 / 128;
-        for (var quietMoveNumber = 0; quietMoveNumber <= Position.MaxMoves; quietMoveNumber++)
+        for (var quietMoveNumber = 0; quietMoveNumber <= _lmrMaxIndex; quietMoveNumber++)
         {
-            lateMoveReductions[quietMoveNumber] = new int[MaxHorizon + 1];
-            for (var toHorizon = 0; toHorizon <= MaxHorizon; toHorizon++)
+            lateMoveReductions[quietMoveNumber] = new int[_lmrMaxIndex + 1];
+            for (var toHorizon = 0; toHorizon <= _lmrMaxIndex; toHorizon++)
             {
                 var logReduction = (double)_lmrScalePer128 / 128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon);
                 lateMoveReductions[quietMoveNumber][toHorizon] = (int)Math.Max(logReduction + constReduction, 0);
@@ -1180,11 +1181,13 @@ public sealed class Search : IDisposable
         }
         if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
         // Reduce search horizon of late move.
-        return horizon - _lateMoveReductions[quietMoveNumber][horizon - depth];
+        var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
+        var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
+        return horizon - _lateMoveReductions[quietMoveIndex][toHorizonIndex];
     }
 
 
-    // Idea from Stockfish chess engine.
+    // Singular move idea from Stockfish chess engine.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong move, CachedPosition cachedPosition)
     {
@@ -1197,7 +1200,7 @@ public sealed class Search : IDisposable
         if (CachedPositionData.ToHorizon(cachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientDraft)) return false;
         var beta = dynamicScore - (_singularMoveMargin * toHorizon);
         var searchHorizon = depth + ((toHorizon * _singularMoveReductionPer128) / 128);
-        dynamicScore = GetDynamicScore(board, depth, searchHorizon, false, beta - 1, beta, move);
+        dynamicScore = GetDynamicScore(board, depth, searchHorizon, false, beta - 1, beta, move); // Exclude best move from search.
         return dynamicScore < beta;
     }
 

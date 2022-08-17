@@ -173,10 +173,16 @@ public sealed class Particle
         eval.Config.EgKnightOutpost = Parameters[nameof(EvalConfig.EgKnightOutpost)].Value;
         eval.Config.MgBishopOutpost = Parameters[nameof(EvalConfig.MgBishopOutpost)].Value;
         eval.Config.EgBishopOutpost = Parameters[nameof(EvalConfig.EgBishopOutpost)].Value;
+        // Major Pieces
+        eval.Config.MgRook7thRank = Parameters[nameof(EvalConfig.MgRook7thRank)].Value;
+        eval.Config.EgRook7thRank = Parameters[nameof(EvalConfig.EgRook7thRank)].Value;
+        eval.Config.MgQueen7thRank = Parameters[nameof(EvalConfig.MgQueen7thRank)].Value;
+        eval.Config.EgQueen7thRank = Parameters[nameof(EvalConfig.EgQueen7thRank)].Value;
         // Endgame Scale
-        eval.Config.EgScaleBishopAdvantagePer128 = Parameters[nameof(EvalConfig.EgScaleBishopAdvantagePer128)].Value;
+        eval.Config.EgScaleMinorAdvantage = Parameters[nameof(EvalConfig.EgScaleMinorAdvantage)].Value;
         eval.Config.EgScaleOppBishopsPerPassedPawn = Parameters[nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn)].Value;
-        eval.Config.EgScaleWinningPerPawn = Parameters[nameof(EvalConfig.EgScaleWinningPerPawn)].Value;
+        eval.Config.EgScalePerPawn = Parameters[nameof(EvalConfig.EgScalePerPawn)].Value;
+        eval.Config.EgScale = Parameters[nameof(EvalConfig.EgScale)].Value;
         // Calculate positional factors after updating evaluation config.
         eval.CalculatePositionalFactors();
     }
