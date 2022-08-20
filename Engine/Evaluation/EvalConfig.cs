@@ -81,33 +81,33 @@ public sealed class EvalConfig
     public int EgFreePassedPawnScalePer128 = 493;
     public int EgKingEscortedPassedPawn = 12;
     // Piece Mobility
-    public int PieceMobilityPowerPer128 = 117;
+    public int PieceMobilityPowerPer128 = 123;
     public int MgKnightMobilityScale = 0;
-    public int EgKnightMobilityScale = 31;
-    public int MgBishopMobilityScale = 29;
-    public int EgBishopMobilityScale = 142;
-    public int MgRookMobilityScale = 65;
-    public int EgRookMobilityScale = 94;
-    public int MgQueenMobilityScale = 114;
-    public int EgQueenMobilityScale = 72;
+    public int EgKnightMobilityScale = 29;
+    public int MgBishopMobilityScale = 31;
+    public int EgBishopMobilityScale = 135;
+    public int MgRookMobilityScale = 92;
+    public int EgRookMobilityScale = 83;
+    public int MgQueenMobilityScale = 92;
+    public int EgQueenMobilityScale = 80;
     // King Safety
-    public int MgKingSafetyPowerPer128 = 236;
-    public int MgKingSafetyScalePer128 = 90;
-    public int MgKingSafetyMinorAttackOuterRingPer8 = 6;
-    public int MgKingSafetyMinorAttackInnerRingPer8 = 24;
-    public int MgKingSafetyRookAttackOuterRingPer8 = 9;
+    public int MgKingSafetyPowerPer128 = 263;
+    public int MgKingSafetyScalePer128 = 56;
+    public int MgKingSafetyMinorAttackOuterRingPer8 = 8;
+    public int MgKingSafetyMinorAttackInnerRingPer8 = 19;
+    public int MgKingSafetyRookAttackOuterRingPer8 = 7;
     public int MgKingSafetyRookAttackInnerRingPer8 = 16;
-    public int MgKingSafetyQueenAttackOuterRingPer8 = 15;
-    public int MgKingSafetyQueenAttackInnerRingPer8 = 20;
-    public int MgKingSafetySemiOpenFilePer8 = 10;
-    public int MgKingSafetyPawnShieldPer8 = 25;
+    public int MgKingSafetyQueenAttackOuterRingPer8 = 10;
+    public int MgKingSafetyQueenAttackInnerRingPer8 = 21;
+    public int MgKingSafetySemiOpenFilePer8 = 8;
+    public int MgKingSafetyPawnShieldPer8 = 24;
     // Threats
-    public int MgPawnThreatenMinor = 42;
-    public int EgPawnThreatenMinor = 45;
+    public int MgPawnThreatenMinor = 46;
+    public int EgPawnThreatenMinor = 46;
     public int MgPawnThreatenMajor = 73;
     public int EgPawnThreatenMajor = 41;
-    public int MgMinorThreatenMajor = 39;
-    public int EgMinorThreatenMajor = 26;
+    public int MgMinorThreatenMajor = 41;
+    public int EgMinorThreatenMajor = 28;
     // Minor Pieces
     public int MgBishopPair = 55;
     public int EgBishopPair = 62;

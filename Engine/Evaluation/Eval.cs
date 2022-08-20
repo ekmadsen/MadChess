@@ -800,7 +800,6 @@ public sealed class Eval
     }
 
 
-    // TODO: Include stacked attacks on same square via x-rays.  For example, a rook behind a queen.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateMobilityKingSafetyThreats(Position position, Color color)
     {
@@ -819,22 +818,23 @@ public sealed class Eval
             var piece = PieceHelper.GetPieceOfColor(colorlessPiece, color);
             var pieces = position.PieceBitboards[(int)piece];
             var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
+            var getPieceXrayMovesMask = Board.PieceXrayMoveMaskDelegates[(int)colorlessPiece];
             Square square;
             while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
                 var pieceMovesMask = getPieceMovesMask(square, position.Occupancy);
-                var pieceDestinations = pieceMovesMask & unOrEnemyOccupiedSquares;
-                // Evaluate piece mobility.
-                var (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceDestinations, _mgPieceMobility[(int)colorlessPiece], _egPieceMobility[(int)colorlessPiece]);
+                var pieceXrayMovesMask = getPieceXrayMovesMask(square, color, position);
+                // Evaluate piece mobility using moves.
+                var (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceMovesMask & unOrEnemyOccupiedSquares, _mgPieceMobility[(int)colorlessPiece], _egPieceMobility[(int)colorlessPiece]);
                 _staticScore.MgPieceMobility[(int)color] += mgPieceMobilityScore;
                 _staticScore.EgPieceMobility[(int)color] += egPieceMobilityScore;
-                // Evaluate king safety.
+                // Evaluate king safety using xray moves.
                 var outerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Outer];
                 var innerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Inner];
-                mgThreatsToEnemyKingSafety += GetKingSafetyIndexIncrement(pieceDestinations, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
+                mgThreatsToEnemyKingSafety += GetKingSafetyIndexIncrement(pieceXrayMovesMask & unOrEnemyOccupiedSquares, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
                 if (colorlessPiece < ColorlessPiece.Rook)
                 {
-                    // Evaluate threats.
+                    // Evaluate threats using moves.
                     var majorPiecesAttacked = Bitwise.CountSetBits(pieceMovesMask & enemyMajorPieces);
                     _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgMinorThreatenMajor;
                     _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgMinorThreatenMajor;
