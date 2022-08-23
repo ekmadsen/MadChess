@@ -812,6 +812,16 @@ public sealed class Eval
         var enemyPawns = position.GetPawns(enemyColor);
         var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
         var mgThreatsToEnemyKingSafety = 0;
+        // Determine safe squares (not attacked by enemy pawns).
+        Square square;
+        var squaresAttackedByEnemyPawns = 0ul;
+        while ((square = Bitwise.PopFirstSetSquare(ref enemyPawns)) != Square.Illegal)
+        {
+            // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+            squaresAttackedByEnemyPawns |= Board.PawnAttackMasks[(int)enemyColor][(int)square];
+        }
+        var safeSquares = ~squaresAttackedByEnemyPawns;
+        enemyPawns = position.GetPawns(enemyColor); // Repopulate after above while loop popped all enemy pawn squares.
         // Evaluate mobility of individual pieces.
         for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
         {
@@ -819,23 +829,25 @@ public sealed class Eval
             var pieces = position.PieceBitboards[(int)piece];
             var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
             var getPieceXrayMovesMask = Board.PieceXrayMoveMaskDelegates[(int)colorlessPiece];
-            Square square;
             while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
                 var pieceMovesMask = getPieceMovesMask(square, position.Occupancy);
                 var pieceXrayMovesMask = getPieceXrayMovesMask(square, color, position);
-                // Evaluate piece mobility using moves.
-                var (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(pieceMovesMask & unOrEnemyOccupiedSquares, _mgPieceMobility[(int)colorlessPiece], _egPieceMobility[(int)colorlessPiece]);
+                // Evaluate piece mobility using safe moves.
+                var safeMoves = pieceMovesMask & unOrEnemyOccupiedSquares & safeSquares;
+                var (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(safeMoves, _mgPieceMobility[(int)colorlessPiece], _egPieceMobility[(int)colorlessPiece]);
                 _staticScore.MgPieceMobility[(int)color] += mgPieceMobilityScore;
                 _staticScore.EgPieceMobility[(int)color] += egPieceMobilityScore;
-                // Evaluate king safety using xray moves.
+                // Evaluate king safety using safe xray moves.
+                safeMoves = pieceXrayMovesMask & unOrEnemyOccupiedSquares & safeSquares;
                 var outerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Outer];
                 var innerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Inner];
-                mgThreatsToEnemyKingSafety += GetKingSafetyIndexIncrement(pieceXrayMovesMask & unOrEnemyOccupiedSquares, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
+                mgThreatsToEnemyKingSafety += GetKingSafetyIndexIncrement(safeMoves, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
                 if (colorlessPiece < ColorlessPiece.Rook)
                 {
-                    // Evaluate threats using moves.
-                    var majorPiecesAttacked = Bitwise.CountSetBits(pieceMovesMask & enemyMajorPieces);
+                    // Evaluate threats using safe moves.
+                    safeMoves = pieceMovesMask & enemyMajorPieces & safeSquares;
+                    var majorPiecesAttacked = Bitwise.CountSetBits(safeMoves);
                     _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgMinorThreatenMajor;
                     _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgMinorThreatenMajor;
                 }
@@ -851,6 +863,15 @@ public sealed class Eval
         const int maxPawnsInShield = 3;
         var pawnsMissingFromShield = maxPawnsInShield - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
         mgThreatsToEnemyKingSafety += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
+        // Evaluate average distance of defending pieces from enemy king.
+        var defendingPieces = position.GetMajorAndMinorPieces(enemyColor);
+        var defendingPieceCount = FastMath.Max(Bitwise.CountSetBits(defendingPieces), 1); // Prevent divide-by-zero exception.
+        var defendingPieceDistance = 0;
+        while ((square = Bitwise.PopFirstSetSquare(ref defendingPieces)) != Square.Illegal)
+        {
+            defendingPieceDistance += Board.SquareDistances[(int)square][(int)enemyKingSquare];
+        }
+        mgThreatsToEnemyKingSafety += (defendingPieceDistance * Config.MgKingSafetyDefendingPiecesPer8) / defendingPieceCount;
         // Lookup king safety score in array.
         var maxIndex = _mgKingSafety.Length - 1;
         _staticScore.MgKingSafety[(int)enemyColor] = _mgKingSafety[FastMath.Min(mgThreatsToEnemyKingSafety / 8, maxIndex)];
@@ -893,7 +914,7 @@ public sealed class Eval
             _staticScore.EgBishopPair[(int)color] += Config.EgBishopPair;
         }
         // Outposts
-        var outpostMask = (Board.RankMasks[(int)color][4] | Board.RankMasks[(int)color][5] | Board.RankMasks[(int)color][6]) & ~(Board.FileMasks[0] | Board.FileMasks[7]);
+        var outpostMask = (Board.RankMasks[(int)color][3] | Board.RankMasks[(int)color][4] | Board.RankMasks[(int)color][5]) & ~(Board.FileMasks[0] | Board.FileMasks[7]);
         ulong supportingPawnsMask;
         ulong potentialAttackMask;
         Square square;
@@ -937,18 +958,8 @@ public sealed class Eval
         {
             if (Board.Ranks[(int)color][(int)square] == 6)
             {
-                _staticScore.MgMajorOn7thRank[(int)color] += Config.MgRook7thRank;
-                _staticScore.EgMajorOn7thRank[(int)color] += Config.EgRook7thRank;
-            }
-        }
-        // Queens on 7th Rank
-        var queens = position.GetQueens(color);
-        while ((square = Bitwise.PopFirstSetSquare(ref queens)) != Square.Illegal)
-        {
-            if (Board.Ranks[(int)color][(int)square] == 6)
-            {
-                _staticScore.MgMajorOn7thRank[(int)color] += Config.MgQueen7thRank;
-                _staticScore.EgMajorOn7thRank[(int)color] += Config.EgQueen7thRank;
+                _staticScore.MgRookOn7thRank[(int)color] += Config.MgRook7thRank;
+                _staticScore.EgRookOn7thRank[(int)color] += Config.EgRook7thRank;
             }
         }
     }
@@ -986,7 +997,7 @@ public sealed class Eval
             return;
         }
         // All Other Endgames
-        _staticScore.EgScalePer128 = (winningPawnCount * Config.EgScalePerPawn) + Config.EgScale;
+        _staticScore.EgScalePer128 = (winningPawnCount * Config.EgScalePerPawn) + 128;
     }
 
 

@@ -171,6 +171,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8), 0, 64),
             // Threats
             new(nameof(EvalConfig.MgPawnThreatenMinor), 0, 100),
             new(nameof(EvalConfig.EgPawnThreatenMinor), 0, 100),
@@ -188,13 +189,10 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             // Major Pieces
             new(nameof(EvalConfig.MgRook7thRank), 0, 100),
             new(nameof(EvalConfig.EgRook7thRank), 0, 100),
-            new(nameof(EvalConfig.MgQueen7thRank), 0, 100),
-            new(nameof(EvalConfig.EgQueen7thRank), 0, 100),
             // Endgame Scale
             new(nameof(EvalConfig.EgScaleMinorAdvantage), 0, 128),
             new(nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn), 0, 128),
-            new(nameof(EvalConfig.EgScalePerPawn), 0, 128),
-            new(nameof(EvalConfig.EgScale), 0, 128)
+            new(nameof(EvalConfig.EgScalePerPawn), 0, 128)
         };
     }
 
@@ -280,6 +278,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackInnerRingPer8;
         parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
         parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
+        parameters[nameof(evalConfig.MgKingSafetyDefendingPiecesPer8)].Value = evalConfig.MgKingSafetyDefendingPiecesPer8;
         // Threats
         parameters[nameof(evalConfig.MgPawnThreatenMinor)].Value = evalConfig.MgPawnThreatenMinor;
         parameters[nameof(evalConfig.EgPawnThreatenMinor)].Value = evalConfig.EgPawnThreatenMinor;
@@ -297,13 +296,10 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         // Major Pieces
         parameters[nameof(evalConfig.MgRook7thRank)].Value = evalConfig.MgRook7thRank;
         parameters[nameof(evalConfig.EgRook7thRank)].Value = evalConfig.EgRook7thRank;
-        parameters[nameof(evalConfig.MgQueen7thRank)].Value = evalConfig.MgQueen7thRank;
-        parameters[nameof(evalConfig.EgQueen7thRank)].Value = evalConfig.EgQueen7thRank;
         // Endgame Scale
         parameters[nameof(evalConfig.EgScaleMinorAdvantage)].Value = evalConfig.EgScaleMinorAdvantage;
         parameters[nameof(evalConfig.EgScaleOppBishopsPerPassedPawn)].Value = evalConfig.EgScaleOppBishopsPerPassedPawn;
         parameters[nameof(evalConfig.EgScalePerPawn)].Value = evalConfig.EgScalePerPawn;
-        parameters[nameof(evalConfig.EgScale)].Value = evalConfig.EgScale;
     }
 
 

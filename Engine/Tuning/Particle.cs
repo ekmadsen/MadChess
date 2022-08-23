@@ -159,6 +159,7 @@ public sealed class Particle
         eval.Config.MgKingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value;
         eval.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvalConfig.MgKingSafetySemiOpenFilePer8)].Value;
         eval.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvalConfig.MgKingSafetyPawnShieldPer8)].Value;
+        eval.Config.MgKingSafetyDefendingPiecesPer8 = Parameters[nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8)].Value;
         // Threats
         eval.Config.MgPawnThreatenMinor = Parameters[nameof(EvalConfig.MgPawnThreatenMinor)].Value;
         eval.Config.EgPawnThreatenMinor = Parameters[nameof(EvalConfig.EgPawnThreatenMinor)].Value;
@@ -176,13 +177,10 @@ public sealed class Particle
         // Major Pieces
         eval.Config.MgRook7thRank = Parameters[nameof(EvalConfig.MgRook7thRank)].Value;
         eval.Config.EgRook7thRank = Parameters[nameof(EvalConfig.EgRook7thRank)].Value;
-        eval.Config.MgQueen7thRank = Parameters[nameof(EvalConfig.MgQueen7thRank)].Value;
-        eval.Config.EgQueen7thRank = Parameters[nameof(EvalConfig.EgQueen7thRank)].Value;
         // Endgame Scale
         eval.Config.EgScaleMinorAdvantage = Parameters[nameof(EvalConfig.EgScaleMinorAdvantage)].Value;
         eval.Config.EgScaleOppBishopsPerPassedPawn = Parameters[nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn)].Value;
         eval.Config.EgScalePerPawn = Parameters[nameof(EvalConfig.EgScalePerPawn)].Value;
-        eval.Config.EgScale = Parameters[nameof(EvalConfig.EgScale)].Value;
         // Calculate positional factors after updating evaluation config.
         eval.CalculatePositionalFactors();
     }
