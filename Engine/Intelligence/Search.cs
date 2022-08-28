@@ -1342,7 +1342,6 @@ public sealed class Search : IDisposable
             for (var pv = 0; pv < principalVariations; pv++)
             {
                 var principalVariation = _principalVariations[Move.ToLongAlgebraic(_bestMoves[pv].Move)];
-                // TODO: Determine if PV can be constructed without allocating memory via StringBuilder instance.
                 var stringBuilder = new StringBuilder("pv");
                 for (var moveIndex = 0; moveIndex < principalVariation.Length; moveIndex++)
                 {
