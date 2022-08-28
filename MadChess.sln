@@ -9,8 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
-		Design.txt = Design.txt
 		EvalError.log = EvalError.log
+		Design.md = Design.md
 		EvalParams.txt = EvalParams.txt
 		LateMoveReductions.xlsx = LateMoveReductions.xlsx
 		LICENSE.md = LICENSE.md
@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ratings", "Ratings", "{CAA777E5-1C76-449F-80F2-B0CF85CF32BA}"
 	ProjectSection(SolutionItems) = preProject
+		ComputerGamesBlitz.txt = ComputerGamesBlitz.txt
+		ComputerGamesBlitzMatchups.txt = ComputerGamesBlitzMatchups.txt
 		ComputerGamesBullet.txt = ComputerGamesBullet.txt
 		ComputerGamesBulletMatchups.txt = ComputerGamesBulletMatchups.txt
 	EndProjectSection

@@ -46,6 +46,7 @@ public sealed class Board
     public static readonly ulong[] RookMoveMasks; // [square]
     public static readonly ulong[] KingMoveMasks; // [square]
     public static readonly Delegates.GetPieceMovesMask[] PieceMoveMaskDelegates; // [colorlessPiece]
+    public static readonly Delegates.GetPieceXrayMovesMask[] PieceXrayMoveMaskDelegates; // [colorlessPiece]
     public static readonly ulong[] EnPassantAttackerMasks; // [square]
     public static readonly ulong[][] PassedPawnMasks; // [color][square]
     public static readonly ulong[][] FreePawnMasks; // [color][square]
@@ -124,6 +125,11 @@ public sealed class Board
         PieceMoveMaskDelegates[(int)ColorlessPiece.Bishop] = GetBishopDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Rook] = GetRookDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Queen] = GetQueenDestinations;
+        PieceXrayMoveMaskDelegates = new Delegates.GetPieceXrayMovesMask[(int)ColorlessPiece.Queen + 1];
+        PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Knight] = GetKnightXrayDestinations;
+        PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Bishop] = GetBishopXrayDestinations;
+        PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Rook] = GetRookXrayDestinations;
+        PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Queen] = GetQueenXrayDestinations;
         PrecalculatedMoves = new PrecalculatedMoves();
         (RankFileBetweenSquares, DiagonalBetweenSquares) = DetermineBetweenSquares();
         // Create en passant, passed pawn, and free pawn masks.
@@ -910,10 +916,58 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetKnightDestinations(Square fromSquare, ulong occupancy) => KnightMoveMasks[(int)fromSquare];
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetBishopDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy);
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetRookDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] private static ulong GetQueenDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetKnightDestinations(Square fromSquare, ulong occupancy) => KnightMoveMasks[(int)fromSquare];
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetKnightXrayDestinations(Square fromSquare, Color color, Position position) => KnightMoveMasks[(int)fromSquare]; // Knights don't slide.  Nothing to xray.
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetBishopDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetBishopXrayDestinations(Square fromSquare, Color color, Position position)
+    {
+        // Attack through own bishops and queens.
+        var otherOwnBishops = position.GetBishops(color) & _squareUnmasks[(int)fromSquare];
+        var ownQueens = position.GetQueens(color);
+        var relevantOccupancy = position.Occupancy & ~(otherOwnBishops | ownQueens);
+        return PrecalculatedMoves.GetBishopMovesMask(fromSquare, relevantOccupancy);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetRookDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetRookXrayDestinations(Square fromSquare, Color color, Position position)
+    {
+        // Attack through own rooks and queens.
+        var otherOwnRooks = position.GetRooks(color) & _squareUnmasks[(int)fromSquare];
+        var ownQueens = position.GetQueens(color);
+        var relevantOccupancy = position.Occupancy & ~(otherOwnRooks | ownQueens);
+        return PrecalculatedMoves.GetRookMovesMask(fromSquare, relevantOccupancy);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetQueenDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetQueenXrayDestinations(Square fromSquare, Color color, Position position)
+    {
+        // Attack through own bishops, rooks, and queens.
+        var otherOwnQueens = position.GetQueens(color) & _squareUnmasks[(int)fromSquare];
+        var ownBishops = position.GetBishops(color);
+        var ownRooks = position.GetRooks(color);
+        var relevantOccupancy = position.Occupancy & ~(otherOwnQueens | ownBishops | ownRooks);
+        return PrecalculatedMoves.GetBishopMovesMask(fromSquare, relevantOccupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, relevantOccupancy);
+    }
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
