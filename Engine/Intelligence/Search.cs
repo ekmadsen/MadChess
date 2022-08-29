@@ -430,7 +430,7 @@ public sealed class Search : IDisposable
         else
         {
             // Estimate moves remaining.
-            var pieces = Bitwise.CountSetBits(position.Occupancy) - 2; // Don't include kings.
+            var pieces = Bitwise.CountSetBits(position.Occupancy) - 2; // Do not include kings.
             movesRemaining = (pieces * _piecesMovesPer128) / 128;
         }
         movesRemaining = FastMath.Max(movesRemaining, _minMovesRemaining);
@@ -644,7 +644,7 @@ public sealed class Search : IDisposable
         int phase;
         if (board.CurrentPosition.KingInCheck)
         {
-            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Don't evaluate static score because no moves are futile when king is in check.
+            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score because no moves are futile when king is in check.
             drawnEndgame = false;
             phase = Eval.DetermineGamePhase(board.CurrentPosition);
         }
@@ -870,7 +870,7 @@ public sealed class Search : IDisposable
             // King is in check.  Search all moves.
             getNextMove = _getNextMove;
             moveGenerationToSquareMask = Board.AllSquaresMask;
-            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Don't evaluate static score because no moves are futile when king is in check.
+            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score because no moves are futile when king is in check.
             drawnEndgame = false;
             phase = Eval.DetermineGamePhase(board.CurrentPosition);
         }
@@ -895,7 +895,7 @@ public sealed class Search : IDisposable
         board.CurrentPosition.PrepareMoveGeneration();
         do
         {
-            // Don't retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
+            // Do not retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
             var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
             var futileMove = considerFutility && IsMoveFutile(board.CurrentPosition, depth, horizon, move, 0, drawnEndgame, phase, alpha, beta);
@@ -1009,8 +1009,7 @@ public sealed class Search : IDisposable
                 var moveIndex = position.CurrentMoveIndex;
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
-                if (Move.Played(move)) continue; // Don't play move twice.
-                if ((moveIndex > 0) && Move.Equals(move, bestMove)) continue; // Don't play move twice.
+                if (Move.Played(move) || ((moveIndex > 0) && Move.Equals(move, bestMove))) continue; // Do not play move twice.
                 return (move, moveIndex);
             }
             // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
@@ -1032,7 +1031,7 @@ public sealed class Search : IDisposable
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
+                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Do not prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
                     position.MoveGenerationStage++;
                     continue;
                 case MoveGenerationStage.NonCaptures:
@@ -1079,7 +1078,7 @@ public sealed class Search : IDisposable
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Don't prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
+                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Do not prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
                     position.MoveGenerationStage = MoveGenerationStage.End; // Skip non-captures.
                     continue;
                 case MoveGenerationStage.End:
@@ -1291,8 +1290,7 @@ public sealed class Search : IDisposable
         _cache[cachedPosition.Key] = cachedPosition;
     }
 
-
-    // TODO: Resolve issue involving illegal PVs.  See http://talkchess.com/forum3/viewtopic.php?p=892120#p892120.
+    
     private void UpdateStatus(Board board, bool includePrincipalVariation)
     {
         var milliseconds = _stopwatch.Elapsed.TotalMilliseconds;
@@ -1321,11 +1319,7 @@ public sealed class Search : IDisposable
                     if (move == Move.Null) break; // Position does not specify a best move.
                 } while (depth < _originalHorizon);
                 // Undo moves in principal variation.
-                while (depth > 0)
-                {
-                    board.UndoMove();
-                    depth--;
-                }
+                board.UndoMoves(depth);
                 // Write message with principal variation(s).
                 var pvLongAlgebraic = stringBuilder.ToString();
                 var score = bestMove.Score;

@@ -83,7 +83,7 @@ public sealed class Eval
         _debug = debug;
         _writeMessageLine = writeMessageLine;
         _staticScore = new StaticScore();
-        // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
+        // Do not set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
         Config = new EvalConfig();
         _defaultConfig = new EvalConfig();
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
