@@ -568,6 +568,7 @@ public sealed class Eval
                     if ((enemyBishopCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2B
                     if ((enemyKnightCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2N
                 }
+                // TODO: Evaluate R vrs Minor as a draw.
                 // Considering R vrs <= 2 Minors a draw increases evaluation error and causes engine to play weaker.
                 //if ((rookCount == 1) && (minorPieceCount == 0) && (enemyMinorPieceCount <= 2)) return true; // R vrs <= 2 Minors
                 break;
