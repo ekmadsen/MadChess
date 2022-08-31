@@ -3,10 +3,10 @@
 	<PropertyGroup>
 		<AssemblyTitle>MadChess.Tests</AssemblyTitle>
 		<AssemblyName>MadChess.Tests</AssemblyName>
-		<Version>3.0</Version>
+		<Version>3.1</Version>
 		<Authors>Erik Madsen</Authors>
 		<Description>Tests for a UCI chess engine.</Description>
-		<Copyright>2019</Copyright>
+		<Copyright>2022</Copyright>
 		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>

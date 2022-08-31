@@ -6,7 +6,7 @@
 		<Version>3.1</Version>
 		<Authors>Erik Madsen</Authors>
 		<Description>UCI Chess Engine</Description>
-		<Copyright>2021</Copyright>
+		<Copyright>2022</Copyright>
 		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
