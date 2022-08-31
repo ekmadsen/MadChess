@@ -74,11 +74,11 @@ public sealed class PgnGame
                         ReadToSectionEnd(stringReader, '(', ')');
                         break;
                     case '\r':
-                        // Don't include carriage return in clean notation.
+                        // Do not include carriage return in clean notation.
                         stringBuilder.Append(' ');
                         break;
                     case '\n':
-                        // Don't include newline in clean notation.
+                        // Do not include newline in clean notation.
                         stringBuilder.Append(' ');
                         break;
                     default:

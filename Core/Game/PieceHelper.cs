@@ -17,12 +17,12 @@ namespace ErikTheCoder.MadChess.Core.Game;
 
 public static class PieceHelper
 {
-    public static char GetChar(Piece piece)
+    public static char? GetChar(Piece piece)
     {
         // Sequence cases in order of enum value to improve performance of switch statement.
         return piece switch
         {
-            Piece.None => ' ',
+            Piece.None => null,
             Piece.WhitePawn => 'P',
             Piece.WhiteKnight => 'N',
             Piece.WhiteBishop => 'B',

@@ -36,7 +36,7 @@ public sealed class UciStream : IDisposable
     private const int _cacheSizeMegabytes = 128;
     private const int _minWinScale = 600;
     private const int _maxWinScale = 1000;
-    private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(500);
+    private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(100);
     private Board _board;
     private Stats _stats;
     private Cache _cache;
@@ -50,7 +50,7 @@ public sealed class UciStream : IDisposable
     private Queue<List<string>> _asyncQueue;
     private Thread _asyncThread;
     private AutoResetEvent _asyncSignal;
-    private object _asyncLock;
+    private object _queueLock;
     private StreamWriter _logWriter;
     private object _messageLock;
     private bool _disposed;
@@ -90,7 +90,7 @@ public sealed class UciStream : IDisposable
         _commandStopwatch = new Stopwatch();
         _asyncQueue = new Queue<List<string>>();
         _asyncSignal = new AutoResetEvent(false);
-        _asyncLock = new object();
+        _queueLock = new object();
         _messageLock = new object();
         // Create game objects.
         // Cannot use object initializer because it changes order of object construction (to PreCalculatedMoves first, Board second, which causes null reference in PrecalculatedMove.FindMagicMultipliers).
@@ -135,9 +135,9 @@ public sealed class UciStream : IDisposable
             _defaultPlyAndFullMove = null;
             lock (_messageLock) { _stopwatch = null; }
             _commandStopwatch = null;
-            lock (_asyncLock) { _asyncQueue = null; }
+            lock (_queueLock) { _asyncQueue = null; }
             _asyncThread = null;
-            _asyncLock = null;
+            _queueLock = null;
             _messageLock = null;
         }
         // Release unmanaged resources.
@@ -185,7 +185,6 @@ public sealed class UciStream : IDisposable
 
     private void MonitorInputStream()
     {
-        // TODO: Determine why engine hangs in Hiarcs Chess Explorer Pro GUI after stopping search, changing number of PV lines, clearing hash, then restarting search.
         try
         {
             string command;
@@ -320,7 +319,7 @@ public sealed class UciStream : IDisposable
 
     private void DispatchOnAsyncThread(List<string> tokens)
     {
-        lock (_asyncLock)
+        lock (_queueLock)
         {
             // Queue command.
             _asyncQueue.Enqueue(tokens);
@@ -339,11 +338,11 @@ public sealed class UciStream : IDisposable
                 // Wait for signal.
                 _asyncSignal.WaitOne();
                 List<string> tokens = null;
-                lock (_asyncLock)
+                lock (_queueLock)
                 {
                     if (_asyncQueue.Count > 0) tokens = _asyncQueue.Dequeue();
                 }
-                if ((tokens != null) && (tokens.Count > 0))
+                if (!tokens.IsNullOrEmpty())
                 {
                     // Process command.
                     switch (tokens[0].ToLower())
@@ -587,12 +586,10 @@ public sealed class UciStream : IDisposable
 
     private void Stop()
     {
-        if (_search.Continue)
-        {
-            _search.Continue = false;
-            // Wait for search to complete.
-            _search.Signal.WaitOne(_maxStopTime);
-        }
+        _search.Continue = false;
+        // Wait for search to complete.
+        _search.Signal.WaitOne(_maxStopTime);
+        _search.Continue = false;
     }
 
 
@@ -884,7 +881,6 @@ public sealed class UciStream : IDisposable
                 _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
                 _search.CanAdjustMoveTime = false;
                 var bestMove = _search.FindBestMove(_board);
-                _search.Signal.Set();
                 // Determine if search found correct move.
                 bool correct;
                 // ReSharper disable once SwitchStatementMissingSomeCases

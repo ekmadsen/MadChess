@@ -614,11 +614,11 @@ public static class Move
 
     public static string ToLongAlgebraic(ulong move)
     {
-        if (move == Null) return "Null";
+        if (move == Null) return "0000";
         var fromSquare = From(move);
         var toSquare = To(move);
         var promotedPiece = PromotedPiece(move);
-        return $"{Board.SquareLocations[(int)fromSquare]}{Board.SquareLocations[(int)toSquare]}{(promotedPiece == Game.Piece.None ? string.Empty : PieceHelper.GetChar(promotedPiece).ToString().ToLower())}";
+        return $"{Board.SquareLocations[(int)fromSquare]}{Board.SquareLocations[(int)toSquare]}{PieceHelper.GetChar(promotedPiece)?.ToString().ToLower()}";
     }
 
 

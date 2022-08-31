@@ -83,7 +83,7 @@ public sealed class Eval
         _debug = debug;
         _writeMessageLine = writeMessageLine;
         _staticScore = new StaticScore();
-        // Don't set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
+        // Do not set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
         Config = new EvalConfig();
         _defaultConfig = new EvalConfig();
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
@@ -568,6 +568,7 @@ public sealed class Eval
                     if ((enemyBishopCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2B
                     if ((enemyKnightCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2N
                 }
+                // TODO: Evaluate R vrs Minor as a draw.
                 // Considering R vrs <= 2 Minors a draw increases evaluation error and causes engine to play weaker.
                 //if ((rookCount == 1) && (minorPieceCount == 0) && (enemyMinorPieceCount <= 2)) return true; // R vrs <= 2 Minors
                 break;

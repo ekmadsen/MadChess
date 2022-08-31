@@ -42,8 +42,9 @@ public sealed class Cache
         {
             _positions = null;
             GC.Collect();
-            _positions = new CachedPosition[value];
-            _indices = value / _buckets;
+            var capacity = Math.Max(value, CapacityPerMegabyte); // Ensure minimum capacity to extract principal variations.
+            _positions = new CachedPosition[capacity];
+            _indices = capacity / _buckets;
             Reset();
         }
     }
