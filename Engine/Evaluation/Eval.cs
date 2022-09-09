@@ -490,15 +490,14 @@ public sealed class Eval
     private bool EvaluateSimpleEndgame(Position position, Color color)
     {
         // TODO: Add detection of unwinnable KBPk endgame, where enemy king prevents pawn from promoting, and bishop is wrong color.
-        var enemyColor = 1 - color;
-        var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
-        var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));
-        if ((pawnCount == 0) && (enemyPawnCount == 0) && IsPawnlessDraw(position))
+        var (pawnCount, enemyPawnCount, pawnlessDraw) = IsPawnlessDraw(position, color);
+        if (pawnlessDraw)
         {
             // Game is pawnless draw.
             _staticScore.EgScalePer128 = 0;
             return true;
         }
+        var enemyColor = 1 - color;
         var minorPieceCount = Bitwise.CountSetBits(position.GetMinorPieces(color));
         var majorPieceCount = Bitwise.CountSetBits(position.GetMajorPieces(color));
         var pawnsAndPiecesCount = pawnCount + minorPieceCount + majorPieceCount;
@@ -524,8 +523,8 @@ public sealed class Eval
                 var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
                 _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
                 return true;
-            case 0:
-                // K vrs K + Pawns and / or Pieces
+            case 0 when enemyMajorPieceCount > 0:
+                // K vrs K + Major Piece
                 // Push lone king to corner.  Push winning king close to lone king.
                 EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
                 _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
@@ -537,12 +536,21 @@ public sealed class Eval
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsPawnlessDraw(Position position) => IsPawnlessDraw(position, Color.White) || IsPawnlessDraw(position, Color.Black);
+    private static (int pawnCount, int enemyPawnCount, bool pawnlessDraw) IsPawnlessDraw(Position position, Color color)
+    {
+        var enemyColor = 1 - color;
+        var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
+        var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));
+        if ((pawnCount + enemyPawnCount) > 0) return (pawnCount, enemyPawnCount, false); // Pawns remain on board.
+        var drawishEndgame = IsDrawishEndgame(position, color) || IsDrawishEndgame(position, enemyColor);
+        return (pawnCount, enemyPawnCount, drawishEndgame);
+    }
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private static bool IsPawnlessDraw(Position position, Color color)
+    private static bool IsDrawishEndgame(Position position, Color color)
     {
+        // Consider material combinations excluding pawns.
         var knightCount = Bitwise.CountSetBits(position.GetKnights(color));
         var bishopCount = Bitwise.CountSetBits(position.GetBishops(color));
         var rookCount = Bitwise.CountSetBits(position.GetRooks(color));
@@ -568,9 +576,7 @@ public sealed class Eval
                     if ((enemyBishopCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2B
                     if ((enemyKnightCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2N
                 }
-                // TODO: Evaluate R vrs Minor as a draw.
-                // Considering R vrs <= 2 Minors a draw increases evaluation error and causes engine to play weaker.
-                //if ((rookCount == 1) && (minorPieceCount == 0) && (enemyMinorPieceCount <= 2)) return true; // R vrs <= 2 Minors
+                if ((rookCount == 1) && (minorPieceCount == 0) && (enemyMinorPieceCount == 1)) return true; // R vrs Minor
                 break;
             case 2:
                 if ((queenCount == 1) && (minorPieceCount == 0))
