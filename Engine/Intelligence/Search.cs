@@ -76,6 +76,7 @@ public sealed class Search : IDisposable
     private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
     private int[] _aspirationWindows;
+    private int[] _multiPvAspirationWindows;
     private int[] _lateMovePruningMargins;
     private int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
     private ScoredMove[] _rootMoves;
@@ -175,7 +176,8 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        _aspirationWindows = new[] { 100, 150, 200, 250, 300, 500, 1000 };
+        _aspirationWindows =        new[] { 100 };
+        _multiPvAspirationWindows = new[] { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 060, 160, 220, 280, 340, 400 };
         _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
@@ -223,6 +225,7 @@ public sealed class Search : IDisposable
             _getExchangeMaterialScore = null;
             _futilityPruningMargins = null;
             _aspirationWindows = null;
+            _multiPvAspirationWindows = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
             _rootMoves = null;
@@ -381,7 +384,7 @@ public sealed class Search : IDisposable
             _selectiveHorizon = 0;
             _moveHistory.Age();
             // Get score within aspiration window.
-            var score = GetScoreWithinAspirationWindow(board, principalVariations);
+            var score = GetScoreWithinAspirationWindow(board, principalVariations, scoreError);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
             // Find best move.
             SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
@@ -488,26 +491,23 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private int GetScoreWithinAspirationWindow(Board board, int principalVariations)
+    private int GetScoreWithinAspirationWindow(Board board, int principalVariations, int scoreError)
     {
         var bestScore = _bestMoves[0].Score;
-        // Use aspiration windows in limited circumstances (not for competitive play).
-        if (CompetitivePlay || (_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
+        if ((_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
         {
             // Reset move scores, then search moves with infinite aspiration window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
             return GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
         }
-        var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 128) < _blunderPer128))
-            ? _blunderError // Blunder
-            : 0;
         scoreError = FastMath.Max(scoreError, _moveError);
         var alpha = 0;
         var beta = 0;
         var scorePrecision = ScorePrecision.Exact;
-        for (var aspirationIndex = 0; aspirationIndex < _aspirationWindows.Length; aspirationIndex++)
+        var aspirationWindows = principalVariations == 1 ? _aspirationWindows : _multiPvAspirationWindows;
+        for (var aspirationIndex = 0; aspirationIndex < aspirationWindows.Length; aspirationIndex++)
         {
-            var aspirationWindow = _aspirationWindows[aspirationIndex];
+            var aspirationWindow = aspirationWindows[aspirationIndex];
             // Reset move scores and adjust alpha / beta window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
             // ReSharper disable once SwitchStatementMissingSomeCases
@@ -515,18 +515,28 @@ public sealed class Search : IDisposable
             {
                 case ScorePrecision.LowerBound:
                     // Fail High
+                    alpha = (alpha + beta) / 2;
                     beta = FastMath.Min(beta + aspirationWindow, SpecialScore.Max);
                     break;
                 case ScorePrecision.UpperBound:
                     // Fail Low
+                    beta = (alpha + beta) / 2;
                     alpha = FastMath.Max(alpha - aspirationWindow, -SpecialScore.Max);
                     break;
                 case ScorePrecision.Exact:
                     // Initial Aspiration Window
-                    // Center aspiration window around best score from prior ply.
-                    alpha = FastMath.Max(_originalHorizon == _aspirationMinToHorizon
-                        ? bestScore - scoreError - aspirationWindow
-                        : _lastAlpha, -SpecialScore.Max);
+                    if (CompetitivePlay)
+                    {
+                        // Center aspiration window around best score from prior ply.
+                        alpha = bestScore - aspirationWindow;
+                    }
+                    else
+                    {
+                        alpha = _originalHorizon == _aspirationMinToHorizon
+                            ? bestScore - scoreError - aspirationWindow // Open aspiration window for inferior moves.
+                            : _lastAlpha - 1;
+                    }
+                    alpha = FastMath.Max(alpha, -SpecialScore.Max);
                     beta = FastMath.Min(bestScore + aspirationWindow, SpecialScore.Max);
                     break;
                 default:
@@ -553,7 +563,7 @@ public sealed class Search : IDisposable
                 continue;
             }
             // Score within aspiration window.
-            _lastAlpha = alpha;
+            _lastAlpha = lowestScore;
             return score;
         }
         // Search moves with infinite aspiration window.
@@ -794,7 +804,7 @@ public sealed class Search : IDisposable
                 // Found new principal variation.
                 bestScore = score;
                 UpdateBestMoveCache(board.CurrentPosition, depth, horizon, move, score, alpha, beta);
-                if ((depth > 0) || CompetitivePlay) alpha = score;
+                if ((depth > 0) || CompetitivePlay) alpha = score; // Keep alpha / beta window open for inferior moves.
             }
             if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= board.NodesInfoUpdate))
             {
@@ -1267,8 +1277,8 @@ public sealed class Search : IDisposable
             CachedPositionData.SetBestMoveTo(ref cachedPosition.Data, Move.To(bestMove));
             CachedPositionData.SetBestMovePromotedPiece(ref cachedPosition.Data, Move.PromotedPiece(bestMove));
         }
-        var adjustedDynamicScore = dynamicScore;
         // Adjust checkmate score.
+        var adjustedDynamicScore = dynamicScore;
         if (adjustedDynamicScore >= SpecialScore.Checkmate) adjustedDynamicScore += depth;
         else if (adjustedDynamicScore <= -SpecialScore.Checkmate) adjustedDynamicScore -= depth;
         // Update score.

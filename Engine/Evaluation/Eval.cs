@@ -453,6 +453,10 @@ public sealed class Eval
         }
         // Position is not a simple endgame.
         _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
+        // TODO: Evaluate piece location based on enemy king on queenside or kingside of board.
+        // TODO: Evaluate territory.  Perhaps squares attacked by more of own pieces than enemy pieces?  Or squares behind own pawns not occupied by enemy pieces?
+        // TODO: Evaluate king safety in the endgame.
+        // TODO: Evaluate rooks on open files.
         // Explicit array lookups are faster than looping through colors.
         EvaluateMaterial(position, Color.White);
         EvaluateMaterial(position, Color.Black);
