@@ -76,7 +76,6 @@ public sealed class Search : IDisposable
     private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
     private int[] _aspirationWindows;
-    private int[] _multiPvAspirationWindows;
     private int[] _lateMovePruningMargins;
     private int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
     private ScoredMove[] _rootMoves;
@@ -176,8 +175,7 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        _aspirationWindows =        new[] { 100 };
-        _multiPvAspirationWindows = new[] { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 };
+        _aspirationWindows = new[] { 50, 100, 200, 400, 800 };
         // To Horizon =                   000  001  002  003  004  005
         _futilityPruningMargins = new[] { 060, 160, 220, 280, 340, 400 };
         _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
@@ -225,7 +223,6 @@ public sealed class Search : IDisposable
             _getExchangeMaterialScore = null;
             _futilityPruningMargins = null;
             _aspirationWindows = null;
-            _multiPvAspirationWindows = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
             _rootMoves = null;
@@ -355,6 +352,7 @@ public sealed class Search : IDisposable
         board.CurrentPosition.MoveIndex = legalMoveIndex;
         if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0))
         {
+            // TODO: Output best move when only one legal move found and in analysis mode.
             // Only one legal move found.
             _stopwatch.Stop();
             return board.CurrentPosition.Moves[0];
@@ -494,7 +492,8 @@ public sealed class Search : IDisposable
     private int GetScoreWithinAspirationWindow(Board board, int principalVariations, int scoreError)
     {
         var bestScore = _bestMoves[0].Score;
-        if ((_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
+        // Use aspiration windows in limited circumstances (not for competitive play).
+        if (CompetitivePlay || (_originalHorizon < _aspirationMinToHorizon) || (FastMath.Abs(bestScore) >= SpecialScore.Checkmate))
         {
             // Reset move scores, then search moves with infinite aspiration window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
@@ -504,10 +503,9 @@ public sealed class Search : IDisposable
         var alpha = 0;
         var beta = 0;
         var scorePrecision = ScorePrecision.Exact;
-        var aspirationWindows = principalVariations == 1 ? _aspirationWindows : _multiPvAspirationWindows;
-        for (var aspirationIndex = 0; aspirationIndex < aspirationWindows.Length; aspirationIndex++)
+        for (var aspirationIndex = 0; aspirationIndex < _aspirationWindows.Length; aspirationIndex++)
         {
-            var aspirationWindow = aspirationWindows[aspirationIndex];
+            var aspirationWindow = _aspirationWindows[aspirationIndex];
             // Reset move scores and adjust alpha / beta window.
             for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
             // ReSharper disable once SwitchStatementMissingSomeCases
@@ -534,7 +532,7 @@ public sealed class Search : IDisposable
                     {
                         alpha = _originalHorizon == _aspirationMinToHorizon
                             ? bestScore - scoreError - aspirationWindow // Open aspiration window for inferior moves.
-                            : _lastAlpha - 1;
+                            : _lastAlpha;
                     }
                     alpha = FastMath.Max(alpha, -SpecialScore.Max);
                     beta = FastMath.Min(bestScore + aspirationWindow, SpecialScore.Max);
@@ -559,11 +557,11 @@ public sealed class Search : IDisposable
             {
                 // Search failed low.
                 scorePrecision = ScorePrecision.UpperBound;
-                if (PvInfoUpdate) UpdateStatusFailLow(board.Nodes, score);
+                if (PvInfoUpdate) UpdateStatusFailLow(board.Nodes, lowestScore);
                 continue;
             }
             // Score within aspiration window.
-            _lastAlpha = lowestScore;
+            _lastAlpha = lowestScore - _aspirationWindows[0];
             return score;
         }
         // Search moves with infinite aspiration window.
