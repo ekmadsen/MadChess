@@ -37,9 +37,9 @@ public sealed class StaticScore
     public readonly int[] UnstoppablePassedPawns;
     public readonly int[] MgPieceMobility;
     public readonly int[] EgPieceMobility;
-    public readonly int[] MgKingSafety;
     public readonly int[] MgThreats;
     public readonly int[] EgThreats;
+    public readonly int[] MgKingSafety;
     public readonly int[] MgBishopPair;
     public readonly int[] EgBishopPair;
     public readonly int[] MgOutposts;
@@ -70,9 +70,9 @@ public sealed class StaticScore
         UnstoppablePassedPawns = new int[2];
         MgPieceMobility = new int[2];
         EgPieceMobility = new int[2];
-        MgKingSafety = new int[2];
         MgThreats = new int[2];
         EgThreats = new int[2];
+        MgKingSafety = new int[2];
         MgBishopPair = new int[2];
         EgBishopPair = new int[2];
         MgOutposts = new int[2];
@@ -169,12 +169,12 @@ public sealed class StaticScore
         MgPieceMobility[(int)Color.Black] = 0;
         EgPieceMobility[(int)Color.White] = 0;
         EgPieceMobility[(int)Color.Black] = 0;
-        MgKingSafety[(int)Color.White] = 0;
-        MgKingSafety[(int)Color.Black] = 0;
         MgThreats[(int)Color.White] = 0;
         MgThreats[(int)Color.Black] = 0;
         EgThreats[(int)Color.White] = 0;
         EgThreats[(int)Color.Black] = 0;
+        MgKingSafety[(int)Color.White] = 0;
+        MgKingSafety[(int)Color.Black] = 0;
         MgBishopPair[(int)Color.White] = 0;
         MgBishopPair[(int)Color.Black] = 0;
         EgBishopPair[(int)Color.White] = 0;
@@ -208,8 +208,8 @@ public sealed class StaticScore
         AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, EgKingEscortedPassedPawns[(int)Color.White], EgKingEscortedPassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Piece Mobility", MgPieceMobility[(int)Color.White], MgPieceMobility[(int)Color.Black], EgPieceMobility[(int)Color.White], EgPieceMobility[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
         AppendStaticScoreLine(stringBuilder, "Threats", MgThreats[(int)Color.White], MgThreats[(int)Color.Black], EgThreats[(int)Color.White], EgThreats[(int)Color.Black], phase);
+        AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
         AppendStaticScoreLine(stringBuilder, "Bishop Pair", MgBishopPair[(int)Color.White], MgBishopPair[(int)Color.Black], EgBishopPair[(int)Color.White], EgBishopPair[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Outposts", MgOutposts[(int)Color.White], MgOutposts[(int)Color.Black], EgOutposts[(int)Color.White], EgOutposts[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Rook on 7th Rank", MgRookOn7thRank[(int)Color.White], MgRookOn7thRank[(int)Color.Black], EgRookOn7thRank[(int)Color.White], EgRookOn7thRank[(int)Color.Black], phase);

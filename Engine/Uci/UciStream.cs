@@ -384,7 +384,7 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("option name UCI_AnalyseMode type check default false");
         WriteMessageLine($"option name MultiPV type spin default 1 min 1 max {Core.Game.Position.MaxMoves}");
         WriteMessageLine("option name UCI_LimitStrength type check default false");
-        WriteMessageLine($"option name UCI_Elo type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
+        WriteMessageLine($"option name UCI_Elo type spin default {Elo.Min} min {Elo.Min} max {Elo.Max}");
         WriteMessageLine("uciok");
     }
 

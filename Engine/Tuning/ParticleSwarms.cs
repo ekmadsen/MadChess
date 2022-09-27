@@ -160,6 +160,13 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.EgRookMobilityScale), 0, 256),
             new(nameof(EvalConfig.MgQueenMobilityScale), 0, 512),
             new(nameof(EvalConfig.EgQueenMobilityScale), 0, 256),
+            // Threats
+            new(nameof(EvalConfig.MgPawnThreatenMinor), 0, 100),
+            new(nameof(EvalConfig.EgPawnThreatenMinor), 0, 100),
+            new(nameof(EvalConfig.MgPawnThreatenMajor), 0, 100),
+            new(nameof(EvalConfig.EgPawnThreatenMajor), 0, 100),
+            new(nameof(EvalConfig.MgMinorThreatenMajor), 0, 100),
+            new(nameof(EvalConfig.EgMinorThreatenMajor), 0, 100),
             // King Safety
             new(nameof(EvalConfig.MgKingSafetyPowerPer128), 128, 512),
             new(nameof(EvalConfig.MgKingSafetyScalePer128), 0, 256),
@@ -172,13 +179,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8), 0, 64),
-            // Threats
-            new(nameof(EvalConfig.MgPawnThreatenMinor), 0, 100),
-            new(nameof(EvalConfig.EgPawnThreatenMinor), 0, 100),
-            new(nameof(EvalConfig.MgPawnThreatenMajor), 0, 100),
-            new(nameof(EvalConfig.EgPawnThreatenMajor), 0, 100),
-            new(nameof(EvalConfig.MgMinorThreatenMajor), 0, 100),
-            new(nameof(EvalConfig.EgMinorThreatenMajor), 0, 100),
             // Minor Pieces
             new(nameof(EvalConfig.MgBishopPair), 0, 100),
             new(nameof(EvalConfig.EgBishopPair), 0, 150),

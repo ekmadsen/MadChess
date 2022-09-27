@@ -90,6 +90,13 @@ public sealed class EvalConfig
     public int EgRookMobilityScale = 81;
     public int MgQueenMobilityScale = 95;
     public int EgQueenMobilityScale = 90;
+    // Threats
+    public int MgPawnThreatenMinor = 50;
+    public int EgPawnThreatenMinor = 49;
+    public int MgPawnThreatenMajor = 75;
+    public int EgPawnThreatenMajor = 42;
+    public int MgMinorThreatenMajor = 41;
+    public int EgMinorThreatenMajor = 24;
     // King Safety
     public int MgKingSafetyPowerPer128 = 260;
     public int MgKingSafetyScalePer128 = 49;
@@ -102,13 +109,6 @@ public sealed class EvalConfig
     public int MgKingSafetySemiOpenFilePer8 = 6;
     public int MgKingSafetyPawnShieldPer8 = 21;
     public int MgKingSafetyDefendingPiecesPer8 = 10;
-    // Threats
-    public int MgPawnThreatenMinor = 50;
-    public int EgPawnThreatenMinor = 49;
-    public int MgPawnThreatenMajor = 75;
-    public int EgPawnThreatenMajor = 42;
-    public int MgMinorThreatenMajor = 41;
-    public int EgMinorThreatenMajor = 24;
     // Minor Pieces
     public int MgBishopPair = 56;
     public int EgBishopPair = 64;
@@ -128,10 +128,14 @@ public sealed class EvalConfig
     // Limit Strength
     public bool LimitedStrength = false;
     public int LsPieceLocationPer128 = 128;
+    public int LsPawnStructurePer128 = 128;
     public int LsPassedPawnsPer128 = 128;
     public int LsPieceMobilityPer128 = 128;
+    public int LsThreatsPer128 = 128;
     public int LsKingSafetyPer128 = 128;
     public int LsMinorPiecesPer128 = 128;
+    public int LsMajorPiecesPer128 = 128;
+    public int LsEndgameScalePer128 = 128;
     // ReSharper restore FieldCanBeMadeReadOnly.Global
     // ReSharper restore ConvertToConstant.Global
 
@@ -205,6 +209,13 @@ public sealed class EvalConfig
         EgRookMobilityScale = copyFromConfig.EgRookMobilityScale;
         MgQueenMobilityScale = copyFromConfig.MgQueenMobilityScale;
         EgQueenMobilityScale = copyFromConfig.EgQueenMobilityScale;
+        // Copy threat values.
+        MgPawnThreatenMinor = copyFromConfig.MgPawnThreatenMinor;
+        EgPawnThreatenMinor = copyFromConfig.EgPawnThreatenMinor;
+        MgPawnThreatenMajor = copyFromConfig.MgPawnThreatenMajor;
+        EgPawnThreatenMajor = copyFromConfig.EgPawnThreatenMajor;
+        MgMinorThreatenMajor = copyFromConfig.MgMinorThreatenMajor;
+        EgMinorThreatenMajor = copyFromConfig.EgMinorThreatenMajor;
         // Copy king safety values.
         MgKingSafetyPowerPer128 = copyFromConfig.MgKingSafetyPowerPer128;
         MgKingSafetyMinorAttackOuterRingPer8 = copyFromConfig.MgKingSafetyMinorAttackOuterRingPer8;
@@ -216,13 +227,6 @@ public sealed class EvalConfig
         MgKingSafetySemiOpenFilePer8 = copyFromConfig.MgKingSafetySemiOpenFilePer8;
         MgKingSafetyPawnShieldPer8 = copyFromConfig.MgKingSafetyPawnShieldPer8;
         MgKingSafetyDefendingPiecesPer8 = copyFromConfig.MgKingSafetyDefendingPiecesPer8;
-        // Copy threat values.
-        MgPawnThreatenMinor = copyFromConfig.MgPawnThreatenMinor;
-        EgPawnThreatenMinor = copyFromConfig.EgPawnThreatenMinor;
-        MgPawnThreatenMajor = copyFromConfig.MgPawnThreatenMajor;
-        EgPawnThreatenMajor = copyFromConfig.EgPawnThreatenMajor;
-        MgMinorThreatenMajor = copyFromConfig.MgMinorThreatenMajor;
-        EgMinorThreatenMajor = copyFromConfig.EgMinorThreatenMajor;
         // Copy minor piece values.
         MgBishopPair = copyFromConfig.MgBishopPair;
         EgBishopPair = copyFromConfig.EgBishopPair;
@@ -240,9 +244,13 @@ public sealed class EvalConfig
         // Copy limit strength values.
         LimitedStrength = copyFromConfig.LimitedStrength;
         LsPieceLocationPer128 = copyFromConfig.LsPieceLocationPer128;
+        LsPawnStructurePer128 = copyFromConfig.LsPawnStructurePer128;
         LsPassedPawnsPer128 = copyFromConfig.LsPassedPawnsPer128;
         LsPieceMobilityPer128 = copyFromConfig.LsPieceMobilityPer128;
+        LsThreatsPer128 = copyFromConfig.LsThreatsPer128;
         LsKingSafetyPer128 = copyFromConfig.LsKingSafetyPer128;
         LsMinorPiecesPer128 = copyFromConfig.LsMinorPiecesPer128;
+        LsMajorPiecesPer128 = copyFromConfig.LsMajorPiecesPer128;
+        LsEndgameScalePer128 = copyFromConfig.LsEndgameScalePer128;
     }
 }
