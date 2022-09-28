@@ -99,6 +99,24 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.EgBishopMaterial), 100, 700),
             new(nameof(EvalConfig.EgRookMaterial), 100, 1000),
             new(nameof(EvalConfig.EgQueenMaterial), 100, 2000),
+            // Passed Pawns
+            new(nameof(EvalConfig.PassedPawnPowerPer128), 128, 512),
+            new(nameof(EvalConfig.MgPassedPawnScalePer128), 0, 256),
+            new(nameof(EvalConfig.EgPassedPawnScalePer128), 64, 1024),
+            new(nameof(EvalConfig.EgFreePassedPawnScalePer128), 128, 2048),
+            new(nameof(EvalConfig.EgKingEscortedPassedPawn), 0, 32),
+            // King Safety
+            new(nameof(EvalConfig.MgKingSafetyPowerPer128), 128, 512),
+            new(nameof(EvalConfig.MgKingSafetyScalePer128), 0, 256),
+            new(nameof(EvalConfig.MgKingSafetyMinorAttackOuterRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyMinorAttackInnerRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8), 0, 64),
             // Pawn Location
             new(nameof(EvalConfig.MgPawnAdvancement), 0, 25),
             new(nameof(EvalConfig.EgPawnAdvancement), 0, 25),
@@ -139,17 +157,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.EgKingCentrality), 0, 50),
             new(nameof(EvalConfig.MgKingCorner), 0, 50),
             new(nameof(EvalConfig.EgKingCorner), -50, 0),
-            // Pawn Structure
-            new(nameof(EvalConfig.MgIsolatedPawn), 0, 100),
-            new(nameof(EvalConfig.EgIsolatedPawn), 0, 100),
-            new(nameof(EvalConfig.MgDoubledPawn), 0, 100),
-            new(nameof(EvalConfig.EgDoubledPawn), 0, 100),
-            // Passed Pawns
-            new(nameof(EvalConfig.PassedPawnPowerPer128), 128, 512),
-            new(nameof(EvalConfig.MgPassedPawnScalePer128), 0, 256),
-            new(nameof(EvalConfig.EgPassedPawnScalePer128), 64, 1024),
-            new(nameof(EvalConfig.EgFreePassedPawnScalePer128), 128, 2048),
-            new(nameof(EvalConfig.EgKingEscortedPassedPawn), 0, 32),
             // Piece Mobility
             new(nameof(EvalConfig.PieceMobilityPowerPer128), 0, 128),
             new(nameof(EvalConfig.MgKnightMobilityScale), 0, 128),
@@ -160,6 +167,11 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.EgRookMobilityScale), 0, 256),
             new(nameof(EvalConfig.MgQueenMobilityScale), 0, 512),
             new(nameof(EvalConfig.EgQueenMobilityScale), 0, 256),
+            // Pawn Structure
+            new(nameof(EvalConfig.MgIsolatedPawn), 0, 100),
+            new(nameof(EvalConfig.EgIsolatedPawn), 0, 100),
+            new(nameof(EvalConfig.MgDoubledPawn), 0, 100),
+            new(nameof(EvalConfig.EgDoubledPawn), 0, 100),
             // Threats
             new(nameof(EvalConfig.MgPawnThreatenMinor), 0, 100),
             new(nameof(EvalConfig.EgPawnThreatenMinor), 0, 100),
@@ -167,18 +179,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.EgPawnThreatenMajor), 0, 100),
             new(nameof(EvalConfig.MgMinorThreatenMajor), 0, 100),
             new(nameof(EvalConfig.EgMinorThreatenMajor), 0, 100),
-            // King Safety
-            new(nameof(EvalConfig.MgKingSafetyPowerPer128), 128, 512),
-            new(nameof(EvalConfig.MgKingSafetyScalePer128), 0, 256),
-            new(nameof(EvalConfig.MgKingSafetyMinorAttackOuterRingPer8), 0, 64),
-            new(nameof(EvalConfig.MgKingSafetyMinorAttackInnerRingPer8), 0, 64),
-            new(nameof(EvalConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 64),
-            new(nameof(EvalConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 64),
-            new(nameof(EvalConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 64),
-            new(nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 64),
-            new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
-            new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
-            new(nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8), 0, 64),
             // Minor Pieces
             new(nameof(EvalConfig.MgBishopPair), 0, 100),
             new(nameof(EvalConfig.EgBishopPair), 0, 150),
@@ -206,6 +206,24 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.EgBishopMaterial)].Value = evalConfig.EgBishopMaterial;
         parameters[nameof(evalConfig.EgRookMaterial)].Value = evalConfig.EgRookMaterial;
         parameters[nameof(evalConfig.EgQueenMaterial)].Value = evalConfig.EgQueenMaterial;
+        // Passed Pawns
+        parameters[nameof(evalConfig.PassedPawnPowerPer128)].Value = evalConfig.PassedPawnPowerPer128;
+        parameters[nameof(evalConfig.MgPassedPawnScalePer128)].Value = evalConfig.MgPassedPawnScalePer128;
+        parameters[nameof(evalConfig.EgPassedPawnScalePer128)].Value = evalConfig.EgPassedPawnScalePer128;
+        parameters[nameof(evalConfig.EgFreePassedPawnScalePer128)].Value = evalConfig.EgFreePassedPawnScalePer128;
+        parameters[nameof(evalConfig.EgKingEscortedPassedPawn)].Value = evalConfig.EgKingEscortedPassedPawn;
+        // King Safety
+        parameters[nameof(evalConfig.MgKingSafetyPowerPer128)].Value = evalConfig.MgKingSafetyPowerPer128;
+        parameters[nameof(evalConfig.MgKingSafetyScalePer128)].Value = evalConfig.MgKingSafetyScalePer128;
+        parameters[nameof(evalConfig.MgKingSafetyMinorAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyMinorAttackOuterRingPer8;
+        parameters[nameof(evalConfig.MgKingSafetyMinorAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyMinorAttackInnerRingPer8;
+        parameters[nameof(evalConfig.MgKingSafetyRookAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyRookAttackOuterRingPer8;
+        parameters[nameof(evalConfig.MgKingSafetyRookAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyRookAttackInnerRingPer8;
+        parameters[nameof(evalConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackOuterRingPer8;
+        parameters[nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackInnerRingPer8;
+        parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
+        parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
+        parameters[nameof(evalConfig.MgKingSafetyDefendingPiecesPer8)].Value = evalConfig.MgKingSafetyDefendingPiecesPer8;
         // Pawn Location
         parameters[nameof(evalConfig.MgPawnAdvancement)].Value = evalConfig.MgPawnAdvancement;
         parameters[nameof(evalConfig.EgPawnAdvancement)].Value = evalConfig.EgPawnAdvancement;
@@ -246,17 +264,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.EgKingCentrality)].Value = evalConfig.EgKingCentrality;
         parameters[nameof(evalConfig.MgKingCorner)].Value = evalConfig.MgKingCorner;
         parameters[nameof(evalConfig.EgKingCorner)].Value = evalConfig.EgKingCorner;
-        // Pawn Structure
-        parameters[nameof(evalConfig.MgIsolatedPawn)].Value = evalConfig.MgIsolatedPawn;
-        parameters[nameof(evalConfig.EgIsolatedPawn)].Value = evalConfig.EgIsolatedPawn;
-        parameters[nameof(evalConfig.MgDoubledPawn)].Value = evalConfig.MgDoubledPawn;
-        parameters[nameof(evalConfig.EgDoubledPawn)].Value = evalConfig.EgDoubledPawn;
-        // Passed Pawns
-        parameters[nameof(evalConfig.PassedPawnPowerPer128)].Value = evalConfig.PassedPawnPowerPer128;
-        parameters[nameof(evalConfig.MgPassedPawnScalePer128)].Value = evalConfig.MgPassedPawnScalePer128;
-        parameters[nameof(evalConfig.EgPassedPawnScalePer128)].Value = evalConfig.EgPassedPawnScalePer128;
-        parameters[nameof(evalConfig.EgFreePassedPawnScalePer128)].Value = evalConfig.EgFreePassedPawnScalePer128;
-        parameters[nameof(evalConfig.EgKingEscortedPassedPawn)].Value = evalConfig.EgKingEscortedPassedPawn;
         // Piece Mobility
         parameters[nameof(evalConfig.PieceMobilityPowerPer128)].Value = evalConfig.PieceMobilityPowerPer128;
         parameters[nameof(evalConfig.MgKnightMobilityScale)].Value = evalConfig.MgKnightMobilityScale;
@@ -267,18 +274,11 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.EgRookMobilityScale)].Value = evalConfig.EgRookMobilityScale;
         parameters[nameof(evalConfig.MgQueenMobilityScale)].Value = evalConfig.MgQueenMobilityScale;
         parameters[nameof(evalConfig.EgQueenMobilityScale)].Value = evalConfig.EgQueenMobilityScale;
-        // King Safety
-        parameters[nameof(evalConfig.MgKingSafetyPowerPer128)].Value = evalConfig.MgKingSafetyPowerPer128;
-        parameters[nameof(evalConfig.MgKingSafetyScalePer128)].Value = evalConfig.MgKingSafetyScalePer128;
-        parameters[nameof(evalConfig.MgKingSafetyMinorAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyMinorAttackOuterRingPer8;
-        parameters[nameof(evalConfig.MgKingSafetyMinorAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyMinorAttackInnerRingPer8;
-        parameters[nameof(evalConfig.MgKingSafetyRookAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyRookAttackOuterRingPer8;
-        parameters[nameof(evalConfig.MgKingSafetyRookAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyRookAttackInnerRingPer8;
-        parameters[nameof(evalConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackOuterRingPer8;
-        parameters[nameof(evalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyQueenAttackInnerRingPer8;
-        parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
-        parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
-        parameters[nameof(evalConfig.MgKingSafetyDefendingPiecesPer8)].Value = evalConfig.MgKingSafetyDefendingPiecesPer8;
+        // Pawn Structure
+        parameters[nameof(evalConfig.MgIsolatedPawn)].Value = evalConfig.MgIsolatedPawn;
+        parameters[nameof(evalConfig.EgIsolatedPawn)].Value = evalConfig.EgIsolatedPawn;
+        parameters[nameof(evalConfig.MgDoubledPawn)].Value = evalConfig.MgDoubledPawn;
+        parameters[nameof(evalConfig.EgDoubledPawn)].Value = evalConfig.EgDoubledPawn;
         // Threats
         parameters[nameof(evalConfig.MgPawnThreatenMinor)].Value = evalConfig.MgPawnThreatenMinor;
         parameters[nameof(evalConfig.EgPawnThreatenMinor)].Value = evalConfig.EgPawnThreatenMinor;

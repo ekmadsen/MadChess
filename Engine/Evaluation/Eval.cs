@@ -292,42 +292,42 @@ public sealed class Eval
             Config.EgRookMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgRookMaterial * 0.67), _defaultConfig.EgRookMaterial, elo, Elo.Min, Elo.Novice - 1);
             Config.MgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.MgQueenMaterial * 1.33), _defaultConfig.MgQueenMaterial, elo, Elo.Min, Elo.Novice - 1);
             Config.EgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgQueenMaterial * 1.33), _defaultConfig.EgQueenMaterial, elo, Elo.Min, Elo.Novice - 1);
-        }
-        if (elo < Elo.Social)
-        {
             // Value knight and bishop equally.
             if (_defaultConfig.MgBishopMaterial > _defaultConfig.MgKnightMaterial)
             {
                 // Bishop worth more than knight in middlegame.
-                Config.MgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgKnightMaterial, _defaultConfig.MgBishopMaterial, elo, Elo.Min, Elo.Social - 1);
+                Config.MgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgKnightMaterial, _defaultConfig.MgBishopMaterial, elo, Elo.Min, Elo.Novice - 1);
             }
             else
             {
                 // Knight worth more than bishop in middlegame.
-                Config.MgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgBishopMaterial, _defaultConfig.MgKnightMaterial, elo, Elo.Min, Elo.Social - 1);
+                Config.MgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgBishopMaterial, _defaultConfig.MgKnightMaterial, elo, Elo.Min, Elo.Novice - 1);
             }
             if (_defaultConfig.EgBishopMaterial > _defaultConfig.EgKnightMaterial)
             {
                 // Bishop worth more than knight in endgame.
-                Config.EgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgKnightMaterial, _defaultConfig.EgBishopMaterial, elo, Elo.Min, Elo.Social - 1);
+                Config.EgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgKnightMaterial, _defaultConfig.EgBishopMaterial, elo, Elo.Min, Elo.Novice - 1);
             }
             else
             {
                 // Knight worth more than bishop in endgame.
-                Config.EgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgBishopMaterial, _defaultConfig.EgKnightMaterial, elo, Elo.Min, Elo.Social - 1);
+                Config.EgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgBishopMaterial, _defaultConfig.EgKnightMaterial, elo, Elo.Min, Elo.Novice - 1);
             }
+        }
+        if (elo < Elo.Social)
+        {
             // Misjudge danger of passed pawns.
             Config.LsPassedPawnsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Social - 1);
         }
         if (elo < Elo.StrongSocial)
         {
-            // Misplace pieces.
-            Config.LsPieceLocationPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.StrongSocial - 1);
+            // Inattentive to defense of king.
+            Config.LsKingSafetyPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.StrongSocial - 1);
         }
         if (elo < Elo.Club)
         {
-            // Allow pawn structure to be damaged.
-            Config.LsPawnStructurePer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Club - 1);
+            // Misplace pieces.
+            Config.LsPieceLocationPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Club - 1);
         }
         if (elo < Elo.StrongClub)
         {
@@ -336,13 +336,13 @@ public sealed class Eval
         }
         if (elo < Elo.Expert)
         {
-            // Underestimate threats (lesser-value pieces attacking greater-value pieces).
-            Config.LsThreatsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Expert - 1);
+            // Allow pawn structure to be damaged.
+            Config.LsPawnStructurePer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Expert - 1);
         }
         if (elo < Elo.CandidateMaster)
         {
-            // Inattentive to defense of king.
-            Config.LsKingSafetyPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.CandidateMaster - 1);
+            // Underestimate threats (lesser-value pieces attacking greater-value pieces).
+            Config.LsThreatsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.CandidateMaster - 1);
         }
         if (elo < Elo.Master)
         {
@@ -368,11 +368,11 @@ public sealed class Eval
             _writeMessageLine($"info string {nameof(Config.MgQueenMaterial)} = {Config.MgQueenMaterial}");
             _writeMessageLine($"info string {nameof(Config.EgQueenMaterial)} = {Config.EgQueenMaterial}");
             _writeMessageLine($"info string {nameof(Config.LsPassedPawnsPer128)} = {Config.LsPassedPawnsPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsPieceLocationPer128)} = {Config.LsPieceLocationPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsPawnStructurePer128)} = {Config.LsPawnStructurePer128}");
-            _writeMessageLine($"info string {nameof(Config.LsPieceMobilityPer128)} = {Config.LsPieceMobilityPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsThreatsPer128)} = {Config.LsThreatsPer128}");
             _writeMessageLine($"info string {nameof(Config.LsKingSafetyPer128)} = {Config.LsKingSafetyPer128}");
+            _writeMessageLine($"info string {nameof(Config.LsPieceLocationPer128)} = {Config.LsPieceLocationPer128}");
+            _writeMessageLine($"info string {nameof(Config.LsPieceMobilityPer128)} = {Config.LsPieceMobilityPer128}");
+            _writeMessageLine($"info string {nameof(Config.LsPawnStructurePer128)} = {Config.LsPawnStructurePer128}");
+            _writeMessageLine($"info string {nameof(Config.LsThreatsPer128)} = {Config.LsThreatsPer128}");
             _writeMessageLine($"info string {nameof(Config.LsMinorPiecesPer128)} = {Config.LsMinorPiecesPer128}");
             _writeMessageLine($"info string {nameof(Config.LsMajorPiecesPer128)} = {Config.LsMajorPiecesPer128}");
             _writeMessageLine($"info string {nameof(Config.LsEndgameScalePer128)} = {Config.LsEndgameScalePer128}");
@@ -391,7 +391,9 @@ public sealed class Eval
         var fraction = (double) (FastMath.Max(correlatedValue, minCorrelatedValue) - minCorrelatedValue) / correlatedRange;
         var valueRange = maxValue - minValue;
         var value = (int) ((fraction * valueRange) + minValue);
-        return Math.Clamp(value, minValue, maxValue);
+        return maxValue > minValue
+            ? Math.Clamp(value, minValue, maxValue)
+            : Math.Clamp(value, maxValue, minValue);
     }
 
 
@@ -1034,24 +1036,26 @@ public sealed class Eval
     {
         for (var color = Color.White; color <= Color.Black; color++)
         {
-            // Limit understanding of piece location and pawn structure.
-            _staticScore.MgPieceLocation[(int)color] = (_staticScore.MgPieceLocation[(int)color] * Config.LsPieceLocationPer128) / 128;
-            _staticScore.EgPieceLocation[(int)color] = (_staticScore.EgPieceLocation[(int)color] * Config.LsPieceLocationPer128) / 128;
-            _staticScore.MgPawnStructure[(int)color] = (_staticScore.MgPawnStructure[(int)color] * Config.LsPawnStructurePer128) / 128;
-            _staticScore.EgPawnStructure[(int)color] = (_staticScore.EgPawnStructure[(int)color] * Config.LsPawnStructurePer128) / 128;
             // Limit understanding of passed pawns.
             _staticScore.MgPassedPawns[(int)color] = (_staticScore.MgPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
             _staticScore.EgPassedPawns[(int)color] = (_staticScore.EgPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
             _staticScore.EgFreePassedPawns[(int)color] = (_staticScore.EgFreePassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
             _staticScore.EgKingEscortedPassedPawns[(int)color] = (_staticScore.EgKingEscortedPassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
             _staticScore.UnstoppablePassedPawns[(int)color] = (_staticScore.UnstoppablePassedPawns[(int)color] * Config.LsPassedPawnsPer128) / 128;
-            // Limit understanding of piece mobility and threats.
-            _staticScore.MgPieceMobility[(int)color] = (_staticScore.MgPieceMobility[(int)color] * Config.LsPieceMobilityPer128) / 128;
-            _staticScore.EgPieceMobility[(int)color] = (_staticScore.EgPieceMobility[(int)color] * Config.LsPieceMobilityPer128) / 128;
-            _staticScore.MgThreats[(int)color] = (_staticScore.MgThreats[(int)color] * Config.LsThreatsPer128) / 128;
-            _staticScore.EgThreats[(int)color] = (_staticScore.EgThreats[(int)color] * Config.LsThreatsPer128) / 128;
             // Limit understanding of king safety.
             _staticScore.MgKingSafety[(int)color] = (_staticScore.MgKingSafety[(int)color] * Config.LsKingSafetyPer128) / 128;
+            // Limit understanding of piece location.
+            _staticScore.MgPieceLocation[(int)color] = (_staticScore.MgPieceLocation[(int)color] * Config.LsPieceLocationPer128) / 128;
+            _staticScore.EgPieceLocation[(int)color] = (_staticScore.EgPieceLocation[(int)color] * Config.LsPieceLocationPer128) / 128;
+            // Limit understanding of piece mobility.
+            _staticScore.MgPieceMobility[(int)color] = (_staticScore.MgPieceMobility[(int)color] * Config.LsPieceMobilityPer128) / 128;
+            _staticScore.EgPieceMobility[(int)color] = (_staticScore.EgPieceMobility[(int)color] * Config.LsPieceMobilityPer128) / 128;
+            // Limit understanding of pawn structure.
+            _staticScore.MgPawnStructure[(int)color] = (_staticScore.MgPawnStructure[(int)color] * Config.LsPawnStructurePer128) / 128;
+            _staticScore.EgPawnStructure[(int)color] = (_staticScore.EgPawnStructure[(int)color] * Config.LsPawnStructurePer128) / 128;
+            // Limit understanding of threats.
+            _staticScore.MgThreats[(int)color] = (_staticScore.MgThreats[(int)color] * Config.LsThreatsPer128) / 128;
+            _staticScore.EgThreats[(int)color] = (_staticScore.EgThreats[(int)color] * Config.LsThreatsPer128) / 128;
             // Limit understanding of minor and major pieces.
             _staticScore.MgBishopPair[(int)color] = (_staticScore.MgBishopPair[(int)color] * Config.LsMinorPiecesPer128) / 128;
             _staticScore.EgBishopPair[(int)color] = (_staticScore.EgBishopPair[(int)color] * Config.LsMinorPiecesPer128) / 128;

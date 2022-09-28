@@ -87,6 +87,24 @@ public sealed class Particle
         eval.Config.EgBishopMaterial = Parameters[nameof(EvalConfig.EgBishopMaterial)].Value;
         eval.Config.EgRookMaterial = Parameters[nameof(EvalConfig.EgRookMaterial)].Value;
         eval.Config.EgQueenMaterial = Parameters[nameof(EvalConfig.EgQueenMaterial)].Value;
+        // Passed Pawns
+        eval.Config.PassedPawnPowerPer128 = Parameters[nameof(EvalConfig.PassedPawnPowerPer128)].Value;
+        eval.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvalConfig.MgPassedPawnScalePer128)].Value;
+        eval.Config.EgPassedPawnScalePer128 = Parameters[nameof(EvalConfig.EgPassedPawnScalePer128)].Value;
+        eval.Config.EgFreePassedPawnScalePer128 = Parameters[nameof(EvalConfig.EgFreePassedPawnScalePer128)].Value;
+        eval.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvalConfig.EgKingEscortedPassedPawn)].Value;
+        // King Safety
+        eval.Config.MgKingSafetyPowerPer128 = Parameters[nameof(EvalConfig.MgKingSafetyPowerPer128)].Value;
+        eval.Config.MgKingSafetyScalePer128 = Parameters[nameof(EvalConfig.MgKingSafetyScalePer128)].Value;
+        eval.Config.MgKingSafetyMinorAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyMinorAttackOuterRingPer8)].Value;
+        eval.Config.MgKingSafetyMinorAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyMinorAttackInnerRingPer8)].Value;
+        eval.Config.MgKingSafetyRookAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyRookAttackOuterRingPer8)].Value;
+        eval.Config.MgKingSafetyRookAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyRookAttackInnerRingPer8)].Value;
+        eval.Config.MgKingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value;
+        eval.Config.MgKingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value;
+        eval.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvalConfig.MgKingSafetySemiOpenFilePer8)].Value;
+        eval.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvalConfig.MgKingSafetyPawnShieldPer8)].Value;
+        eval.Config.MgKingSafetyDefendingPiecesPer8 = Parameters[nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8)].Value;
         // Pawn Location
         eval.Config.MgPawnAdvancement = Parameters[nameof(EvalConfig.MgPawnAdvancement)].Value;
         eval.Config.EgPawnAdvancement = Parameters[nameof(EvalConfig.EgPawnAdvancement)].Value;
@@ -127,17 +145,6 @@ public sealed class Particle
         eval.Config.EgKingCentrality = Parameters[nameof(EvalConfig.EgKingCentrality)].Value;
         eval.Config.MgKingCorner = Parameters[nameof(EvalConfig.MgKingCorner)].Value;
         eval.Config.EgKingCorner = Parameters[nameof(EvalConfig.EgKingCorner)].Value;
-        // Pawn Structure
-        eval.Config.MgIsolatedPawn = Parameters[nameof(EvalConfig.MgIsolatedPawn)].Value;
-        eval.Config.EgIsolatedPawn = Parameters[nameof(EvalConfig.EgIsolatedPawn)].Value;
-        eval.Config.MgDoubledPawn = Parameters[nameof(EvalConfig.MgDoubledPawn)].Value;
-        eval.Config.EgDoubledPawn = Parameters[nameof(EvalConfig.EgDoubledPawn)].Value;
-        // Passed Pawns
-        eval.Config.PassedPawnPowerPer128 = Parameters[nameof(EvalConfig.PassedPawnPowerPer128)].Value;
-        eval.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvalConfig.MgPassedPawnScalePer128)].Value;
-        eval.Config.EgPassedPawnScalePer128 = Parameters[nameof(EvalConfig.EgPassedPawnScalePer128)].Value;
-        eval.Config.EgFreePassedPawnScalePer128 = Parameters[nameof(EvalConfig.EgFreePassedPawnScalePer128)].Value;
-        eval.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvalConfig.EgKingEscortedPassedPawn)].Value;
         // Piece Mobility
         eval.Config.PieceMobilityPowerPer128 = Parameters[nameof(EvalConfig.PieceMobilityPowerPer128)].Value;
         eval.Config.MgKnightMobilityScale = Parameters[nameof(EvalConfig.MgKnightMobilityScale)].Value;
@@ -148,6 +155,11 @@ public sealed class Particle
         eval.Config.EgRookMobilityScale = Parameters[nameof(EvalConfig.EgRookMobilityScale)].Value;
         eval.Config.MgQueenMobilityScale = Parameters[nameof(EvalConfig.MgQueenMobilityScale)].Value;
         eval.Config.EgQueenMobilityScale = Parameters[nameof(EvalConfig.EgQueenMobilityScale)].Value;
+        // Pawn Structure
+        eval.Config.MgIsolatedPawn = Parameters[nameof(EvalConfig.MgIsolatedPawn)].Value;
+        eval.Config.EgIsolatedPawn = Parameters[nameof(EvalConfig.EgIsolatedPawn)].Value;
+        eval.Config.MgDoubledPawn = Parameters[nameof(EvalConfig.MgDoubledPawn)].Value;
+        eval.Config.EgDoubledPawn = Parameters[nameof(EvalConfig.EgDoubledPawn)].Value;
         // Threats
         eval.Config.MgPawnThreatenMinor = Parameters[nameof(EvalConfig.MgPawnThreatenMinor)].Value;
         eval.Config.EgPawnThreatenMinor = Parameters[nameof(EvalConfig.EgPawnThreatenMinor)].Value;
@@ -155,18 +167,6 @@ public sealed class Particle
         eval.Config.EgPawnThreatenMajor = Parameters[nameof(EvalConfig.EgPawnThreatenMajor)].Value;
         eval.Config.MgMinorThreatenMajor = Parameters[nameof(EvalConfig.MgMinorThreatenMajor)].Value;
         eval.Config.EgMinorThreatenMajor = Parameters[nameof(EvalConfig.EgMinorThreatenMajor)].Value;
-        // King Safety
-        eval.Config.MgKingSafetyPowerPer128 = Parameters[nameof(EvalConfig.MgKingSafetyPowerPer128)].Value;
-        eval.Config.MgKingSafetyScalePer128 = Parameters[nameof(EvalConfig.MgKingSafetyScalePer128)].Value;
-        eval.Config.MgKingSafetyMinorAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyMinorAttackOuterRingPer8)].Value;
-        eval.Config.MgKingSafetyMinorAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyMinorAttackInnerRingPer8)].Value;
-        eval.Config.MgKingSafetyRookAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyRookAttackOuterRingPer8)].Value;
-        eval.Config.MgKingSafetyRookAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyRookAttackInnerRingPer8)].Value;
-        eval.Config.MgKingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value;
-        eval.Config.MgKingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value;
-        eval.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvalConfig.MgKingSafetySemiOpenFilePer8)].Value;
-        eval.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvalConfig.MgKingSafetyPawnShieldPer8)].Value;
-        eval.Config.MgKingSafetyDefendingPiecesPer8 = Parameters[nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8)].Value;
         // Minor Pieces
         eval.Config.MgBishopPair = Parameters[nameof(EvalConfig.MgBishopPair)].Value;
         eval.Config.EgBishopPair = Parameters[nameof(EvalConfig.EgBishopPair)].Value;
