@@ -1036,6 +1036,7 @@ public sealed class Search : IDisposable
             // To increase confidence in the singular move's score, search it one ply deeper.
             return horizon + 1;
         }
+        // TODO: Consider reducing search depth in Multi-PV searches or when engine playing strength is reduced.
         if ((depth == 0) && !CompetitivePlay) return horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
         if (Move.CaptureVictim(move) != Piece.None) return horizon; // Do not reduce capture.
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.

@@ -368,7 +368,7 @@ public sealed class UciStream : IDisposable
     {
         // Display engine name, author, and standard commands.
         // ReSharper disable once ConvertToConstant.Local
-        var version = "3.2";
+        var version = "3.2 Beta";
 #if CPU64
         version = $"{version} x64";
 #else
@@ -412,7 +412,6 @@ public sealed class UciStream : IDisposable
                 _moveHistory.Reset();
                 break;
             case "uci_analysemode":
-            case "analyze":
                 var analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                 if (analysisMode)
                 {

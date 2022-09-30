@@ -3,7 +3,7 @@
   <PropertyGroup>
 	  <AssemblyTitle>MadChess.Core</AssemblyTitle>
 	  <AssemblyName>MadChess.Core</AssemblyName>
-	  <Version>3.1</Version>
+	  <Version>3.2</Version>
 	  <Authors>Erik Madsen</Authors>
 	  <Description>Core Chess Classes</Description>
 	  <Copyright>2022</Copyright>
