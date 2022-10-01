@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<AssemblyTitle>MadChess.Engine</AssemblyTitle>
 		<AssemblyName>MadChess.Engine</AssemblyName>
-		<Version>3.1</Version>
+		<Version>3.2</Version>
 		<Authors>Erik Madsen</Authors>
 		<Description>UCI Chess Engine</Description>
 		<Copyright>2022</Copyright>

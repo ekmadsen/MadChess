@@ -368,7 +368,7 @@ public sealed class UciStream : IDisposable
     {
         // Display engine name, author, and standard commands.
         // ReSharper disable once ConvertToConstant.Local
-        var version = "3.1";
+        var version = "3.2 Beta";
 #if CPU64
         version = $"{version} x64";
 #else
@@ -384,7 +384,7 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("option name UCI_AnalyseMode type check default false");
         WriteMessageLine($"option name MultiPV type spin default 1 min 1 max {Core.Game.Position.MaxMoves}");
         WriteMessageLine("option name UCI_LimitStrength type check default false");
-        WriteMessageLine($"option name UCI_Elo type spin default {Search.MinElo} min {Search.MinElo} max {Search.MaxElo}");
+        WriteMessageLine($"option name UCI_Elo type spin default {Elo.Min} min {Elo.Min} max {Elo.Max}");
         WriteMessageLine("uciok");
     }
 
@@ -412,7 +412,6 @@ public sealed class UciStream : IDisposable
                 _moveHistory.Reset();
                 break;
             case "uci_analysemode":
-            case "analyze":
                 var analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                 if (analysisMode)
                 {
@@ -993,7 +992,7 @@ public sealed class UciStream : IDisposable
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 806 for MadChessGauntlets.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 790 for MadChessGauntlets.pgn.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
         particleSwarms.Optimize(iterations);

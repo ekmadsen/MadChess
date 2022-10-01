@@ -98,6 +98,7 @@ public sealed class Cache
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         set
         {
+            // TODO: Do not overwrite PV lines from cache during current search (Cache.Searches).
             Debug.Assert(value.Key == key);
             Debug.Assert(CachedPositionData.IsValid(value.Data));
             var index = GetIndex(key);
