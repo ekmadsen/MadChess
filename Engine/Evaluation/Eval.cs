@@ -411,7 +411,7 @@ public sealed class Eval
                 // Neither side has any major pieces.
                 if ((Bitwise.CountSetBits(position.GetMinorPieces(Color.White)) <= 1) && (Bitwise.CountSetBits(position.GetMinorPieces(Color.Black)) <= 1))
                 {
-                    // Each side has one or zero minor pieces.  Draw by insufficient material.
+                    // Each side has one or zero minor pieces.  Draw by insufficient checkmating material.
                     return (true, false);
                 }
             }

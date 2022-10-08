@@ -76,7 +76,7 @@ public sealed class Search : IDisposable
     private int[] _lateMovePruningMargins;
     private int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
     private ScoredMove[] _rootMoves;
-    private ScoredMove[] _bestMoves;
+    private ScoredMove[] _bestMoves; // TODO: Determine whether _bestMoves array can be removed (use the _rootMoves array instead).
     private ScoredMove[] _bestMovePlies;
     private Stats _stats;
     private Cache _cache;
@@ -261,7 +261,6 @@ public sealed class Search : IDisposable
 
     private void ConfigureLimitedStrength()
     {
-        // TODO: Calibrate limit strength parameters.  Currently, MadChess plays too weak for ELO rating.
         // Reset to full strength, then limit search capabilities.
         var elo = _elo;
         ConfigureFullStrength();
@@ -327,6 +326,7 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public ulong FindBestMove(Board board)
     {
+        // TODO: Determine whether legalMoveNumber variable may be used instead of board.CurrentPosition.MoveIndex.
         // Ensure all root moves are legal.
         board.CurrentPosition.GenerateMoves();
         var legalMoveIndex = 0;
@@ -698,7 +698,14 @@ public sealed class Search : IDisposable
                 // Found new principal variation.
                 bestScore = score;
                 UpdateBestMoveCache(board.CurrentPosition, depth, horizon, move, score, alpha, beta);
-                if ((depth > 0) || CompetitivePlay) alpha = score; // Keep alpha / beta window open for inferior moves.
+                if ((depth > 0) || CompetitivePlay) alpha = score;
+                else if ((depth == 0) && (legalMoveNumber >= MultiPv))
+                {
+                    // Root move and not playing competitively.
+                    var rootMoveIndex = legalMoveNumber - 1;
+                    SortMovesByScore(_rootMoves, rootMoveIndex);
+                    alpha = FastMath.Max(alpha, _rootMoves[rootMoveIndex].Score);
+                }
             }
             if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= board.NodesInfoUpdate))
             {
@@ -1036,8 +1043,6 @@ public sealed class Search : IDisposable
             // To increase confidence in the singular move's score, search it one ply deeper.
             return horizon + 1;
         }
-        // TODO: Consider reducing search depth in Multi-PV searches or when engine playing strength is reduced.
-        if ((depth == 0) && !CompetitivePlay) return horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
         if (Move.CaptureVictim(move) != Piece.None) return horizon; // Do not reduce capture.
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
         if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return horizon; // Do not reduce killer move, pawn promotion, or castling.
