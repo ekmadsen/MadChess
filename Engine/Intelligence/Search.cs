@@ -45,7 +45,7 @@ public sealed class Search : IDisposable
     public TimeSpan MoveTimeSoftLimit;
     public TimeSpan MoveTimeHardLimit;
     public bool CanAdjustMoveTime;
-    public bool AllowedToTruncatePv;
+    public bool TruncatePv;
     public int MultiPv;
     public bool Continue;
     private const int _minMovesRemaining = 8;
@@ -76,8 +76,9 @@ public sealed class Search : IDisposable
     private int[] _lateMovePruningMargins;
     private int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
     private ScoredMove[] _rootMoves;
-    private ScoredMove[] _bestMoves; // TODO: Determine whether _bestMoves array can be removed (use the _rootMoves array instead).
+    private ScoredMove[] _bestMoves;
     private ScoredMove[] _bestMovePlies;
+    private ScoredMove[] _multiPvMoves;
     private Stats _stats;
     private Cache _cache;
     private KillerMoves _killerMoves;
@@ -137,10 +138,6 @@ public sealed class Search : IDisposable
         }
     }
 
-
-    private bool CompetitivePlay => !LimitedStrength && (MultiPv == 1);
-
-
     static Search()
     {
         _movePriorityComparer = new MovePriorityComparer();
@@ -176,14 +173,15 @@ public sealed class Search : IDisposable
         _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         _lateMoveReductions = GetLateMoveReductions();
-        // Create scored move arrays.
+        // Create scored move collections.
         _rootMoves = new ScoredMove[Position.MaxMoves];
         _bestMoves = new ScoredMove[Position.MaxMoves];
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
+        _multiPvMoves = new ScoredMove[MaxHorizon + 1];
         _disposed = false;
         // Set Multi PV, PV truncation, and search strength.
         MultiPv = 1;
-        AllowedToTruncatePv = true;
+        TruncatePv = true;
         ConfigureFullStrength();
     }
 
@@ -222,6 +220,7 @@ public sealed class Search : IDisposable
             _rootMoves = null;
             _bestMoves = null;
             _bestMovePlies = null;
+            _multiPvMoves = null;
             _stats = null;
             _cache = null;
             _killerMoves = null;
@@ -326,7 +325,6 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public ulong FindBestMove(Board board)
     {
-        // TODO: Determine whether legalMoveNumber variable may be used instead of board.CurrentPosition.MoveIndex.
         // Ensure all root moves are legal.
         board.CurrentPosition.GenerateMoves();
         var legalMoveIndex = 0;
@@ -345,10 +343,9 @@ public sealed class Search : IDisposable
             }
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
-        if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0))
+        if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0) && TruncatePv)
         {
-            // TODO: Output best move when only one legal move found and in analysis mode.
-            // Only one legal move found.
+            // Only one legal move found.  Play it immediately.
             _stopwatch.Stop();
             return board.CurrentPosition.Moves[0];
         }
@@ -375,13 +372,12 @@ public sealed class Search : IDisposable
             _originalHorizon++;
             _selectiveHorizon = 0;
             _moveHistory.Age();
-            // Reset move scores, then search moves.
-            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
+            // Search moves.
             var score = GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
             // Find best move.
-            SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
-            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
+            SortMovesByScore(_rootMoves, legalMoveIndex - 1);
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
             bestMove = _bestMoves[0];
             _bestMovePlies[_originalHorizon] = bestMove;
             // Update principal variation status and determine whether to keep searching.
@@ -698,13 +694,26 @@ public sealed class Search : IDisposable
                 // Found new principal variation.
                 bestScore = score;
                 UpdateBestMoveCache(board.CurrentPosition, depth, horizon, move, score, alpha, beta);
-                if ((depth > 0) || CompetitivePlay) alpha = score;
-                else if ((depth == 0) && (legalMoveNumber >= MultiPv))
+                if ((depth > 0) || ((MultiPv == 1) && !LimitedStrength)) alpha = score; // Else leave alpha / beta window open when limiting strength.
+            }
+            if (depth == 0)
+            {
+                // Searching root moves.
+                var principalVariations = FastMath.Min(MultiPv, board.CurrentPosition.MoveIndex);
+                if (principalVariations > 1)
                 {
-                    // Root move and not playing competitively.
-                    var rootMoveIndex = legalMoveNumber - 1;
-                    SortMovesByScore(_rootMoves, rootMoveIndex);
-                    alpha = FastMath.Max(alpha, _rootMoves[rootMoveIndex].Score);
+                    // MultiPV Search
+                    var multiPvIndex = legalMoveNumber - 1;
+                    _multiPvMoves[multiPvIndex] = _rootMoves[multiPvIndex];
+                    if (legalMoveNumber >= principalVariations)
+                    {
+                        // Determine worst score among principal variations.
+                        // For example: If MultiPV = 4 and legalMoveNumber = 8, find the 4th best move among the 8 moves searched.
+                        SortMovesByScore(_multiPvMoves, multiPvIndex);
+                        var worstPvScore = _multiPvMoves[principalVariations - 1].Score;
+                        // Raise alpha because MultiPV best moves have been found.
+                        alpha = worstPvScore;
+                    }
                 }
             }
             if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= board.NodesInfoUpdate))
@@ -1095,7 +1104,7 @@ public sealed class Search : IDisposable
             case ScorePrecision.Exact:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 if (dynamicScore >= beta) return beta; // Score fails high.
-                return AllowedToTruncatePv ? dynamicScore : SpecialScore.NotCached;
+                return TruncatePv ? dynamicScore : SpecialScore.NotCached;
             case ScorePrecision.UpperBound:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 break;
@@ -1265,7 +1274,7 @@ public sealed class Search : IDisposable
         MoveTimeSoftLimit = TimeSpan.MaxValue;
         MoveTimeHardLimit = TimeSpan.MaxValue;
         CanAdjustMoveTime = true;
-        // Reset best moves and last alpha.
+        // Reset best moves.
         for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -SpecialScore.Max);
         for (var depth = 0; depth < _bestMovePlies.Length; depth++) _bestMovePlies[depth] = new ScoredMove(Move.Null, -SpecialScore.Max);
         // Enable PV update, increment search counter, and continue search.
