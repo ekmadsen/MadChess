@@ -33,12 +33,12 @@ public sealed class Eval
     private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
     private readonly StaticScore _staticScore;
     public readonly EvalConfig Config;
-    // Game Phase (constants selected such that starting material = 256)
+    // Game Phase (constants selected such that starting material = 128)
     public const int MiddlegamePhase = 4 * (_knightPhaseWeight + _bishopPhaseWeight + _rookPhaseWeight) + (2 * _queenPhaseWeight);
-    private const int _knightPhaseWeight = 10; //   4 * 10 =  40
-    private const int _bishopPhaseWeight = 10; // + 4 * 10 =  80
-    private const int _rookPhaseWeight = 22; //   + 4 * 22 = 168
-    private const int _queenPhaseWeight = 44; //  + 2 * 44 = 256
+    private const int _knightPhaseWeight = 5; //   4 *  5 =  20
+    private const int _bishopPhaseWeight = 5; // + 4 *  5 =  40
+    private const int _rookPhaseWeight =  11; // + 4 * 11 =  84
+    private const int _queenPhaseWeight = 22; // + 2 * 22 = 128
     // Draw by Repetition
     public int DrawMoves;
     // Material

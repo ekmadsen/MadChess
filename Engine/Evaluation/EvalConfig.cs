@@ -160,6 +160,7 @@ public sealed class EvalConfig
         EgKingEscortedPassedPawn = copyFromConfig.EgKingEscortedPassedPawn;
         // Copy king safety values.
         MgKingSafetyPowerPer128 = copyFromConfig.MgKingSafetyPowerPer128;
+        MgKingSafetyScalePer128 = copyFromConfig.MgKingSafetyScalePer128;
         MgKingSafetyMinorAttackOuterRingPer8 = copyFromConfig.MgKingSafetyMinorAttackOuterRingPer8;
         MgKingSafetyMinorAttackInnerRingPer8 = copyFromConfig.MgKingSafetyMinorAttackInnerRingPer8;
         MgKingSafetyRookAttackOuterRingPer8 = copyFromConfig.MgKingSafetyRookAttackOuterRingPer8;

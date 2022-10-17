@@ -372,7 +372,8 @@ public sealed class Search : IDisposable
             _originalHorizon++;
             _selectiveHorizon = 0;
             _moveHistory.Age();
-            // Search moves.
+            // Reset move scores, then search moves.
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
             var score = GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
             // Find best move.
