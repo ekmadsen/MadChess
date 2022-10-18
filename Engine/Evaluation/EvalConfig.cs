@@ -46,6 +46,7 @@ public sealed class EvalConfig
     public int MgKingSafetySemiOpenFilePer8 = 6;
     public int MgKingSafetyPawnShieldPer8 = 21;
     public int MgKingSafetyDefendingPiecesPer8 = 10;
+    public int MgKingSafetyAttackingPiecesPer8 = 10;
     // Pawn Location
     public int MgPawnAdvancement = 0;
     public int EgPawnAdvancement = 4;
@@ -170,6 +171,7 @@ public sealed class EvalConfig
         MgKingSafetySemiOpenFilePer8 = copyFromConfig.MgKingSafetySemiOpenFilePer8;
         MgKingSafetyPawnShieldPer8 = copyFromConfig.MgKingSafetyPawnShieldPer8;
         MgKingSafetyDefendingPiecesPer8 = copyFromConfig.MgKingSafetyDefendingPiecesPer8;
+        MgKingSafetyAttackingPiecesPer8 = copyFromConfig.MgKingSafetyAttackingPiecesPer8;
         // Copy piece location values.
         MgPawnAdvancement = copyFromConfig.MgPawnAdvancement;
         EgPawnAdvancement = copyFromConfig.EgPawnAdvancement;
