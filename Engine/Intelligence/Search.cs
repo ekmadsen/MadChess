@@ -266,42 +266,29 @@ public sealed class Search : IDisposable
         _limitedStrength = true;
         _elo = elo;
 
-        // Limit search speed.  -------------------------------------------------------------------------------------------+
-        var scale = 200d; //                                                                                               |
-        var power = 4d; //                                                                                                 |
-        var constant = 500; //                                                                                             |
-        var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200; //                                                                |
-        _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //                                  |
-        //  Rating              600  800   1000    1200    1400     1600     1800     2000     2200       2400       2600  |
-        //  Nodes Per Second    500  700  3,700  16,700  51,700  125,500  259,700  480,700  819,700  1,312,700  2,000,500  |
-        //                                                                                                                 |
-        // ----------------------------------------------------------------------------------------------------------------+
-
-        // Enable errors on every move.  --------------------------------------------------+
-        scale = 0.45d; //                                                                  |
-        power = 2d; //                                                                     |
-        constant = 5; //                                                                   |
-        ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200; //                                    |
-        _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //       |
-        // Rating          600  800  1000  1200  1400  1600  1800  2000  2200  2400  2600  |
-        // Move Error       50   41    34    27    21    16    12     9     7     5     5  |
-        //                                                                                 |
-        // --------------------------------------------------------------------------------+
-
-        // Enable occasional blunders.  ---------------------------------------------------+
-        scale = 1.75d; //                                                                  |
-        power = 2.5d; //                                                                   |
-        constant = 50; //                                                                  |
-        _blunderError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //    |
-        scale = 1d; //                                                                     |
-        power = 1d; //                                                                     |
-        constant = 6; //                                                                   |
-        _blunderPer128 = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //   |
-        // Rating          600  800  1000  1200  1400  1600  1800  2000  2200  2400  2600  |    
-        // Blunder Error   603  475   367   277   204   148   106    77    60    52    50  |
-        // Blunder Per128   16   15    14    13    12    11    10     9     8     7     6  |
-        //                                                                                 |
-        // --------------------------------------------------------------------------------+
+        // See https://www.madchess.net/the-madchess-uci_limitstrength-algorithm/ for chart with NPS, Move Error, Blunder Error, and Blunder Percent values.
+        var scale = 128d;
+        var power = 4d; 
+        var constant = 32;
+        var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
+        _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        
+        // Enable errors on every move.
+        scale = 1d;
+        power = 2d;
+        constant = 5;
+        ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200;
+        _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        
+        // Enable occasional blunders.
+        scale = 1.75d;
+        power = 2.5d;
+        constant = 50;
+        _blunderError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        scale = 0.16d;
+        power = 2d;
+        constant = 5;
+        _blunderPer128 = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
 
         if (_debug())
         {
