@@ -33,12 +33,12 @@ public sealed class Eval
     private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
     private readonly StaticScore _staticScore;
     public readonly EvalConfig Config;
-    // Game Phase (constants selected such that starting material = 256)
+    // Game Phase (constants selected such that starting material = 128)
     public const int MiddlegamePhase = 4 * (_knightPhaseWeight + _bishopPhaseWeight + _rookPhaseWeight) + (2 * _queenPhaseWeight);
-    private const int _knightPhaseWeight = 10; //   4 * 10 =  40
-    private const int _bishopPhaseWeight = 10; // + 4 * 10 =  80
-    private const int _rookPhaseWeight = 22; //   + 4 * 22 = 168
-    private const int _queenPhaseWeight = 44; //  + 2 * 44 = 256
+    private const int _knightPhaseWeight = 5; //   4 *  5 =  20
+    private const int _bishopPhaseWeight = 5; // + 4 *  5 =  40
+    private const int _rookPhaseWeight =  11; // + 4 * 11 =  84
+    private const int _queenPhaseWeight = 22; // + 2 * 22 = 128
     // Draw by Repetition
     public int DrawMoves;
     // Material
@@ -55,8 +55,8 @@ public sealed class Eval
     private readonly int[] _mgMaterialScores; // [colorlessPiece]
     private readonly int[] _egMaterialScores; // [colorlessPiece]
     // Piece Location
-    private readonly int[][] _mgPieceLocations; // [colorlessPiece][square)]
-    private readonly int[][] _egPieceLocations; // [colorlessPiece][square)]
+    private readonly int[][] _mgPieceLocations; // [colorlessPiece][square]
+    private readonly int[][] _egPieceLocations; // [colorlessPiece][square]
     // Passed Pawns
     private readonly ulong[] _passedPawns; // [color]
     private readonly int[] _mgPassedPawns; // [rank]
@@ -411,7 +411,7 @@ public sealed class Eval
                 // Neither side has any major pieces.
                 if ((Bitwise.CountSetBits(position.GetMinorPieces(Color.White)) <= 1) && (Bitwise.CountSetBits(position.GetMinorPieces(Color.Black)) <= 1))
                 {
-                    // Each side has one or zero minor pieces.  Draw by insufficient material.
+                    // Each side has one or zero minor pieces.  Draw by insufficient checkmating material.
                     return (true, false);
                 }
             }
@@ -473,9 +473,8 @@ public sealed class Eval
         }
         // Position is not a simple endgame.
         _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
-        // TODO: Evaluate piece location based on enemy king on queenside or kingside of board.
+        // TODO: Evaluate piece location based on king on queenside or kingside of board.
         // TODO: Evaluate space.  Perhaps squares attacked by more of own pieces than enemy pieces?  Or squares behind own pawns not occupied by enemy pieces?
-        // TODO: Evaluate king safety in the endgame.
         // TODO: Evaluate rooks on open files.
         // Explicit array lookups are faster than looping through colors.
         EvaluateMaterial(position, Color.White);
@@ -854,6 +853,8 @@ public sealed class Eval
         var safeSquares = ~squaresAttackedByEnemyPawns;
         enemyPawns = position.GetPawns(enemyColor); // Repopulate after above while loop popped all enemy pawn squares.
         // Evaluate mobility of individual pieces.
+        var attackingPieceCount = 0;
+        var attackingPieceDistance = 0;
         for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
         {
             var piece = PieceHelper.GetPieceOfColor(colorlessPiece, color);
@@ -862,6 +863,8 @@ public sealed class Eval
             var getPieceXrayMovesMask = Board.PieceXrayMoveMaskDelegates[(int)colorlessPiece];
             while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
+                attackingPieceCount++;
+                attackingPieceDistance += Board.SquareDistances[(int)square][(int)enemyKingSquare];
                 var pieceMovesMask = getPieceMovesMask(square, position.Occupancy);
                 var pieceXrayMovesMask = getPieceXrayMovesMask(square, color, position);
                 // Evaluate piece mobility using safe moves.
@@ -891,18 +894,25 @@ public sealed class Eval
         if ((enemyKingFile < 7) && ((Board.FileMasks[enemyKingFile + 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Right of Enemy King
         mgThreatsToEnemyKingSafety += semiOpenFilesNearEnemyKing * Config.MgKingSafetySemiOpenFilePer8;
         // Evaluate enemy king pawn shield.
-        const int maxPawnsInShield = 3;
-        var pawnsMissingFromShield = maxPawnsInShield - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
+        var pawnsMissingFromShield = 3 - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
         mgThreatsToEnemyKingSafety += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
         // Evaluate average distance of defending pieces from enemy king.
         var defendingPieces = position.GetMajorAndMinorPieces(enemyColor);
-        var defendingPieceCount = FastMath.Max(Bitwise.CountSetBits(defendingPieces), 1); // Prevent divide-by-zero exception.
-        var defendingPieceDistance = 0;
-        while ((square = Bitwise.PopFirstSetSquare(ref defendingPieces)) != Square.Illegal)
+        var defendingPieceCount = Bitwise.CountSetBits(defendingPieces);
+        if (defendingPieceCount > 0)
         {
-            defendingPieceDistance += Board.SquareDistances[(int)square][(int)enemyKingSquare];
+            var defendingPieceDistance = 0;
+            while ((square = Bitwise.PopFirstSetSquare(ref defendingPieces)) != Square.Illegal)
+            {
+                defendingPieceDistance += Board.SquareDistances[(int)square][(int)enemyKingSquare];
+            }
+            mgThreatsToEnemyKingSafety += (defendingPieceDistance * Config.MgKingSafetyDefendingPiecesPer8) / defendingPieceCount;
         }
-        mgThreatsToEnemyKingSafety += (defendingPieceDistance * Config.MgKingSafetyDefendingPiecesPer8) / defendingPieceCount;
+        // Evaluate average distance of attacking pieces from enemy king.
+        if (attackingPieceCount > 0)
+        {
+            mgThreatsToEnemyKingSafety += (((7 * attackingPieceCount) - attackingPieceDistance) * Config.MgKingSafetyAttackingPiecesPer8) / attackingPieceCount;
+        }
         // Lookup king safety score in array.
         var maxIndex = _mgKingSafety.Length - 1;
         _staticScore.MgKingSafety[(int)enemyColor] = _mgKingSafety[FastMath.Min(mgThreatsToEnemyKingSafety / 8, maxIndex)];

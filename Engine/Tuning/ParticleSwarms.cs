@@ -117,6 +117,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 64),
             new(nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8), 0, 64),
+            new(nameof(EvalConfig.MgKingSafetyAttackingPiecesPer8), 0, 64),
             // Pawn Location
             new(nameof(EvalConfig.MgPawnAdvancement), 0, 25),
             new(nameof(EvalConfig.EgPawnAdvancement), 0, 25),
@@ -224,6 +225,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
         parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
         parameters[nameof(evalConfig.MgKingSafetyDefendingPiecesPer8)].Value = evalConfig.MgKingSafetyDefendingPiecesPer8;
+        parameters[nameof(evalConfig.MgKingSafetyAttackingPiecesPer8)].Value = evalConfig.MgKingSafetyAttackingPiecesPer8;
         // Pawn Location
         parameters[nameof(evalConfig.MgPawnAdvancement)].Value = evalConfig.MgPawnAdvancement;
         parameters[nameof(evalConfig.EgPawnAdvancement)].Value = evalConfig.EgPawnAdvancement;

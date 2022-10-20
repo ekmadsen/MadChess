@@ -415,12 +415,12 @@ public sealed class UciStream : IDisposable
                 var analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                 if (analysisMode)
                 {
-                    _search.AllowedToTruncatePv = false;
+                    _search.TruncatePv = false;
                     _eval.DrawMoves = 3;
                 }
                 else
                 {
-                    _search.AllowedToTruncatePv = true;
+                    _search.TruncatePv = true;
                     _eval.DrawMoves = 2;
                 }
                 break;

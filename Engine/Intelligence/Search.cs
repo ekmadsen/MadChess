@@ -45,7 +45,7 @@ public sealed class Search : IDisposable
     public TimeSpan MoveTimeSoftLimit;
     public TimeSpan MoveTimeHardLimit;
     public bool CanAdjustMoveTime;
-    public bool AllowedToTruncatePv;
+    public bool TruncatePv;
     public int MultiPv;
     public bool Continue;
     private const int _minMovesRemaining = 8;
@@ -78,6 +78,7 @@ public sealed class Search : IDisposable
     private ScoredMove[] _rootMoves;
     private ScoredMove[] _bestMoves;
     private ScoredMove[] _bestMovePlies;
+    private ScoredMove[] _multiPvMoves;
     private Stats _stats;
     private Cache _cache;
     private KillerMoves _killerMoves;
@@ -137,10 +138,6 @@ public sealed class Search : IDisposable
         }
     }
 
-
-    private bool CompetitivePlay => !LimitedStrength && (MultiPv == 1);
-
-
     static Search()
     {
         _movePriorityComparer = new MovePriorityComparer();
@@ -176,14 +173,15 @@ public sealed class Search : IDisposable
         _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         _lateMoveReductions = GetLateMoveReductions();
-        // Create scored move arrays.
+        // Create scored move collections.
         _rootMoves = new ScoredMove[Position.MaxMoves];
         _bestMoves = new ScoredMove[Position.MaxMoves];
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
+        _multiPvMoves = new ScoredMove[MaxHorizon + 1];
         _disposed = false;
         // Set Multi PV, PV truncation, and search strength.
         MultiPv = 1;
-        AllowedToTruncatePv = true;
+        TruncatePv = true;
         ConfigureFullStrength();
     }
 
@@ -222,6 +220,7 @@ public sealed class Search : IDisposable
             _rootMoves = null;
             _bestMoves = null;
             _bestMovePlies = null;
+            _multiPvMoves = null;
             _stats = null;
             _cache = null;
             _killerMoves = null;
@@ -261,49 +260,35 @@ public sealed class Search : IDisposable
 
     private void ConfigureLimitedStrength()
     {
-        // TODO: Calibrate limit strength parameters.  Currently, MadChess plays too weak for ELO rating.
         // Reset to full strength, then limit search capabilities.
         var elo = _elo;
         ConfigureFullStrength();
         _limitedStrength = true;
         _elo = elo;
 
-        // Limit search speed.  -------------------------------------------------------------------------------------------+
-        var scale = 200d; //                                                                                               |
-        var power = 4d; //                                                                                                 |
-        var constant = 500; //                                                                                             |
-        var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200; //                                                                |
-        _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //                                  |
-        //  Rating              600  800   1000    1200    1400     1600     1800     2000     2200       2400       2600  |
-        //  Nodes Per Second    500  700  3,700  16,700  51,700  125,500  259,700  480,700  819,700  1,312,700  2,000,500  |
-        //                                                                                                                 |
-        // ----------------------------------------------------------------------------------------------------------------+
-
-        // Enable errors on every move.  --------------------------------------------------+
-        scale = 0.45d; //                                                                  |
-        power = 2d; //                                                                     |
-        constant = 5; //                                                                   |
-        ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200; //                                    |
-        _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //       |
-        // Rating          600  800  1000  1200  1400  1600  1800  2000  2200  2400  2600  |
-        // Move Error       50   41    34    27    21    16    12     9     7     5     5  |
-        //                                                                                 |
-        // --------------------------------------------------------------------------------+
-
-        // Enable occasional blunders.  ---------------------------------------------------+
-        scale = 1.75d; //                                                                  |
-        power = 2.5d; //                                                                   |
-        constant = 50; //                                                                  |
-        _blunderError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //    |
-        scale = 1d; //                                                                     |
-        power = 1d; //                                                                     |
-        constant = 6; //                                                                   |
-        _blunderPer128 = Eval.GetNonLinearBonus(ratingClass, scale, power, constant); //   |
-        // Rating          600  800  1000  1200  1400  1600  1800  2000  2200  2400  2600  |    
-        // Blunder Error   603  475   367   277   204   148   106    77    60    52    50  |
-        // Blunder Per128   16   15    14    13    12    11    10     9     8     7     6  |
-        //                                                                                 |
-        // --------------------------------------------------------------------------------+
+        // See https://www.madchess.net/the-madchess-uci_limitstrength-algorithm/ for chart with NPS, Move Error, Blunder Error, and Blunder Percent values.
+        var scale = 128d;
+        var power = 4d; 
+        var constant = 32;
+        var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
+        _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        
+        // Enable errors on every move.
+        scale = 1d;
+        power = 2d;
+        constant = 5;
+        ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200;
+        _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        
+        // Enable occasional blunders.
+        scale = 1.75d;
+        power = 2.5d;
+        constant = 50;
+        _blunderError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        scale = 0.16d;
+        power = 2d;
+        constant = 5;
+        _blunderPer128 = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
 
         if (_debug())
         {
@@ -345,10 +330,9 @@ public sealed class Search : IDisposable
             }
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
-        if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0))
+        if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0) && TruncatePv)
         {
-            // TODO: Output best move when only one legal move found and in analysis mode.
-            // Only one legal move found.
+            // Only one legal move found.  Play it immediately.
             _stopwatch.Stop();
             return board.CurrentPosition.Moves[0];
         }
@@ -376,12 +360,12 @@ public sealed class Search : IDisposable
             _selectiveHorizon = 0;
             _moveHistory.Age();
             // Reset move scores, then search moves.
-            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
             var score = GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
             // Find best move.
-            SortMovesByScore(_rootMoves, board.CurrentPosition.MoveIndex - 1);
-            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
+            SortMovesByScore(_rootMoves, legalMoveIndex - 1);
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
             bestMove = _bestMoves[0];
             _bestMovePlies[_originalHorizon] = bestMove;
             // Update principal variation status and determine whether to keep searching.
@@ -698,7 +682,27 @@ public sealed class Search : IDisposable
                 // Found new principal variation.
                 bestScore = score;
                 UpdateBestMoveCache(board.CurrentPosition, depth, horizon, move, score, alpha, beta);
-                if ((depth > 0) || CompetitivePlay) alpha = score; // Keep alpha / beta window open for inferior moves.
+                if ((depth > 0) || ((MultiPv == 1) && !LimitedStrength)) alpha = score; // Else leave alpha / beta window open when limiting strength.
+            }
+            if (depth == 0)
+            {
+                // Searching root moves.
+                var principalVariations = FastMath.Min(MultiPv, board.CurrentPosition.MoveIndex);
+                if (principalVariations > 1)
+                {
+                    // MultiPV Search
+                    var multiPvIndex = legalMoveNumber - 1;
+                    _multiPvMoves[multiPvIndex] = _rootMoves[multiPvIndex];
+                    if (legalMoveNumber >= principalVariations)
+                    {
+                        // Determine worst score among principal variations.
+                        // For example: If MultiPV = 4 and legalMoveNumber = 8, find the 4th best move among the 8 moves searched.
+                        SortMovesByScore(_multiPvMoves, multiPvIndex);
+                        var worstPvScore = _multiPvMoves[principalVariations - 1].Score;
+                        // Raise alpha because MultiPV best moves have been found.
+                        alpha = worstPvScore;
+                    }
+                }
             }
             if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= board.NodesInfoUpdate))
             {
@@ -1036,8 +1040,6 @@ public sealed class Search : IDisposable
             // To increase confidence in the singular move's score, search it one ply deeper.
             return horizon + 1;
         }
-        // TODO: Consider reducing search depth in Multi-PV searches or when engine playing strength is reduced.
-        if ((depth == 0) && !CompetitivePlay) return horizon; // Do not reduce root move in Multi-PV searches or when engine playing strength is reduced.
         if (Move.CaptureVictim(move) != Piece.None) return horizon; // Do not reduce capture.
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
         if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return horizon; // Do not reduce killer move, pawn promotion, or castling.
@@ -1090,7 +1092,7 @@ public sealed class Search : IDisposable
             case ScorePrecision.Exact:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 if (dynamicScore >= beta) return beta; // Score fails high.
-                return AllowedToTruncatePv ? dynamicScore : SpecialScore.NotCached;
+                return TruncatePv ? dynamicScore : SpecialScore.NotCached;
             case ScorePrecision.UpperBound:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 break;
@@ -1260,7 +1262,7 @@ public sealed class Search : IDisposable
         MoveTimeSoftLimit = TimeSpan.MaxValue;
         MoveTimeHardLimit = TimeSpan.MaxValue;
         CanAdjustMoveTime = true;
-        // Reset best moves and last alpha.
+        // Reset best moves.
         for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -SpecialScore.Max);
         for (var depth = 0; depth < _bestMovePlies.Length; depth++) _bestMovePlies[depth] = new ScoredMove(Move.Null, -SpecialScore.Max);
         // Enable PV update, increment search counter, and continue search.
