@@ -19,10 +19,9 @@ public static class Program
 {
     public static void Main()
     {
-        // TODO: Embed MadChess logo in MadChess.Engine.exe file.
 
         // Improve garbage collector performance at the cost of memory usage.
-        // Engine should not allocate much memory when searching a position anyhow, since it references pre-allocated objects.
+        // Engine should not allocate much memory when searching a position anyhow because it references pre-allocated objects.
         GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
         using (var uciStream = new UciStream())
         {

@@ -19,6 +19,7 @@
 		<PackageId>MadChess.Engine</PackageId>
 		<Configurations>Debug;Release</Configurations>
 		<Platforms>x64;x86</Platforms>
+		<ApplicationIcon>MadChess.Engine.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
@@ -36,6 +37,10 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
 	  <DefineConstants>TRACE</DefineConstants>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Content Include="MadChess.Engine.ico" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="JetBrains.Annotations" Version="2022.1.0" />

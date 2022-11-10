@@ -168,9 +168,9 @@ public sealed class Search : IDisposable
         SpecifiedMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        // To Horizon =                   000  001  002  003  004  005
-        _futilityPruningMargins = new[] { 060, 160, 220, 280, 340, 400 };
-        _lateMovePruningMargins = new[] { 999, 003, 005, 009, 017, 033 };
+        // To Horizon =                   000  001  002  003  004  005  006  007  008  009
+        _futilityPruningMargins = new[] { 100, 110, 140, 190, 260, 350, 460, 590, 740, 910 }; // 10.00 * (toHorizon Pow 2.0) + 100
+        _lateMovePruningMargins = new[] { 999, 003, 006, 009, 014, 018, 024, 029, 035, 042}; //  1.50 * (toHorizon Pow 1.5) +   2... quiet search excluded
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         _lateMoveReductions = GetLateMoveReductions();
         // Create scored move collections.
