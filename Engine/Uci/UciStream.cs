@@ -578,7 +578,7 @@ public sealed class UciStream : IDisposable
         _commandStopwatch.Stop();
         _search.Signal.Set();
         // Collect memory from unreferenced objects in generations 0 and 1.
-        // Do not collect memory from generation 2 (that contains the large object heap) since it's mostly arrays whose lifetime is the duration of the application.
+        // Do not collect memory from generation 2 (that contains the large object heap) because it's mostly arrays whose lifetime is the duration of the application.
         GC.Collect(1, GCCollectionMode.Forced, true, true);
     }
 
@@ -605,7 +605,7 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("Square   Piece  Shift  Unique Occupancies  Unique Moves  Magic Multiplier");
         WriteMessageLine("======  ======  =====  ==================  ============  ================");
         // Find magic multipliers for bishop and rook moves.
-        // No need to find magic multipliers for queen moves since the queen combines bishop and rook moves.
+        // No need to find magic multipliers for queen moves because the queen combines bishop and rook moves.
         Board.PrecalculatedMoves.FindMagicMultipliers(ColorlessPiece.Bishop, WriteMessageLine);
         Board.PrecalculatedMoves.FindMagicMultipliers(ColorlessPiece.Rook, WriteMessageLine);
     }

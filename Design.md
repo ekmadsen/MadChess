@@ -2,7 +2,7 @@
 
 ## Performance Optimizations
 
-1. Avoid use of foreach since it allocates an enumerator.
+1. Avoid use of foreach because it allocates an enumerator.
 
    A. Technically, this is critical only when searching positions.
 
