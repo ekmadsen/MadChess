@@ -181,7 +181,7 @@ public sealed class Particle
         // Endgame Scale
         eval.Config.EgScaleMinorAdvantage = Parameters[nameof(EvalConfig.EgScaleMinorAdvantage)].Value;
         eval.Config.EgScaleOppBishopsPerPassedPawn = Parameters[nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn)].Value;
-        eval.Config.EgScalePerPawn = Parameters[nameof(EvalConfig.EgScalePerPawn)].Value;
+        eval.Config.EgScalePerPawnAdvantage = Parameters[nameof(EvalConfig.EgScalePerPawnAdvantage)].Value;
         // Calculate positional factors after updating evaluation config.
         eval.CalculatePositionalFactors();
     }
