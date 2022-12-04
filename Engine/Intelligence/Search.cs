@@ -45,6 +45,7 @@ public sealed class Search : IDisposable
     public TimeSpan MoveTimeSoftLimit;
     public TimeSpan MoveTimeHardLimit;
     public bool CanAdjustMoveTime;
+    public bool AnalyzeMode;
     public int MultiPv;
     public bool Continue;
     private const int _minMovesRemaining = 8;
@@ -178,8 +179,9 @@ public sealed class Search : IDisposable
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
         _multiPvMoves = new ScoredMove[Position.MaxMoves];
         _disposed = false;
-        // Set Multi PV and search strength.
+        // Set Multi PV, analyze mode, and search strength.
         MultiPv = 1;
+        AnalyzeMode = false;
         ConfigureFullStrength();
     }
 
@@ -328,7 +330,7 @@ public sealed class Search : IDisposable
             }
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
-        if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0))
+        if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0) && !AnalyzeMode)
         {
             // Only one legal move found.  Play it immediately.
             _stopwatch.Stop();
@@ -1073,7 +1075,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private static int GetCachedDynamicScore(ulong cachedPositionData, int depth, int horizon, int alpha, int beta)
+    private int GetCachedDynamicScore(ulong cachedPositionData, int depth, int horizon, int alpha, int beta)
     {
         var dynamicScore = CachedPositionData.DynamicScore(cachedPositionData);
         if (dynamicScore == SpecialScore.NotCached) return SpecialScore.NotCached; // Score is not cached.
@@ -1089,9 +1091,10 @@ public sealed class Search : IDisposable
         {
             case ScorePrecision.Exact:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
-                return dynamicScore >= beta
-                    ? beta // Score fails high.
-                    : SpecialScore.NotCached; // Don't return exact score to force continuing search of PV, keeping its positions recently-accessed in cache (therefore, less likely to be overwritten).
+                if (dynamicScore >= beta) return beta; // Score fails high.
+                return AnalyzeMode
+                    ? SpecialScore.NotCached // Force continuing search of PV, keeping its positions recently-accessed in cache (therefore less likely to be overwritten, truncating PV).
+                    : dynamicScore;
             case ScorePrecision.UpperBound:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 break;
