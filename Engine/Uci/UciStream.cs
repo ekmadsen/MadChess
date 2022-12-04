@@ -413,16 +413,7 @@ public sealed class UciStream : IDisposable
                 break;
             case "uci_analysemode":
                 var analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
-                if (analysisMode)
-                {
-                    _search.TruncatePv = false;
-                    _eval.DrawMoves = 3;
-                }
-                else
-                {
-                    _search.TruncatePv = true;
-                    _eval.DrawMoves = 2;
-                }
+                _eval.DrawMoves = analysisMode ? 3 : 2;
                 break;
             case "multipv":
                 Stop();
