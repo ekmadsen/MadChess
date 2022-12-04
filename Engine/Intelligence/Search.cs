@@ -177,7 +177,7 @@ public sealed class Search : IDisposable
         _rootMoves = new ScoredMove[Position.MaxMoves];
         _bestMoves = new ScoredMove[Position.MaxMoves];
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
-        _multiPvMoves = new ScoredMove[MaxHorizon + 1];
+        _multiPvMoves = new ScoredMove[Position.MaxMoves];
         _disposed = false;
         // Set Multi PV, PV truncation, and search strength.
         MultiPv = 1;

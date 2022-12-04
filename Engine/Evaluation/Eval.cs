@@ -1038,7 +1038,9 @@ public sealed class Eval
             return;
         }
         // All Other Endgames
-        _staticScore.EgScalePer128 = (winningPawnCount * Config.EgScalePerPawn) + 128;
+        // When ahead, trace pieces.  When behind, trade pawns.
+        var winningPawnAdvantage = winningPawnCount - Bitwise.CountSetBits(position.GetPawns(losingColor));
+        _staticScore.EgScalePer128 = (winningPawnAdvantage * Config.EgScalePerPawnAdvantage) + 128;
     }
 
 
