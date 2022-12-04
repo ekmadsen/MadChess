@@ -15,6 +15,7 @@
 		<Nullable>disable</Nullable>
 		<TargetFramework>net7.0</TargetFramework>
 		<TieredCompilation>true</TieredCompilation>
+		<TieredPGO>true</TieredPGO>
 		<OutputType>Exe</OutputType>
 		<PackageId>MadChess.Engine</PackageId>
 		<Configurations>Debug;Release</Configurations>
