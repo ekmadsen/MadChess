@@ -27,7 +27,7 @@ public sealed class Cache
     public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf(typeof(CachedPosition));
     public readonly CachedPosition NullPosition;
     public int Positions;
-    public byte Searches;
+    public ushort Searches;
     private const int _buckets = 4;
     private readonly Stats _stats;
     private readonly Core.Delegates.ValidateMove _validateMove;
@@ -60,6 +60,7 @@ public sealed class Cache
         CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
         CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.Illegal);
         CachedPositionData.SetBestMovePromotedPiece(ref NullPosition.Data, Piece.None);
+        CachedPositionData.SetBestMoveInPrincipalVariation(ref NullPosition.Data, false);
         CachedPositionData.SetDynamicScore(ref NullPosition.Data, SpecialScore.NotCached);
         CachedPositionData.SetScorePrecision(ref NullPosition.Data, ScorePrecision.Unknown);
         CachedPositionData.SetLastAccessed(ref NullPosition.Data, 0);
@@ -75,9 +76,9 @@ public sealed class Cache
         {
             _stats.CacheProbes++;
             var index = GetIndex(key);
-            for (var bucket = 0; bucket < _buckets; bucket++)
+            var maxBucketIndex = index + _buckets - 1;
+            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
             {
-                var bucketIndex = index + bucket;
                 var position = _positions[bucketIndex];
                 if (position.Key == key)
                 {
@@ -101,14 +102,15 @@ public sealed class Cache
             // TODO: Do not overwrite PV lines from cache during current search (Cache.Searches).
             Debug.Assert(value.Key == key);
             Debug.Assert(CachedPositionData.IsValid(value.Data));
-            var index = GetIndex(key);
             CachedPositionData.SetLastAccessed(ref value.Data, Searches);
+            var index = GetIndex(key);
+            var maxBucketIndex = index + _buckets - 1;
             // Find oldest bucket.
-            var earliestAccess = byte.MaxValue;
-            var oldestBucketIndex = 0;
-            for (var bucket = 0; bucket < _buckets; bucket++)
+            var earliestAccess = ushort.MaxValue;
+            int? oldestNotInPvBucketIndex = null;
+            var oldestBucketIndex = index;
+            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
             {
-                var bucketIndex = index + bucket;
                 var position = _positions[bucketIndex];
                 if (position.Key == key)
                 {
@@ -118,16 +120,18 @@ public sealed class Cache
                     return;
                 }
                 var lastAccessed = CachedPositionData.LastAccessed(position.Data);
-                if (lastAccessed < earliestAccess)
+                if (lastAccessed <= earliestAccess)
                 {
                     earliestAccess = lastAccessed;
+                    if (!CachedPositionData.BestMoveInPrincipalVariation(position.Data)) oldestNotInPvBucketIndex = bucketIndex;
                     oldestBucketIndex = bucketIndex;
                 }
             }
-            if (_positions[oldestBucketIndex].Key == NullPosition.Key) Positions++; // Oldest bucket has not been used.
-            // Overwrite oldest bucket.
+            var overwriteBucketIndex = oldestNotInPvBucketIndex ?? oldestBucketIndex; // Avoid overwriting cached position from a principle variation if possible.
+            if (_positions[overwriteBucketIndex].Key == NullPosition.Key) Positions++; // Oldest bucket has not been used.
+            // Overwrite bucket.
             Debug.Assert(CachedPositionData.IsValid(value.Data));
-            _positions[oldestBucketIndex] = value;
+            _positions[overwriteBucketIndex] = value;
         }
     }
 

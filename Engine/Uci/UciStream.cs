@@ -412,17 +412,18 @@ public sealed class UciStream : IDisposable
                 _moveHistory.Reset();
                 break;
             case "uci_analysemode":
-                var analysisMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
-                if (analysisMode)
+                var analyzeMode = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                if (analyzeMode)
                 {
-                    _search.TruncatePv = false;
+                    _search.AnalyzeMode = true;
                     _eval.DrawMoves = 3;
                 }
                 else
                 {
-                    _search.TruncatePv = true;
+                    _search.AnalyzeMode = false;
                     _eval.DrawMoves = 2;
                 }
+                _eval.DrawMoves = analyzeMode ? 3 : 2;
                 break;
             case "multipv":
                 Stop();

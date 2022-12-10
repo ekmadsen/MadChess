@@ -45,7 +45,7 @@ public sealed class Search : IDisposable
     public TimeSpan MoveTimeSoftLimit;
     public TimeSpan MoveTimeHardLimit;
     public bool CanAdjustMoveTime;
-    public bool TruncatePv;
+    public bool AnalyzeMode;
     public int MultiPv;
     public bool Continue;
     private const int _minMovesRemaining = 8;
@@ -179,9 +179,9 @@ public sealed class Search : IDisposable
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
         _multiPvMoves = new ScoredMove[Position.MaxMoves];
         _disposed = false;
-        // Set Multi PV, PV truncation, and search strength.
+        // Set Multi PV, analyze mode, and search strength.
         MultiPv = 1;
-        TruncatePv = true;
+        AnalyzeMode = false;
         ConfigureFullStrength();
     }
 
@@ -330,7 +330,7 @@ public sealed class Search : IDisposable
             }
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
-        if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0) && TruncatePv)
+        if ((legalMoveIndex == 1) && (SpecifiedMoves.Count == 0) && !AnalyzeMode)
         {
             // Only one legal move found.  Play it immediately.
             _stopwatch.Stop();
@@ -1092,7 +1092,9 @@ public sealed class Search : IDisposable
             case ScorePrecision.Exact:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 if (dynamicScore >= beta) return beta; // Score fails high.
-                return TruncatePv ? dynamicScore : SpecialScore.NotCached;
+                return AnalyzeMode
+                    ? SpecialScore.NotCached // Force continuing search of PV, keeping its positions recently-accessed in cache (therefore less likely to be overwritten, truncating PV).
+                    : dynamicScore;
             case ScorePrecision.UpperBound:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 break;
@@ -1170,9 +1172,11 @@ public sealed class Search : IDisposable
         if (bestMove != Move.Null)
         {
             // Set best move.
+            var inPrincipalVariation = (beta - alpha) > 1;
             CachedPositionData.SetBestMoveFrom(ref cachedPosition.Data, Move.From(bestMove));
             CachedPositionData.SetBestMoveTo(ref cachedPosition.Data, Move.To(bestMove));
             CachedPositionData.SetBestMovePromotedPiece(ref cachedPosition.Data, Move.PromotedPiece(bestMove));
+            CachedPositionData.SetBestMoveInPrincipalVariation(ref cachedPosition.Data, inPrincipalVariation);
         }
         // Adjust checkmate score.
         var adjustedDynamicScore = dynamicScore;
