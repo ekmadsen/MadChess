@@ -54,20 +54,20 @@ public sealed class Eval
     };
     private readonly int[] _mgMaterialScores; // [colorlessPiece]
     private readonly int[] _egMaterialScores; // [colorlessPiece]
-    // Piece Location
-    private readonly int[][] _mgPieceLocations; // [colorlessPiece][square]
-    private readonly int[][] _egPieceLocations; // [colorlessPiece][square]
     // Passed Pawns
     private readonly ulong[] _passedPawns; // [color]
     private readonly int[] _mgPassedPawns; // [rank]
     private readonly int[] _egPassedPawns; // [rank]
     private readonly int[] _egFreePassedPawns; // [rank]
-    // Piece Mobility
-    private readonly int[][] _mgPieceMobility; // [colorlessPiece][moves]
-    private readonly int[][] _egPieceMobility; // [colorlessPiece][moves]
     // King Safety
     private readonly int[][] _mgKingSafetyAttackWeights; // [colorlessPiece][kingRing]
     private readonly int[] _mgKingSafety; // [threatsToEnemyKingSafety]
+    // Piece Location
+    private readonly int[][] _mgPieceLocations; // [colorlessPiece][square]
+    private readonly int[][] _egPieceLocations; // [colorlessPiece][square]
+    // Piece Mobility
+    private readonly int[][] _mgPieceMobility; // [colorlessPiece][moves]
+    private readonly int[][] _egPieceMobility; // [colorlessPiece][moves]
 
 
     public Eval(Stats stats, Delegates.IsRepeatPosition isRepeatPosition, Core.Delegates.Debug debug, Core.Delegates.WriteMessageLine writeMessageLine)
@@ -81,8 +81,26 @@ public sealed class Eval
         Config = new EvalConfig();
         _defaultConfig = new EvalConfig();
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
+        // Material
         _mgMaterialScores = new int[(int)ColorlessPiece.King + 1];
         _egMaterialScores = new int[(int)ColorlessPiece.King + 1];
+        // Passed Pawns
+        _passedPawns = new ulong[2];
+        _mgPassedPawns = new int[8];
+        _egPassedPawns = new int[8];
+        _egFreePassedPawns = new int[8];
+        // King Safety
+        _mgKingSafetyAttackWeights = new[]
+        {
+            Array.Empty<int>(), // None
+            Array.Empty<int>(), // Pawn
+            new int[2],         // Knight
+            new int[2],         // Bishop
+            new int[2],         // Rook
+            new int[2]          // Queen
+        };
+        _mgKingSafety = new int[64];
+        // Piece Location
         _mgPieceLocations = new int[(int)ColorlessPiece.King + 1][];
         _egPieceLocations = new int[(int)ColorlessPiece.King + 1][];
         for (var colorlessPiece = ColorlessPiece.None; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
@@ -90,38 +108,25 @@ public sealed class Eval
             _mgPieceLocations[(int)colorlessPiece] = new int[64];
             _egPieceLocations[(int)colorlessPiece] = new int[64];
         }
+        // Piece Mobility
         _mgPieceMobility = new[]
         {
-            new int[0],  // None
-            new int[0],  // Pawn
-            new int[9],  // Knight
-            new int[14], // Bishop
-            new int[15], // Rook
-            new int[28]  // Queen
+            Array.Empty<int>(),  // None
+            Array.Empty<int>(),  // Pawn
+            new int[9],          // Knight
+            new int[14],         // Bishop
+            new int[15],         // Rook
+            new int[28]          // Queen
         };
         _egPieceMobility = new[]
         {
-            new int[0],  // None
-            new int[0],  // Pawn
-            new int[9],  // Knight
-            new int[14], // Bishop
-            new int[15], // Rook
-            new int[28]  // Queen
+            Array.Empty<int>(),  // None
+            Array.Empty<int>(),  // Pawn
+            new int[9],          // Knight
+            new int[14],         // Bishop
+            new int[15],         // Rook
+            new int[28]          // Queen
         };
-        _passedPawns = new ulong[2];
-        _mgPassedPawns = new int[8];
-        _egPassedPawns = new int[8];
-        _egFreePassedPawns = new int[8];
-        _mgKingSafetyAttackWeights = new[]
-        {
-            new int[0], // None
-            new int[0], // Pawn
-            new int[2], // Knight
-            new int[2], // Bishop
-            new int[2], // Rook
-            new int[2]  // Queen
-        };
-        _mgKingSafety = new int[64];
         // Set number of repetitions considered a draw, calculate positional factors, and set evaluation strength.
         DrawMoves = 2;
         CalculatePositionalFactors();
@@ -144,6 +149,29 @@ public sealed class Eval
         _egMaterialScores[(int)ColorlessPiece.Rook] = Config.EgRookMaterial;
         _egMaterialScores[(int)ColorlessPiece.Queen] = Config.EgQueenMaterial;
         _egMaterialScores[(int)ColorlessPiece.King] = 0;
+        // Calculate passed pawn values.
+        var passedPawnPower = Config.PassedPawnPowerPer128 / 128d;
+        var mgScale = Config.MgPassedPawnScalePer128 / 128d;
+        var egScale = Config.EgPassedPawnScalePer128 / 128d;
+        var egFreeScale = Config.EgFreePassedPawnScalePer128 / 128d;
+        for (var rank = 1; rank < 7; rank++)
+        {
+            _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
+            _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
+            _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
+        }
+        // Calculate king safety values.
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Knight][(int)KingRing.Outer] = Config.MgKingSafetyMinorAttackOuterRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Knight][(int)KingRing.Inner] = Config.MgKingSafetyMinorAttackInnerRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Bishop][(int)KingRing.Outer] = Config.MgKingSafetyMinorAttackOuterRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Bishop][(int)KingRing.Inner] = Config.MgKingSafetyMinorAttackInnerRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Rook][(int)KingRing.Outer] = Config.MgKingSafetyRookAttackOuterRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Rook][(int)KingRing.Inner] = Config.MgKingSafetyRookAttackInnerRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Outer] = Config.MgKingSafetyQueenAttackOuterRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Inner] = Config.MgKingSafetyQueenAttackInnerRingPer8;
+        var kingSafetyPower = Config.MgKingSafetyPowerPer128 / 128d;
+        var scale = -Config.MgKingSafetyScalePer128 / 128d; // Note the negative scale.  More threats to king == less safety.
+        for (var index = 0; index < _mgKingSafety.Length; index++) _mgKingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
         // Calculate piece location values.
         for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
         {
@@ -220,34 +248,11 @@ public sealed class Eval
                 _egPieceLocations[(int)colorlessPiece][(int)square] = (rank * egAdvancement) + (squareCentrality * egCentrality) + (nearestCorner * egCorner);
             }
         }
-        // Calculate passed pawn values.
-        var passedPawnPower = Config.PassedPawnPowerPer128 / 128d;
-        var mgScale = Config.MgPassedPawnScalePer128 / 128d;
-        var egScale = Config.EgPassedPawnScalePer128 / 128d;
-        var egFreeScale = Config.EgFreePassedPawnScalePer128 / 128d;
-        for (var rank = 1; rank < 7; rank++)
-        {
-            _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
-            _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
-            _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
-        }
         // Calculate piece mobility values.
         CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Knight], _egPieceMobility[(int)ColorlessPiece.Knight], Config.MgKnightMobilityScale, Config.EgKnightMobilityScale);
         CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Bishop], _egPieceMobility[(int)ColorlessPiece.Bishop], Config.MgBishopMobilityScale, Config.EgBishopMobilityScale);
         CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Rook], _egPieceMobility[(int)ColorlessPiece.Rook], Config.MgRookMobilityScale, Config.EgRookMobilityScale);
         CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Queen], _egPieceMobility[(int)ColorlessPiece.Queen], Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
-        // Calculate king safety values.
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Knight][(int)KingRing.Outer] = Config.MgKingSafetyMinorAttackOuterRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Knight][(int)KingRing.Inner] = Config.MgKingSafetyMinorAttackInnerRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Bishop][(int)KingRing.Outer] = Config.MgKingSafetyMinorAttackOuterRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Bishop][(int)KingRing.Inner] = Config.MgKingSafetyMinorAttackInnerRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Rook][(int)KingRing.Outer] = Config.MgKingSafetyRookAttackOuterRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Rook][(int)KingRing.Inner] = Config.MgKingSafetyRookAttackInnerRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Outer] = Config.MgKingSafetyQueenAttackOuterRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Inner] = Config.MgKingSafetyQueenAttackInnerRingPer8;
-        var kingSafetyPower = Config.MgKingSafetyPowerPer128 / 128d;
-        var scale = -Config.MgKingSafetyScalePer128 / 128d; // Note the negative scale.  More threats to king == less safety.
-        for (var index = 0; index < _mgKingSafety.Length; index++) _mgKingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
     }
 
 
@@ -538,6 +543,8 @@ public sealed class Eval
                 // K vrs KP
                 EvaluateKingVersusPawn(position, enemyColor);
                 return true;
+            // TODO: Implement Bahr's rule to evaluate a blocked rook pawn and passed pawn.
+            // See https://macechess.blogspot.com/2013/08/bahrs-rule.html and http://www.fraserheightschess.com/Documents/Bahrs_Rule.pdf.
             case 0 when (enemyPawnCount == 0) && (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
                 // K vrs KBN
                 // Push lone king to corner with same color square as occupied by bishop.  Push winning king close to lone king.

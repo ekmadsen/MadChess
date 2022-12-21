@@ -146,10 +146,9 @@ public sealed class Board
     {
         _writeMessageLine = writeMessageLine;
         _nodesInfoInterval = nodesInfoInterval;
-        // Create positions and precalculated moves.
+        // Create positions and Zobrist keys.
         _positions = new Position[_maxPositions];
         for (var positionIndex = 0; positionIndex < _maxPositions; positionIndex++) _positions[positionIndex] = new Position(this);
-        // Create Zobrist position keys.
         _piecesSquaresInitialKey = SafeRandom.NextULong();
         _pieceSquareKeys = new ulong[13][];
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
@@ -1334,14 +1333,6 @@ public sealed class Board
     {
         Debug.Assert(_positionIndex > 0);
         _positionIndex--;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void UndoMoves(int numberOfMoves)
-    {
-        Debug.Assert(_positionIndex >= numberOfMoves);
-        _positionIndex -= numberOfMoves;
     }
 
 
