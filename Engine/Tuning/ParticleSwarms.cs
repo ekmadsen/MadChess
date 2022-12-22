@@ -65,7 +65,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         }
         var stats = new Stats();
         var cache = new Cache(1, stats, board.ValidateMove);
-        var killerMoves = new KillerMoves(Search.MaxHorizon);
+        var killerMoves = new KillerMoves();
         var moveHistory = new MoveHistory();
         var eval = new Eval(stats, board.IsRepeatPosition, () => false, writeMessageLine);
         var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, displayStats, writeMessageLine);
@@ -326,7 +326,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             boards[index] = board;
             var stats = new Stats();
             var cache = new Cache(1, stats, board.ValidateMove);
-            var killerMoves = new KillerMoves(Search.MaxHorizon);
+            var killerMoves = new KillerMoves();
             var moveHistory = new MoveHistory();
             var eval = new Eval(stats, board.IsRepeatPosition, () => false, _writeMessageLine);
             evals[index] = eval;

@@ -25,11 +25,11 @@ public static class FastMath
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Constrain(int value, int inclusiveMinValue, int inclusiveMaxValue)
+    public static int Clamp(int value, int min, int max)
     {
-        if (value < inclusiveMinValue) return inclusiveMinValue;
-        return (value > inclusiveMaxValue)
-            ? inclusiveMaxValue
+        if (value < min) return min;
+        return (value > max)
+            ? max
             : value;
     }
 }

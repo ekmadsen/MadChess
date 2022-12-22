@@ -54,7 +54,7 @@ public sealed class MoveHistory
         var toSquare = Move.To(move);
         var value = _moveHistory[(int)piece][(int)toSquare];
         value += (increment * _multiplier) - ((value * FastMath.Abs(increment)) / _divisor);
-        _moveHistory[(int)piece][(int)toSquare] = value;
+        _moveHistory[(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
     }
 
 

@@ -471,7 +471,7 @@ public sealed class Position
             x++;
             if (x == 9)
             {
-                stringBuilder.Append("/");
+                stringBuilder.Append('/');
                 x = 1;
             }
             var piece = GetPiece(square);
@@ -500,15 +500,15 @@ public sealed class Position
             }
         }
         // Display side to move, castling rights, en passant square, ply, and full move number.
-        stringBuilder.Append(" ");
+        stringBuilder.Append(' ');
         stringBuilder.Append(ColorToMove == Color.White ? "w" : "b");
-        stringBuilder.Append(" ");
+        stringBuilder.Append(' ');
         stringBuilder.Append(Game.Castling.ToString(Castling));
-        stringBuilder.Append(" ");
+        stringBuilder.Append(' ');
         stringBuilder.Append(EnPassantSquare == Square.Illegal ? "-" : Board.SquareLocations[(int)EnPassantSquare]);
-        stringBuilder.Append(" ");
+        stringBuilder.Append(' ');
         stringBuilder.Append(PlySinceCaptureOrPawnMove);
-        stringBuilder.Append(" ");
+        stringBuilder.Append(' ');
         stringBuilder.Append(FullMoveNumber);
         return stringBuilder.ToString();
     }
@@ -540,14 +540,14 @@ public sealed class Position
         {
             // Add rank.
             stringBuilder.Append(y);
-            stringBuilder.Append(" ");
+            stringBuilder.Append(' ');
             for (var x = 1; x <= 8; x++)
             {
                 stringBuilder.Append("| ");
                 var piece = GetPiece(square);
-                if (piece == Piece.None) stringBuilder.Append(" ");
+                if (piece == Piece.None) stringBuilder.Append(' ');
                 else stringBuilder.Append(PieceHelper.GetChar(piece));
-                stringBuilder.Append(" ");
+                stringBuilder.Append(' ');
                 square++;
             }
             stringBuilder.AppendLine("|");

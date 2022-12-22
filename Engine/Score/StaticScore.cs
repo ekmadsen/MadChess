@@ -127,7 +127,7 @@ public sealed class StaticScore
         // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
         var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
         // Evaluation never scores checkmate positions.  Search identifies checkmates.
-        return FastMath.Constrain(scaledTaperedScore, -SpecialScore.LargestNonMate, SpecialScore.LargestNonMate);
+        return FastMath.Clamp(scaledTaperedScore, -SpecialScore.LargestNonMate, SpecialScore.LargestNonMate);
     }
 
 

@@ -28,7 +28,8 @@ public static class Tokens
             if (index == command.Length - 1)
             {
                 // Add last token.
-                token = command.Substring(startIndex, index - startIndex + 1);
+                var lastIndex = index + 1;
+                token = command[startIndex..lastIndex];
                 tokens.Add(token.TrimEnd(tokenizer));
                 break;
             }
@@ -36,7 +37,7 @@ public static class Tokens
             {
                 if (inToken) continue;
                 // Add token.
-                token = command.Substring(startIndex, index - startIndex);
+                token = command[startIndex..index];
                 tokens.Add(token.TrimEnd(tokenizer));
                 startIndex = index + 1;
             }

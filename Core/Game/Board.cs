@@ -120,12 +120,12 @@ public sealed class Board
         BishopMoveMasks = CreateBishopMoveMasks();
         RookMoveMasks = CreateRookMoveMasks();
         KingMoveMasks = CreateKingMoveMasks();
-        PieceMoveMaskDelegates = new Delegates.GetPieceMovesMask[(int)ColorlessPiece.Queen + 1];
+        PieceMoveMaskDelegates = new Delegates.GetPieceMovesMask[(int)ColorlessPiece.King];
         PieceMoveMaskDelegates[(int)ColorlessPiece.Knight] = GetKnightDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Bishop] = GetBishopDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Rook] = GetRookDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Queen] = GetQueenDestinations;
-        PieceXrayMoveMaskDelegates = new Delegates.GetPieceXrayMovesMask[(int)ColorlessPiece.Queen + 1];
+        PieceXrayMoveMaskDelegates = new Delegates.GetPieceXrayMovesMask[(int)ColorlessPiece.King];
         PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Knight] = GetKnightXrayDestinations;
         PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Bishop] = GetBishopXrayDestinations;
         PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Rook] = GetRookXrayDestinations;

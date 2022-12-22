@@ -98,7 +98,7 @@ public sealed class UciStream : IDisposable
         _board = new Board(WriteMessageLine, NodesInfoInterval);
         _stats = new Stats();
         _cache = new Cache(_cacheSizeMegabytes, _stats, _board.ValidateMove);
-        _killerMoves = new KillerMoves(Search.MaxHorizon + Search.MaxQuietDepth);
+        _killerMoves = new KillerMoves();
         _moveHistory = new MoveHistory();
         _eval = new Eval(_stats, _board.IsRepeatPosition, () => _debug, WriteMessageLine);
         _search = new Search(_stats, _cache, _killerMoves, _moveHistory, _eval, () => _debug, DisplayStats, WriteMessageLine);
@@ -478,7 +478,7 @@ public sealed class UciStream : IDisposable
         }
         if (!specifiesMoves)
         {
-            if (!char.IsNumber(tokens[tokens.Count - 1][0]))
+            if (!char.IsNumber(tokens[^1][0]))
             {
                 // Position does not specify ply or full move number.
                 tokens.AddRange(_defaultPlyAndFullMove);
@@ -1033,7 +1033,7 @@ public sealed class UciStream : IDisposable
             var board = new Board(WriteMessageLine, NodesInfoInterval);
             var stats = new Stats();
             var cache = new Cache(1, stats, board.ValidateMove);
-            var killerMoves = new KillerMoves(Search.MaxHorizon);
+            var killerMoves = new KillerMoves();
             var moveHistory = new MoveHistory();
             var eval = new Eval(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
             var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, DisplayStats, WriteMessageLine);

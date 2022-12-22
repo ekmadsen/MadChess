@@ -178,13 +178,13 @@ public sealed class Search : IDisposable
         _bestMoves = new ScoredMove[Position.MaxMoves];
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
         _multiPvMoves = new ScoredMove[Position.MaxMoves];
-        _principalVariations = new ulong[Position.MaxMoves + 1][][];
+        _principalVariations = new ulong[Position.MaxMoves][][];
         for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
         {
             _principalVariations[rootMoveIndex] = new ulong[MaxHorizon + 1][];
             for (var depth = 0; depth <= MaxHorizon; depth++)
             {
-                var remainingDepth = MaxHorizon - depth;
+                var remainingDepth = MaxHorizon - depth + 1;
                 _principalVariations[rootMoveIndex][depth] = new ulong[remainingDepth];
                 for (var pvMoveIndex = 0; pvMoveIndex < remainingDepth; pvMoveIndex++) _principalVariations[rootMoveIndex][depth][pvMoveIndex] = Move.Null;
             }
@@ -699,12 +699,15 @@ public sealed class Search : IDisposable
                 var rootMoveIndex = _rootMoveNumber - 1;
                 var pvThisDepth = _principalVariations[rootMoveIndex][depth];
                 pvThisDepth[0] = move;
-                var pvNextDepth = depth < MaxHorizon ? _principalVariations[rootMoveIndex][depth + 1] : Array.Empty<ulong>();
-                for (var pvMoveIndex = 0; pvMoveIndex < pvNextDepth.Length; pvMoveIndex++)
+                if (depth < MaxHorizon)
                 {
-                    var pvMove = pvNextDepth[pvMoveIndex];
-                    if (pvMove == Move.Null) break;
-                    pvThisDepth[pvMoveIndex + 1] = pvMove;
+                    var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1];
+                    for (var pvMoveIndex = 0; pvMoveIndex < pvNextDepth.Length; pvMoveIndex++)
+                    {
+                        var pvMove = pvNextDepth[pvMoveIndex];
+                        if (pvMove == Move.Null) break;
+                        pvThisDepth[pvMoveIndex + 1] = pvMove;
+                    }
                 }
                 if (score > bestScore)
                 {
@@ -734,13 +737,7 @@ public sealed class Search : IDisposable
                     }
                 }
             }
-            if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= board.NodesInfoUpdate))
-            {
-                // Update status.
-                UpdateStatus(board, false);
-                var intervals = (int)(board.Nodes / UciStream.NodesInfoInterval);
-                board.NodesInfoUpdate = UciStream.NodesInfoInterval * (intervals + 1);
-            }
+            if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= board.NodesInfoUpdate)) UpdateStatus(board, false); // Update status.
         } while (true);
         if (legalMoveNumber == 0)
         {
@@ -1244,7 +1241,7 @@ public sealed class Search : IDisposable
                 var stringBuilder = new StringBuilder("pv");
                 var bestMove = _bestMoves[pv];
                 var move = bestMove.Move;
-                for (var rootMoveIndex = 0; rootMoveIndex <= Position.MaxMoves; rootMoveIndex++)
+                for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
                 {
                     if (Move.Equals(_principalVariations[rootMoveIndex][0][0], move))
                     {
