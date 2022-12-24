@@ -27,14 +27,14 @@ public sealed class Cache
     public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf(typeof(CachedPosition));
     public readonly CachedPosition NullPosition;
     public int Positions;
-    public ushort Searches;
+    public byte Searches;
     private const int _buckets = 4;
     private readonly Stats _stats;
     private readonly Core.Delegates.ValidateMove _validateMove;
     private int _indices;
     private CachedPosition[] _positions; // More memory efficient than a jagged array that has a .NET object header for each sub-array (for garbage collection tracking of reachable-from-root).
-        
-        
+
+
     public int Capacity
     {
         get => _positions.Length;
@@ -60,7 +60,6 @@ public sealed class Cache
         CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
         CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.Illegal);
         CachedPositionData.SetBestMovePromotedPiece(ref NullPosition.Data, Piece.None);
-        CachedPositionData.SetBestMoveInPrincipalVariation(ref NullPosition.Data, false);
         CachedPositionData.SetDynamicScore(ref NullPosition.Data, SpecialScore.NotCached);
         CachedPositionData.SetScorePrecision(ref NullPosition.Data, ScorePrecision.Unknown);
         CachedPositionData.SetLastAccessed(ref NullPosition.Data, 0);
@@ -76,9 +75,9 @@ public sealed class Cache
         {
             _stats.CacheProbes++;
             var index = GetIndex(key);
-            var maxBucketIndex = index + _buckets - 1;
-            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
+            for (var bucket = 0; bucket < _buckets; bucket++)
             {
+                var bucketIndex = index + bucket;
                 var position = _positions[bucketIndex];
                 if (position.Key == key)
                 {
@@ -102,15 +101,14 @@ public sealed class Cache
             // TODO: Do not overwrite PV lines from cache during current search (Cache.Searches).
             Debug.Assert(value.Key == key);
             Debug.Assert(CachedPositionData.IsValid(value.Data));
-            CachedPositionData.SetLastAccessed(ref value.Data, Searches);
             var index = GetIndex(key);
-            var maxBucketIndex = index + _buckets - 1;
+            CachedPositionData.SetLastAccessed(ref value.Data, Searches);
             // Find oldest bucket.
-            var earliestAccess = ushort.MaxValue;
-            int? oldestNotInPvBucketIndex = null;
-            var oldestBucketIndex = index;
-            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
+            var earliestAccess = byte.MaxValue;
+            var oldestBucketIndex = 0;
+            for (var bucket = 0; bucket < _buckets; bucket++)
             {
+                var bucketIndex = index + bucket;
                 var position = _positions[bucketIndex];
                 if (position.Key == key)
                 {
@@ -120,18 +118,16 @@ public sealed class Cache
                     return;
                 }
                 var lastAccessed = CachedPositionData.LastAccessed(position.Data);
-                if (lastAccessed <= earliestAccess)
+                if (lastAccessed < earliestAccess)
                 {
                     earliestAccess = lastAccessed;
-                    if (!CachedPositionData.BestMoveInPrincipalVariation(position.Data)) oldestNotInPvBucketIndex = bucketIndex;
                     oldestBucketIndex = bucketIndex;
                 }
             }
-            var overwriteBucketIndex = oldestNotInPvBucketIndex ?? oldestBucketIndex; // Avoid overwriting cached position from a principle variation if possible.
-            if (_positions[overwriteBucketIndex].Key == NullPosition.Key) Positions++; // Oldest bucket has not been used.
-            // Overwrite bucket.
+            if (_positions[oldestBucketIndex].Key == NullPosition.Key) Positions++; // Oldest bucket has not been used.
+            // Overwrite oldest bucket.
             Debug.Assert(CachedPositionData.IsValid(value.Data));
-            _positions[overwriteBucketIndex] = value;
+            _positions[oldestBucketIndex] = value;
         }
     }
 
@@ -167,6 +163,10 @@ public sealed class Cache
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetIndex(ulong key)
     {
+        // TODO: Replace call to GetHashCode with own implementation.
+        // TODO: Implement fast modulus.
+        // See https://lemire.me/blog/2019/02/08/faster-remainders-when-the-divisor-is-a-constant-beating-compilers-and-libdivide/.
+        // See https://stackoverflow.com/questions/11040646/faster-modulus-in-c-c.
         // Ensure even distribution of indices by using GetHashCode method rather than raw Zobrist key for modular division.
         var index = (key.GetHashCode() % _indices) * _buckets;
         // Ensure index is positive.

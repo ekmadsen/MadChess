@@ -428,8 +428,8 @@ public static class Move
 
     public static ulong ParseLongAlgebraic(string longAlgebraic, Color colorToMove)
     {
-        var fromSquare = Board.GetSquare(longAlgebraic.Substring(0, 2));
-        var toSquare = Board.GetSquare(longAlgebraic.Substring(2, 2));
+        var fromSquare = Board.GetSquare(longAlgebraic[..2]);
+        var toSquare = Board.GetSquare(longAlgebraic[2..4]);
         // Set case of promoted piece character based on side to move.
         var promotedPiece = longAlgebraic.Length == 5
             ? PieceHelper.ParseChar(colorToMove == Color.White ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
@@ -484,18 +484,18 @@ public static class Move
                     break;
                 case 4 when standardAlgebraicNoCheck[1] == 'x':
                     // Pawn Capture
-                    toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(2, 2));
+                    toSquare = Board.GetSquare(standardAlgebraicNoCheck[2..4]);
                     break;
                 case 4 when standardAlgebraicNoCheck[2] == '=':
                     // Pawn promotion.  Set case of promoted piece character based on side to move.
-                    toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(0, 2));
+                    toSquare = Board.GetSquare(standardAlgebraicNoCheck[..2]);
                     promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
                         ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                         : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                     break;
                 case 6:
                     // Pawn promotion with capture.  Set case of promoted piece character based on side to move.
-                    toSquare = Board.GetSquare(standardAlgebraicNoCheck.Substring(2, 2));
+                    toSquare = Board.GetSquare(standardAlgebraicNoCheck[2..4]);
                     promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
                         ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                         : char.ToLower(standardAlgebraicNoCheck[length - 1]));
@@ -513,13 +513,13 @@ public static class Move
             if (standardAlgebraicNoCheck[1] == 'x')
             {
                 // Piece Capture
-                var square = standardAlgebraicNoCheck.Substring(2, 2);
+                var square = standardAlgebraicNoCheck[2..4];
                 toSquare = Board.GetSquare(square);
             }
             else if (standardAlgebraicNoCheck[2] == 'x')
             {
                 // Piece Capture with Disambiguation
-                var square = standardAlgebraicNoCheck.Substring(3, 2);
+                var square = standardAlgebraicNoCheck[3..5];
                 toSquare = Board.GetSquare(square);
                 if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
                 else fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
@@ -527,7 +527,7 @@ public static class Move
             else if ((length > 3) && (standardAlgebraicNoCheck[3] == 'x'))
             {
                 // Piece Capture with From Square Specified
-                var square = standardAlgebraicNoCheck.Substring(4, 2);
+                var square = standardAlgebraicNoCheck[4..6];
                 toSquare = Board.GetSquare(square);
                 fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
                 fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
@@ -535,13 +535,13 @@ public static class Move
             else if (length == 3)
             {
                 // Piece Move
-                var square = standardAlgebraicNoCheck.Substring(1, 2);
+                var square = standardAlgebraicNoCheck[1..3];
                 toSquare = Board.GetSquare(square);
             }
             else if (length == 4)
             {
                 // Piece Move with Disambiguation
-                var square = standardAlgebraicNoCheck.Substring(2, 2);
+                var square = standardAlgebraicNoCheck[2..4];
                 toSquare = Board.GetSquare(square);
                 if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
                 else fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
@@ -549,7 +549,7 @@ public static class Move
             else if (length == 5)
             {
                 // Piece Move with From Square Specified
-                var square = standardAlgebraicNoCheck.Substring(3, 2);
+                var square = standardAlgebraicNoCheck[3..5];
                 toSquare = Board.GetSquare(square);
                 fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
                 fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];

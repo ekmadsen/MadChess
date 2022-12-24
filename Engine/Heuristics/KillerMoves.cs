@@ -10,6 +10,7 @@
 
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
 namespace ErikTheCoder.MadChess.Engine.Heuristics;
@@ -20,8 +21,9 @@ public sealed class KillerMoves
     private readonly KillerMove[][] _killerMoves;
 
 
-    public KillerMoves(int maxDepth)
+    public KillerMoves()
     {
+        const int maxDepth = Search.MaxHorizon + Search.MaxQuietDepth;
         _killerMoves = new KillerMove[maxDepth + 1][];
         for (var depth = 0; depth <= maxDepth; depth++)
         {

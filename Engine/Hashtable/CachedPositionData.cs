@@ -35,9 +35,6 @@ public static class CachedPositionData
     private static readonly int _bestMovePromotedPieceShift;
     private static readonly ulong _bestMovePromotedPieceMask;
     private static readonly ulong _bestMovePromotedPieceUnmask;
-    private static readonly int _bestMoveInPrincipalVariationShift;
-    private static readonly ulong _bestMoveInPrincipalVariationMask;
-    private static readonly ulong _bestMoveInPrincipalVariationUnmask;
     private static readonly int _dynamicScoreShift;
     private static readonly ulong _dynamicScoreMask;
     private static readonly ulong _dynamicScoreUnmask;
@@ -47,15 +44,14 @@ public static class CachedPositionData
     private static readonly ulong _lastAccessedMask;
     private static readonly ulong _lastAccessedUnmask;
 
-        
+
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // To Horizon |Best From    |Best To      |BMP    |P|Dynamic Score                            |DSP|Last
+    // To Horizon |Best From    |Best To      |BMP    |Dynamic Score                                              |DSP|Last
 
     // Best From = Best Move From (one extra bit for illegal square)
     // Best To =   Best Move To   (one extra bit for illegal square)
     // BMP =       Best Move Promoted Piece
-    // P =         Best Move in Principal Variation
     // DSP =       Dynamic Score Precision
     // Last =      Last Accessed
 
@@ -75,17 +71,14 @@ public static class CachedPositionData
         _bestMovePromotedPieceShift = 40;
         _bestMovePromotedPieceMask = Bitwise.CreateULongMask(40, 43);
         _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(40, 43);
-        _bestMoveInPrincipalVariationShift = 39;
-        _bestMoveInPrincipalVariationMask = Bitwise.CreateULongMask(39);
-        _bestMoveInPrincipalVariationUnmask = Bitwise.CreateULongUnmask(39);
-        _dynamicScoreShift = 18;
-        _dynamicScoreMask = Bitwise.CreateULongMask(18, 38);
-        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(18, 38);
-        _scorePrecisionShift = 16;
-        _scorePrecisionMask = Bitwise.CreateULongMask(16, 17);
-        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(16, 17);
-        _lastAccessedMask = Bitwise.CreateULongMask(0, 15);
-        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 15);
+        _dynamicScoreShift = 10;
+        _dynamicScoreMask = Bitwise.CreateULongMask(10, 39);
+        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(10, 39);
+        _scorePrecisionShift = 8;
+        _scorePrecisionMask = Bitwise.CreateULongMask(8, 9);
+        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(8, 9);
+        _lastAccessedMask = Bitwise.CreateULongMask(0, 7);
+        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 7);
     }
 
 
@@ -152,20 +145,6 @@ public static class CachedPositionData
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) == bestMovePromotedPiece);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool BestMoveInPrincipalVariation(ulong cachedPositionData) => (cachedPositionData & _bestMoveInPrincipalVariationMask) >> _bestMoveInPrincipalVariationShift > 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetBestMoveInPrincipalVariation(ref ulong cachedPosition, bool inPrincipalVariation)
-    {
-        var value = inPrincipalVariation ? 1ul : 0;
-        // Clear
-        cachedPosition &= _bestMoveInPrincipalVariationUnmask;
-        // Set
-        cachedPosition |= (value << _bestMoveInPrincipalVariationShift) & _bestMoveInPrincipalVariationMask;
-        // Validate move.
-        Debug.Assert(BestMoveInPrincipalVariation(cachedPosition) == inPrincipalVariation);
-    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int DynamicScore(ulong cachedPositionData) => (int)((cachedPositionData & _dynamicScoreMask) >> _dynamicScoreShift) - SpecialScore.Max; // Cached score is a positive number.
@@ -203,11 +182,11 @@ public static class CachedPositionData
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ushort LastAccessed(ulong cachedPositionData) => (byte)(cachedPositionData & _lastAccessedMask);
+    public static byte LastAccessed(ulong cachedPositionData) => (byte)(cachedPositionData & _lastAccessedMask);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetLastAccessed(ref ulong cachedPositionData, ushort lastAccessed)
+    public static void SetLastAccessed(ref ulong cachedPositionData, byte lastAccessed)
     {
         // Clear
         cachedPositionData &= _lastAccessedUnmask;
@@ -241,7 +220,6 @@ public static class CachedPositionData
         stringBuilder.AppendLine($"Best Move From = {BestMoveFrom(cachedPositionData)}");
         stringBuilder.AppendLine($"Best Move To = {BestMoveTo(cachedPositionData)}");
         stringBuilder.AppendLine($"Best Move Promoted Piece = {BestMovePromotedPiece(cachedPositionData)}");
-        stringBuilder.AppendLine($"Best Move in Principal Variation = {BestMoveInPrincipalVariation(cachedPositionData)}");
         stringBuilder.AppendLine($"Dynamic Score = {DynamicScore(cachedPositionData)}");
         stringBuilder.AppendLine($"Score Precision = {ScorePrecision(cachedPositionData)}");
         stringBuilder.AppendLine($"Last Accessed = {LastAccessed(cachedPositionData)}");
