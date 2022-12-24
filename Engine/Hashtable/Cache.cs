@@ -163,6 +163,10 @@ public sealed class Cache
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetIndex(ulong key)
     {
+        // TODO: Replace call to GetHashCode with own implementation.
+        // TODO: Implement fast modulus.
+        // See https://lemire.me/blog/2019/02/08/faster-remainders-when-the-divisor-is-a-constant-beating-compilers-and-libdivide/.
+        // See https://stackoverflow.com/questions/11040646/faster-modulus-in-c-c.
         // Ensure even distribution of indices by using GetHashCode method rather than raw Zobrist key for modular division.
         var index = (key.GetHashCode() % _indices) * _buckets;
         // Ensure index is positive.
