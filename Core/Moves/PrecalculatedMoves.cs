@@ -295,38 +295,32 @@ public sealed class PrecalculatedMoves
         {
             case 0:
                 // Piece is on Westernmost edge file.
-                switch (rank)
+                return rank switch
                 {
-                    case 0:
+                    0 =>
                         // Piece is on A1 square.
                         // Occupancy of most distant squares does not affect pseudo-legal moves.
-                        return ~Board.SquareMasks[(int)Square.A8] & ~Board.SquareMasks[(int)Square.H1];
-                    case 7:
+                        ~Board.SquareMasks[(int)Square.A8] & ~Board.SquareMasks[(int)Square.H1],
+                    7 =>
                         // Piece is on A8 square.
                         // Occupancy of most distant squares does not affect pseudo-legal moves.
-                        return ~Board.SquareMasks[(int)Square.A1] & ~Board.SquareMasks[(int)Square.H8];
-                    default:
-                        // Piece is not on edge rank.
-                        // Occupancy of edge ranks and opposite edge file does not affect pseudo-legal moves.
-                        return ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7] & ~Board.FileMasks[7];
-                }
+                        ~Board.SquareMasks[(int)Square.A1] & ~Board.SquareMasks[(int)Square.H8],
+                    _ => ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7] & ~Board.FileMasks[7]
+                };
             case 7:
                 // Piece is on Easternmost edge file.
-                switch (rank)
+                return rank switch
                 {
-                    case 0:
+                    0 =>
                         // Piece is on H1 square.
                         // Occupancy of most distant squares does not affect pseudo-legal moves.
-                        return ~Board.SquareMasks[(int)Square.A1] & ~Board.SquareMasks[(int)Square.H8];
-                    case 7:
+                        ~Board.SquareMasks[(int)Square.A1] & ~Board.SquareMasks[(int)Square.H8],
+                    7 =>
                         // Piece is on H8 square.
                         // Occupancy of most distant squares does not affect pseudo-legal moves.
-                        return ~Board.SquareMasks[(int)Square.A8] & ~Board.SquareMasks[(int)Square.H1];
-                    default:
-                        // Piece is not on edge rank.
-                        // Occupancy of edge ranks and opposite edge file does not affect pseudo-legal moves.
-                        return ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7] & ~Board.FileMasks[0];
-                }
+                        ~Board.SquareMasks[(int)Square.A8] & ~Board.SquareMasks[(int)Square.H1],
+                    _ => ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7] & ~Board.FileMasks[0]
+                };
             default:
                 // Piece is not on edge file.
                 // Occupancy of edge files does not affect pseudo-legal moves.
@@ -334,21 +328,18 @@ public sealed class PrecalculatedMoves
                 break;
         }
         // Piece is not on a corner square (handled in above code).
-        switch (rank)
+        return rank switch
         {
-            case 0:
+            0 =>
                 // Piece is on Southernmost edge rank.
                 // Occupancy of opposite rank does not affect pseudo-legal moves.
-                return occupancy & ~Board.RankMasks[(int)Color.White][7];
-            case 7:
+                occupancy & ~Board.RankMasks[(int)Color.White][7],
+            7 =>
                 // Piece is on Northernmost edge rank.
                 // Occupancy of opposite rank does not affect pseudo-legal moves.
-                return occupancy & ~Board.RankMasks[(int)Color.White][0];
-            default:
-                // Piece is not on edge rank.
-                // Occupancy of edge ranks does not affect pseudo-legal moves.
-                return occupancy & ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7];
-        }
+                occupancy & ~Board.RankMasks[(int)Color.White][0],
+            _ => occupancy & ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7]
+        };
         // ReSharper restore ConvertSwitchStatementToSwitchExpression
     }
 

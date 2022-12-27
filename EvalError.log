@@ -1,216 +1,234 @@
-00:00:47.852   In   tune "C:\Users\Erik\Documents\Chess\Databases\MadChessGauntlets.pgn" 28 1 592 10000
-00:00:47.856   Out  Loading games.
-00:00:48.345   Out  Loaded 1,000 games.
-00:00:48.668   Out  Loaded 2,000 games.
-00:00:48.986   Out  Loaded 3,000 games.
-00:00:49.300   Out  Loaded 4,000 games.
-00:00:49.616   Out  Loaded 5,000 games.
-00:00:49.933   Out  Loaded 6,000 games.
-00:00:50.245   Out  Loaded 7,000 games.
-00:00:50.561   Out  Loaded 8,000 games.
-00:00:50.872   Out  Loaded 9,000 games.
-00:00:51.190   Out  Loaded 10,000 games.
-00:00:51.512   Out  Loaded 11,000 games.
-00:00:51.827   Out  Loaded 12,000 games.
-00:00:52.147   Out  Loaded 13,000 games.
-00:00:52.476   Out  Loaded 14,000 games.
-00:00:52.788   Out  Loaded 15,000 games.
-00:00:53.100   Out  Loaded 16,000 games.
-00:00:53.412   Out  Loaded 17,000 games.
-00:00:53.723   Out  Loaded 18,000 games.
-00:00:54.039   Out  Loaded 19,000 games.
-00:00:54.353   Out  Loaded 20,000 games.
-00:00:54.670   Out  Loaded 21,000 games.
-00:00:54.985   Out  Loaded 22,000 games.
-00:00:55.294   Out  Loaded 23,000 games.
-00:00:55.610   Out  Loaded 24,000 games.
-00:00:55.930   Out  Loaded 25,000 games.
-00:00:56.235   Out  Loaded 26,000 games.
-00:00:56.548   Out  Loaded 27,000 games.
-00:00:56.867   Out  Loaded 28,000 games.
-00:00:57.179   Out  Loaded 29,000 games.
-00:00:57.511   Out  Loaded 30,000 games.
-00:00:57.839   Out  Loaded 31,000 games.
-00:00:58.150   Out  Loaded 32,000 games.
-00:00:58.463   Out  Loaded 33,000 games.
-00:00:58.769   Out  Loaded 34,000 games.
-00:00:59.090   Out  Loaded 35,000 games.
-00:00:59.424   Out  Loaded 36,000 games.
-00:00:59.737   Out  Loaded 37,000 games.
-00:01:00.049   Out  Loaded 38,000 games.
-00:01:00.353   Out  Loaded 39,000 games.
-00:01:00.660   Out  Loaded 40,000 games.
-00:01:00.976   Out  Loaded 41,000 games.
-00:01:01.288   Out  Loaded 42,000 games.
-00:01:01.595   Out  Loaded 43,000 games.
-00:01:01.912   Out  Loaded 44,000 games.
-00:01:02.221   Out  Loaded 45,000 games.
-00:01:02.535   Out  Loaded 46,000 games.
-00:01:02.848   Out  Loaded 47,000 games.
-00:01:03.158   Out  Loaded 48,000 games.
-00:01:03.187   Out  Loaded 48,000 games with 7,794,745 positions in 15.321 seconds (508,750 positions per second).
-00:01:03.187   Out  Creating data structures.
-00:02:22.994   Out  Created data structures in 79.807 seconds.
-00:02:22.996   Out  Optimizing 86 parameters in a space of 2.51e+162 discrete parameter combinations.
+00:00:08.922   Out  
+00:00:37.260   In   tune "C:\Users\Erik\Documents\Chess\Databases\MadChessGauntlets.pgn" 28 1 577 10000
+00:00:37.264   Out  Loading games.
+00:00:37.767   Out  Loaded 1,000 games.
+00:00:38.068   Out  Loaded 2,000 games.
+00:00:38.364   Out  Loaded 3,000 games.
+00:00:38.665   Out  Loaded 4,000 games.
+00:00:38.954   Out  Loaded 5,000 games.
+00:00:39.254   Out  Loaded 6,000 games.
+00:00:39.546   Out  Loaded 7,000 games.
+00:00:39.838   Out  Loaded 8,000 games.
+00:00:40.123   Out  Loaded 9,000 games.
+00:00:40.411   Out  Loaded 10,000 games.
+00:00:40.713   Out  Loaded 11,000 games.
+00:00:41.018   Out  Loaded 12,000 games.
+00:00:41.310   Out  Loaded 13,000 games.
+00:00:41.614   Out  Loaded 14,000 games.
+00:00:41.911   Out  Loaded 15,000 games.
+00:00:42.193   Out  Loaded 16,000 games.
+00:00:42.480   Out  Loaded 17,000 games.
+00:00:42.777   Out  Loaded 18,000 games.
+00:00:43.062   Out  Loaded 19,000 games.
+00:00:43.345   Out  Loaded 20,000 games.
+00:00:43.636   Out  Loaded 21,000 games.
+00:00:43.942   Out  Loaded 22,000 games.
+00:00:44.230   Out  Loaded 23,000 games.
+00:00:44.523   Out  Loaded 24,000 games.
+00:00:44.812   Out  Loaded 25,000 games.
+00:00:45.092   Out  Loaded 26,000 games.
+00:00:45.393   Out  Loaded 27,000 games.
+00:00:45.683   Out  Loaded 28,000 games.
+00:00:45.967   Out  Loaded 29,000 games.
+00:00:46.268   Out  Loaded 30,000 games.
+00:00:46.551   Out  Loaded 31,000 games.
+00:00:46.845   Out  Loaded 32,000 games.
+00:00:47.140   Out  Loaded 33,000 games.
+00:00:47.432   Out  Loaded 34,000 games.
+00:00:47.730   Out  Loaded 35,000 games.
+00:00:48.016   Out  Loaded 36,000 games.
+00:00:48.299   Out  Loaded 37,000 games.
+00:00:48.579   Out  Loaded 38,000 games.
+00:00:48.864   Out  Loaded 39,000 games.
+00:00:49.171   Out  Loaded 40,000 games.
+00:00:49.465   Out  Loaded 41,000 games.
+00:00:49.755   Out  Loaded 42,000 games.
+00:00:50.040   Out  Loaded 43,000 games.
+00:00:50.340   Out  Loaded 44,000 games.
+00:00:50.635   Out  Loaded 45,000 games.
+00:00:50.923   Out  Loaded 46,000 games.
+00:00:51.211   Out  Loaded 47,000 games.
+00:00:51.505   Out  Loaded 48,000 games.
+00:00:51.793   Out  Loaded 49,000 games.
+00:00:52.081   Out  Loaded 50,000 games.
+00:00:52.381   Out  Loaded 51,000 games.
+00:00:52.675   Out  Loaded 52,000 games.
+00:00:52.968   Out  Loaded 53,000 games.
+00:00:53.263   Out  Loaded 54,000 games.
+00:00:53.557   Out  Loaded 55,000 games.
+00:00:53.858   Out  Loaded 56,000 games.
+00:00:54.148   Out  Loaded 57,000 games.
+00:00:54.436   Out  Loaded 58,000 games.
+00:00:54.721   Out  Loaded 59,000 games.
+00:00:55.003   Out  Loaded 60,000 games.
+00:00:55.298   Out  Loaded 61,000 games.
+00:00:55.589   Out  Loaded 62,000 games.
+00:00:55.871   Out  Loaded 63,000 games.
+00:00:56.160   Out  Loaded 64,000 games.
+00:00:56.194   Out  Loaded 64,000 games with 10,394,646 positions in 18.921 seconds (549,371 positions per second).
+00:00:56.194   Out  Creating data structures.
+00:03:16.149   Out  Created data structures in 139.955 seconds.
+00:03:16.152   Out  Optimizing 86 parameters in a space of 2.51e+162 discrete parameter combinations.
+00:07:23.256   Out  
+23:12:50.441   Out  
+23:12:50.441   Out  Iterations                              =   1236    
+23:12:50.441   Out  Original Evaluation Error               = 1438269.191
+23:12:50.441   Out  Best Evaluation Error                   = 1111999.730
+23:12:50.441   Out  
+23:12:50.441   Out  Particle Swarm 00 Best Evaluation Error = 1112022.929
+23:12:50.441   Out    Particle 00 Evaluation Error          = 1112023.362
+23:12:50.441   Out  Particle Swarm 01 Best Evaluation Error = 1112013.255
+23:12:50.441   Out    Particle 00 Evaluation Error          = 1112013.255
+23:12:50.441   Out  Particle Swarm 02 Best Evaluation Error = 1112007.771
+23:12:50.441   Out    Particle 00 Evaluation Error          = 1112007.771
+23:12:50.441   Out  Particle Swarm 03 Best Evaluation Error = 1112010.555
+23:12:50.441   Out    Particle 00 Evaluation Error          = 1112018.453
+23:12:50.441   Out  Particle Swarm 04 Best Evaluation Error = 1111999.730
+23:12:50.441   Out    Particle 00 Evaluation Error          = 1111999.730
+23:12:50.441   Out  Particle Swarm 05 Best Evaluation Error = 1112014.249
+23:12:50.441   Out    Particle 00 Evaluation Error          = 1112014.249
+23:12:50.442   Out  Particle Swarm 06 Best Evaluation Error = 1112017.200
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112020.109
+23:12:50.442   Out  Particle Swarm 07 Best Evaluation Error = 1112004.457
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112004.457
+23:12:50.442   Out  Particle Swarm 08 Best Evaluation Error = 1112000.869
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112006.518
+23:12:50.442   Out  Particle Swarm 09 Best Evaluation Error = 1112018.957
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112022.138
+23:12:50.442   Out  Particle Swarm 10 Best Evaluation Error = 1112026.224
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112043.268
+23:12:50.442   Out  Particle Swarm 11 Best Evaluation Error = 1112008.400
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112010.859
+23:12:50.442   Out  Particle Swarm 12 Best Evaluation Error = 1112010.217
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112010.217
+23:12:50.442   Out  Particle Swarm 13 Best Evaluation Error = 1112020.003
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112020.003
+23:12:50.442   Out  Particle Swarm 14 Best Evaluation Error = 1112008.729
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112009.919
+23:12:50.442   Out  Particle Swarm 15 Best Evaluation Error = 1112009.800
+23:12:50.442   Out    Particle 00 Evaluation Error          = 1112012.193
+23:12:50.442   Out  Particle Swarm 16 Best Evaluation Error = 1112009.553
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112009.650
+23:12:50.443   Out  Particle Swarm 17 Best Evaluation Error = 1112005.505
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112008.006
+23:12:50.443   Out  Particle Swarm 18 Best Evaluation Error = 1112022.514
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112022.514
+23:12:50.443   Out  Particle Swarm 19 Best Evaluation Error = 1112004.240
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112008.562
+23:12:50.443   Out  Particle Swarm 20 Best Evaluation Error = 1112011.021
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112011.021
+23:12:50.443   Out  Particle Swarm 21 Best Evaluation Error = 1112017.468
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112017.468
+23:12:50.443   Out  Particle Swarm 22 Best Evaluation Error = 1112008.155
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112009.673
+23:12:50.443   Out  Particle Swarm 23 Best Evaluation Error = 1112007.480
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112010.893
+23:12:50.443   Out  Particle Swarm 24 Best Evaluation Error = 1112008.874
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112015.943
+23:12:50.443   Out  Particle Swarm 25 Best Evaluation Error = 1112010.789
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112010.789
+23:12:50.443   Out  Particle Swarm 26 Best Evaluation Error = 1112015.709
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112015.709
+23:12:50.443   Out  Particle Swarm 27 Best Evaluation Error = 1112019.632
+23:12:50.443   Out    Particle 00 Evaluation Error          = 1112019.668
+23:12:50.443   Out  
+23:12:50.444   Out  EgPawnMaterial                          =    168
+23:12:50.444   Out  EgKnightMaterial                        =    697
+23:12:50.444   Out  EgBishopMaterial                        =    723
+23:12:50.444   Out  EgRookMaterial                          =   1225
+23:12:50.444   Out  EgQueenMaterial                         =   2331
 
-19:15:57.966   Out  Iterations                              =    440    
-19:15:57.966   Out  Original Evaluation Error               = 833694.458
-19:15:57.966   Out  Best Evaluation Error                   = 832338.939
-19:15:57.966   Out  
-19:15:57.966   Out  Particle Swarm 00 Best Evaluation Error = 832339.727
-19:15:57.966   Out    Particle 00 Evaluation Error          = 832339.727
-19:15:57.966   Out  Particle Swarm 01 Best Evaluation Error = 832355.073
-19:15:57.966   Out    Particle 00 Evaluation Error          = 832355.073
-19:15:57.966   Out  Particle Swarm 02 Best Evaluation Error = 832350.171
-19:15:57.966   Out    Particle 00 Evaluation Error          = 832350.171
-19:15:57.966   Out  Particle Swarm 03 Best Evaluation Error = 832347.378
-19:15:57.966   Out    Particle 00 Evaluation Error          = 832347.378
-19:15:57.966   Out  Particle Swarm 04 Best Evaluation Error = 832348.502
-19:15:57.966   Out    Particle 00 Evaluation Error          = 832348.502
-19:15:57.966   Out  Particle Swarm 05 Best Evaluation Error = 832338.939
-19:15:57.966   Out    Particle 00 Evaluation Error          = 832338.939
-19:15:57.966   Out  Particle Swarm 06 Best Evaluation Error = 832341.613
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832341.613
-19:15:57.967   Out  Particle Swarm 07 Best Evaluation Error = 832344.155
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832344.155
-19:15:57.967   Out  Particle Swarm 08 Best Evaluation Error = 832380.572
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832380.963
-19:15:57.967   Out  Particle Swarm 09 Best Evaluation Error = 832357.128
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832357.128
-19:15:57.967   Out  Particle Swarm 10 Best Evaluation Error = 832353.862
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832353.862
-19:15:57.967   Out  Particle Swarm 11 Best Evaluation Error = 832350.561
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832350.561
-19:15:57.967   Out  Particle Swarm 12 Best Evaluation Error = 832358.968
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832358.968
-19:15:57.967   Out  Particle Swarm 13 Best Evaluation Error = 832339.330
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832339.330
-19:15:57.967   Out  Particle Swarm 14 Best Evaluation Error = 832351.823
-19:15:57.967   Out    Particle 00 Evaluation Error          = 832351.823
-19:15:57.967   Out  Particle Swarm 15 Best Evaluation Error = 832375.294
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832375.978
-19:15:57.968   Out  Particle Swarm 16 Best Evaluation Error = 832340.125
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832340.125
-19:15:57.968   Out  Particle Swarm 17 Best Evaluation Error = 832342.921
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832343.031
-19:15:57.968   Out  Particle Swarm 18 Best Evaluation Error = 832368.461
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832368.461
-19:15:57.968   Out  Particle Swarm 19 Best Evaluation Error = 832370.296
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832370.296
-19:15:57.968   Out  Particle Swarm 20 Best Evaluation Error = 832349.393
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832349.393
-19:15:57.968   Out  Particle Swarm 21 Best Evaluation Error = 832349.677
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832349.677
-19:15:57.968   Out  Particle Swarm 22 Best Evaluation Error = 832357.713
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832357.757
-19:15:57.968   Out  Particle Swarm 23 Best Evaluation Error = 832340.125
-19:15:57.968   Out    Particle 00 Evaluation Error          = 832340.125
-19:15:57.969   Out  Particle Swarm 24 Best Evaluation Error = 832357.241
-19:15:57.969   Out    Particle 00 Evaluation Error          = 832357.241
-19:15:57.969   Out  Particle Swarm 25 Best Evaluation Error = 832364.058
-19:15:57.969   Out    Particle 00 Evaluation Error          = 832364.058
-19:15:57.969   Out  Particle Swarm 26 Best Evaluation Error = 832340.603
-19:15:57.969   Out    Particle 00 Evaluation Error          = 832340.603
-19:15:57.969   Out  Particle Swarm 27 Best Evaluation Error = 832348.143
-19:15:57.969   Out    Particle 00 Evaluation Error          = 832348.143
-19:15:57.969   Out  
-19:15:57.969   Out  EgPawnMaterial                          =    152
-19:15:57.969   Out  EgKnightMaterial                        =    609
-19:15:57.969   Out  EgBishopMaterial                        =    650
-19:15:57.969   Out  EgRookMaterial                          =   1068
-19:15:57.969   Out  EgQueenMaterial                         =   2068
+23:12:50.444   Out  PassedPawnPowerPer128                   =    321
+23:12:50.444   Out  MgPassedPawnScalePer128                 =     71
+23:12:50.444   Out  EgPassedPawnScalePer128                 =    278
+23:12:50.444   Out  EgFreePassedPawnScalePer128             =    713
+23:12:50.444   Out  EgKingEscortedPassedPawn                =     14
 
-19:15:57.969   Out  PassedPawnPowerPer128                   =    314
-19:15:57.969   Out  MgPassedPawnScalePer128                 =    126
-19:15:57.969   Out  EgPassedPawnScalePer128                 =    349
-19:15:57.969   Out  EgFreePassedPawnScalePer128             =    806
-19:15:57.970   Out  EgKingEscortedPassedPawn                =     16
+23:12:50.444   Out  MgKingSafetyPowerPer128                 =    211
+23:12:50.444   Out  MgKingSafetyScalePer128                 =     86
+23:12:50.444   Out  MgKingSafetyMinorAttackOuterRingPer8    =     19
+23:12:50.444   Out  MgKingSafetyMinorAttackInnerRingPer8    =     26
+23:12:50.444   Out  MgKingSafetyRookAttackOuterRingPer8     =     16
+23:12:50.444   Out  MgKingSafetyRookAttackInnerRingPer8     =     18
+23:12:50.444   Out  MgKingSafetyQueenAttackOuterRingPer8    =     17
+23:12:50.444   Out  MgKingSafetyQueenAttackInnerRingPer8    =     25
+23:12:50.444   Out  MgKingSafetySemiOpenFilePer8            =     16
+23:12:50.444   Out  MgKingSafetyPawnShieldPer8              =     18
+23:12:50.444   Out  MgKingSafetyDefendingPiecesPer8         =     10
+23:12:50.444   Out  MgKingSafetyAttackingPiecesPer8         =     15
 
-19:15:57.970   Out  MgKingSafetyPowerPer128                 =    255
-19:15:57.970   Out  MgKingSafetyScalePer128                 =     52
-19:15:57.970   Out  MgKingSafetyMinorAttackOuterRingPer8    =     17
-19:15:57.970   Out  MgKingSafetyMinorAttackInnerRingPer8    =     17
-19:15:57.970   Out  MgKingSafetyRookAttackOuterRingPer8     =     12
-19:15:57.970   Out  MgKingSafetyRookAttackInnerRingPer8     =     12
-19:15:57.970   Out  MgKingSafetyQueenAttackOuterRingPer8    =     14
-19:15:57.970   Out  MgKingSafetyQueenAttackInnerRingPer8    =     21
-19:15:57.970   Out  MgKingSafetySemiOpenFilePer8            =      3
-19:15:57.970   Out  MgKingSafetyPawnShieldPer8              =     12
-19:15:57.970   Out  MgKingSafetyDefendingPiecesPer8         =      9
-19:15:57.970   Out  MgKingSafetyAttackingPiecesPer8         =      5
+23:12:50.445   Out  MgPawnAdvancement                       =      0
+23:12:50.445   Out  EgPawnAdvancement                       =     13
+23:12:50.445   Out  MgPawnCentrality                        =      0
+23:12:50.445   Out  EgPawnCentrality                        =     -9
 
-19:15:57.970   Out  MgPawnAdvancement                       =      0
-19:15:57.970   Out  EgPawnAdvancement                       =      8
-19:15:57.970   Out  MgPawnCentrality                        =      0
-19:15:57.970   Out  EgPawnCentrality                        =     -6
+23:12:50.445   Out  MgKnightAdvancement                     =     -1
+23:12:50.445   Out  EgKnightAdvancement                     =     13
+23:12:50.445   Out  MgKnightCentrality                      =     12
+23:12:50.445   Out  EgKnightCentrality                      =      5
+23:12:50.445   Out  MgKnightCorner                          =      0
+23:12:50.445   Out  EgKnightCorner                          =    -12
 
-19:15:57.970   Out  MgKnightAdvancement                     =      4
-19:15:57.971   Out  EgKnightAdvancement                     =     10
-19:15:57.971   Out  MgKnightCentrality                      =      8
-19:15:57.971   Out  EgKnightCentrality                      =     12
-19:15:57.971   Out  MgKnightCorner                          =      0
-19:15:57.971   Out  EgKnightCorner                          =    -17
+23:12:50.445   Out  MgBishopAdvancement                     =     -5
+23:12:50.445   Out  EgBishopAdvancement                     =     10
+23:12:50.445   Out  MgBishopCentrality                      =      6
+23:12:50.445   Out  EgBishopCentrality                      =     14
+23:12:50.445   Out  MgBishopCorner                          =      0
+23:12:50.445   Out  EgBishopCorner                          =      0
 
-19:15:57.971   Out  MgBishopAdvancement                     =     -5
-19:15:57.971   Out  EgBishopAdvancement                     =     11
-19:15:57.971   Out  MgBishopCentrality                      =     11
-19:15:57.971   Out  EgBishopCentrality                      =      3
-19:15:57.971   Out  MgBishopCorner                          =      0
-19:15:57.971   Out  EgBishopCorner                          =      0
+23:12:50.445   Out  MgRookAdvancement                       =     -1
+23:12:50.445   Out  EgRookAdvancement                       =     15
+23:12:50.445   Out  MgRookCentrality                        =      0
+23:12:50.445   Out  EgRookCentrality                        =     -8
+23:12:50.445   Out  MgRookCorner                            =     -9
+23:12:50.445   Out  EgRookCorner                            =     -7
 
-19:15:57.971   Out  MgRookAdvancement                       =      2
-19:15:57.971   Out  EgRookAdvancement                       =     18
-19:15:57.971   Out  MgRookCentrality                        =      9
-19:15:57.971   Out  EgRookCentrality                        =     -2
-19:15:57.971   Out  MgRookCorner                            =      0
-19:15:57.971   Out  EgRookCorner                            =     -1
+23:12:50.446   Out  MgQueenAdvancement                      =     -8
+23:12:50.446   Out  EgQueenAdvancement                      =     28
+23:12:50.446   Out  MgQueenCentrality                       =      6
+23:12:50.446   Out  EgQueenCentrality                       =     -3
+23:12:50.446   Out  MgQueenCorner                           =    -10
+23:12:50.446   Out  EgQueenCorner                           =     -6
 
-19:15:57.972   Out  MgQueenAdvancement                      =     -9
-19:15:57.972   Out  EgQueenAdvancement                      =     30
-19:15:57.972   Out  MgQueenCentrality                       =      3
-19:15:57.972   Out  EgQueenCentrality                       =     15
-19:15:57.972   Out  MgQueenCorner                           =      0
-19:15:57.972   Out  EgQueenCorner                           =     -7
+23:12:50.446   Out  MgKingAdvancement                       =    -15
+23:12:50.446   Out  EgKingAdvancement                       =     19
+23:12:50.446   Out  MgKingCentrality                        =      0
+23:12:50.446   Out  EgKingCentrality                        =     24
+23:12:50.446   Out  MgKingCorner                            =      9
+23:12:50.446   Out  EgKingCorner                            =    -14
 
-19:15:57.972   Out  MgKingAdvancement                       =    -40
-19:15:57.972   Out  EgKingAdvancement                       =     28
-19:15:57.972   Out  MgKingCentrality                        =      0
-19:15:57.972   Out  EgKingCentrality                        =     15
-19:15:57.972   Out  MgKingCorner                            =      7
-19:15:57.972   Out  EgKingCorner                            =    -13
+23:12:50.446   Out  PieceMobilityPowerPer128                =    110
+23:12:50.446   Out  MgKnightMobilityScale                   =     47
+23:12:50.446   Out  EgKnightMobilityScale                   =    104
+23:12:50.446   Out  MgBishopMobilityScale                   =     29
+23:12:50.446   Out  EgBishopMobilityScale                   =    154
+23:12:50.446   Out  MgRookMobilityScale                     =     75
+23:12:50.446   Out  EgRookMobilityScale                     =    120
+23:12:50.446   Out  MgQueenMobilityScale                    =    101
+23:12:50.446   Out  EgQueenMobilityScale                    =     29
 
-19:15:57.972   Out  PieceMobilityPowerPer128                =    116
-19:15:57.972   Out  MgKnightMobilityScale                   =     54
-19:15:57.972   Out  EgKnightMobilityScale                   =    108
-19:15:57.972   Out  MgBishopMobilityScale                   =     58
-19:15:57.972   Out  EgBishopMobilityScale                   =    181
-19:15:57.972   Out  MgRookMobilityScale                     =     87
-19:15:57.972   Out  EgRookMobilityScale                     =    157
-19:15:57.973   Out  MgQueenMobilityScale                    =     89
-19:15:57.973   Out  EgQueenMobilityScale                    =     90
+23:12:50.446   Out  MgIsolatedPawn                          =     11
+23:12:50.446   Out  EgIsolatedPawn                          =     50
+23:12:50.446   Out  MgDoubledPawn                           =     27
+23:12:50.446   Out  EgDoubledPawn                           =     22
 
-19:15:57.973   Out  MgIsolatedPawn                          =     12
-19:15:57.973   Out  EgIsolatedPawn                          =     43
-19:15:57.973   Out  MgDoubledPawn                           =     30
-19:15:57.973   Out  EgDoubledPawn                           =     15
+23:12:50.447   Out  MgPawnThreatenMinor                     =     35
+23:12:50.447   Out  EgPawnThreatenMinor                     =     45
+23:12:50.447   Out  MgPawnThreatenMajor                     =     65
+23:12:50.447   Out  EgPawnThreatenMajor                     =     24
+23:12:50.447   Out  MgMinorThreatenMajor                    =     19
+23:12:50.447   Out  EgMinorThreatenMajor                    =     40
 
-19:15:57.973   Out  MgPawnThreatenMinor                     =     46
-19:15:57.973   Out  EgPawnThreatenMinor                     =     51
-19:15:57.973   Out  MgPawnThreatenMajor                     =     64
-19:15:57.973   Out  EgPawnThreatenMajor                     =     40
-19:15:57.973   Out  MgMinorThreatenMajor                    =     42
-19:15:57.973   Out  EgMinorThreatenMajor                    =     17
+23:12:50.447   Out  MgBishopPair                            =     46
+23:12:50.447   Out  EgBishopPair                            =     95
+23:12:50.447   Out  MgKnightOutpost                         =     61
+23:12:50.447   Out  EgKnightOutpost                         =     63
+23:12:50.447   Out  MgBishopOutpost                         =     46
+23:12:50.447   Out  EgBishopOutpost                         =     11
 
-19:15:57.973   Out  MgBishopPair                            =     44
-19:15:57.973   Out  EgBishopPair                            =     62
-19:15:57.973   Out  MgKnightOutpost                         =     45
-19:15:57.973   Out  EgKnightOutpost                         =     48
-19:15:57.973   Out  MgBishopOutpost                         =     39
-19:15:57.973   Out  EgBishopOutpost                         =      1
+23:12:50.447   Out  MgRook7thRank                           =     72
+23:12:50.447   Out  EgRook7thRank                           =     53
 
-19:15:57.974   Out  MgRook7thRank                           =     50
-19:15:57.974   Out  EgRook7thRank                           =      5
-
-19:15:57.974   Out  EgScaleMinorAdvantage                   =     11
-19:15:57.974   Out  EgScaleOppBishopsPerPassedPawn          =     34
-19:15:57.974   Out  EgScalePerPawnAdvantage                 =     11
+23:12:50.447   Out  EgScaleMinorAdvantage                   =      9
+23:12:50.447   Out  EgScaleOppBishopsPerPassedPawn          =     34
+23:12:50.447   Out  EgScalePerPawnAdvantage                 =      8

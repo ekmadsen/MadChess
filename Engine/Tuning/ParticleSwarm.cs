@@ -53,6 +53,8 @@ public sealed class ParticleSwarm
         for (var index = 0; index < Particles.Count; index++)
         {
             var particle = Particles[index];
+            particle.ConfigureEvaluation(eval);
+            particle.CalculateEvaluationError(board, search, _winScale);
             if ((particle != bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
             {
                 // Recreate particle at random location.
@@ -60,8 +62,6 @@ public sealed class ParticleSwarm
                 Particles[index] = particle;
             }
             particle.Move();
-            particle.ConfigureEvaluation(eval);
-            particle.CalculateEvaluationError(board, search, _winScale);
         }
     }
 

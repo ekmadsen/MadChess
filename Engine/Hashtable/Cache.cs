@@ -10,6 +10,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ErikTheCoder.MadChess.Core.Game;
@@ -42,9 +43,11 @@ public sealed class Cache
         {
             _positions = null;
             GC.Collect();
-            var capacity = Math.Max(value, CapacityPerMegabyte); // Ensure minimum capacity to extract principal variations.
+            _indices = value / _buckets;
+            // Round indices up to nearest power of two to enable fast modular division in GetIndex method.
+            _indices = (int)BitOperations.RoundUpToPowerOf2((uint)_indices);
+            var capacity = _indices * _buckets;
             _positions = new CachedPosition[capacity];
-            _indices = capacity / _buckets;
             Reset();
         }
     }
@@ -98,7 +101,6 @@ public sealed class Cache
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         set
         {
-            // TODO: Do not overwrite PV lines from cache during current search (Cache.Searches).
             Debug.Assert(value.Key == key);
             Debug.Assert(CachedPositionData.IsValid(value.Data));
             var index = GetIndex(key);
@@ -163,12 +165,12 @@ public sealed class Cache
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetIndex(ulong key)
     {
-        // TODO: Replace call to GetHashCode with own implementation.
-        // TODO: Implement fast modulus.
+        // Ensure even distribution of indices by hashing ulong to int rather than using raw Zobrist key for modular division.
+        var hash = ((int)key) ^ (int)(key >> 32);
+        // Fast modular division using bitwise operations.  Requires _indices to be a power of two.
         // See https://lemire.me/blog/2019/02/08/faster-remainders-when-the-divisor-is-a-constant-beating-compilers-and-libdivide/.
         // See https://stackoverflow.com/questions/11040646/faster-modulus-in-c-c.
-        // Ensure even distribution of indices by using GetHashCode method rather than raw Zobrist key for modular division.
-        var index = (key.GetHashCode() % _indices) * _buckets;
+        var index = hash & (_indices - 1);
         // Ensure index is positive.
         return FastMath.Abs(index);
     }
