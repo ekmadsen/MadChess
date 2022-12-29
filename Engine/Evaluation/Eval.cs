@@ -546,6 +546,7 @@ public sealed class Eval
             // TODO: Implement Bahr's rule to evaluate a blocked rook pawn and passed pawn.
             // See https://macechess.blogspot.com/2013/08/bahrs-rule.html and http://www.fraserheightschess.com/Documents/Bahrs_Rule.pdf.
             case 0 when (enemyPawnCount == 0) && (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
+                // TODO: Lower value of K vrs KBN so engine, with a knight, prefers to promote pawn to Q for K vrs KQN instead of promoting pawn to B for K vrs KBN.
                 // K vrs KBN
                 // Push lone king to corner with same color square as occupied by bishop.  Push winning king close to lone king.
                 var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;

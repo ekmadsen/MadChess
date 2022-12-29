@@ -43,11 +43,8 @@ public sealed class Cache
         {
             _positions = null;
             GC.Collect();
-            _indices = value / _buckets;
-            // Round indices up to nearest power of two to enable fast modular division in GetIndex method.
-            _indices = (int)BitOperations.RoundUpToPowerOf2((uint)_indices);
-            var capacity = _indices * _buckets;
-            _positions = new CachedPosition[capacity];
+            _indices = (int)BitOperations.RoundUpToPowerOf2((uint)value / _buckets); // Round indices up to nearest power of two to enable fast modular division in GetIndex method.
+            _positions = new CachedPosition[_indices * _buckets];
             Reset();
         }
     }
@@ -78,9 +75,9 @@ public sealed class Cache
         {
             _stats.CacheProbes++;
             var index = GetIndex(key);
-            for (var bucket = 0; bucket < _buckets; bucket++)
+            var maxBucketIndex = index + _buckets - 1;
+            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
             {
-                var bucketIndex = index + bucket;
                 var position = _positions[bucketIndex];
                 if (position.Key == key)
                 {
@@ -103,14 +100,14 @@ public sealed class Cache
         {
             Debug.Assert(value.Key == key);
             Debug.Assert(CachedPositionData.IsValid(value.Data));
-            var index = GetIndex(key);
             CachedPositionData.SetLastAccessed(ref value.Data, Searches);
+            var index = GetIndex(key);
+            var maxBucketIndex = index + _buckets - 1;
             // Find oldest bucket.
             var earliestAccess = byte.MaxValue;
-            var oldestBucketIndex = 0;
-            for (var bucket = 0; bucket < _buckets; bucket++)
+            var oldestBucketIndex = index;
+            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
             {
-                var bucketIndex = index + bucket;
                 var position = _positions[bucketIndex];
                 if (position.Key == key)
                 {
@@ -170,7 +167,7 @@ public sealed class Cache
         // Fast modular division using bitwise operations.  Requires _indices to be a power of two.
         // See https://lemire.me/blog/2019/02/08/faster-remainders-when-the-divisor-is-a-constant-beating-compilers-and-libdivide/.
         // See https://stackoverflow.com/questions/11040646/faster-modulus-in-c-c.
-        var index = hash & (_indices - 1);
+        var index = (hash & (_indices - 1)) * _buckets;
         // Ensure index is positive.
         return FastMath.Abs(index);
     }
