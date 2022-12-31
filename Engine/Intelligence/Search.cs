@@ -181,10 +181,10 @@ public sealed class Search : IDisposable
         _principalVariations = new ulong[Position.MaxMoves][][];
         for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
         {
-            _principalVariations[rootMoveIndex] = new ulong[MaxHorizon + 1][];
+            _principalVariations[rootMoveIndex] = new ulong[MaxHorizon + 2][]; // Guarantees var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1] is in bounds.
             for (var depth = 0; depth <= MaxHorizon; depth++)
             {
-                var remainingDepth = MaxHorizon - depth + 1;
+                var remainingDepth = MaxHorizon + 2 - depth;
                 _principalVariations[rootMoveIndex][depth] = new ulong[remainingDepth];
                 for (var pvMoveIndex = 0; pvMoveIndex < remainingDepth; pvMoveIndex++) _principalVariations[rootMoveIndex][depth][pvMoveIndex] = Move.Null;
             }
@@ -699,15 +699,12 @@ public sealed class Search : IDisposable
                 var rootMoveIndex = _rootMoveNumber - 1;
                 var pvThisDepth = _principalVariations[rootMoveIndex][depth];
                 pvThisDepth[0] = move;
-                if (depth < MaxHorizon)
+                var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1];
+                for (var pvMoveIndex = 0; pvMoveIndex < pvNextDepth.Length; pvMoveIndex++)
                 {
-                    var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1];
-                    for (var pvMoveIndex = 0; pvMoveIndex < pvNextDepth.Length; pvMoveIndex++)
-                    {
-                        var pvMove = pvNextDepth[pvMoveIndex];
-                        if (pvMove == Move.Null) break;
-                        pvThisDepth[pvMoveIndex + 1] = pvMove;
-                    }
+                    var pvMove = pvNextDepth[pvMoveIndex];
+                    pvThisDepth[pvMoveIndex + 1] = pvMove;
+                    if (pvMove == Move.Null) break;
                 }
                 if (score > bestScore)
                 {
