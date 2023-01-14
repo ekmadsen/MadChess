@@ -42,16 +42,6 @@ public sealed class Eval
     // Draw by Repetition
     public int DrawMoves;
     // Material
-    private static readonly int[] _exchangeMaterialScores =
-    {
-        0,   // None
-        100, // Pawn
-        300, // Knight
-        300, // Bishop
-        500, // Rook
-        900, // Queen
-        0    // King
-    };
     private readonly int[] _mgMaterialScores; // [colorlessPiece]
     private readonly int[] _egMaterialScores; // [colorlessPiece]
     // Passed Pawns
@@ -428,22 +418,6 @@ public sealed class Eval
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetPieceMaterialScore(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
-
-
-    public static (int StaticScore, bool DrawnEndgame, int phase) GetExchangeMaterialScore(Position position)
-    {
-        var phase = DetermineGamePhase(position);
-        var score = 0;
-        for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
-        {
-            var piece = PieceHelper.GetPieceOfColor(colorlessPiece, position.ColorToMove);
-            var enemyPiece = PieceHelper.GetPieceOfColor(colorlessPiece, position.ColorLastMoved);
-            var pieceCount = Bitwise.CountSetBits(position.PieceBitboards[(int)piece]);
-            var enemyPieceCount = Bitwise.CountSetBits(position.PieceBitboards[(int)enemyPiece]);
-            score += (pieceCount - enemyPieceCount) * _exchangeMaterialScores[(int)colorlessPiece];
-        }
-        return (score, false, phase);
-    }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -287,17 +287,11 @@ public sealed class UciStream : IDisposable
             case "staticscore":
                 WriteMessageLine(_eval.ToString(_board.CurrentPosition));
                 break;
-            case "exchangescore":
-                ExchangeScore(tokens);
-                break;
             case "testpositions":
                 TestPositions(tokens);
                 break;
             case "analyzepositions":
                 AnalyzePositions(tokens);
-                break;
-            case "analyzeexchangepositions":
-                AnalyzeExchangePositions(tokens);
                 break;
             case "tune":
                 Tune(tokens);
@@ -748,19 +742,6 @@ public sealed class UciStream : IDisposable
     }
 
 
-    private void ExchangeScore(List<string> tokens)
-    {
-        var move = Move.ParseLongAlgebraic(tokens[1].Trim(), _board.CurrentPosition.ColorToMove);
-        var validMove = _board.ValidateMove(ref move);
-        if (!validMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
-        var (legalMove, _) = _board.PlayMove(move);
-        _board.UndoMove();
-        if (!legalMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is illegal in position {_board.CurrentPosition.ToFen()}.");
-        var exchangeScore = _search.GetExchangeScore(_board, move);
-        WriteMessageLine(exchangeScore.ToString());
-    }
-
-
     private void TestPositions(List<string> tokens)
     {
         _commandStopwatch.Restart();
@@ -945,53 +926,6 @@ public sealed class UciStream : IDisposable
     }
 
 
-    private void AnalyzeExchangePositions(IList<string> tokens)
-    {
-        _commandStopwatch.Restart();
-        var file = tokens[1].Trim();
-        var positions = 0;
-        var correctPositions = 0;
-        _stats.Reset();
-        using (var reader = File.OpenText(file))
-        {
-            WriteMessageLine("Number                                                                     Position   Move  Expected Score  Score  Correct    Pct");
-            WriteMessageLine("======  ===========================================================================  =====  ==============  =====  =======  =====");
-            _board.Nodes = 0;
-            while (!reader.EndOfStream)
-            {
-                // Load position and correct score.
-                var line = reader.ReadLine();
-                if (line == null) continue;
-                positions++;
-                var parsedTokens = Tokens.Parse(line, ',', '"');
-                var fen = parsedTokens[0].Trim();
-                var moveStandardAlgebraic = parsedTokens[1].Trim();
-                var expectedScore = int.Parse(parsedTokens[2].Trim());
-                // Setup position and reset search and move heuristics.
-                UciNewGame(true);
-                _board.SetPosition(fen, true);
-                _cache.Reset();
-                _killerMoves.Reset();
-                _moveHistory.Reset();
-                _search.Reset();
-                var move = Move.ParseStandardAlgebraic(_board, moveStandardAlgebraic);
-                var score = _search.GetExchangeScore(_board, move);
-                var correct = score == expectedScore;
-                if (correct) correctPositions++;
-                var correctFraction = (100d * correctPositions) / positions;
-                WriteMessageLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),5}  {expectedScore,14}  {score,5}  {correct,7}  {correctFraction,5:0.0}");
-            }
-        }
-        _commandStopwatch.Stop();
-        // Update score.
-        WriteMessageLine();
-        WriteMessageLine($"Solved {correctPositions} of {positions} positions in {_commandStopwatch.Elapsed.TotalMilliseconds:000} milliseconds.");
-        // Update node count.
-        var nodesPerSecond = _board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
-        WriteMessageLine($"Counted {_board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
-    }
-
-
     private void Tune(IList<string> tokens)
     {
         _commandStopwatch.Restart();
@@ -1116,17 +1050,11 @@ public sealed class UciStream : IDisposable
         WriteMessageLine();
         WriteMessageLine("staticscore                           Display evaluation details of current position.");
         WriteMessageLine();
-        WriteMessageLine("exchangescore [move]                  Display static score if pieces are traded on the destination square of the given move.");
-        WriteMessageLine("                                      Move must be specified in long algebraic notation.");
-        WriteMessageLine();
         WriteMessageLine("testpositions [filename]              Calculate legal moves for positions in given file and compare to expected results.");
         WriteMessageLine("                                      Each line of file must be formatted as [FEN]|[Depth]|[Legal Move Count].");
         WriteMessageLine();
         WriteMessageLine("analyzepositions [filename] [msec]    Search for best move for positions in given file and compare to expected results.");
         WriteMessageLine("                                      File must be in EPD format.  Search of each move is limited to given time in milliseconds.");
-        WriteMessageLine();
-        WriteMessageLine("analyzeexchangepositions [filename]   Determine material score after exchanging pieces on destination square of given move.");
-        WriteMessageLine("                                      Pawn = 100, Knight and Bishop = 300, Rook = 500, Queen = 900.");
         WriteMessageLine();
         WriteMessageLine("tune [pgn] [ps] [pps] [ws] [i]        Tune evaluation parameters using a particle swarm algorithm.");
         WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");
