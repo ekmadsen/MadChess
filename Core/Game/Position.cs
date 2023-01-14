@@ -439,7 +439,8 @@ public sealed class Position
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Reset()
     {
-        for (var piece = Piece.WhitePawn; piece <= Piece.BlackKing; piece++) PieceBitboards[(int) piece] = 0;
+        for (var piece = Piece.WhitePawn; piece <= Piece.BlackKing; piece++)
+            PieceBitboards[(int) piece] = 0;
         ColorOccupancy[(int) Color.White] = 0;
         ColorOccupancy[(int) Color.Black] = 0;
         Occupancy = 0;

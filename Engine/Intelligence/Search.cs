@@ -181,12 +181,13 @@ public sealed class Search : IDisposable
         _principalVariations = new ulong[Position.MaxMoves][][];
         for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
         {
-            _principalVariations[rootMoveIndex] = new ulong[MaxHorizon + 1][];
+            _principalVariations[rootMoveIndex] = new ulong[MaxHorizon + 2][]; // Guarantees var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1] is in bounds.
             for (var depth = 0; depth <= MaxHorizon; depth++)
             {
-                var remainingDepth = MaxHorizon - depth + 1;
+                var remainingDepth = MaxHorizon + 2 - depth;
                 _principalVariations[rootMoveIndex][depth] = new ulong[remainingDepth];
-                for (var pvMoveIndex = 0; pvMoveIndex < remainingDepth; pvMoveIndex++) _principalVariations[rootMoveIndex][depth][pvMoveIndex] = Move.Null;
+                for (var pvMoveIndex = 0; pvMoveIndex < remainingDepth; pvMoveIndex++)
+                    _principalVariations[rootMoveIndex][depth][pvMoveIndex] = Move.Null;
             }
         }
         // Set Multi PV, analyze mode, and search strength.
@@ -279,23 +280,23 @@ public sealed class Search : IDisposable
         _elo = elo;
 
         // See https://www.madchess.net/the-madchess-uci_limitstrength-algorithm/ for chart with NPS, Move Error, Blunder Error, and Blunder Percent values.
-        var scale = 128d;
+        var scale = 192d;
         var power = 4d; 
         var constant = 32;
         var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
         _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
         
         // Enable errors on every move.
-        scale = 1d;
+        scale = 0.5d;
         power = 2d;
         constant = 5;
         ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200;
         _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
         
         // Enable occasional blunders.
-        scale = 1.75d;
+        scale = 1d;
         power = 2.5d;
-        constant = 50;
+        constant = 25;
         _blunderError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
         scale = 0.16d;
         power = 2d;
@@ -374,12 +375,14 @@ public sealed class Search : IDisposable
             _selectiveHorizon = 0;
             _moveHistory.Age();
             // Reset move scores, then search moves.
-            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
+                _rootMoves[moveIndex].Score = -SpecialScore.Max;
             var score = GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
             // Find best move.
             SortMovesByScore(_rootMoves, legalMoveIndex - 1);
-            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
+                _bestMoves[moveIndex] = _rootMoves[moveIndex];
             bestMove = _bestMoves[0];
             _bestMovePlies[_originalHorizon] = bestMove;
             // Update principal variation status and determine whether to keep searching.
@@ -699,15 +702,12 @@ public sealed class Search : IDisposable
                 var rootMoveIndex = _rootMoveNumber - 1;
                 var pvThisDepth = _principalVariations[rootMoveIndex][depth];
                 pvThisDepth[0] = move;
-                if (depth < MaxHorizon)
+                var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1];
+                for (var pvMoveIndex = 0; pvMoveIndex < pvNextDepth.Length; pvMoveIndex++)
                 {
-                    var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1];
-                    for (var pvMoveIndex = 0; pvMoveIndex < pvNextDepth.Length; pvMoveIndex++)
-                    {
-                        var pvMove = pvNextDepth[pvMoveIndex];
-                        if (pvMove == Move.Null) break;
-                        pvThisDepth[pvMoveIndex + 1] = pvMove;
-                    }
+                    var pvMove = pvNextDepth[pvMoveIndex];
+                    pvThisDepth[pvMoveIndex + 1] = pvMove;
+                    if (pvMove == Move.Null) break;
                 }
                 if (score > bestScore)
                 {
@@ -1290,8 +1290,10 @@ public sealed class Search : IDisposable
         MoveTimeHardLimit = TimeSpan.MaxValue;
         CanAdjustMoveTime = true;
         // Reset best moves.
-        for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -SpecialScore.Max);
-        for (var depth = 0; depth < _bestMovePlies.Length; depth++) _bestMovePlies[depth] = new ScoredMove(Move.Null, -SpecialScore.Max);
+        for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++)
+            _bestMoves[moveIndex] = new ScoredMove(Move.Null, -SpecialScore.Max);
+        for (var depth = 0; depth < _bestMovePlies.Length; depth++)
+            _bestMovePlies[depth] = new ScoredMove(Move.Null, -SpecialScore.Max);
         // Enable PV update, increment search counter, and continue search.
         PvInfoUpdate = true;
         _cache.Searches++;

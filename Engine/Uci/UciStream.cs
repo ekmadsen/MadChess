@@ -34,8 +34,8 @@ public sealed class UciStream : IDisposable
     public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
-    private const int _minWinScale = 400;
-    private const int _maxWinScale = 600;
+    private const int _minWinScale = 550;
+    private const int _maxWinScale = 650;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(100);
     private Board _board;
     private Stats _stats;
@@ -856,13 +856,18 @@ public sealed class UciStream : IDisposable
                 // Must convert tokens to array to prevent joining class name (System.Collections.Generic.List) instead of string value.
                 // This is because the IEnumerable<T> overload does not accept a StartIndex and Count so those parameters are interpreted as params object[].
                 var fen = string.Join(" ", parsedTokens.ToArray(), 0, solutionIndex).Trim();
+                // Setup position and reset search and move heuristics.
+                UciNewGame(true);
+                _board.SetPosition(fen, true);
+                _cache.Reset();
+                _killerMoves.Reset();
+                _moveHistory.Reset();
+                _search.Reset();
+                // Determine expected moves.
                 var expectedMovesListStandardAlgebraic = string.Join(" ", parsedTokens.ToArray(), solutionIndex + 1, correctMoves).Trim().TrimEnd(";".ToCharArray());
                 var expectedMovesStandardAlgebraic = expectedMovesListStandardAlgebraic.Split(" ".ToCharArray());
                 var expectedMoves = new ulong[expectedMovesStandardAlgebraic.Length];
                 var expectedMovesLongAlgebraic = new string[expectedMovesStandardAlgebraic.Length];
-                // Setup position and reset search and move heuristics.
-                UciNewGame(true);
-                _board.SetPosition(fen, true);
                 for (var moveIndex = 0; moveIndex < expectedMovesStandardAlgebraic.Length; moveIndex++)
                 {
                     var expectedMoveStandardAlgebraic = expectedMovesStandardAlgebraic[moveIndex];
@@ -870,10 +875,6 @@ public sealed class UciStream : IDisposable
                     expectedMoves[moveIndex] = expectedMove;
                     expectedMovesLongAlgebraic[moveIndex] = Move.ToLongAlgebraic(expectedMove);
                 }
-                _cache.Reset();
-                _killerMoves.Reset();
-                _moveHistory.Reset();
-                _search.Reset();
                 // Find best move.  Do not update node count or PV.
                 _board.NodesInfoUpdate = long.MaxValue;
                 _search.PvInfoUpdate = false;
@@ -966,8 +967,12 @@ public sealed class UciStream : IDisposable
                 var fen = parsedTokens[0].Trim();
                 var moveStandardAlgebraic = parsedTokens[1].Trim();
                 var expectedScore = int.Parse(parsedTokens[2].Trim());
-                // Setup position and reset search.
+                // Setup position and reset search and move heuristics.
+                UciNewGame(true);
                 _board.SetPosition(fen, true);
+                _cache.Reset();
+                _killerMoves.Reset();
+                _moveHistory.Reset();
                 _search.Reset();
                 var move = Move.ParseStandardAlgebraic(_board, moveStandardAlgebraic);
                 var score = _search.GetExchangeScore(_board, move);
@@ -993,7 +998,7 @@ public sealed class UciStream : IDisposable
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 592 for MadChessGauntlets.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 581 for MadChessGauntlets.pgn.
         var iterations = int.Parse(tokens[5].Trim());
         var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
         particleSwarms.Optimize(iterations);
@@ -1041,7 +1046,8 @@ public sealed class UciStream : IDisposable
         }
         // Calculate evaluation error of all win scales.
         var winScales = new Stack<int>(_maxWinScale - _minWinScale + 1);
-        for (var winScale = _minWinScale; winScale <= _maxWinScale; winScale++) winScales.Push(winScale);
+        for (var winScale = _minWinScale; winScale <= _maxWinScale; winScale++)
+            winScales.Push(winScale);
         var tasks = new Task<int>[threads];
         var bestWinScale = _minWinScale;
         var bestEvaluationError = double.MaxValue;

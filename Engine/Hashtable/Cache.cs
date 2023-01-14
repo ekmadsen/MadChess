@@ -42,7 +42,7 @@ public sealed class Cache
         {
             _positions = null;
             GC.Collect();
-            var capacity = Math.Max(value, CapacityPerMegabyte); // Ensure minimum capacity to extract principal variations.
+            var capacity = Math.Max(value, CapacityPerMegabyte);
             _positions = new CachedPosition[capacity];
             _indices = capacity / _buckets;
             Reset();
@@ -75,9 +75,9 @@ public sealed class Cache
         {
             _stats.CacheProbes++;
             var index = GetIndex(key);
-            for (var bucket = 0; bucket < _buckets; bucket++)
+            var maxBucketIndex = index + _buckets - 1;
+            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
             {
-                var bucketIndex = index + bucket;
                 var position = _positions[bucketIndex];
                 if (position.Key == key)
                 {
@@ -98,17 +98,16 @@ public sealed class Cache
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         set
         {
-            // TODO: Do not overwrite PV lines from cache during current search (Cache.Searches).
             Debug.Assert(value.Key == key);
             Debug.Assert(CachedPositionData.IsValid(value.Data));
-            var index = GetIndex(key);
             CachedPositionData.SetLastAccessed(ref value.Data, Searches);
+            var index = GetIndex(key);
+            var maxBucketIndex = index + _buckets - 1;
             // Find oldest bucket.
             var earliestAccess = byte.MaxValue;
-            var oldestBucketIndex = 0;
-            for (var bucket = 0; bucket < _buckets; bucket++)
+            var oldestBucketIndex = index;
+            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
             {
-                var bucketIndex = index + bucket;
                 var position = _positions[bucketIndex];
                 if (position.Key == key)
                 {
@@ -154,7 +153,8 @@ public sealed class Cache
 
     public void Reset()
     {
-        for (var index = 0; index < _positions.Length; index++) _positions[index] = NullPosition;
+        for (var index = 0; index < _positions.Length; index++)
+            _positions[index] = NullPosition;
         Positions = 0;
         Searches = 0;
     }
@@ -163,12 +163,9 @@ public sealed class Cache
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetIndex(ulong key)
     {
-        // TODO: Replace call to GetHashCode with own implementation.
-        // TODO: Implement fast modulus.
-        // See https://lemire.me/blog/2019/02/08/faster-remainders-when-the-divisor-is-a-constant-beating-compilers-and-libdivide/.
-        // See https://stackoverflow.com/questions/11040646/faster-modulus-in-c-c.
-        // Ensure even distribution of indices by using GetHashCode method rather than raw Zobrist key for modular division.
-        var index = (key.GetHashCode() % _indices) * _buckets;
+        // Ensure even distribution of indices by hashing ulong to int rather than using raw Zobrist key for modular division.
+        var hash = ((int)key) ^ (int)(key >> 32);
+        var index = (hash % _indices) * _buckets;
         // Ensure index is positive.
         return FastMath.Abs(index);
     }

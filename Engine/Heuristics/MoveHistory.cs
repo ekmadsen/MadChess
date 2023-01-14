@@ -31,7 +31,8 @@ public sealed class MoveHistory
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
             _moveHistory[(int)piece] = new int[64];
-            for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++) _moveHistory[(int)piece][(int)toSquare] = 0;
+            for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
+                _moveHistory[(int)piece][(int)toSquare] = 0;
         }
     }
 
@@ -74,7 +75,8 @@ public sealed class MoveHistory
     {
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
-            for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++) _moveHistory[(int)piece][(int)toSquare] = 0;
+            for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
+                _moveHistory[(int)piece][(int)toSquare] = 0;
         }
     }
 }

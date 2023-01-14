@@ -11,6 +11,7 @@
 namespace ErikTheCoder.MadChess.Engine.Score;
 
 
+// TODO: Make ScoredMove immutable.
 public struct ScoredMove
 {
     public ulong Move;

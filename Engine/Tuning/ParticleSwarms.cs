@@ -60,8 +60,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         {
             var particleSwarm = new ParticleSwarm(pgnGames, parameters, particlesPerSwarm, winScale);
             Add(particleSwarm);
-            // Set parameter values of all particles in swarm to known best.
-            for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++) SetDefaultParameters(particleSwarm.Particles[particleIndex].Parameters);
         }
         var stats = new Stats();
         var cache = new Cache(1, stats, board.ValidateMove);
@@ -70,6 +68,9 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         var eval = new Eval(stats, board.IsRepeatPosition, () => false, writeMessageLine);
         var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, displayStats, writeMessageLine);
         var firstParticleInFirstSwarm = this[0].Particles[0];
+        // Set parameters of first particle in first swarm to known best.
+        SetDefaultParameters(firstParticleInFirstSwarm.Parameters);
+        firstParticleInFirstSwarm.ConfigureEvaluation(eval);
         firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
         _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
         stopwatch.Stop();
