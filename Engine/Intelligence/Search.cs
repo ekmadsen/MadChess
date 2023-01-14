@@ -280,23 +280,23 @@ public sealed class Search : IDisposable
         _elo = elo;
 
         // See https://www.madchess.net/the-madchess-uci_limitstrength-algorithm/ for chart with NPS, Move Error, Blunder Error, and Blunder Percent values.
-        var scale = 128d;
+        var scale = 192d;
         var power = 4d; 
         var constant = 32;
         var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
         _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
         
         // Enable errors on every move.
-        scale = 1d;
+        scale = 0.5d;
         power = 2d;
         constant = 5;
         ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200;
         _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
         
         // Enable occasional blunders.
-        scale = 1.75d;
+        scale = 1d;
         power = 2.5d;
-        constant = 50;
+        constant = 25;
         _blunderError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
         scale = 0.16d;
         power = 2d;
