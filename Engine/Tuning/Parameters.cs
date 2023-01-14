@@ -30,7 +30,8 @@ public sealed class Parameters : Collection<Parameter>
     public Parameters DuplicateWithSameValues()
     {
         var parameters = new Parameters();
-        for (var index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithSameValue());
+        for (var index = 0; index < Count; index++)
+            parameters.Add(this[index].DuplicateWithSameValue());
         return parameters;
     }
 
@@ -38,14 +39,16 @@ public sealed class Parameters : Collection<Parameter>
     public Parameters DuplicateWithRandomValues()
     {
         var parameters = new Parameters();
-        for (var index = 0; index < Count; index++) parameters.Add(this[index].DuplicateWithRandomValue());
+        for (var index = 0; index < Count; index++)
+            parameters.Add(this[index].DuplicateWithRandomValue());
         return parameters;
     }
 
 
     public void CopyValuesTo(Parameters parameters)
     {
-        for (var index = 0; index < Count; index++) parameters[index].Value = this[index].Value;
+        for (var index = 0; index < Count; index++)
+            parameters[index].Value = this[index].Value;
     }
 
 

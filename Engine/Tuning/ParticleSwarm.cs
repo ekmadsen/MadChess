@@ -31,7 +31,8 @@ public sealed class ParticleSwarm
         // Create particles at random locations.
         Particles = new Particles();
         _winScale = winScale;
-        for (var particle = 0; particle < particles; particle++) Particles.Add(new Particle(pgnGames, parameters.DuplicateWithRandomValues()));
+        for (var particle = 0; particle < particles; particle++)
+            Particles.Add(new Particle(pgnGames, parameters.DuplicateWithRandomValues()));
     }
 
 

@@ -186,7 +186,8 @@ public sealed class Search : IDisposable
             {
                 var remainingDepth = MaxHorizon + 2 - depth;
                 _principalVariations[rootMoveIndex][depth] = new ulong[remainingDepth];
-                for (var pvMoveIndex = 0; pvMoveIndex < remainingDepth; pvMoveIndex++) _principalVariations[rootMoveIndex][depth][pvMoveIndex] = Move.Null;
+                for (var pvMoveIndex = 0; pvMoveIndex < remainingDepth; pvMoveIndex++)
+                    _principalVariations[rootMoveIndex][depth][pvMoveIndex] = Move.Null;
             }
         }
         // Set Multi PV, analyze mode, and search strength.
@@ -374,12 +375,14 @@ public sealed class Search : IDisposable
             _selectiveHorizon = 0;
             _moveHistory.Age();
             // Reset move scores, then search moves.
-            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _rootMoves[moveIndex].Score = -SpecialScore.Max;
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
+                _rootMoves[moveIndex].Score = -SpecialScore.Max;
             var score = GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
             // Find best move.
             SortMovesByScore(_rootMoves, legalMoveIndex - 1);
-            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++) _bestMoves[moveIndex] = _rootMoves[moveIndex];
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
+                _bestMoves[moveIndex] = _rootMoves[moveIndex];
             bestMove = _bestMoves[0];
             _bestMovePlies[_originalHorizon] = bestMove;
             // Update principal variation status and determine whether to keep searching.
@@ -1287,8 +1290,10 @@ public sealed class Search : IDisposable
         MoveTimeHardLimit = TimeSpan.MaxValue;
         CanAdjustMoveTime = true;
         // Reset best moves.
-        for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++) _bestMoves[moveIndex] = new ScoredMove(Move.Null, -SpecialScore.Max);
-        for (var depth = 0; depth < _bestMovePlies.Length; depth++) _bestMovePlies[depth] = new ScoredMove(Move.Null, -SpecialScore.Max);
+        for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++)
+            _bestMoves[moveIndex] = new ScoredMove(Move.Null, -SpecialScore.Max);
+        for (var depth = 0; depth < _bestMovePlies.Length; depth++)
+            _bestMovePlies[depth] = new ScoredMove(Move.Null, -SpecialScore.Max);
         // Enable PV update, increment search counter, and continue search.
         PvInfoUpdate = true;
         _cache.Searches++;

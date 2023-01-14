@@ -171,7 +171,8 @@ public sealed class Eval
         _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Inner] = Config.MgKingSafetyQueenAttackInnerRingPer8;
         var kingSafetyPower = Config.MgKingSafetyPowerPer128 / 128d;
         var scale = -Config.MgKingSafetyScalePer128 / 128d; // Note the negative scale.  More threats to king == less safety.
-        for (var index = 0; index < _mgKingSafety.Length; index++) _mgKingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
+        for (var index = 0; index < _mgKingSafety.Length; index++)
+            _mgKingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
         // Calculate piece location values.
         for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
         {
@@ -1202,7 +1203,8 @@ public sealed class Eval
 
     private static void ShowParameterArray(int[] parameters, StringBuilder stringBuilder)
     {
-        for (var index = 0; index < parameters.Length; index++) stringBuilder.Append(parameters[index].ToString("+000;-000").PadRight(5));
+        for (var index = 0; index < parameters.Length; index++)
+            stringBuilder.Append(parameters[index].ToString("+000;-000").PadRight(5));
     }
 
 

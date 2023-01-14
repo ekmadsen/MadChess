@@ -44,7 +44,8 @@ public static class Bitwise
         Debug.Assert((mostSignificantBit >= 0) && (mostSignificantBit < 64));
         Debug.Assert(leastSignificantBit <= mostSignificantBit);
         var mask = 0ul;
-        for (var index = leastSignificantBit; index <= mostSignificantBit; index++) SetBit(ref mask, index);
+        for (var index = leastSignificantBit; index <= mostSignificantBit; index++)
+            SetBit(ref mask, index);
         return mask;
     }
 
@@ -141,7 +142,8 @@ public static class Bitwise
         Debug.Assert(maskSetBitCount <= 14); // Greatest number of moves in rank / file or diagonal direction.
         // Determine which bits are set in the mask.
         var maskSetBits = new List<int>();
-        for (var maskIndex = 0; maskIndex < 64; maskIndex++) if (IsBitSet(mask, maskIndex)) maskSetBits.Add(maskIndex);
+        for (var maskIndex = 0; maskIndex < 64; maskIndex++)
+            if (IsBitSet(mask, maskIndex)) maskSetBits.Add(maskIndex);
         // The binary representation of integers from 0 to ((2 Pow n) - 1) contains all permutations of n bits.
         var permutationCount = (int)Math.Pow(2, maskSetBitCount);
         var permutations = new List<ulong>(permutationCount);

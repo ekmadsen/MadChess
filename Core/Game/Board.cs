@@ -148,21 +148,25 @@ public sealed class Board
         _nodesInfoInterval = nodesInfoInterval;
         // Create positions and Zobrist keys.
         _positions = new Position[_maxPositions];
-        for (var positionIndex = 0; positionIndex < _maxPositions; positionIndex++) _positions[positionIndex] = new Position(this);
+        for (var positionIndex = 0; positionIndex < _maxPositions; positionIndex++)
+            _positions[positionIndex] = new Position(this);
         _piecesSquaresInitialKey = SafeRandom.NextULong();
         _pieceSquareKeys = new ulong[13][];
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
             _pieceSquareKeys[(int)piece] = new ulong[64];
-            for (var square = Square.A8; square < Square.Illegal; square++) _pieceSquareKeys[(int)piece][(int)square] = SafeRandom.NextULong();
+            for (var square = Square.A8; square < Square.Illegal; square++)
+                _pieceSquareKeys[(int)piece][(int)square] = SafeRandom.NextULong();
         }
         _sideToMoveKeys = new[] { SafeRandom.NextULong(), SafeRandom.NextULong() };
         _castlingKeys = new ulong[16]; // 2 Pow 4 = 16 combinations of castling rights.
         {
-            for (var castlingRights = 0; castlingRights < 16; castlingRights++) _castlingKeys[castlingRights] = SafeRandom.NextULong();
+            for (var castlingRights = 0; castlingRights < 16; castlingRights++)
+                _castlingKeys[castlingRights] = SafeRandom.NextULong();
         }
         _enPassantKeys = new ulong[(int)Square.Illegal + 1];
-        for (var square = Square.A8; square <= Square.Illegal; square++) _enPassantKeys[(int)square] = SafeRandom.NextULong();
+        for (var square = Square.A8; square <= Square.Illegal; square++)
+            _enPassantKeys[(int)square] = SafeRandom.NextULong();
         _piecesSquaresInitialKey = SafeRandom.NextULong();
         // Set nodes.
         Nodes = 0;
@@ -408,7 +412,8 @@ public sealed class Board
         var squareIndices1212To88 = MapSquareIndices1212To88();
         var neighborSquares = new int[64][];
         Square square88;
-        for (square88 = Square.A8; square88 < Square.Illegal; square88++) neighborSquares[(int)square88] = new int[(int)Direction.North2West1 + 1];
+        for (square88 = Square.A8; square88 < Square.Illegal; square88++)
+            neighborSquares[(int)square88] = new int[(int)Direction.North2West1 + 1];
         for (var square1212 = 0; square1212 < 144; square1212++)
         {
             square88 = (Square)squareIndices1212To88[square1212];
@@ -1360,9 +1365,7 @@ public sealed class Board
         // Examine positions since the last capture or pawn move.
         var firstMove = FastMath.Max(_positionIndex - CurrentPosition.PlySinceCaptureOrPawnMove, 0);
         for (var positionIndex = firstMove; positionIndex <= _positionIndex; positionIndex += 2) // Advance by two ply to retain same side to move.
-        {
             if (_positions[positionIndex].Key == currentPositionKey) positionCount++;
-        }
         return positionCount;
     }
 
@@ -1467,7 +1470,8 @@ public sealed class Board
     {
         if (!allPositions) return ToString();
         var stringBuilder = new StringBuilder();
-        for (var positionIndex = 0; positionIndex <= _positionIndex; positionIndex++) stringBuilder.AppendLine(_positions[positionIndex].ToString());
+        for (var positionIndex = 0; positionIndex <= _positionIndex; positionIndex++)
+            stringBuilder.AppendLine(_positions[positionIndex].ToString());
         return stringBuilder.ToString();
     }
 }

@@ -1046,7 +1046,8 @@ public sealed class UciStream : IDisposable
         }
         // Calculate evaluation error of all win scales.
         var winScales = new Stack<int>(_maxWinScale - _minWinScale + 1);
-        for (var winScale = _minWinScale; winScale <= _maxWinScale; winScale++) winScales.Push(winScale);
+        for (var winScale = _minWinScale; winScale <= _maxWinScale; winScale++)
+            winScales.Push(winScale);
         var tasks = new Task<int>[threads];
         var bestWinScale = _minWinScale;
         var bestEvaluationError = double.MaxValue;

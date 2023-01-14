@@ -42,8 +42,10 @@ public sealed class PrecalculatedMoves
         _rookShifts = new int[64];
         _rookMoveMasks = new ulong[64][];
         // Calculate relevant occupancy masks.
-        for (var square = Square.A8; square < Square.Illegal; square++) _bishopRelevantOccupancyMasks[(int)square] = Board.BishopMoveMasks[(int)square] & GetRelevantOccupancy(square, false);
-        for (var square = Square.A8; square < Square.Illegal; square++) _rookRelevantOccupancyMasks[(int)square] = Board.RookMoveMasks[(int)square] & GetRelevantOccupancy(square, true);
+        for (var square = Square.A8; square < Square.Illegal; square++)
+            _bishopRelevantOccupancyMasks[(int)square] = Board.BishopMoveMasks[(int)square] & GetRelevantOccupancy(square, false);
+        for (var square = Square.A8; square < Square.Illegal; square++)
+            _rookRelevantOccupancyMasks[(int)square] = Board.RookMoveMasks[(int)square] & GetRelevantOccupancy(square, true);
 
         // Find magic multipliers if not already known.
         _bishopMagicMultipliers[(int)Square.A8] = 0x7099C1ECF439F7FEul;
@@ -353,7 +355,8 @@ public sealed class PrecalculatedMoves
         NextMagicMultiplier:
         var magicMultiplier = knownMagicMultiplier ?? SafeRandom.NextULong();
         // Clear moves masks.
-        for (var maskIndex = 0; maskIndex < movesMasks.Length; maskIndex++) movesMasks[maskIndex] = 0;
+        for (var maskIndex = 0; maskIndex < movesMasks.Length; maskIndex++)
+            movesMasks[maskIndex] = 0;
         for (var occupancyIndex = 0; occupancyIndex < occupancies.Count; occupancyIndex++)
         {
             var occupancy = occupancies[occupancyIndex];

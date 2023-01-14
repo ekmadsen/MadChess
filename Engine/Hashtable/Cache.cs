@@ -153,7 +153,8 @@ public sealed class Cache
 
     public void Reset()
     {
-        for (var index = 0; index < _positions.Length; index++) _positions[index] = NullPosition;
+        for (var index = 0; index < _positions.Length; index++)
+            _positions[index] = NullPosition;
         Positions = 0;
         Searches = 0;
     }
