@@ -371,7 +371,7 @@ public sealed class Search : IDisposable
             // Reset move scores, then search moves.
             for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
                 _rootMoves[moveIndex].Score = -SpecialScore.Max;
-            var score = GetDynamicScore(board, 0, _originalHorizon, -SpecialScore.Max, SpecialScore.Max);
+            var score = GetDynamicScore(board, 0, _originalHorizon, false, -SpecialScore.Max, SpecialScore.Max);
             if (FastMath.Abs(score) == SpecialScore.Interrupted) break; // Stop searching.
             // Find best move.
             SortMovesByScore(_rootMoves, legalMoveIndex - 1);
@@ -481,7 +481,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private int GetDynamicScore(Board board, int depth, int horizon, int alpha, int beta, ulong excludedMove = 0)
+    private int GetDynamicScore(Board board, int depth, int horizon, bool nullMovePermitted, int alpha, int beta, ulong excludedMove = 0)
     {
         _principalVariations[_rootMoveNumber - 1][depth][0] = Move.Null;
         if ((board.Nodes > board.NodesExamineTime) || _nodesPerSecond.HasValue)
@@ -563,7 +563,7 @@ public sealed class Search : IDisposable
             UpdateBestMoveCache(board.CurrentPosition, depth, horizon, Move.Null, beta, alpha, beta);
             return beta;
         }
-        if (IsNullMovePermitted(board, beta))
+        if (nullMovePermitted && IsNullMovePermitted(board, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -583,7 +583,7 @@ public sealed class Search : IDisposable
         {
             // Cached position in a principal variation does not specify a best move.
             // Find best move via Internal Iterative Deepening.
-            GetDynamicScore(board, depth, horizon - _iidReduction, alpha, beta);
+            GetDynamicScore(board, depth, horizon - _iidReduction, false, alpha, beta);
             cachedPosition = _cache[board.CurrentPosition.Key];
             bestMove = _cache.GetBestMove(cachedPosition.Data);
         }
@@ -644,7 +644,7 @@ public sealed class Search : IDisposable
             var moveBeta = (legalMoveNumber == 1) || ((MultiPv > 1) && (depth == 0))
                 ? beta // Search with full alpha / beta window.
                 : bestScore + 1; // Search with zero alpha / beta window.
-            var score = -GetDynamicScore(board, depth + 1, searchHorizon, -moveBeta, -alpha);
+            var score = -GetDynamicScore(board, depth + 1, searchHorizon, true, -moveBeta, -alpha);
             if (FastMath.Abs(score) == SpecialScore.Interrupted)
             {
                 // Stop searching.
@@ -657,7 +657,7 @@ public sealed class Search : IDisposable
                 if ((moveBeta < beta) || (searchHorizon < horizon))
                 {
                     // Search move at unreduced horizon with full alpha / beta window.
-                    score = -GetDynamicScore(board, depth + 1, horizon, -beta, -alpha);
+                    score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
                 }
             }
             board.UndoMove();
@@ -895,8 +895,8 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsNullMovePermitted(Board board, int beta)
     {
-        if (board.PreviousPosition?.PlayedMove == Move.Null) return false;
-        if ((board.CurrentPosition.StaticScore < beta) || board.CurrentPosition.KingInCheck) return false; // Do attempt null move if static score is weak, nor if king is in check.
+        // Do attempt null move if static score is weak nor if king is in check.
+        if ((board.CurrentPosition.StaticScore < beta) || board.CurrentPosition.KingInCheck) return false;
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(board.CurrentPosition.GetMajorAndMinorPieces(board.CurrentPosition.ColorToMove));
         return minorAndMajorPieces > 0;
@@ -909,7 +909,7 @@ public sealed class Search : IDisposable
         var reduction = _nullMoveReduction + Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
         board.PlayNullMove();
         // Do not play two null moves consecutively.  Search with zero alpha / beta window.
-        var score = -GetDynamicScore(board, depth + 1, horizon - reduction, -beta, -beta + 1);
+        var score = -GetDynamicScore(board, depth + 1, horizon - reduction, false, -beta, -beta + 1);
         board.UndoMove();
         return score >= beta;
     }
@@ -1079,7 +1079,7 @@ public sealed class Search : IDisposable
         if (CachedPositionData.ToHorizon(cachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientDraft)) return false;
         var beta = dynamicScore - (_singularMoveMargin * toHorizon);
         var searchHorizon = depth + ((toHorizon * _singularMoveReductionPer128) / 128);
-        dynamicScore = GetDynamicScore(board, depth, searchHorizon, beta - 1, beta, move); // Exclude best move from search.
+        dynamicScore = GetDynamicScore(board, depth, searchHorizon, false, beta - 1, beta, move); // Exclude best move from search.
         return dynamicScore < beta;
     }
 
