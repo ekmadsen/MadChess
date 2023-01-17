@@ -828,10 +828,7 @@ public sealed class Eval
         Square square;
         var squaresAttackedByEnemyPawns = 0ul;
         while ((square = Bitwise.PopFirstSetSquare(ref enemyPawns)) != Square.Illegal)
-        {
-            // Attacked by white pawn masks = black pawn attack masks and vice-versa.
             squaresAttackedByEnemyPawns |= Board.PawnAttackMasks[(int)enemyColor][(int)square];
-        }
         var safeSquares = ~squaresAttackedByEnemyPawns;
         enemyPawns = position.GetPawns(enemyColor); // Repopulate after above while loop popped all enemy pawn squares.
         // Evaluate mobility of individual pieces.

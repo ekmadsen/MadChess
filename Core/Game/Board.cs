@@ -1221,7 +1221,8 @@ public sealed class Board
         if (toSquare == CastleToSquares[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.Queen]) attackedSquaresMask = _castleAttackedSquareMasks[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.Queen];
         else if (toSquare == CastleToSquares[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.King]) attackedSquaresMask = _castleAttackedSquareMasks[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.King];
         else throw new Exception($"{CurrentPosition.ColorToMove} king cannot castle to {SquareLocations[(int)toSquare]}.");
-        while ((toSquare = Bitwise.PopFirstSetSquare(ref attackedSquaresMask)) != Square.Illegal) if (IsSquareAttacked(toSquare)) return true;
+        while ((toSquare = Bitwise.PopFirstSetSquare(ref attackedSquaresMask)) != Square.Illegal)
+            if (IsSquareAttacked(toSquare)) return true;
         return false;
     }
 

@@ -563,7 +563,7 @@ public sealed class Search : IDisposable
             UpdateBestMoveCache(board.CurrentPosition, depth, horizon, Move.Null, beta, alpha, beta);
             return beta;
         }
-        if (nullMovePermitted && IsNullMovePermitted(board, beta))
+        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -893,12 +893,12 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsNullMovePermitted(Board board, int beta)
+    private static bool IsNullMovePermitted(Position position, int beta)
     {
-        // Do attempt null move if static score is weak nor if king is in check.
-        if ((board.CurrentPosition.StaticScore < beta) || board.CurrentPosition.KingInCheck) return false;
+        // Do attempt null move if static score is weak, nor if king is in check.
+        if ((position.StaticScore < beta) || position.KingInCheck) return false;
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
-        var minorAndMajorPieces = Bitwise.CountSetBits(board.CurrentPosition.GetMajorAndMinorPieces(board.CurrentPosition.ColorToMove));
+        var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
     }
 
