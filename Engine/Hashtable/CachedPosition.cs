@@ -11,7 +11,6 @@
 namespace ErikTheCoder.MadChess.Engine.Hashtable;
 
 
-// TODO: Make CachedPosition immutable.
 public struct CachedPosition
 {
     public ulong Key;

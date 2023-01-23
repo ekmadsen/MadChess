@@ -17,6 +17,7 @@ namespace ErikTheCoder.MadChess.Core.Game;
 public enum Direction
 {
     [UsedImplicitly] Unknown,
+
     // Sliding Piece Moves
     North,
     NorthEast,
@@ -26,6 +27,7 @@ public enum Direction
     SouthWest,
     West,
     NorthWest,
+
     // Knight Moves
     North2East1,
     East2North1,

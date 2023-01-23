@@ -75,8 +75,10 @@ public sealed class SquareTests : TestBase
     public void TestF6FromWhitePerspective()
     {
         var f6Square = Board.GetSquare("f6");
+
         var whiteToMoveSquare = Board.GetSquareFromWhitePerspective(f6Square, Color.White);
         var blackToMoveSquare = Board.GetSquareFromWhitePerspective(f6Square, Color.Black);
+
         Assert.That(whiteToMoveSquare, Is.EqualTo(Square.F6));
         Assert.That(blackToMoveSquare, Is.EqualTo(Square.C3));
     }

@@ -19,12 +19,15 @@ public static class Tokens
     public static List<string> Parse(string command, char separator, char tokenizer)
     {
         var tokens = new List<string>();
+
         var startIndex = 0;
         var inToken = false;
+
         for (var index = 0; index < command.Length; index++)
         {
             string token;
             var character = command[index];
+
             if (index == command.Length - 1)
             {
                 // Add last token.
@@ -33,14 +36,17 @@ public static class Tokens
                 tokens.Add(token.TrimEnd(tokenizer));
                 break;
             }
+
             if (character == separator)
             {
                 if (inToken) continue;
+
                 // Add token.
                 token = command[startIndex..index];
                 tokens.Add(token.TrimEnd(tokenizer));
                 startIndex = index + 1;
             }
+
             else if (character == tokenizer)
             {
                 if (inToken) inToken = false;
@@ -51,6 +57,7 @@ public static class Tokens
                 }
             }
         }
+
         return tokens;
     }
 }

@@ -30,8 +30,10 @@ public sealed class Parameters : Collection<Parameter>
     public Parameters DuplicateWithSameValues()
     {
         var parameters = new Parameters();
+
         for (var index = 0; index < Count; index++)
             parameters.Add(this[index].DuplicateWithSameValue());
+
         return parameters;
     }
 
@@ -39,8 +41,10 @@ public sealed class Parameters : Collection<Parameter>
     public Parameters DuplicateWithRandomValues()
     {
         var parameters = new Parameters();
+
         for (var index = 0; index < Count; index++)
             parameters.Add(this[index].DuplicateWithRandomValue());
+
         return parameters;
     }
 

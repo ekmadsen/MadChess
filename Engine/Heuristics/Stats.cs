@@ -15,10 +15,13 @@ public sealed class Stats
 {
     public long NullMoves;
     public long NullMoveCutoffs;
+
     public long MovesCausingBetaCutoff;
     public long BetaCutoffMoveNumber;
     public long BetaCutoffFirstMove;
+
     public long Evaluations;
+
     public long CacheProbes;
     public long CacheHits;
     public long CacheScoreCutoff;
@@ -31,10 +34,13 @@ public sealed class Stats
     {
         NullMoves = 0;
         NullMoveCutoffs = 0;
+
         MovesCausingBetaCutoff = 0;
         BetaCutoffMoveNumber = 0;
         BetaCutoffFirstMove = 0;
+
         Evaluations = 0;
+
         CacheProbes = 0;
         CacheHits = 0;
         CacheScoreCutoff = 0;

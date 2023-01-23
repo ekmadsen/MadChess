@@ -25,14 +25,19 @@ public sealed class PgnGames : List<PgnGame>
         {
             var gameNumber = 1;
             PgnGame pgnGame;
+
             do
             {
                 pgnGame = GetNextGame(board, pgnReader, gameNumber);
                 if ((pgnGame != null) && (pgnGame.Result != GameResult.Unknown)) Add(pgnGame);
+
                 gameNumber++;
+
                 if ((gameNumber % 1000) == 0) writeMessageLine($"Loaded {gameNumber:n0} games.");
+
             } while (pgnGame != null);
         }
+
         GC.Collect();
     }
 
@@ -42,30 +47,36 @@ public sealed class PgnGames : List<PgnGame>
         const string eventTag = "[Event ";
         const string resultTag = "[Result ";
         const string fenTag = "[FEN ";
+
         while (!pgnReader.EndOfStream)
         {
             var line = pgnReader.ReadLine();
             if (line == null) continue;
             line = line.Trim();
+
             if (line.StartsWith(eventTag))
             {
                 // Found start of game.
                 var result = GameResult.Unknown;
                 var stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine(line);
+
                 while (!pgnReader.EndOfStream)
                 {
                     line = pgnReader.ReadLine();
                     if (line == null) continue;
                     line = line.Trim();
+
                     if (line.StartsWith(fenTag)) break; // Skip games that start from non-standard positions.
                     stringBuilder.AppendLine(line);
+
                     if (line.StartsWith(resultTag))
                     {
                         // Determine game result.
                         var startPosition = line.IndexOf("\"", resultTag.Length, StringComparison.OrdinalIgnoreCase) + 1;
                         var endPosition = line.IndexOf("\"", startPosition, StringComparison.OrdinalIgnoreCase);
                         var resultText = line[startPosition..endPosition];
+
                         result = resultText switch
                         {
                             "1-0" => GameResult.WhiteWon,
@@ -82,6 +93,7 @@ public sealed class PgnGames : List<PgnGame>
                 }
             }
         }
+
         return null;
     }
 }

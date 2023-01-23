@@ -31,6 +31,7 @@ public sealed class ParticleSwarm
         // Create particles at random locations.
         Particles = new Particles();
         _winScale = winScale;
+
         for (var particle = 0; particle < particles; particle++)
             Particles.Add(new Particle(pgnGames, parameters.DuplicateWithRandomValues()));
     }
@@ -39,11 +40,13 @@ public sealed class ParticleSwarm
     public Particle GetBestParticle()
     {
         var bestParticle = Particles[0];
+
         for (var index = 1; index < Particles.Count; index++)
         {
             var particle = Particles[index];
             if (particle.BestEvaluationError < bestParticle.BestEvaluationError) bestParticle = particle;
         }
+
         return bestParticle;
     }
 
@@ -51,17 +54,20 @@ public sealed class ParticleSwarm
     public void Iterate(Board board, Search search, Eval eval)
     {
         var bestParticle = GetBestParticle();
+
         for (var index = 0; index < Particles.Count; index++)
         {
             var particle = Particles[index];
             particle.ConfigureEvaluation(eval);
             particle.CalculateEvaluationError(board, search, _winScale);
+
             if ((particle != bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
             {
                 // Recreate particle at random location.
                 particle = new Particle(particle.PgnGames, particle.Parameters.DuplicateWithRandomValues());
                 Particles[index] = particle;
             }
+
             particle.Move();
         }
     }
@@ -70,6 +76,7 @@ public sealed class ParticleSwarm
     public void UpdateVelocity(Particle globallyBestParticle)
     {
         var bestSwarmParticle = GetBestParticle();
+
         for (var index = 0; index < Particles.Count; index++)
         {
             var particle = Particles[index];

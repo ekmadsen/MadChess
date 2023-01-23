@@ -16,6 +16,7 @@ namespace ErikTheCoder.MadChess.Engine;
 
 public static class Delegates
 {
+    // TODO: Replace Engine delegates with injected services (if circular dependencies can be avoided).
     public delegate (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove);
     public delegate bool IsRepeatPosition(int repetitions);
     public delegate void DisplayStats();

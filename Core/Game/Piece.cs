@@ -14,12 +14,14 @@ namespace ErikTheCoder.MadChess.Core.Game;
 public enum Piece
 {
     None,
+
     WhitePawn,
     WhiteKnight,
     WhiteBishop,
     WhiteRook,
     WhiteQueen,
     WhiteKing,
+
     BlackPawn,
     BlackKnight,
     BlackBishop,

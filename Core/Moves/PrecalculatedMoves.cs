@@ -37,13 +37,16 @@ public sealed class PrecalculatedMoves
         _bishopMagicMultipliers = new ulong[64];
         _bishopShifts = new int[64];
         _bishopMoveMasks = new ulong[64][];
+
         _rookRelevantOccupancyMasks = new ulong[64];
         _rookMagicMultipliers = new ulong[64];
         _rookShifts = new int[64];
         _rookMoveMasks = new ulong[64][];
+
         // Calculate relevant occupancy masks.
         for (var square = Square.A8; square < Square.Illegal; square++)
             _bishopRelevantOccupancyMasks[(int)square] = Board.BishopMoveMasks[(int)square] & GetRelevantOccupancy(square, false);
+
         for (var square = Square.A8; square < Square.Illegal; square++)
             _rookRelevantOccupancyMasks[(int)square] = Board.RookMoveMasks[(int)square] & GetRelevantOccupancy(square, true);
 
@@ -227,6 +230,7 @@ public sealed class PrecalculatedMoves
         ulong[] magicMultipliers;
         int[] shifts;
         ulong[][] moveMasks;
+
         // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
         switch (colorlessPiece)
         {
@@ -238,6 +242,7 @@ public sealed class PrecalculatedMoves
                 shifts = _bishopShifts;
                 moveMasks = _bishopMoveMasks;
                 break;
+
             case ColorlessPiece.Rook:
                 directions = new[] {Direction.North, Direction.East, Direction.South, Direction.West};
                 unoccupiedMoveMasks = Board.RookMoveMasks;
@@ -246,23 +251,30 @@ public sealed class PrecalculatedMoves
                 shifts = _rookShifts;
                 moveMasks = _rookMoveMasks;
                 break;
+
             default:
                 throw new ArgumentException($"{colorlessPiece} piece not supported.");
         }
+
         // ReSharper restore SwitchStatementHandlesSomeKnownEnumValuesWithDefault
         // Generate moves mask on each square.
         var occupancyToMovesMask = new Dictionary<ulong, ulong>();
         var uniqueMovesMasks = new HashSet<ulong>();
+
         for (var square = Square.A8; square < Square.Illegal; square++)
         {
             occupancyToMovesMask.Clear();
             uniqueMovesMasks.Clear();
+
             var moveDestinations = unoccupiedMoveMasks[(int)square];
             var relevantMoveDestinations = moveDestinations & relevantOccupancyMasks[(int)square];
+
             var uniqueOccupancies = (int)Math.Pow(2, Bitwise.CountSetBits(relevantMoveDestinations));
             occupancyToMovesMask.EnsureCapacity(uniqueOccupancies);
+
             // Generate moves mask for every permutation of occupancy of the relevant destination squares.
             var occupancyPermutations = Bitwise.GetAllPermutations(relevantMoveDestinations);
+
             for (var occupancyIndex = 0; occupancyIndex < occupancyPermutations.Count; occupancyIndex++)
             {
                 var occupancy = occupancyPermutations[occupancyIndex];
@@ -270,14 +282,19 @@ public sealed class PrecalculatedMoves
                 occupancyToMovesMask.Add(occupancy, movesMask);
                 if (!uniqueMovesMasks.Contains(movesMask)) uniqueMovesMasks.Add(movesMask);
             }
+
             Debug.Assert(occupancyToMovesMask.Count == uniqueOccupancies);
+
             // Determine bit shift that produces number >= unique occupancies.
             // A stricter condition is number >= unique moves but this requires more computing time to find magic multipliers.
             var shift = 64 - (int)Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
             shifts[(int)square] = shift;
+
             var magicMultiplier = magicMultipliers[(int)square];
             var knownMagicMultiplier = magicMultiplier == 0 ? null : (ulong?) magicMultiplier;
+
             (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, knownMagicMultiplier);
+
             writeMessageLine?.Invoke($"{Board.SquareLocations[(int)square],6}  {PieceHelper.GetName(colorlessPiece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[(int)square],16:X16}");
         }
     }
@@ -286,12 +303,15 @@ public sealed class PrecalculatedMoves
     public static ulong GetRelevantOccupancy(Square square, bool fileRankSlidingPiece)
     {
         if ((Board.SquareMasks[(int)square] & Board.EdgeSquaresMask) == 0) return ~Board.EdgeSquaresMask;
+
         // Square is on edge of board.
         if (!fileRankSlidingPiece) return ~Board.EdgeSquaresMask;
+
         // Piece can slide along file or rank.
         ulong occupancy;
         var file = Board.Files[(int)square];
         var rank = Board.Ranks[(int)Color.White][(int)square];
+
         // ReSharper disable ConvertSwitchStatementToSwitchExpression
         switch (file)
         {
@@ -303,12 +323,15 @@ public sealed class PrecalculatedMoves
                         // Piece is on A1 square.
                         // Occupancy of most distant squares does not affect pseudo-legal moves.
                         ~Board.SquareMasks[(int)Square.A8] & ~Board.SquareMasks[(int)Square.H1],
+
                     7 =>
                         // Piece is on A8 square.
                         // Occupancy of most distant squares does not affect pseudo-legal moves.
                         ~Board.SquareMasks[(int)Square.A1] & ~Board.SquareMasks[(int)Square.H8],
+
                     _ => ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7] & ~Board.FileMasks[7]
                 };
+
             case 7:
                 // Piece is on Easternmost edge file.
                 return rank switch
@@ -317,10 +340,12 @@ public sealed class PrecalculatedMoves
                         // Piece is on H1 square.
                         // Occupancy of most distant squares does not affect pseudo-legal moves.
                         ~Board.SquareMasks[(int)Square.A1] & ~Board.SquareMasks[(int)Square.H8],
+
                     7 =>
                         // Piece is on H8 square.
                         // Occupancy of most distant squares does not affect pseudo-legal moves.
                         ~Board.SquareMasks[(int)Square.A8] & ~Board.SquareMasks[(int)Square.H1],
+
                     _ => ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7] & ~Board.FileMasks[0]
                 };
             default:
@@ -329,6 +354,7 @@ public sealed class PrecalculatedMoves
                 occupancy = ~Board.FileMasks[0] & ~Board.FileMasks[7];
                 break;
         }
+
         // Piece is not on a corner square (handled in above code).
         return rank switch
         {
@@ -336,10 +362,12 @@ public sealed class PrecalculatedMoves
                 // Piece is on Southernmost edge rank.
                 // Occupancy of opposite rank does not affect pseudo-legal moves.
                 occupancy & ~Board.RankMasks[(int)Color.White][7],
+
             7 =>
                 // Piece is on Northernmost edge rank.
                 // Occupancy of opposite rank does not affect pseudo-legal moves.
                 occupancy & ~Board.RankMasks[(int)Color.White][0],
+
             _ => occupancy & ~Board.RankMasks[(int)Color.White][0] & ~Board.RankMasks[(int)Color.White][7]
         };
         // ReSharper restore ConvertSwitchStatementToSwitchExpression
@@ -350,21 +378,27 @@ public sealed class PrecalculatedMoves
     {
         var indexBits = 64 - shift;
         var indexLength = (int)Math.Pow(2d, indexBits);
+
         var movesMasks = new ulong[indexLength];
         var occupancies = new List<ulong>(occupancyToMovesMask.Keys);
+
         NextMagicMultiplier:
         var magicMultiplier = knownMagicMultiplier ?? SafeRandom.NextULong();
+
         // Clear moves masks.
         for (var maskIndex = 0; maskIndex < movesMasks.Length; maskIndex++)
             movesMasks[maskIndex] = 0;
+
         for (var occupancyIndex = 0; occupancyIndex < occupancies.Count; occupancyIndex++)
         {
             var occupancy = occupancies[occupancyIndex];
             var magicIndex = GetMagicIndex(occupancy, magicMultiplier, shift);
+
             var movesMask = movesMasks[magicIndex];
             if (movesMask == 0) movesMasks[magicIndex] = occupancyToMovesMask[occupancy]; // Moves mask not yet added to unique moves array.
             else if (movesMask != occupancyToMovesMask[occupancy]) goto NextMagicMultiplier; // Moves mask already added to unique moves array but mask is incorrect.
         }
+
         // Found magic multiplier that maps to correct moves index for all occupancies.
         return (magicMultiplier, movesMasks);
     }

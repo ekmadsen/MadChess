@@ -26,21 +26,27 @@ public static class CachedPositionData
     private static readonly int _toHorizonShift;
     private static readonly ulong _toHorizonMask;
     private static readonly ulong _toHorizonUnmask;
+
     private static readonly int _bestMoveFromShift;
     private static readonly ulong _bestMoveFromMask;
     private static readonly ulong _bestMoveFromUnmask;
+
     private static readonly int _bestMoveToShift;
     private static readonly ulong _bestMoveToMask;
     private static readonly ulong _bestMoveToUnmask;
+
     private static readonly int _bestMovePromotedPieceShift;
     private static readonly ulong _bestMovePromotedPieceMask;
     private static readonly ulong _bestMovePromotedPieceUnmask;
+
     private static readonly int _dynamicScoreShift;
     private static readonly ulong _dynamicScoreMask;
     private static readonly ulong _dynamicScoreUnmask;
+
     private static readonly int _scorePrecisionShift;
     private static readonly ulong _scorePrecisionMask;
     private static readonly ulong _scorePrecisionUnmask;
+
     private static readonly ulong _lastAccessedMask;
     private static readonly ulong _lastAccessedUnmask;
 
@@ -62,21 +68,27 @@ public static class CachedPositionData
         _toHorizonShift = 58;
         _toHorizonMask = Bitwise.CreateULongMask(58, 63);
         _toHorizonUnmask = Bitwise.CreateULongUnmask(58, 63);
+
         _bestMoveFromShift = 51;
         _bestMoveFromMask = Bitwise.CreateULongMask(51, 57);
         _bestMoveFromUnmask = Bitwise.CreateULongUnmask(51, 57);
+
         _bestMoveToShift = 44;
         _bestMoveToMask = Bitwise.CreateULongMask(44, 50);
         _bestMoveToUnmask = Bitwise.CreateULongUnmask(44, 50);
+
         _bestMovePromotedPieceShift = 40;
         _bestMovePromotedPieceMask = Bitwise.CreateULongMask(40, 43);
         _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(40, 43);
+
         _dynamicScoreShift = 10;
         _dynamicScoreMask = Bitwise.CreateULongMask(10, 39);
         _dynamicScoreUnmask = Bitwise.CreateULongUnmask(10, 39);
+
         _scorePrecisionShift = 8;
         _scorePrecisionMask = Bitwise.CreateULongMask(8, 9);
         _scorePrecisionUnmask = Bitwise.CreateULongUnmask(8, 9);
+
         _lastAccessedMask = Bitwise.CreateULongMask(0, 7);
         _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 7);
     }
@@ -200,15 +212,19 @@ public static class CachedPositionData
     public static bool IsValid(ulong cachedPositionData)
     {
         Debug.Assert(ToHorizon(cachedPositionData) <= Search.MaxHorizon, $"ToHorizon(CachedPosition) = {ToHorizon(cachedPositionData)}, Search.MaxHorizon = {Search.MaxHorizon}{Environment.NewLine}{ToString(cachedPositionData)}");
+
         Debug.Assert(BestMoveFrom(cachedPositionData) <= Square.Illegal, $"BestMoveFrom(CachedPosition) = {BestMoveFrom(cachedPositionData)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMoveTo(cachedPositionData) <= Square.Illegal, $"BestMoveTo(CachedPosition) = {BestMoveTo(cachedPositionData)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(cachedPositionData)}");
+
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) >= Piece.None, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.None = {Piece.None}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) != Piece.WhitePawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.WhitePawn = {Piece.WhitePawn}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) != Piece.WhiteKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.WhiteKing = {Piece.WhiteKing}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) != Piece.BlackPawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.BlackPawn = {Piece.BlackPawn}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) < Piece.BlackKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.BlackKing = {Piece.BlackKing}{Environment.NewLine}{ToString(cachedPositionData)}");
+
         Debug.Assert(DynamicScore(cachedPositionData) >= -SpecialScore.Max, $"DynamicScore(CachedPosition) = {DynamicScore(cachedPositionData)}, -SpecialScore.Max = {-SpecialScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(DynamicScore(cachedPositionData) <= SpecialScore.Max, $"DynamicScore(CachedPosition) = {DynamicScore(cachedPositionData)}, SpecialScore.Max = {SpecialScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
+
         return true;
     }
 
@@ -216,6 +232,7 @@ public static class CachedPositionData
     private static string ToString(ulong cachedPositionData)
     {
         var stringBuilder = new StringBuilder();
+
         stringBuilder.AppendLine($"To Horizon = {ToHorizon(cachedPositionData)}");
         stringBuilder.AppendLine($"Best Move From = {BestMoveFrom(cachedPositionData)}");
         stringBuilder.AppendLine($"Best Move To = {BestMoveTo(cachedPositionData)}");
@@ -223,6 +240,7 @@ public static class CachedPositionData
         stringBuilder.AppendLine($"Dynamic Score = {DynamicScore(cachedPositionData)}");
         stringBuilder.AppendLine($"Score Precision = {ScorePrecision(cachedPositionData)}");
         stringBuilder.AppendLine($"Last Accessed = {LastAccessed(cachedPositionData)}");
+
         return stringBuilder.ToString();
     }
 }

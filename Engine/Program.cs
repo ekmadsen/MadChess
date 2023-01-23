@@ -23,6 +23,7 @@ public static class Program
         // Improve garbage collector performance at the cost of memory usage.
         // Engine should not allocate much memory when searching a position anyhow because it references pre-allocated objects.
         GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+
         using (var uciStream = new UciStream())
         {
             try
