@@ -27,48 +27,63 @@ public static class Move
     public const int HistoryMaxValue = 16_777_215;
 
     public static readonly ulong Null;
+
     private static readonly int _bestShift;
     private static readonly ulong _bestMask;
     private static readonly ulong _bestUnmask;
+
     private static readonly int _captureVictimShift;
     private static readonly ulong _captureVictimMask;
     private static readonly ulong _captureVictimUnmask;
+
     private static readonly int _captureAttackerShift;
     private static readonly ulong _captureAttackerMask;
     private static readonly ulong _captureAttackerUnmask;
+
     private static readonly int _promotedPieceShift;
     private static readonly ulong _promotedPieceMask;
     private static readonly ulong _promotedPieceUnmask;
+
     private static readonly int _killerShift;
     private static readonly ulong _killerMask;
     private static readonly ulong _killerUnmask;
+
     private static readonly int _historyShift;
     private static readonly ulong _historyMask;
     private static readonly ulong _historyUnmask;
+
     private static readonly int _playedShift;
     private static readonly ulong _playedMask;
     private static readonly ulong _playedUnmask;
+
     private static readonly int _castlingShift;
     private static readonly ulong _castlingMask;
     private static readonly ulong _castlingUnmask;
+
     private static readonly int _kingMoveShift;
     private static readonly ulong _kingMoveMask;
     private static readonly ulong _kingMoveUnmask;
+
     private static readonly int _enPassantShift;
     private static readonly ulong _enPassantMask;
     private static readonly ulong _enPassantUnmask;
+
     private static readonly int _pawnMoveShift;
     private static readonly ulong _pawnMoveMask;
     private static readonly ulong _pawnMoveUnmask;
+
     private static readonly int _doublePawnMoveShift;
     private static readonly ulong _doublePawnMoveMask;
     private static readonly ulong _doublePawnMoveUnmask;
+
     private static readonly int _toShift;
     private static readonly ulong _toMask;
     private static readonly ulong _toUnmask;
+
     private static readonly int _fromShift;
     private static readonly ulong _fromMask;
     private static readonly ulong _fromUnmask;
+
     private static readonly ulong _pieceMask;
     private static readonly ulong _pieceUnmask;
 
@@ -101,47 +116,62 @@ public static class Move
         _bestShift = 63;
         _bestMask = Bitwise.CreateULongMask(63);
         _bestUnmask = Bitwise.CreateULongUnmask(63);
+
         _captureVictimShift = 59;
         _captureVictimMask = Bitwise.CreateULongMask(59, 62);
         _captureVictimUnmask = Bitwise.CreateULongUnmask(59, 62);
+
         _captureAttackerShift = 55;
         _captureAttackerMask = Bitwise.CreateULongMask(55, 58);
         _captureAttackerUnmask = Bitwise.CreateULongUnmask(55, 58);
+
         _promotedPieceShift = 51;
         _promotedPieceMask = Bitwise.CreateULongMask(51, 54);
         _promotedPieceUnmask = Bitwise.CreateULongUnmask(51, 54);
+
         _killerShift = 49;
         _killerMask = Bitwise.CreateULongMask(49, 50);
         _killerUnmask = Bitwise.CreateULongUnmask(49, 50);
+
         _historyShift = 24;
         _historyMask = Bitwise.CreateULongMask(24, 48);
         _historyUnmask = Bitwise.CreateULongUnmask(24, 48);
+
         _playedShift = 23;
         _playedMask = Bitwise.CreateULongMask(23);
         _playedUnmask = Bitwise.CreateULongUnmask(23);
+
         _castlingShift = 22;
         _castlingMask = Bitwise.CreateULongMask(22);
         _castlingUnmask = Bitwise.CreateULongUnmask(22);
+
         _kingMoveShift = 21;
         _kingMoveMask = Bitwise.CreateULongMask(21);
         _kingMoveUnmask = Bitwise.CreateULongUnmask(21);
+
         _enPassantShift = 20;
         _enPassantMask = Bitwise.CreateULongMask(20);
         _enPassantUnmask = Bitwise.CreateULongUnmask(20);
+
         _doublePawnMoveShift = 19;
         _doublePawnMoveMask = Bitwise.CreateULongMask(19);
         _doublePawnMoveUnmask = Bitwise.CreateULongUnmask(19);
+
         _pawnMoveShift = 18;
         _pawnMoveMask = Bitwise.CreateULongMask(18);
         _pawnMoveUnmask = Bitwise.CreateULongUnmask(18);
+
         _toShift = 11;
         _toMask = Bitwise.CreateULongMask(11, 17);
         _toUnmask = Bitwise.CreateULongUnmask(11, 17);
+
         _fromShift = 4;
         _fromMask = Bitwise.CreateULongMask(4, 10);
         _fromUnmask = Bitwise.CreateULongUnmask(4, 10);
+
         _pieceMask = Bitwise.CreateULongMask(0, 3);
         _pieceUnmask = Bitwise.CreateULongUnmask(0, 3);
+
         // Set null move.
         Null = 0;
         SetIsBest(ref Null, false);
@@ -430,14 +460,18 @@ public static class Move
     {
         var fromSquare = Board.GetSquare(longAlgebraic[..2]);
         var toSquare = Board.GetSquare(longAlgebraic[2..4]);
+
         // Set case of promoted piece character based on side to move.
         var promotedPiece = longAlgebraic.Length == 5
             ? PieceHelper.ParseChar(colorToMove == Color.White ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
             : Game.Piece.None;
+
         var move = Null;
+
         SetFrom(ref move, fromSquare);
         SetTo(ref move, toSquare);
         SetPromotedPiece(ref move, promotedPiece);
+
         return move;
     }
 
@@ -445,8 +479,10 @@ public static class Move
     public static ulong ParseStandardAlgebraic(Board board, string standardAlgebraic)
     {
         var move = Null;
+
         // Remove check and checkmate symbols.
         var standardAlgebraicNoCheck = standardAlgebraic.TrimEnd("+#".ToCharArray());
+
         // ReSharper disable once SwitchStatementMissingSomeCases
         switch (standardAlgebraicNoCheck)
         {
@@ -455,37 +491,47 @@ public static class Move
                 // Castle Queenside
                 SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                 SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.Queen]);
+
                 if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
+
                 return move;
+
             case "O-O":
             case "0-0":
                 // Castle Kingside
                 SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                 SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.King]);
+
                 if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
+
                 return move;
         }
+
         var length = standardAlgebraicNoCheck.Length;
         var fromFile = -1;
         var fromRank = -1;
         var promotedPiece = Game.Piece.None;
         Piece piece;
         Square toSquare;
+
         if (char.IsLower(standardAlgebraicNoCheck, 0))
         {
             // Pawn Move
             piece = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, board.CurrentPosition.ColorToMove);
             fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[0]}1")];
+
             switch (length)
             {
                 case 2:
                     // Pawn Move
                     toSquare = Board.GetSquare(standardAlgebraicNoCheck);
                     break;
+
                 case 4 when standardAlgebraicNoCheck[1] == 'x':
                     // Pawn Capture
                     toSquare = Board.GetSquare(standardAlgebraicNoCheck[2..4]);
                     break;
+
                 case 4 when standardAlgebraicNoCheck[2] == '=':
                     // Pawn promotion.  Set case of promoted piece character based on side to move.
                     toSquare = Board.GetSquare(standardAlgebraicNoCheck[..2]);
@@ -493,6 +539,7 @@ public static class Move
                         ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                         : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                     break;
+
                 case 6:
                     // Pawn promotion with capture.  Set case of promoted piece character based on side to move.
                     toSquare = Board.GetSquare(standardAlgebraicNoCheck[2..4]);
@@ -500,22 +547,26 @@ public static class Move
                         ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
                         : char.ToLower(standardAlgebraicNoCheck[length - 1]));
                     break;
+
                 default:
                     throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
             }
         }
+
         else
         {
             // Piece Move
             piece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
                 ? char.ToUpper(standardAlgebraicNoCheck[0])
                 : char.ToLower(standardAlgebraicNoCheck[0]));
+
             if (standardAlgebraicNoCheck[1] == 'x')
             {
                 // Piece Capture
                 var square = standardAlgebraicNoCheck[2..4];
                 toSquare = Board.GetSquare(square);
             }
+
             else if (standardAlgebraicNoCheck[2] == 'x')
             {
                 // Piece Capture with Disambiguation
@@ -524,6 +575,7 @@ public static class Move
                 if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
                 else fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
             }
+
             else if ((length > 3) && (standardAlgebraicNoCheck[3] == 'x'))
             {
                 // Piece Capture with From Square Specified
@@ -532,12 +584,14 @@ public static class Move
                 fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
                 fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
             }
+
             else if (length == 3)
             {
                 // Piece Move
                 var square = standardAlgebraicNoCheck[1..3];
                 toSquare = Board.GetSquare(square);
             }
+
             else if (length == 4)
             {
                 // Piece Move with Disambiguation
@@ -546,6 +600,7 @@ public static class Move
                 if (char.IsLetter(standardAlgebraicNoCheck[1])) fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")]; // Piece disambiguated by file.
                 else fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[1]}")]; // Piece disambiguated by rank.
             }
+
             else if (length == 5)
             {
                 // Piece Move with From Square Specified
@@ -554,36 +609,49 @@ public static class Move
                 fromFile = Board.Files[(int)Board.GetSquare($"{standardAlgebraicNoCheck[1]}1")];
                 fromRank = Board.Ranks[(int)Color.White][(int)Board.GetSquare($"a{standardAlgebraicNoCheck[2]}")];
             }
+
             else throw new Exception($"{standardAlgebraic} move not supported.");
         }
+
         board.CurrentPosition.GenerateMoves();
+
         for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
         {
             move = board.CurrentPosition.Moves[moveIndex];
+            
             var (legalMove, _) = board.PlayMove(move);
             board.UndoMove();
+
             if (!legalMove) continue; // Skip illegal move.
+
             var movePiece = Piece(move);
             if (movePiece != piece) continue; // Wrong Piece
+
             var moveToSquare = To(move);
             if (moveToSquare != toSquare) continue; // Wrong Square
+
             var movePromotedPiece = PromotedPiece(move);
             if (movePromotedPiece != promotedPiece) continue; // Wrong Promoted Piece
+
             if (fromFile >= 0)
             {
                 // Piece disambiguated by file.
                 var moveFromFile = Board.Files[(int)From(move)];
                 if (moveFromFile != fromFile) continue; // Wrong File
             }
+
             if (fromRank >= 0)
             {
                 // Piece disambiguated by rank.
                 var moveFromRank = Board.Ranks[(int)Color.White][(int)From(move)];
                 if (moveFromRank != fromRank) continue; // Wrong Rank
             }
+
             if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
+
             return move;
         }
+
         throw new Exception($"Failed to parse {standardAlgebraic} standard algebraic notation move.");
     }
 
@@ -596,18 +664,23 @@ public static class Move
         Debug.Assert(CaptureVictim(move) != Game.Piece.BlackKing, $"CaptureVictim(Move) = {CaptureVictim(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
         Debug.Assert(CaptureAttacker(move) >= Game.Piece.None, $"CaptureAttacker(Move) = {CaptureAttacker(move)}, Piece.None = {Game.Piece.None}");
         Debug.Assert(CaptureAttacker(move) <= Game.Piece.BlackKing, $"CaptureAttacker(Move) = {CaptureAttacker(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
+
         Debug.Assert(PromotedPiece(move) >= Game.Piece.None, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.None = {Game.Piece.None}");
         Debug.Assert(PromotedPiece(move) < Game.Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
         Debug.Assert(PromotedPiece(move) != Game.Piece.WhitePawn, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.WhitePawn = {Game.Piece.WhitePawn}");
         Debug.Assert(PromotedPiece(move) != Game.Piece.BlackPawn, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackPawn = {Game.Piece.BlackPawn}");
         Debug.Assert(PromotedPiece(move) != Game.Piece.WhiteKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.WhiteKing = {Game.Piece.WhiteKing}");
         Debug.Assert(PromotedPiece(move) != Game.Piece.BlackKing, $"PromotedPiece(Move) = {PromotedPiece(move)}, Piece.BlackKing = {Game.Piece.BlackKing}");
+
         Debug.Assert(Killer(move) >= 0, $"Killer(Move) = {Killer(move)}");
         Debug.Assert(Killer(move) <= 2, $"Killer(Move) = {Killer(move)}");
+
         Debug.Assert(From(move) >= Square.A8, $"From(Move) = {From(move)}");
         Debug.Assert(From(move) <= Square.Illegal, $"From(Move) = {From(move)}");
+
         Debug.Assert(To(move) >= Square.A8, $"To(Move) = {To(move)}");
         Debug.Assert(To(move) <= Square.Illegal, $"To(Move) = {To(move)}");
+
         return true;
     }
 
@@ -615,9 +688,11 @@ public static class Move
     public static string ToLongAlgebraic(ulong move)
     {
         if (move == Null) return "0000";
+
         var fromSquare = From(move);
         var toSquare = To(move);
         var promotedPiece = PromotedPiece(move);
+
         return $"{Board.SquareLocations[(int)fromSquare]}{Board.SquareLocations[(int)toSquare]}{PieceHelper.GetChar(promotedPiece)?.ToString().ToLower()}";
     }
 

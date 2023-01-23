@@ -42,9 +42,11 @@ public sealed class Cache
         {
             _positions = null;
             GC.Collect();
+
             var capacity = Math.Max(value, CapacityPerMegabyte);
             _positions = new CachedPosition[capacity];
             _indices = capacity / _buckets;
+
             Reset();
         }
     }
@@ -54,6 +56,7 @@ public sealed class Cache
     {
         _stats = stats;
         _validateMove = validateMove;
+
         // Set null position.
         NullPosition = new CachedPosition(0, 0);
         CachedPositionData.SetToHorizon(ref NullPosition.Data, 0);
@@ -63,6 +66,7 @@ public sealed class Cache
         CachedPositionData.SetDynamicScore(ref NullPosition.Data, SpecialScore.NotCached);
         CachedPositionData.SetScorePrecision(ref NullPosition.Data, ScorePrecision.Unknown);
         CachedPositionData.SetLastAccessed(ref NullPosition.Data, 0);
+
         // Set capacity (which resets position array).
         Capacity = sizeMegabyte * CapacityPerMegabyte;
     }
@@ -74,8 +78,10 @@ public sealed class Cache
         get
         {
             _stats.CacheProbes++;
+
             var index = GetIndex(key);
             var maxBucketIndex = index + _buckets - 1;
+
             for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
             {
                 var position = _positions[bucketIndex];
@@ -85,10 +91,12 @@ public sealed class Cache
                     _stats.CacheHits++;
                     CachedPositionData.SetLastAccessed(ref position.Data, Searches);
                     _positions[bucketIndex] = position;
+
                     Debug.Assert(CachedPositionData.IsValid(position.Data));
                     return position;
                 }
             }
+            
             // Position is not cached.
             Debug.Assert(CachedPositionData.IsValid(NullPosition.Data));
             return NullPosition;
@@ -100,12 +108,16 @@ public sealed class Cache
         {
             Debug.Assert(value.Key == key);
             Debug.Assert(CachedPositionData.IsValid(value.Data));
+
             CachedPositionData.SetLastAccessed(ref value.Data, Searches);
+
             var index = GetIndex(key);
             var maxBucketIndex = index + _buckets - 1;
+
             // Find oldest bucket.
             var earliestAccess = byte.MaxValue;
             var oldestBucketIndex = index;
+
             for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
             {
                 var position = _positions[bucketIndex];
@@ -116,6 +128,7 @@ public sealed class Cache
                     _positions[bucketIndex] = value;
                     return;
                 }
+
                 var lastAccessed = CachedPositionData.LastAccessed(position.Data);
                 if (lastAccessed < earliestAccess)
                 {
@@ -123,7 +136,9 @@ public sealed class Cache
                     oldestBucketIndex = bucketIndex;
                 }
             }
+
             if (_positions[oldestBucketIndex].Key == NullPosition.Key) Positions++; // Oldest bucket has not been used.
+
             // Overwrite oldest bucket.
             Debug.Assert(CachedPositionData.IsValid(value.Data));
             _positions[oldestBucketIndex] = value;
@@ -134,19 +149,26 @@ public sealed class Cache
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public ulong GetBestMove(ulong cachedPosition)
     {
-        _stats.CacheBestMoveProbes++;
         Debug.Assert(CachedPositionData.IsValid(cachedPosition));
+
+        _stats.CacheBestMoveProbes++;
+        
         var fromSquare = CachedPositionData.BestMoveFrom(cachedPosition);
         if (fromSquare == Square.Illegal) return Move.Null; // Cached position does not specify a best move.
+
         var bestMove = Move.Null;
         Move.SetFrom(ref bestMove, fromSquare);
         Move.SetTo(ref bestMove, CachedPositionData.BestMoveTo(cachedPosition));
         Move.SetPromotedPiece(ref bestMove, CachedPositionData.BestMovePromotedPiece(cachedPosition));
         Move.SetIsBest(ref bestMove, true);
+
+        // Validate move is possible in current position on board.
         var validMove = _validateMove(ref bestMove);
         if (validMove) _stats.CacheValidBestMove++;
         else _stats.CacheInvalidBestMove++;
-        Debug.Assert(Move.IsValid(bestMove));
+
+        Debug.Assert(Move.IsValid(bestMove)); // Validate integrity of ulong move bits.
+
         return validMove ? bestMove : Move.Null;
     }
 
@@ -155,6 +177,7 @@ public sealed class Cache
     {
         for (var index = 0; index < _positions.Length; index++)
             _positions[index] = NullPosition;
+
         Positions = 0;
         Searches = 0;
     }
@@ -166,6 +189,7 @@ public sealed class Cache
         // Ensure even distribution of indices by hashing ulong to int rather than using raw Zobrist key for modular division.
         var hash = ((int)key) ^ (int)(key >> 32);
         var index = (hash % _indices) * _buckets;
+
         // Ensure index is positive.
         return FastMath.Abs(index);
     }

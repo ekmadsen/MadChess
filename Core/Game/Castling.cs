@@ -50,6 +50,7 @@ public static class Castling
                 0, 1
             }
         };
+
         _masks = new[]
         {
             new[]
@@ -63,6 +64,7 @@ public static class Castling
                 Bitwise.CreateUIntMask(1)
             }
         };
+
         _unmasks = new[]
         {
             new[]
@@ -104,26 +106,31 @@ public static class Castling
     {
         var stringBuilder = new StringBuilder();
         var anyCastlingRights = false;
+
         if (Permitted(castling, Color.White, BoardSide.King))
         {
             stringBuilder.Append('K');
             anyCastlingRights = true;
         }
+
         if (Permitted(castling, Color.White, BoardSide.Queen))
         {
             stringBuilder.Append('Q');
             anyCastlingRights = true;
         }
+
         if (Permitted(castling, Color.Black, BoardSide.King))
         {
             stringBuilder.Append('k');
             anyCastlingRights = true;
         }
+
         if(Permitted(castling, Color.Black, BoardSide.Queen))
         {
             stringBuilder.Append('q');
             anyCastlingRights = true;
         }
+
         return anyCastlingRights ? stringBuilder.ToString() : "-";
     }
 }

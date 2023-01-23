@@ -38,6 +38,7 @@ public sealed class PgnGame
         Result = result;
         _notation = notation;
         _buffer = new char[1];
+
         ParseStandardAlgebraicMoves();
         UpdateMoves(board);
     }
@@ -46,6 +47,7 @@ public sealed class PgnGame
     private void ParseStandardAlgebraicMoves()
     {
         if (_notation == null) return;
+
         // Remove tags, comments, and variations from notation.
         var stringBuilder = new StringBuilder();
         using (var stringReader = new StringReader(_notation))
@@ -57,7 +59,9 @@ public sealed class PgnGame
                 if (line == null) break;
                 if (line.StartsWith("[") && line.EndsWith("]")) continue; // Skip tag.
                 break; // End of tag section.
+
             } while (true);
+
             // Remove comments and variations.
             do
             {
@@ -69,36 +73,47 @@ public sealed class PgnGame
                         // Found a comment.
                         ReadToSectionEnd(stringReader, '{', '}');
                         break;
+
                     case '(':
                         // Found a variation.
                         ReadToSectionEnd(stringReader, '(', ')');
                         break;
+
                     case '\r':
                         // Do not include carriage return in clean notation.
                         stringBuilder.Append(' ');
                         break;
+
                     case '\n':
                         // Do not include newline in clean notation.
                         stringBuilder.Append(' ');
                         break;
+
                     default:
                         stringBuilder.Append(_buffer[0]);
                         break;
                 }
+
             } while (true);
+
             _cleanNotation = stringBuilder.ToString().Trim();
         }
+
         // Read moves from notation.
         var moves = _cleanNotation.Split(". ".ToCharArray());
         _standardAlgebraicMoves = new List<string>(moves.Length);
+
         for (var moveIndex = 0; moveIndex < moves.Length; moveIndex++)
         {
             var move = moves[moveIndex];
             var cleanMove = move.Trim();
             if (cleanMove.IsNullOrEmpty()) continue;
+
             var firstCharacter = cleanMove[0];
+
             if (char.IsNumber(firstCharacter)) continue; // Skip move number or result.
             if (firstCharacter == '*') continue; // Skip unknown result.
+
             // Add move to list.
             _standardAlgebraicMoves.Add(cleanMove);
         }
@@ -110,10 +125,12 @@ public sealed class PgnGame
         _longAlgebraicMoves = new List<string>(_standardAlgebraicMoves.Count);
         Moves = new List<ulong>(_standardAlgebraicMoves.Count);
         board.SetPosition(Board.StartPositionFen);
+
         for (var moveIndex = 0; moveIndex < _standardAlgebraicMoves.Count; moveIndex++)
         {
             var standardAlgebraicMove = _standardAlgebraicMoves[moveIndex];
             ulong move;
+
             try 
             {
                 move = Move.ParseStandardAlgebraic(board, standardAlgebraicMove);
@@ -122,12 +139,16 @@ public sealed class PgnGame
             {
                 throw new Exception($"Error updating {standardAlgebraicMove} move in game {Number}.{Environment.NewLine}{board.CurrentPosition}", exception);
             }
+
             var longAlgebraicMove = Move.ToLongAlgebraic(move);
             _longAlgebraicMoves.Add(longAlgebraicMove);
+
             Moves.Add(move);
+
             var (legalMove, _) = board.PlayMove(move);
             if (!legalMove) throw new Exception($"Move {longAlgebraicMove} is illegal in position {board.PreviousPosition.ToFen()}.");
         }
+
         _cleanNotation = null;
         _standardAlgebraicMoves = null;
         _longAlgebraicMoves = null;
@@ -137,16 +158,19 @@ public sealed class PgnGame
     private void ReadToSectionEnd(TextReader stringReader, char openingChar, char closingChar)
     {
         var sections = 1;
+
         do
         {
             var charsRead = stringReader.Read(_buffer, 0, 1);
             if (charsRead == 0) break;
+
             if (_buffer[0] == openingChar) sections++;
             else if (_buffer[0] == closingChar)
             {
                 sections--;
                 if (sections == 0) break;
             }
+
         } while (true);
     }
 
@@ -158,25 +182,31 @@ public sealed class PgnGame
         stringBuilder.AppendLine("======");
         stringBuilder.AppendLine(Number.ToString());
         stringBuilder.AppendLine();
+
         stringBuilder.AppendLine("Result");
         stringBuilder.AppendLine("======");
         stringBuilder.AppendLine(Result.ToString());
         stringBuilder.AppendLine();
+
         stringBuilder.AppendLine("Notation");
         stringBuilder.AppendLine("========");
         stringBuilder.AppendLine(_notation);
         stringBuilder.AppendLine();
+
         stringBuilder.AppendLine("Clean Notation");
         stringBuilder.AppendLine("==============");
         stringBuilder.AppendLine(_cleanNotation);
         stringBuilder.AppendLine();
+
         stringBuilder.AppendLine("Standard Algebraic Moves");
         stringBuilder.AppendLine("========================");
         stringBuilder.AppendLine(string.Join(" ", _standardAlgebraicMoves));
         stringBuilder.AppendLine();
+
         stringBuilder.AppendLine("Long Algebraic Moves");
         stringBuilder.AppendLine("====================");
         stringBuilder.AppendLine(string.Join(" ", _longAlgebraicMoves));
+
         return stringBuilder.ToString();
     }
 }

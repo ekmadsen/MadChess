@@ -25,6 +25,7 @@ public sealed class KillerMoves
     {
         const int maxDepth = Search.MaxHorizon + Search.MaxQuietDepth;
         _killerMoves = new KillerMove[maxDepth + 1][];
+
         for (var depth = 0; depth <= maxDepth; depth++)
         {
             _killerMoves[depth] = new[]
@@ -50,6 +51,7 @@ public sealed class KillerMoves
     {
         var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return; // Move already is the best killer move.
+
         // Shift and update killer move.
         _killerMoves[depth][1] = _killerMoves[depth][0];
         _killerMoves[depth][0] = killerMove;
@@ -60,11 +62,13 @@ public sealed class KillerMoves
     {
         // Shift killer moves closer to root position.
         var lastDepth = _killerMoves.Length - depth - 1;
+
         for (var depthIndex = 0; depthIndex <= lastDepth; depthIndex++)
         {
             _killerMoves[depthIndex][0] = _killerMoves[depthIndex + depth][0];
             _killerMoves[depthIndex][1] = _killerMoves[depthIndex + depth][1];
         }
+
         // Reset killer moves far from root position.
         for (var depthIndex = lastDepth + 1; depthIndex < _killerMoves.Length; depthIndex++)
         {

@@ -28,6 +28,7 @@ public static class FastMath
     public static int Clamp(int value, int min, int max)
     {
         if (value < min) return min;
+
         return (value > max)
             ? max
             : value;

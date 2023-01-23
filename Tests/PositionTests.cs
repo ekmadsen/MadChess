@@ -24,7 +24,9 @@ public sealed class PositionTests : TestBase
     {
         var board = new Board(WriteMessageLine, long.MaxValue);
         board.SetPosition(Board.StartPositionFen);
+
         WriteMessageLine(board.ToString());
+
         // Validate integrity of board and occupancy of every square.
         board.AssertIntegrity();
         Assert.That(board.CurrentPosition.GetPiece(Square.A8), Is.EqualTo(Piece.BlackRook));
@@ -35,22 +37,29 @@ public sealed class PositionTests : TestBase
         Assert.That(board.CurrentPosition.GetPiece(Square.F8), Is.EqualTo(Piece.BlackBishop));
         Assert.That(board.CurrentPosition.GetPiece(Square.G8), Is.EqualTo(Piece.BlackKnight));
         Assert.That(board.CurrentPosition.GetPiece(Square.H8), Is.EqualTo(Piece.BlackRook));
+
         var square = Square.A7;
         do
         {
             Assert.That(board.CurrentPosition.GetPiece(square), Is.EqualTo(Piece.BlackPawn));
             square++;
+
         } while (square <= Square.H7);
+
         do
         {
             Assert.That(board.CurrentPosition.GetPiece(square), Is.EqualTo(Piece.None));
             square++;
+
         } while (square <= Square.H3);
+
         do
         {
             Assert.That(board.CurrentPosition.GetPiece(square), Is.EqualTo(Piece.WhitePawn));
             square++;
+
         } while (square <= Square.H2);
+
         Assert.That(board.CurrentPosition.GetPiece(Square.A1), Is.EqualTo(Piece.WhiteRook));
         Assert.That(board.CurrentPosition.GetPiece(Square.B1), Is.EqualTo(Piece.WhiteKnight));
         Assert.That(board.CurrentPosition.GetPiece(Square.C1), Is.EqualTo(Piece.WhiteBishop));
@@ -59,6 +68,7 @@ public sealed class PositionTests : TestBase
         Assert.That(board.CurrentPosition.GetPiece(Square.F1), Is.EqualTo(Piece.WhiteBishop));
         Assert.That(board.CurrentPosition.GetPiece(Square.G1), Is.EqualTo(Piece.WhiteKnight));
         Assert.That(board.CurrentPosition.GetPiece(Square.H1), Is.EqualTo(Piece.WhiteRook));
+
         // Validate piece counts.
         Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhitePawn]), Is.EqualTo(8));
         Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteKnight]), Is.EqualTo(2));
@@ -80,7 +90,9 @@ public sealed class PositionTests : TestBase
     {
         var board = new Board(WriteMessageLine, long.MaxValue);
         board.SetPosition("r1b1kb1r/3q1ppp/pBp1pn2/8/Np3P2/5B2/PPP3PP/R2Q1RK1 w kq -");
+
         WriteMessageLine(board.ToString());
+
         // Validate integrity of board and occupancy of every square.
         board.AssertIntegrity();
         Assert.That(board.CurrentPosition.GetPiece(Square.A8), Is.EqualTo(Piece.BlackRook));
@@ -147,6 +159,7 @@ public sealed class PositionTests : TestBase
         Assert.That(board.CurrentPosition.GetPiece(Square.F1), Is.EqualTo(Piece.WhiteRook));
         Assert.That(board.CurrentPosition.GetPiece(Square.G1), Is.EqualTo(Piece.WhiteKing));
         Assert.That(board.CurrentPosition.GetPiece(Square.H1), Is.EqualTo(Piece.None));
+
         // Validate piece counts.
         Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhitePawn]), Is.EqualTo(6));
         Assert.That(Bitwise.CountSetBits(board.CurrentPosition.PieceBitboards[(int)Piece.WhiteKnight]), Is.EqualTo(1));

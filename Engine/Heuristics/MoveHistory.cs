@@ -28,9 +28,11 @@ public sealed class MoveHistory
     public MoveHistory()
     {
         _moveHistory = new int[(int)Piece.BlackKing + 1][];
+
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
             _moveHistory[(int)piece] = new int[64];
+
             for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
                 _moveHistory[(int)piece][(int)toSquare] = 0;
         }
@@ -53,8 +55,10 @@ public sealed class MoveHistory
         // This function approaches an asymptotic limit of +/- Move.HistoryMaxValue.
         var piece = Move.Piece(move);
         var toSquare = Move.To(move);
+
         var value = _moveHistory[(int)piece][(int)toSquare];
         value += (increment * _multiplier) - ((value * FastMath.Abs(increment)) / _divisor);
+
         _moveHistory[(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
     }
 
@@ -64,9 +68,7 @@ public sealed class MoveHistory
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
             for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
-            {
                 _moveHistory[(int)piece][(int)toSquare] = (_agePer256 * _moveHistory[(int)piece][(int)toSquare]) / 256;
-            }
         }
     }
 

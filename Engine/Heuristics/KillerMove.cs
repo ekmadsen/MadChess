@@ -31,9 +31,12 @@ public readonly struct KillerMove
 
     public static bool operator ==(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1._piece == killerMove2._piece) && (killerMove1._toSquare == killerMove2._toSquare);
     public static bool operator !=(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1._piece != killerMove2._piece) || (killerMove1._toSquare != killerMove2._toSquare);
+
     // ReSharper disable once MemberCanBePrivate.Global
     public bool Equals(KillerMove otherKillerMove) => (_piece == otherKillerMove._piece) && (_toSquare == otherKillerMove._toSquare);
     public override bool Equals(object other) => (other is KillerMove otherKillerMove) && Equals(otherKillerMove);
+
     public override int GetHashCode() => HashCode.Combine((int)_piece, (int)_toSquare);
+
     public static KillerMove Parse(ulong move) => new(Move.Piece(move), Move.To(move));
 }

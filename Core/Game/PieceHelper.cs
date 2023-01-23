@@ -23,6 +23,7 @@ public static class PieceHelper
         return piece switch
         {
             Piece.None => null,
+
             Piece.WhitePawn => 'P',
             Piece.WhiteKnight => 'N',
             Piece.WhiteBishop => 'B',
@@ -35,6 +36,7 @@ public static class PieceHelper
             Piece.BlackRook => 'r',
             Piece.BlackQueen => 'q',
             Piece.BlackKing => 'k',
+
             _ => throw new ArgumentException($"{piece} piece not supported.")
         };
     }
@@ -49,12 +51,14 @@ public static class PieceHelper
         return colorlessPiece switch
         {
             ColorlessPiece.None => string.Empty,
+
             ColorlessPiece.Pawn => "Pawn",
             ColorlessPiece.Knight => "Knight",
             ColorlessPiece.Bishop => "Bishop",
             ColorlessPiece.Rook => "Rook",
             ColorlessPiece.Queen => "Queen",
             ColorlessPiece.King => "King",
+
             _ => throw new ArgumentException($"{colorlessPiece} piece not supported.")
         };
     }
@@ -82,12 +86,14 @@ public static class PieceHelper
             'R' => Piece.WhiteRook,
             'Q' => Piece.WhiteQueen,
             'K' => Piece.WhiteKing,
+
             'p' => Piece.BlackPawn,
             'n' => Piece.BlackKnight,
             'b' => Piece.BlackBishop,
             'r' => Piece.BlackRook,
             'q' => Piece.BlackQueen,
             'k' => Piece.BlackKing,
+
             _ => throw new ArgumentException($"{character} character not supported.")
         };
     }

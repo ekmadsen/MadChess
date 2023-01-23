@@ -16,6 +16,7 @@ namespace ErikTheCoder.MadChess.Core;
 
 public static class Delegates
 {
+    // TODO: Replace Core delegates with injected services (if circular dependencies can be avoided).
     public delegate bool ValidateMove(ref ulong move);
     public delegate bool Debug();
     public delegate void WriteMessageLine(string message);
