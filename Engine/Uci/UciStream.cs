@@ -553,7 +553,7 @@ public sealed class UciStream : IDisposable
             ? Board.StartPositionFen
             : string.Join(" ", tokens.ToArray(), 2, tokens.Count - 2);
 
-        // Setup position and play moves if specified.
+        // Setup position and play specified moves.
         _board.SetPosition(fen);
 
         while (moveIndex < tokens.Count)
@@ -590,11 +590,12 @@ public sealed class UciStream : IDisposable
             switch (token.ToLower())
             {
                 case "searchmoves":
-                    // Assume all remaining tokens are moves.
+                    // Restrict search to candidate moves.
+                    // Assume all remaining tokens are candidate moves.
                     for (var moveIndex = tokenIndex + 1; moveIndex < tokens.Count; moveIndex++)
                     {
                         var move = Move.ParseLongAlgebraic(tokens[moveIndex], _board.CurrentPosition.ColorToMove);
-                        _search.SpecifiedMoves.Add(move);
+                        _search.CandidateMoves.Add(move);
                     }
                     break;
 
@@ -1236,7 +1237,7 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("                                      removing hard-coded magic multipliers from source code, then recompiling.");
         WriteMessageLine();
 
-        WriteMessageLine("countmoves [depth]                    Count legal moves at given depth.   Count only leaf nodes, not internal nodes.");
+        WriteMessageLine("countmoves [depth]                    Count legal moves at depth.   Count only leaf nodes, not internal nodes.");
         WriteMessageLine("                                      Known by chess programmers as perft.");
         WriteMessageLine();
 
@@ -1246,7 +1247,7 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("listmoves                             List moves in order of priority.  Display history heuristics for each move.");
         WriteMessageLine();
 
-        WriteMessageLine("shiftkillermoves [depth]              Shift killer moves deeper by given depth.");
+        WriteMessageLine("shiftkillermoves [depth]              Shift killer moves deeper by depth.");
         WriteMessageLine("                                      Useful after go command followed by a position command that includes moves.");
         WriteMessageLine("                                      Without shifting killer moves, the listmoves command will display incorrect killer values.");
         WriteMessageLine();
@@ -1260,12 +1261,12 @@ public sealed class UciStream : IDisposable
         WriteMessageLine("staticscore                           Display evaluation details of current position.");
         WriteMessageLine();
 
-        WriteMessageLine("testpositions [filename]              Calculate legal moves for positions in given file and compare to expected results.");
+        WriteMessageLine("testpositions [filename]              Calculate legal moves for positions in file and compare to expected results.");
         WriteMessageLine("                                      Each line of file must be formatted as [FEN]|[Depth]|[Legal Move Count].");
         WriteMessageLine();
 
-        WriteMessageLine("analyzepositions [filename] [msec]    Search for best move for positions in given file and compare to expected results.");
-        WriteMessageLine("                                      File must be in EPD format.  Search of each move is limited to given time in milliseconds.");
+        WriteMessageLine("analyzepositions [filename] [msec]    Search for best move for positions in file and compare to expected results.");
+        WriteMessageLine("                                      File must be in EPD format.  Search of each move is limited to time in milliseconds.");
         WriteMessageLine();
 
         WriteMessageLine("tune [pgn] [ps] [pps] [ws] [i]        Tune evaluation parameters using a particle swarm algorithm.");
