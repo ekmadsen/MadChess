@@ -344,8 +344,6 @@ public sealed class Search : IDisposable
             }
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
-        MultiPv = FastMath.Min(MultiPv, legalMoveIndex); // Reduce MultiPV if less legal moves exist than principal variations requested.
-        _rootMoveNumber = 1;
 
         if ((legalMoveIndex == 1) && (CandidateMoves.Count == 0) && !AnalyzeMode)
         {
@@ -374,9 +372,10 @@ public sealed class Search : IDisposable
         var bestMove = new ScoredMove(Move.Null, -SpecialScore.Max);
         do
         {
-            // Increment horizon and age move history.
+            // Increment horizon, reset root move number, and age move history.
             _originalHorizon++;
             _selectiveHorizon = 0;
+            _rootMoveNumber = 1;
             _moveHistory.Age();
 
             // Reset move scores, then search moves.
@@ -613,7 +612,7 @@ public sealed class Search : IDisposable
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
-        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, beta))
+        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, alpha, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -1015,10 +1014,10 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsNullMovePermitted(Position position, int beta)
+    private bool IsNullMovePermitted(Position position, int alpha, int beta)
     {
-        // Do attempt null move if static score is weak, nor if king is in check.
-        if ((position.StaticScore < beta) || position.KingInCheck) return false;
+        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Don't attempt null move when analyzing a principal variation so moves aren't truncated.
+        if ((position.StaticScore < beta) || position.KingInCheck) return false; // Don't attempt null move if static score is weak, nor if king is in check.
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
@@ -1248,7 +1247,7 @@ public sealed class Search : IDisposable
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
                 if (dynamicScore >= beta) return beta; // Score fails high.
                 return AnalyzeMode
-                    ? SpecialScore.NotCached // Force continuing search of principal variation.
+                    ? SpecialScore.NotCached // Continue searching when analyzing so principal variation isn't truncated.
                     : dynamicScore;
             case ScorePrecision.UpperBound:
                 if (dynamicScore <= alpha) return alpha; // Score fails low.
@@ -1369,7 +1368,8 @@ public sealed class Search : IDisposable
         if (includePrincipalVariations)
         {
             // Include principal variations.
-            for (var pv = 0; pv < MultiPv; pv++)
+            var legalPv = FastMath.Min(MultiPv, board.CurrentPosition.MoveIndex); // Less legal moves may exist than principal variations requested.
+            for (var pv = 0; pv < legalPv; pv++)
             {
                 var stringBuilder = new StringBuilder("pv");
                 var bestMove = _bestMoves[pv];
