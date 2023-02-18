@@ -237,7 +237,7 @@ public static class Move
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void SetCaptureAttacker(ref ulong move, Piece captureAttacker)
     {
-        // Invert piece value so P x Q captures are given a higher priority than Q x Q.
+        // Invert piece value so P x Q captures have a higher priority than Q x Q.
         var storedPiece = (ulong)(Game.Piece.BlackKing - captureAttacker);
         // Clear
         move &= _captureAttackerUnmask;
