@@ -232,7 +232,7 @@
 &lt;/Patterns&gt;</s:String>
 	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">// +---------------------------------------------------------------------------+&#xD;
 // |                                                                           |&#xD;
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2022.       |&#xD;
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2023.       |&#xD;
 // |       MadChess is free software.  It is distributed under the MIT         |&#xD;
 // |       license.  See LICENSE.md file for details.                          |&#xD;
 // |       See https://www.madchess.net/ for user and developer guides.        |&#xD;
