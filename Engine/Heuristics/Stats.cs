@@ -48,4 +48,20 @@ public sealed class Stats
         CacheValidBestMove = 0;
         CacheInvalidBestMove = 0;
     }
+
+    public override string ToString()
+    {
+        var nullMoveCutoffFraction = (100d * NullMoveCutoffs) / NullMoves;
+        var betaCutoffMoveNumber = (double)BetaCutoffMoveNumber / MovesCausingBetaCutoff;
+        var betaCutoffFirstMoveFraction = (100d * BetaCutoffFirstMove) / MovesCausingBetaCutoff;
+        var cacheHitFraction = (100d * CacheHits) / CacheProbes;
+        var scoreCutoffFraction = (100d * CacheScoreCutoff) / CacheHits;
+        var bestMoveHitFraction = (100d * CacheValidBestMove) / CacheBestMoveProbes;
+
+        return $"""
+            info string Cache Hit = {cacheHitFraction:0.00}% Score Cutoff = {scoreCutoffFraction:0.00}% Best Move Hit = {bestMoveHitFraction:0.00}% Invalid Best Moves = {CacheInvalidBestMove:n0}
+            info string Null Move Cutoffs = {nullMoveCutoffFraction:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMoveFraction:0.00}%
+            info string Evals = {Evaluations:n0}
+            """;
+    }
 }

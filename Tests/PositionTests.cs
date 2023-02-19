@@ -8,6 +8,8 @@
 // +---------------------------------------------------------------------------+
 
 
+using System;
+using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 using NUnit.Framework;
@@ -22,7 +24,8 @@ public sealed class PositionTests : TestBase
     [Test]
     public void TestStartPosition()
     {
-        var board = new Board(WriteMessageLine, long.MaxValue);
+        var messenger = new Messenger(Console.OpenStandardInput(), Console.OpenStandardOutput());
+        var board = new Board(messenger);
         board.SetPosition(Board.StartPositionFen);
 
         WriteMessageLine(board.ToString());
@@ -88,7 +91,8 @@ public sealed class PositionTests : TestBase
     [Test]
     public void TestWac11Position()
     {
-        var board = new Board(WriteMessageLine, long.MaxValue);
+        var messenger = new Messenger(Console.OpenStandardInput(), Console.OpenStandardOutput());
+        var board = new Board(messenger);
         board.SetPosition("r1b1kb1r/3q1ppp/pBp1pn2/8/Np3P2/5B2/PPP3PP/R2Q1RK1 w kq -");
 
         WriteMessageLine(board.ToString());

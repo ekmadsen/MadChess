@@ -274,7 +274,7 @@ public sealed class StaticScore
 
         stringBuilder.AppendLine($"Middlegame   = {phase} of {Eval.MiddlegamePhase} ({phaseFraction}%)");
         stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
-        stringBuilder.AppendLine($"Total Score  = {totalScore:0.00}");
+        stringBuilder.Append($"Total Score  = {totalScore:0.00}");
 
         return stringBuilder.ToString();
     }

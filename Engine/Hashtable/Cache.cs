@@ -30,7 +30,6 @@ public sealed class Cache
     public byte Searches;
     private const int _buckets = 4;
     private readonly Stats _stats;
-    private readonly Core.Delegates.ValidateMove _validateMove;
     private int _indices;
     private CachedPosition[] _positions; // More memory efficient than a jagged array that has a .NET object header for each sub-array (for garbage collection tracking of reachable-from-root).
 
@@ -52,10 +51,9 @@ public sealed class Cache
     }
 
 
-    public Cache(int sizeMegabyte, Stats stats, Core.Delegates.ValidateMove validateMove)
+    public Cache(Stats stats, int sizeMegabyte)
     {
         _stats = stats;
-        _validateMove = validateMove;
 
         // Set null position.
         NullPosition = new CachedPosition(0, 0);
@@ -147,7 +145,7 @@ public sealed class Cache
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public ulong GetBestMove(ulong cachedPosition)
+    public ulong GetBestMove(Position position, ulong cachedPosition)
     {
         Debug.Assert(CachedPositionData.IsValid(cachedPosition));
 
@@ -163,7 +161,7 @@ public sealed class Cache
         Move.SetIsBest(ref bestMove, true);
 
         // Validate move is possible in current position on board.
-        var validMove = _validateMove(ref bestMove);
+        var validMove = position.ValidateMove(ref bestMove);
         if (validMove) _stats.CacheValidBestMove++;
         else _stats.CacheInvalidBestMove++;
 

@@ -10,7 +10,7 @@
 
 using System;
 using System.Runtime;
-using ErikTheCoder.MadChess.Engine.Uci;
+using ErikTheCoder.MadChess.Core;
 
 
 namespace ErikTheCoder.MadChess.Engine;
@@ -24,7 +24,10 @@ public static class Program
         // Engine should not allocate much memory when searching a position anyhow because it references pre-allocated objects.
         GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
 
-        using (var uciStream = new UciStream())
+        using (var inputStream = Console.OpenStandardInput())
+        using (var outputStream = Console.OpenStandardOutput())
+        using (var messenger = new Messenger(inputStream, outputStream))
+        using (var uciStream = new UciStream(messenger))
         {
             try
             {

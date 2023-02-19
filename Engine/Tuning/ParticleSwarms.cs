@@ -11,12 +11,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Intelligence;
-using ErikTheCoder.MadChess.Engine.Uci;
 
 
 namespace ErikTheCoder.MadChess.Engine.Tuning;
@@ -25,24 +25,22 @@ namespace ErikTheCoder.MadChess.Engine.Tuning;
 public sealed class ParticleSwarms : List<ParticleSwarm>
 {
     public const double Influence = 0.375d;
-    private readonly Delegates.DisplayStats _displayStats;
-    private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
+    private readonly Messenger _messenger; // Lifetime managed by caller.
     private readonly double _originalEvaluationError;
     private int _iterations;
 
 
-    public ParticleSwarms(string pgnFilename, int particleSwarms, int particlesPerSwarm, int winScale, Delegates.DisplayStats displayStats, Core.Delegates.WriteMessageLine writeMessageLine)
+    public ParticleSwarms(Messenger messenger, string pgnFilename, int particleSwarms, int particlesPerSwarm, int winScale)
     {
-        _displayStats = displayStats;
-        _writeMessageLine = writeMessageLine;
+        _messenger = messenger;
 
         // Load games.
-        writeMessageLine("Loading games.");
+        messenger.WriteMessageLine("Loading games.");
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        var board = new Board(writeMessageLine, UciStream.NodesInfoInterval);
-        var pgnGames = new PgnGames();
-        pgnGames.Load(board, pgnFilename, writeMessageLine);
+        var board = new Board(messenger);
+        var pgnGames = new PgnGames(messenger);
+        pgnGames.Load(board, pgnFilename);
         stopwatch.Stop();
 
         // Count positions.
@@ -54,10 +52,10 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         }
 
         var positionsPerSecond = (int)(positions / stopwatch.Elapsed.TotalSeconds);
-        writeMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
+        messenger.WriteMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
         
         stopwatch.Restart();
-        writeMessageLine("Creating data structures.");
+        messenger.WriteMessageLine("Creating data structures.");
 
         // Create parameters and particle swarms.
         var parameters = CreateParameters();
@@ -68,11 +66,11 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         }
 
         var stats = new Stats();
-        var cache = new Cache(1, stats, board.ValidateMove);
+        var cache = new Cache(stats, 1);
         var killerMoves = new KillerMoves();
         var moveHistory = new MoveHistory();
-        var eval = new Eval(stats, board.IsRepeatPosition, () => false, writeMessageLine);
-        var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, displayStats, writeMessageLine);
+        var eval = new Eval(messenger, stats);
+        var search = new Search(messenger, stats, cache, killerMoves, moveHistory, eval);
         
         // Set parameters of first particle in first swarm to known best.
         var firstParticleInFirstSwarm = this[0].Particles[0];
@@ -83,7 +81,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
         
         stopwatch.Stop();
-        writeMessageLine($"Created data structures in {stopwatch.Elapsed.TotalSeconds:0.000} seconds.");
+        messenger.WriteMessageLine($"Created data structures in {stopwatch.Elapsed.TotalSeconds:0.000} seconds.");
     }
 
 
@@ -357,7 +355,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             parameterSpace *= parameter.MaxValue - parameter.MinValue + 1;
         }
 
-        _writeMessageLine($"Optimizing {firstParticleInFirstSwarm.Parameters.Count} parameters in a space of {parameterSpace:e2} discrete parameter combinations.");
+        _messenger.WriteMessageLine($"Optimizing {firstParticleInFirstSwarm.Parameters.Count} parameters in a space of {parameterSpace:e2} discrete parameter combinations.");
 
         // Create game objects for each particle swarm.
         var boards = new Board[Count];
@@ -366,18 +364,18 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 
         for (var index = 0; index < Count; index++)
         {
-            var board = new Board(_writeMessageLine, UciStream.NodesInfoInterval);
+            var board = new Board(_messenger);
             boards[index] = board;
 
             var stats = new Stats();
-            var cache = new Cache(1, stats, board.ValidateMove);
+            var cache = new Cache(stats, 1);
             var killerMoves = new KillerMoves();
             var moveHistory = new MoveHistory();
 
-            var eval = new Eval(stats, board.IsRepeatPosition, () => false, _writeMessageLine);
+            var eval = new Eval(_messenger, stats);
             evals[index] = eval;
 
-            searches[index] = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, _displayStats, _writeMessageLine);
+            searches[index] = new Search(_messenger, stats, cache, killerMoves, moveHistory, eval);
         }
 
         var tasks = new Task[Count];
@@ -429,14 +427,14 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         const int padding = 39;
 
         // Display iterations and original evaluation error.
-        _writeMessageLine(null);
-        _writeMessageLine($"{"Iterations",-padding} = {_iterations,6:000}    ");
-        _writeMessageLine($"{"Original Evaluation Error",-padding} = {_originalEvaluationError,10:0.000}");
+        _messenger.WriteMessageLine(null);
+        _messenger.WriteMessageLine($"{"Iterations",-padding} = {_iterations,6:000}    ");
+        _messenger.WriteMessageLine($"{"Original Evaluation Error",-padding} = {_originalEvaluationError,10:0.000}");
 
         // Display globally best evaluation error.
         var bestParticle = GetBestParticle();
-        _writeMessageLine($"{"Best Evaluation Error",-padding} = {bestParticle.BestEvaluationError,10:0.000}");
-        _writeMessageLine(null);
+        _messenger.WriteMessageLine($"{"Best Evaluation Error",-padding} = {bestParticle.BestEvaluationError,10:0.000}");
+        _messenger.WriteMessageLine(null);
 
         // Display evaluation error of every particle in every particle swarm.
         for (var swarmIndex = 0; swarmIndex < Count; swarmIndex++)
@@ -444,23 +442,23 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             // Display evaluation error of best particle in swarm.
             var particleSwarm = this[swarmIndex];
             var bestSwarmParticle = particleSwarm.GetBestParticle();
-            _writeMessageLine($"Particle Swarm {swarmIndex:00} Best Evaluation Error = {bestSwarmParticle.BestEvaluationError,10:0.000}");
+            _messenger.WriteMessageLine($"Particle Swarm {swarmIndex:00} Best Evaluation Error = {bestSwarmParticle.BestEvaluationError,10:0.000}");
 
             // Display evaluation error of all particles in swarm.
             for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
             {
                 var particle = particleSwarm.Particles[particleIndex];
-                _writeMessageLine($"  Particle {particleIndex:00} Evaluation Error          = {particle.EvaluationError,10:0.000}");
+                _messenger.WriteMessageLine($"  Particle {particleIndex:00} Evaluation Error          = {particle.EvaluationError,10:0.000}");
             }
         }
 
-        _writeMessageLine(null);
+        _messenger.WriteMessageLine(null);
 
         // Display globally best parameter values.
         for (var parameterIndex = 0; parameterIndex < bestParticle.BestParameters.Count; parameterIndex++)
         {
             var parameter = bestParticle.BestParameters[parameterIndex];
-            _writeMessageLine($"{parameter.Name,-padding} = {parameter.Value,6}");
+            _messenger.WriteMessageLine($"{parameter.Name,-padding} = {parameter.Value,6}");
         }
     }
 }

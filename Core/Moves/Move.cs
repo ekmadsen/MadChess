@@ -478,6 +478,7 @@ public static class Move
 
     public static ulong ParseStandardAlgebraic(Board board, string standardAlgebraic)
     {
+        // Convert Standard Algebraic Notation (SAN) move to a ulong move.
         var move = Null;
 
         // Remove check and checkmate symbols.
@@ -492,7 +493,7 @@ public static class Move
                 SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                 SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.Queen]);
 
-                if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
+                if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
 
                 return move;
 
@@ -502,7 +503,7 @@ public static class Move
                 SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                 SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.King]);
 
-                if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
+                if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
 
                 return move;
         }
@@ -514,6 +515,7 @@ public static class Move
         Piece piece;
         Square toSquare;
 
+        // Determine if SAN specifies pawn or piece move or capture.
         if (char.IsLower(standardAlgebraicNoCheck, 0))
         {
             // Pawn Move
@@ -613,6 +615,7 @@ public static class Move
             else throw new Exception($"{standardAlgebraic} move not supported.");
         }
 
+        // Generate moves and determine if any legal moves match SAN move.
         board.CurrentPosition.GenerateMoves();
 
         for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
@@ -647,7 +650,7 @@ public static class Move
                 if (moveFromRank != fromRank) continue; // Wrong Rank
             }
 
-            if (!board.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
+            if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
 
             return move;
         }
@@ -699,8 +702,22 @@ public static class Move
 
     public static string ToString(ulong move)
     {
-        return $"{ToLongAlgebraic(move)} (B = {IsBest(move)}, CapV = {PieceHelper.GetChar(CaptureVictim(move))}, CapA = {PieceHelper.GetChar(CaptureAttacker(move))}, Promo = {PieceHelper.GetChar(PromotedPiece(move))}, Kil = {Killer(move)}, " +
-               $"! = {Played(move)},  O = {IsCastling(move)}, K = {IsKingMove(move)}, E = {IsEnPassantCapture(move)}, 2 = {IsDoublePawnMove(move)}, P = {IsPawnMove(move)}, Q = {IsQuiet(move)} " +
-               $"From = {From(move)}, To = {To(move)})";
+        return $"""
+            {ToLongAlgebraic(move)}
+            B     = {IsBest(move)}
+            CapV  = {PieceHelper.GetChar(CaptureVictim(move))}
+            CapA  = {PieceHelper.GetChar(CaptureAttacker(move))}
+            Promo = {PieceHelper.GetChar(PromotedPiece(move))}
+            Kil   = {Killer(move)}
+            !     = {Played(move)}
+            O     = {IsCastling(move)}
+            K     = {IsKingMove(move)}
+            E     = {IsEnPassantCapture(move)}
+            2     = {IsDoublePawnMove(move)}
+            P     = {IsPawnMove(move)}
+            Q     = {IsQuiet(move)}
+            From  = {From(move)}
+            To    = {To(move)}
+            """;
     }
 }

@@ -212,7 +212,7 @@ public sealed class Particle
     // See http://talkchess.com/forum/viewtopic.php?t=50823&postdays=0&postorder=asc&highlight=texel+tuning&topic_view=flat&start=20.
     public void CalculateEvaluationError(Board board, Search search, int winScale)
     {
-        board.NodesExamineTime = long.MaxValue;
+        search.NodesExamineTime = long.MaxValue;
         search.PvInfoUpdate = false;
         search.Continue = true;
 

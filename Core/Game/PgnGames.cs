@@ -19,7 +19,16 @@ namespace ErikTheCoder.MadChess.Core.Game;
 
 public sealed class PgnGames : List<PgnGame>
 {
-    public void Load(Board board, string filename, Delegates.WriteMessageLine writeMessageLine)
+    private readonly Messenger _messenger; // Lifetime managed by caller.
+
+
+    public PgnGames(Messenger messenger)
+    {
+        _messenger = messenger;
+    }
+
+
+    public void Load(Board board, string filename)
     {
         using (var pgnReader = File.OpenText(filename))
         {
@@ -33,7 +42,7 @@ public sealed class PgnGames : List<PgnGame>
 
                 gameNumber++;
 
-                if ((gameNumber % 1000) == 0) writeMessageLine($"Loaded {gameNumber:n0} games.");
+                if ((gameNumber % 1000) == 0) _messenger.WriteMessageLine($"Loaded {gameNumber:n0} games.");
 
             } while (pgnGame != null);
         }

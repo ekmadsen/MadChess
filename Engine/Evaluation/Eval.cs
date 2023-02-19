@@ -12,6 +12,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
@@ -26,11 +27,9 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation;
 public sealed class Eval
 {
     private const int _egKingCornerFactor = 32;
+    private readonly Messenger _messenger; // Lifetime managed by caller.
     private readonly Stats _stats;
     private readonly EvalConfig _defaultConfig;
-    private readonly Delegates.IsRepeatPosition _isRepeatPosition;
-    private readonly Core.Delegates.Debug _debug;
-    private readonly Core.Delegates.WriteMessageLine _writeMessageLine;
     private readonly StaticScore _staticScore;
     public readonly EvalConfig Config;
     // Game Phase (constants selected such that starting material = 128)
@@ -60,12 +59,10 @@ public sealed class Eval
     private readonly int[][] _egPieceMobility; // [colorlessPiece][moves]
 
 
-    public Eval(Stats stats, Delegates.IsRepeatPosition isRepeatPosition, Core.Delegates.Debug debug, Core.Delegates.WriteMessageLine writeMessageLine)
+    public Eval(Messenger messenger, Stats stats)
     {
+        _messenger = messenger;
         _stats = stats;
-        _isRepeatPosition = isRepeatPosition;
-        _debug = debug;
-        _writeMessageLine = writeMessageLine;
         _staticScore = new StaticScore();
 
         // Do not set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
@@ -395,32 +392,32 @@ public sealed class Eval
             Config.LsEndgameScalePer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.InternationalMaster - 1);
         }
 
-        if (_debug())
+        if (_messenger.Debug)
         {
-            _writeMessageLine($"info string {nameof(Config.MgPawnMaterial)} = {Config.MgPawnMaterial}");
-            _writeMessageLine($"info string {nameof(Config.EgPawnMaterial)} = {Config.EgPawnMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.MgPawnMaterial)} = {Config.MgPawnMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.EgPawnMaterial)} = {Config.EgPawnMaterial}");
 
-            _writeMessageLine($"info string {nameof(Config.MgKnightMaterial)} = {Config.MgKnightMaterial}");
-            _writeMessageLine($"info string {nameof(Config.EgKnightMaterial)} = {Config.EgKnightMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.MgKnightMaterial)} = {Config.MgKnightMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.EgKnightMaterial)} = {Config.EgKnightMaterial}");
 
-            _writeMessageLine($"info string {nameof(Config.MgBishopMaterial)} = {Config.MgBishopMaterial}");
-            _writeMessageLine($"info string {nameof(Config.EgBishopMaterial)} = {Config.EgBishopMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.MgBishopMaterial)} = {Config.MgBishopMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.EgBishopMaterial)} = {Config.EgBishopMaterial}");
 
-            _writeMessageLine($"info string {nameof(Config.MgRookMaterial)} = {Config.MgRookMaterial}");
-            _writeMessageLine($"info string {nameof(Config.EgRookMaterial)} = {Config.EgRookMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.MgRookMaterial)} = {Config.MgRookMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.EgRookMaterial)} = {Config.EgRookMaterial}");
 
-            _writeMessageLine($"info string {nameof(Config.MgQueenMaterial)} = {Config.MgQueenMaterial}");
-            _writeMessageLine($"info string {nameof(Config.EgQueenMaterial)} = {Config.EgQueenMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.MgQueenMaterial)} = {Config.MgQueenMaterial}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.EgQueenMaterial)} = {Config.EgQueenMaterial}");
 
-            _writeMessageLine($"info string {nameof(Config.LsPassedPawnsPer128)} = {Config.LsPassedPawnsPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsKingSafetyPer128)} = {Config.LsKingSafetyPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsPieceLocationPer128)} = {Config.LsPieceLocationPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsPieceMobilityPer128)} = {Config.LsPieceMobilityPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsPawnStructurePer128)} = {Config.LsPawnStructurePer128}");
-            _writeMessageLine($"info string {nameof(Config.LsThreatsPer128)} = {Config.LsThreatsPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsMinorPiecesPer128)} = {Config.LsMinorPiecesPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsMajorPiecesPer128)} = {Config.LsMajorPiecesPer128}");
-            _writeMessageLine($"info string {nameof(Config.LsEndgameScalePer128)} = {Config.LsEndgameScalePer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsPassedPawnsPer128)} = {Config.LsPassedPawnsPer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsKingSafetyPer128)} = {Config.LsKingSafetyPer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsPieceLocationPer128)} = {Config.LsPieceLocationPer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsPieceMobilityPer128)} = {Config.LsPieceMobilityPer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsPawnStructurePer128)} = {Config.LsPawnStructurePer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsThreatsPer128)} = {Config.LsThreatsPer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsMinorPiecesPer128)} = {Config.LsMinorPiecesPer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsMajorPiecesPer128)} = {Config.LsMajorPiecesPer128}");
+            _messenger.WriteMessageLine($"info string {nameof(Config.LsEndgameScalePer128)} = {Config.LsEndgameScalePer128}");
         }
     }
 
@@ -465,7 +462,7 @@ public sealed class Eval
             }
         }
 
-        return _isRepeatPosition(DrawMoves) ? (true, true) : (false, false);
+        return position.IsRepeatPosition(DrawMoves) ? (true, true) : (false, false);
     }
 
 
@@ -1344,7 +1341,6 @@ public sealed class Eval
 
         stringBuilder.Append("Middlegame King Safety:  ");
         ShowParameterArray(_mgKingSafety, stringBuilder);
-        stringBuilder.AppendLine();
 
         return stringBuilder.ToString();
     }

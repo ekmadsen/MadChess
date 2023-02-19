@@ -8,16 +8,15 @@
 // +---------------------------------------------------------------------------+
 
 
-using ErikTheCoder.MadChess.Core.Game;
+using JetBrains.Annotations;
 
 
-namespace ErikTheCoder.MadChess.Engine;
+namespace ErikTheCoder.MadChess.Core;
 
 
-public static class Delegates
+public enum CommandDirection
 {
-    // TODO: Replace Engine delegates with injected services (if circular dependencies can be avoided).
-    public delegate (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove);
-    public delegate bool IsRepeatPosition(int repetitions);
-    public delegate void DisplayStats();
+    [UsedImplicitly] Unknown,
+    In,
+    Out
 }

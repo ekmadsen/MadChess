@@ -19,6 +19,10 @@ using ErikTheCoder.MadChess.Core.Utilities;
 namespace ErikTheCoder.MadChess.Core.Game;
 
 
+public delegate ulong GetPieceMovesMask(Square fromSquare, ulong occupancy);
+public delegate ulong GetPieceXrayMovesMask(Square fromSquare, Color color, Position position);
+
+
 public sealed class Board
 {
     public const string StartPositionFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -55,8 +59,9 @@ public sealed class Board
     public static readonly ulong[] RookMoveMasks; // [square]
     public static readonly ulong[] KingMoveMasks; // [square]
 
-    public static readonly Delegates.GetPieceMovesMask[] PieceMoveMaskDelegates; // [colorlessPiece]
-    public static readonly Delegates.GetPieceXrayMovesMask[] PieceXrayMoveMaskDelegates; // [colorlessPiece]
+    public static readonly PrecalculatedMoves PrecalculatedMoves;
+    public static readonly GetPieceMovesMask[] PieceMoveMaskDelegates; // [colorlessPiece]
+    public static readonly GetPieceXrayMovesMask[] PieceXrayMoveMaskDelegates; // [colorlessPiece]
 
     public static readonly ulong[] EnPassantAttackerMasks; // [square]
 
@@ -68,14 +73,10 @@ public sealed class Board
 
     public static readonly ulong[][] PawnShieldMasks; // [color][square]
 
-    public static readonly PrecalculatedMoves PrecalculatedMoves;
-
     public static readonly ulong[][] RankFileBetweenSquares; // [square1][square2]
     public static readonly ulong[][] DiagonalBetweenSquares; // [square1][square2]
 
     public long Nodes;
-    public long NodesInfoUpdate;
-    public long NodesExamineTime;
 
     private const int _maxPositions = 1024;
 
@@ -90,17 +91,14 @@ public sealed class Board
     private static readonly Square[] _enPassantTargetSquares; // [square]
     private static readonly Square[] _enPassantVictimSquares; // [square]
 
+    private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly Position[] _positions; // [distanceFromRoot]
+
     private readonly ulong[][] _pieceSquareKeys; // [piece][square]
+    private readonly ulong _piecesSquaresInitialKey;
     private readonly ulong[] _sideToMoveKeys; // [color]
     private readonly ulong[] _castlingKeys; // [castlingRights]
     private readonly ulong[] _enPassantKeys; // [square]
-
-    private readonly Position[] _positions; // [distanceFromRoot]
-
-    private readonly Delegates.WriteMessageLine _writeMessageLine;
-    private readonly long _nodesInfoInterval;
-    
-    private readonly ulong _piecesSquaresInitialKey;
 
     private int _positionIndex;
 
@@ -156,17 +154,17 @@ public sealed class Board
         KingMoveMasks = CreateKingMoveMasks();
 
         // Create piece move delegates and precalculated moves.
-        PieceMoveMaskDelegates = new Delegates.GetPieceMovesMask[(int)ColorlessPiece.King];
+        PrecalculatedMoves = new PrecalculatedMoves();
+        PieceMoveMaskDelegates = new GetPieceMovesMask[(int)ColorlessPiece.King];
         PieceMoveMaskDelegates[(int)ColorlessPiece.Knight] = GetKnightDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Bishop] = GetBishopDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Rook] = GetRookDestinations;
         PieceMoveMaskDelegates[(int)ColorlessPiece.Queen] = GetQueenDestinations;
-        PieceXrayMoveMaskDelegates = new Delegates.GetPieceXrayMovesMask[(int)ColorlessPiece.King];
+        PieceXrayMoveMaskDelegates = new GetPieceXrayMovesMask[(int)ColorlessPiece.King];
         PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Knight] = GetKnightXrayDestinations;
         PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Bishop] = GetBishopXrayDestinations;
         PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Rook] = GetRookXrayDestinations;
         PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Queen] = GetQueenXrayDestinations;
-        PrecalculatedMoves = new PrecalculatedMoves();
 
         // Create en passant, passed pawn, and free pawn masks.
         (_enPassantTargetSquares, _enPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
@@ -179,10 +177,9 @@ public sealed class Board
     }
 
 
-    public Board(Delegates.WriteMessageLine writeMessageLine, long nodesInfoInterval)
+    public Board(Messenger messenger)
     {
-        _writeMessageLine = writeMessageLine;
-        _nodesInfoInterval = nodesInfoInterval;
+        _messenger = messenger;
 
         // Create positions.
         _positions = new Position[_maxPositions];
@@ -217,9 +214,7 @@ public sealed class Board
         for (var square = Square.A8; square <= Square.Illegal; square++)
             _enPassantKeys[(int)square] = SafeRandom.NextULong();
 
-        // Set nodes.
         Nodes = 0;
-        NodesInfoUpdate = nodesInfoInterval;
     }
 
 
@@ -1164,92 +1159,6 @@ public sealed class Board
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public bool ValidateMove(ref ulong move)
-    {
-        // Do not trust move that wasn't generated by engine (from cache, game notation, input by user, etc).
-        // Validate main aspects of the move.  Do not test for every impossibility.
-        // Goal is to prevent engine crashes, not ensure a perfectly legal search tree.
-        var fromSquare = Move.From(move);
-        var toSquare = Move.To(move);
-
-        var attacker = CurrentPosition.GetPiece(fromSquare);
-        if (attacker == Piece.None) return false; // No piece on from square.
-
-        var attackerColor = PieceHelper.GetColor(attacker);
-        if (CurrentPosition.ColorToMove != attackerColor) return false; // Piece is wrong color.
-
-        var colorlessAttacker = PieceHelper.GetColorlessPiece(attacker);
-        var victim = CurrentPosition.GetPiece(toSquare);
-        if ((victim != Piece.None) && (attackerColor == PieceHelper.GetColor(victim))) return false; // Piece cannot attack its own color.
-        if ((victim == Piece.WhiteKing) || (victim == Piece.BlackKing)) return false;  // Piece cannot attack king.
-
-        var promotedPiece = Move.PromotedPiece(move);
-        if ((promotedPiece != Piece.None) && (CurrentPosition.ColorToMove != PieceHelper.GetColor(promotedPiece))) return false; // Promoted piece is wrong color.
-
-        var distance = SquareDistances[(int)fromSquare][(int)toSquare];
-        if (distance > 1)
-        {
-            // For sliding pieces, validate to square is reachable and not blocked.
-            ulong betweenSquares;
-            // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
-            switch (colorlessAttacker)
-            {
-                case ColorlessPiece.Bishop:
-                    betweenSquares = DiagonalBetweenSquares[(int)fromSquare][(int)toSquare];
-                    if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
-                    break;
-
-                case ColorlessPiece.Rook:
-                    betweenSquares = RankFileBetweenSquares[(int)fromSquare][(int)toSquare];
-                    if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
-                    break;
-
-                case ColorlessPiece.Queen:
-                    betweenSquares = DiagonalBetweenSquares[(int)fromSquare][(int)toSquare];
-                    if (betweenSquares == 0) betweenSquares = RankFileBetweenSquares[(int)fromSquare][(int)toSquare];
-                    if ((betweenSquares == 0) || ((CurrentPosition.Occupancy & betweenSquares) > 0)) return false;
-                    break;
-            }
-            // ReSharper restore SwitchStatementMissingSomeEnumCasesNoDefault
-        }
-
-        var pawn = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, CurrentPosition.ColorToMove);
-        var king = PieceHelper.GetPieceOfColor(ColorlessPiece.King, CurrentPosition.ColorToMove);
-        
-        if ((promotedPiece != Piece.None) && (attacker != pawn)) return false; // Only pawns can promote.
-        if ((promotedPiece == pawn) || (promotedPiece == king)) return false; // Cannot promote pawn to pawn or king.
-        
-        var castling = (attacker == king) && (distance == 2);
-        if (castling)
-        {
-            var boardSide = Files[(int)toSquare] < 4 ? BoardSide.Queen : BoardSide.King;
-            if (!Castling.Permitted(CurrentPosition.Castling, attackerColor, boardSide)) return false; // Castle not possible.
-            if (toSquare != CastleToSquares[(int)attackerColor][(int)boardSide]) return false; // Castle destination square invalid.
-            if ((CurrentPosition.Occupancy & CastleEmptySquaresMask[(int)attackerColor][(int)boardSide]) > 0) return false; // Castle squares occupied.
-        }
-
-        // Set move properties.
-        Move.SetPiece(ref move, attacker);
-        Move.SetIsPawnMove(ref move, attacker == pawn);
-        Move.SetIsDoublePawnMove(ref move, (attacker == pawn) && (distance == 2));
-        var enPassantCapture = (attacker == pawn) && (toSquare == CurrentPosition.EnPassantSquare);
-        Move.SetIsEnPassantCapture(ref move, enPassantCapture);
-        Move.SetIsKingMove(ref move, attacker == king);
-        Move.SetIsCastling(ref move, castling);
-        if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
-        
-        if (enPassantCapture)
-        {
-            var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, CurrentPosition.ColorLastMoved);
-            Move.SetCaptureVictim(ref move, enPassantVictim);
-        }
-        else Move.SetCaptureVictim(ref move, victim);
-
-        return true;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (bool isLegal, bool deliversCheck) PlayMove(ulong move)
     {
         Debug.Assert(Move.IsValid(move));
@@ -1665,7 +1574,7 @@ public sealed class Board
         }
 
         var matches = fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey;
-        if (!matches) _writeMessageLine(ToString(true));
+        if (!matches) _messenger.WriteMessageLine(ToString(true));
 
         return matches;
     }
@@ -1679,12 +1588,7 @@ public sealed class Board
         CurrentPosition.Reset();
         CurrentPosition.PiecesSquaresKey = _piecesSquaresInitialKey;
 
-        if (!preserveMoveCount)
-        {
-            // Reset nodes.
-            Nodes = 0;
-            NodesInfoUpdate = _nodesInfoInterval;
-        }
+        if (!preserveMoveCount) Nodes = 0;
     }
 
 
