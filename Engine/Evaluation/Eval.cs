@@ -632,6 +632,7 @@ public sealed class Eval
 
         if ((pawnCount + enemyPawnCount) > 0) return (pawnCount, enemyPawnCount, false); // Pawns remain on board.
 
+        // TODO: Should IsPawnlessDraw call only IsDrawishEndgame(position, color) and not also IsDrawishEndgame(position, enemyColor)?
         var drawishEndgame = IsDrawishEndgame(position, color) || IsDrawishEndgame(position, enemyColor);
 
         return (pawnCount, enemyPawnCount, drawishEndgame);

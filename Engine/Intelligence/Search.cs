@@ -673,7 +673,7 @@ public sealed class Search : IDisposable
                 (move, moveIndex) = GetNextMove(board.CurrentPosition, Board.AllSquaresMask, depth, bestMove);
                 if (move == Move.Null) break; // All moves have been searched.
             }
-            if (Move.Equals(move, excludedMove)) continue; // Don't search excluded (potentially singular) move.
+            if (Move.Equals(move, excludedMove)) continue; // Do not search excluded (potentially singular) move.
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
@@ -1015,8 +1015,8 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsNullMovePermitted(Position position, int alpha, int beta)
     {
-        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Don't attempt null move when analyzing a principal variation so moves aren't truncated.
-        if ((position.StaticScore < beta) || position.KingInCheck) return false; // Don't attempt null move if static score is weak, nor if king is in check.
+        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Do not attempt null move when analyzing a principal variation so moves aren't truncated.
+        if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;

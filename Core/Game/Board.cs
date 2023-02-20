@@ -1059,7 +1059,7 @@ public sealed class Board
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ulong GetKnightXrayDestinations(Square fromSquare, Color color, Position position) => KnightMoveMasks[(int)fromSquare]; // Knights don't slide.  Nothing to xray.
+    private static ulong GetKnightXrayDestinations(Square fromSquare, Color color, Position position) => KnightMoveMasks[(int)fromSquare]; // Knights do not slide.  Nothing to xray.
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
