@@ -60,17 +60,17 @@ public sealed class Search : IDisposable
     private const int _adjustMoveTimePer128 = 32;
     private const int _haveTimeSearchNextPlyPer128 = 70;
     private const int _nullMoveReduction = 2;
-    private const int _nullStaticScoreReduction = 200;
-    private const int _nullStaticScoreMaxReduction = 4;
+    private const int _nullStaticScoreReduction = 300;
+    private const int _nullStaticScoreMaxReduction = 2;
     private const int _iidReduction = 2;
     private const int _singularMoveMinToHorizon = 7;
     private const int _singularMoveMaxInsufficientDraft = 3;
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 48;
-    private const int _lmrConstPer128 = -64;
-    private const int _quietSearchMaxFromHorizon = 3;
+    private const int _lmrScalePer128 = 32;
+    private const int _lmrConstPer128 = -32;
+    private const int _quietSearchMaxFromHorizon = 8;
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
     private static MoveScoreComparer _moveScoreComparer;
@@ -167,9 +167,9 @@ public sealed class Search : IDisposable
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
 
-        // To Horizon =                   000  001  002  003  004  005  006  007
-        _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50
-        _lateMovePruningMargins = new[] { 999, 004, 007, 012, 019, 028, 039, 052 }; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
+        // To Horizon =                   000  001  002  003  004  005
+        _futilityPruningMargins = new[] { 064, 096, 192, 352, 576, 864 }; // (32 * (toHorizon Pow 2)) + 64
+        _lateMovePruningMargins = new[] { 999, 003, 009, 019, 033, 051 }; // (02 * (toHorizon Pow 2)) + 01... quiet search excluded
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         _lateMoveReductions = GetLateMoveReductions();
 
