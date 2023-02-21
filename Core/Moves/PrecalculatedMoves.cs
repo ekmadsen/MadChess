@@ -222,7 +222,7 @@ public sealed class PrecalculatedMoves
     private static int GetMagicIndex(ulong occupancy, ulong magicMultiplier, int shift) => (int)((occupancy * magicMultiplier) >> shift);
 
 
-    public void FindMagicMultipliers(ColorlessPiece colorlessPiece, Delegates.WriteMessageLine writeMessageLine = null)
+    public void FindMagicMultipliers(ColorlessPiece colorlessPiece, Messenger messenger = null)
     {
         Direction[] directions;
         ulong[] unoccupiedMoveMasks;
@@ -295,7 +295,7 @@ public sealed class PrecalculatedMoves
 
             (magicMultipliers[(int)square], moveMasks[(int)square]) = FindMagicMultiplier(occupancyToMovesMask, shift, knownMagicMultiplier);
 
-            writeMessageLine?.Invoke($"{Board.SquareLocations[(int)square],6}  {PieceHelper.GetName(colorlessPiece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[(int)square],16:X16}");
+            messenger?.WriteMessageLine($"{Board.SquareLocations[(int)square],6}  {PieceHelper.GetName(colorlessPiece),6}  {shift,5}  {occupancyToMovesMask.Count,18}  {uniqueMovesMasks.Count,12}  {magicMultipliers[(int)square],16:X16}");
         }
     }
 

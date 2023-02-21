@@ -8,6 +8,8 @@
 // +---------------------------------------------------------------------------+
 
 
+using System;
+using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
@@ -23,7 +25,8 @@ public sealed class SlidingMoveTests : TestBase
     [Test]
     public void TestBishopOnE7Moves()
     {
-        var board = new Board(WriteMessageLine, long.MaxValue);
+        var messenger = new Messenger(Console.OpenStandardInput(), Console.OpenStandardOutput());
+        var board = new Board(messenger);
         board.SetPosition("rnbq1bnr/ppppkppp/4p3/8/8/BP6/P1PPPPPP/RN1QKBNR b KQ - 0 3");
 
         var unoccupiedMovesMask = Board.BishopMoveMasks[(int)Square.E7];

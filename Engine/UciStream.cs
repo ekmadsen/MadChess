@@ -15,6 +15,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Engine.Heuristics;
@@ -25,7 +26,7 @@ using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
-namespace ErikTheCoder.MadChess.Engine.Uci;
+namespace ErikTheCoder.MadChess.Engine;
 
 
 public sealed class UciStream : IDisposable
@@ -37,6 +38,7 @@ public sealed class UciStream : IDisposable
     private const int _minWinScale = 550;
     private const int _maxWinScale = 650;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(100);
+    private readonly Messenger _messenger; // Lifetime managed by caller.
     private Board _board;
     private Stats _stats;
     private Cache _cache;
@@ -44,66 +46,32 @@ public sealed class UciStream : IDisposable
     private MoveHistory _moveHistory;
     private Eval _eval;
     private Search _search;
-    private bool _debug;
-    private Stopwatch _stopwatch;
     private Stopwatch _commandStopwatch;
     private Queue<List<string>> _asyncQueue;
     private Thread _asyncThread;
     private AutoResetEvent _asyncSignal;
     private object _queueLock;
-    private StreamWriter _logWriter;
-    private object _messageLock;
     private bool _disposed;
 
 
-    private bool Log
+    public UciStream(Messenger messenger)
     {
-        get => _logWriter != null;
+        _messenger = messenger;
 
-
-        set
-        {
-            if (value)
-            {
-                // Start logging.
-                if (_logWriter == null)
-                {
-                    // Create or append to log file.
-                    // Include GUID in log filename to avoid multiple engine instances interleaving lines in a single log file.
-                    var file = $"MadChess-{Guid.NewGuid()}.log";
-                    var fileStream = File.Open(file, FileMode.Append, FileAccess.Write, FileShare.Read);
-
-                    _logWriter = new StreamWriter(fileStream) { AutoFlush = true };
-                }
-            }
-            else
-            {
-                // Stop logging.
-                _logWriter?.Close();
-                _logWriter?.Dispose();
-                _logWriter = null;
-            }
-        }
-    }
-
-    public UciStream()
-    {
         // Create diagnostic and synchronization objects.
-        _stopwatch = Stopwatch.StartNew();
         _commandStopwatch = new Stopwatch();
         _asyncQueue = new Queue<List<string>>();
         _asyncSignal = new AutoResetEvent(false);
         _queueLock = new object();
-        _messageLock = new object();
 
         // Create game objects.
-        _board = new Board(WriteMessageLine, NodesInfoInterval);
+        _board = new Board(_messenger);
         _stats = new Stats();
-        _cache = new Cache(_cacheSizeMegabytes, _stats, _board.ValidateMove);
+        _cache = new Cache(_stats, _cacheSizeMegabytes);
         _killerMoves = new KillerMoves();
         _moveHistory = new MoveHistory();
-        _eval = new Eval(_stats, _board.IsRepeatPosition, () => _debug, WriteMessageLine);
-        _search = new Search(_stats, _cache, _killerMoves, _moveHistory, _eval, () => _debug, DisplayStats, WriteMessageLine);
+        _eval = new Eval(_messenger, _stats);
+        _search = new Search(_messenger, _stats, _cache, _killerMoves, _moveHistory, _eval);
         
         _defaultPlyAndFullMove = new[] { "0", "1" };
         
@@ -138,21 +106,18 @@ public sealed class UciStream : IDisposable
             _moveHistory = null;
             _eval = null;
             _defaultPlyAndFullMove = null;
-            lock (_messageLock) { _stopwatch = null; }
             _commandStopwatch = null;
             lock (_queueLock) { _asyncQueue = null; }
             _asyncThread = null;
             _queueLock = null;
-            _messageLock = null;
         }
 
         // Release unmanaged resources.
         _search?.Dispose();
         _search = null;
-        _logWriter?.Dispose();
-        _logWriter = null;
         _asyncSignal?.Dispose();
         _asyncSignal = null;
+
         _disposed = true;
     }
 
@@ -171,7 +136,7 @@ public sealed class UciStream : IDisposable
 
     public void HandleException(Exception exception)
     {
-        Log = true;
+        _messenger.Log = true;
         var stringBuilder = new StringBuilder();
         var ex = exception;
 
@@ -191,7 +156,7 @@ public sealed class UciStream : IDisposable
 
         } while (ex != null);
 
-        WriteMessageLine(stringBuilder.ToString());
+        _messenger.WriteMessageLine(stringBuilder.ToString());
 
         Quit(-1);
     }
@@ -204,11 +169,8 @@ public sealed class UciStream : IDisposable
             string command;
             do
             {
-                // Read command.
-                command = Console.ReadLine();
-                if (Log) WriteMessageLine(command, CommandDirection.In);
-
-                // Dispatch command.
+                // Read and dispatch command.
+                command = _messenger.ReadLine();
                 DispatchCommand(command);
 
             } while (command != null);
@@ -255,11 +217,11 @@ public sealed class UciStream : IDisposable
                 break;
 
             case "isready":
-                WriteMessageLine("readyok");
+                _messenger.WriteMessageLine("readyok");
                 break;
 
             case "debug":
-                _debug = tokens[1].Equals("on", StringComparison.OrdinalIgnoreCase);
+                _messenger.Debug = tokens[1].Equals("on", StringComparison.OrdinalIgnoreCase);
                 break;
 
             case "setoption":
@@ -288,7 +250,7 @@ public sealed class UciStream : IDisposable
 
             // Extended Commands
             case "showboard":
-                WriteMessageLine(_board.ToString());
+                _messenger.WriteMessageLine(_board.ToString());
                 break;
 
             case "findmagics":
@@ -304,7 +266,7 @@ public sealed class UciStream : IDisposable
                 break;
 
             case "listmoves":
-                ListMoves();
+                ListMoves(_board.CurrentPosition);
                 break;
 
             case "shiftkillermoves":
@@ -316,11 +278,11 @@ public sealed class UciStream : IDisposable
                 break;
 
             case "showevalparams":
-                WriteMessageLine(_eval.ShowParameters());
+                _messenger.WriteMessageLine(_eval.ShowParameters());
                 break;
 
             case "staticscore":
-                WriteMessageLine(_eval.ToString(_board.CurrentPosition));
+                _messenger.WriteMessageLine(_eval.ToString(_board.CurrentPosition));
                 break;
 
             case "testpositions":
@@ -345,11 +307,11 @@ public sealed class UciStream : IDisposable
                 break;
 
             default:
-                WriteMessageLine(tokens[0] + " command not supported.");
+                _messenger.WriteMessageLine(tokens[0] + " command not supported.");
                 break;
         }
 
-        if (writeMessageLine) WriteMessageLine();
+        if (writeMessageLine) _messenger.WriteMessageLine();
     }
 
 
@@ -392,7 +354,7 @@ public sealed class UciStream : IDisposable
                             throw new Exception($"Cannot process {tokens[0]} command on asynchronous thread.");
                     }
 
-                    WriteMessageLine();
+                    _messenger.WriteMessageLine();
                 }
 
             } while (true);
@@ -414,23 +376,22 @@ public sealed class UciStream : IDisposable
 #else
             version = $"{version} x86";
 #endif
-        WriteMessageLine($"id name MadChess {version}");
+        _messenger.WriteMessageLine($"id name MadChess {version}");
 
         // Display author.
-        WriteMessageLine("id author Erik Madsen");
+        _messenger.WriteMessageLine("id author Erik Madsen");
 
         // Display engine options.
-        WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
-        WriteMessageLine("option name Debug type check default false");
-        WriteMessageLine("option name Log type check default false");
-        WriteMessageLine("option name Hash type spin default 128 min 0 max 2048");
-        WriteMessageLine("option name ClearHash type button");
-        WriteMessageLine("option name UCI_AnalyseMode type check default false");
-        WriteMessageLine($"option name MultiPV type spin default 1 min 1 max {Core.Game.Position.MaxMoves}");
-        WriteMessageLine("option name UCI_LimitStrength type check default false");
-        WriteMessageLine($"option name UCI_Elo type spin default {Elo.Min} min {Elo.Min} max {Elo.Max}");
+        _messenger.WriteMessageLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
+        _messenger.WriteMessageLine("option name Log type check default false");
+        _messenger.WriteMessageLine("option name Hash type spin default 128 min 0 max 2048");
+        _messenger.WriteMessageLine("option name ClearHash type button");
+        _messenger.WriteMessageLine("option name UCI_AnalyseMode type check default false");
+        _messenger.WriteMessageLine($"option name MultiPV type spin default 1 min 1 max {Core.Game.Position.MaxMoves}");
+        _messenger.WriteMessageLine("option name UCI_LimitStrength type check default false");
+        _messenger.WriteMessageLine($"option name UCI_Elo type spin default {Elo.Min} min {Elo.Min} max {Elo.Max}");
 
-        WriteMessageLine("uciok");
+        _messenger.WriteMessageLine("uciok");
     }
 
 
@@ -441,12 +402,8 @@ public sealed class UciStream : IDisposable
 
         switch (optionName.ToLower())
         {
-            case "debug":
-                _debug = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
-                break;
-
             case "log":
-                Log = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                _messenger.Log = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                 break;
 
             case "hash":
@@ -492,7 +449,7 @@ public sealed class UciStream : IDisposable
                 break;
 
             default:
-                WriteMessageLine(optionName + " option not supported.");
+                _messenger.WriteMessageLine(optionName + " option not supported.");
                 break;
         }
     }
@@ -561,7 +518,7 @@ public sealed class UciStream : IDisposable
             var move = Move.ParseLongAlgebraic(tokens[moveIndex], _board.CurrentPosition.ColorToMove);
 
             // Verify move is valid.
-            var validMove = _board.ValidateMove(ref move);
+            var validMove = _board.CurrentPosition.ValidateMove(ref move);
             if (!validMove) throw new Exception($"Move {Move.ToLongAlgebraic(move)} is invalid in position {_board.CurrentPosition.ToFen()}.");
 
             // Verify move is legal.
@@ -657,7 +614,7 @@ public sealed class UciStream : IDisposable
     {
         // Find best move and respond.
         var bestMove = _search.FindBestMove(_board);
-        WriteMessageLine($"bestmove {Move.ToLongAlgebraic(bestMove)}");
+        _messenger.WriteMessageLine($"bestmove {Move.ToLongAlgebraic(bestMove)}");
 
         // Signal search has stopped.
         _commandStopwatch.Stop();
@@ -690,13 +647,13 @@ public sealed class UciStream : IDisposable
     // Extended Commands
     private void FindMagicMultipliers()
     {
-        WriteMessageLine("Square   Piece  Shift  Unique Occupancies  Unique Moves  Magic Multiplier");
-        WriteMessageLine("======  ======  =====  ==================  ============  ================");
+        _messenger.WriteMessageLine("Square   Piece  Shift  Unique Occupancies  Unique Moves  Magic Multiplier");
+        _messenger.WriteMessageLine("======  ======  =====  ==================  ============  ================");
 
         // Find magic multipliers for bishop and rook moves.
         // No need to find magic multipliers for queen moves because the queen combines bishop and rook moves.
-        Board.PrecalculatedMoves.FindMagicMultipliers(ColorlessPiece.Bishop, WriteMessageLine);
-        Board.PrecalculatedMoves.FindMagicMultipliers(ColorlessPiece.Rook, WriteMessageLine);
+        Board.PrecalculatedMoves.FindMagicMultipliers(ColorlessPiece.Bishop, _messenger);
+        Board.PrecalculatedMoves.FindMagicMultipliers(ColorlessPiece.Rook, _messenger);
     }
 
 
@@ -708,12 +665,11 @@ public sealed class UciStream : IDisposable
         if (horizon <= 0) throw new ArgumentException("Horizon must be > 0.", nameof(tokens));
 
         _board.Nodes = 0;
-        _board.NodesInfoUpdate = NodesInfoInterval;
 
         var moves = CountMoves(0, horizon);
 
         _commandStopwatch.Stop();
-        WriteMessageLine($"Counted {moves:n0} moves in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds.");
+        _messenger.WriteMessageLine($"Counted {moves:n0} moves in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds.");
     }
 
 
@@ -722,14 +678,14 @@ public sealed class UciStream : IDisposable
         if (depth < 0) throw new ArgumentException($"{nameof(depth)} must be >= 0.", nameof(depth));
         if (horizon < 0) throw new ArgumentException($"{nameof(horizon)} must be >= 0.", nameof(horizon));
 
-        if (_board.Nodes >= _board.NodesInfoUpdate)
+        if (_board.Nodes >= _search.NodesInfoUpdate)
         {
             // Display move count.
             var nodesPerSecond = _board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
-            WriteMessageLine($"Counted {_board.NodesInfoUpdate:n0} nodes ({nodesPerSecond:n0} nodes per second).");
+            _messenger.WriteMessageLine($"Counted {_search.NodesInfoUpdate:n0} nodes ({nodesPerSecond:n0} nodes per second).");
 
             var intervals = (int)(_board.Nodes / NodesInfoInterval);
-            _board.NodesInfoUpdate = NodesInfoInterval * (intervals + 1);
+            _search.NodesInfoUpdate = NodesInfoInterval * (intervals + 1);
         }
 
         // Count moves using staged moved generation (as is done when searching moves).
@@ -771,7 +727,7 @@ public sealed class UciStream : IDisposable
         if (horizon < 1) throw new ArgumentException("Horizon must be >= 1.", nameof(tokens));
 
         _board.Nodes = 0;
-        _board.NodesInfoUpdate = NodesInfoInterval;
+        _search.NodesInfoUpdate = NodesInfoInterval;
 
         // Ensure all root moves are legal.
         _board.CurrentPosition.GenerateMoves();
@@ -806,25 +762,25 @@ public sealed class UciStream : IDisposable
         _commandStopwatch.Stop();
 
         // Display move count for each root move.
-        WriteMessageLine("Root Move    Moves");
-        WriteMessageLine("=========  =======");
+        _messenger.WriteMessageLine("Root Move    Moves");
+        _messenger.WriteMessageLine("=========  =======");
 
         for (var moveIndex = 0; moveIndex < _board.CurrentPosition.MoveIndex; moveIndex++)
         {
             var move = _board.CurrentPosition.Moves[moveIndex];
-            WriteMessageLine($"{Move.ToLongAlgebraic(move),9}  {rootMoves[moveIndex],7}");
+            _messenger.WriteMessageLine($"{Move.ToLongAlgebraic(move),9}  {rootMoves[moveIndex],7}");
         }
 
-        WriteMessageLine();
-        WriteMessageLine($"{legalMoveIndex} legal root moves.");
+        _messenger.WriteMessageLine();
+        _messenger.WriteMessageLine($"{legalMoveIndex} legal root moves.");
     }
 
 
-    private void ListMoves()
+    private void ListMoves(Position position)
     {
         // Get cached position.
         var cachedPosition = _cache[_board.CurrentPosition.Key];
-        var bestMove = _cache.GetBestMove(cachedPosition.Data);
+        var bestMove = _cache.GetBestMove(position, cachedPosition.Data);
 
         // Generate and sort moves.
         _board.CurrentPosition.GenerateMoves();
@@ -832,8 +788,8 @@ public sealed class UciStream : IDisposable
         _search.PrioritizeMoves(_board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
         Search.SortMovesByPriority(_board.CurrentPosition.Moves, lastMoveIndex);
 
-        WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer   History              Priority");
-        WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  ========  ====================");
+        _messenger.WriteMessageLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer   History              Priority");
+        _messenger.WriteMessageLine("====  =====  ====  ==========  ============  =====  ======  ========  ====================");
 
         var stringBuilder = new StringBuilder();
         var legalMoveNumber = 0;
@@ -865,11 +821,11 @@ public sealed class UciStream : IDisposable
 
             stringBuilder.Append(move.ToString().PadLeft(22));
 
-            WriteMessageLine(stringBuilder.ToString());
+            _messenger.WriteMessageLine(stringBuilder.ToString());
         }
 
-        WriteMessageLine();
-        WriteMessageLine($"{legalMoveNumber} legal moves.");
+        _messenger.WriteMessageLine();
+        _messenger.WriteMessageLine($"{legalMoveNumber} legal moves.");
     }
 
 
@@ -879,11 +835,11 @@ public sealed class UciStream : IDisposable
 
         var file = tokens[1].Trim();
 
-        WriteMessageLine("Number                                                                     Position  Depth     Expected        Moves  Correct    Pct");
-        WriteMessageLine("======  ===========================================================================  =====  ===========  ===========  =======  =====");
+        _messenger.WriteMessageLine("Number                                                                     Position  Depth     Expected        Moves  Correct    Pct");
+        _messenger.WriteMessageLine("======  ===========================================================================  =====  ===========  ===========  =======  =====");
 
         _board.Nodes = 0;
-        _board.NodesInfoUpdate = NodesInfoInterval;
+        _search.NodesInfoUpdate = NodesInfoInterval;
         var positions = 0;
         var correctPositions = 0;
 
@@ -907,25 +863,25 @@ public sealed class UciStream : IDisposable
                 _board.SetPosition(fen, true);
 
                 // Count nodes.  Do not display node count.
-                _board.NodesInfoUpdate = long.MaxValue;
+                _search.NodesInfoUpdate = long.MaxValue;
                 var moves = CountMoves(0, horizon);
 
                 var correct = moves == expectedMoves;
                 if (correct) correctPositions++;
                 var correctFraction = (100d * correctPositions) / positions;
 
-                WriteMessageLine($"{positions,6}  {fen,75}  {horizon,5:0}  {expectedMoves,11:n0}  {moves,11:n0}  {correct,7}  {correctFraction,5:0.0}");
+                _messenger.WriteMessageLine($"{positions,6}  {fen,75}  {horizon,5:0}  {expectedMoves,11:n0}  {moves,11:n0}  {correct,7}  {correctFraction,5:0.0}");
             }
         }
 
         _commandStopwatch.Stop();
 
-        WriteMessageLine();
-        WriteMessageLine($"Test completed in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
+        _messenger.WriteMessageLine();
+        _messenger.WriteMessageLine($"Test completed in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
 
         // Display node count.
         var nodesPerSecond = _board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
-        WriteMessageLine($"Counted {_board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
+        _messenger.WriteMessageLine($"Counted {_board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
     }
 
 
@@ -939,14 +895,14 @@ public sealed class UciStream : IDisposable
         var positions = 0;
         var correctPositions = 0;
         _board.Nodes = 0;
-        _board.NodesInfoUpdate = NodesInfoInterval;
+        _search.NodesInfoUpdate = NodesInfoInterval;
         
         _stats.Reset();
 
         using (var reader = File.OpenText(file))
         {
-            WriteMessageLine("Number                                                                     Position  Solution    Expected Moves   Move  Correct    Pct");
-            WriteMessageLine("======  ===========================================================================  ========  ================  =====  =======  =====");
+            _messenger.WriteMessageLine("Number                                                                     Position  Solution    Expected Moves   Move  Correct    Pct");
+            _messenger.WriteMessageLine("======  ===========================================================================  ========  ================  =====  =======  =====");
 
             while (!reader.EndOfStream)
             {
@@ -1019,7 +975,7 @@ public sealed class UciStream : IDisposable
                 }
 
                 // Find best move.  Do not display node count or PV.
-                _board.NodesInfoUpdate = long.MaxValue;
+                _search.NodesInfoUpdate = long.MaxValue;
                 _search.PvInfoUpdate = false;
                 _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
                 _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
@@ -1066,36 +1022,21 @@ public sealed class UciStream : IDisposable
                 var correctFraction = (100d * correctPositions) / positions;
                 var solution = positionSolution == PositionSolution.BestMoves ? "Best" : "Avoid";
 
-                WriteMessageLine($"{positions,6}  {fen,75}  {solution,8}  {string.Join(" ", expectedMovesLongAlgebraic),16}  {Move.ToLongAlgebraic(bestMove),5}  {correct,7}  {correctFraction,5:0.0}");
+                _messenger.WriteMessageLine($"{positions,6}  {fen,75}  {solution,8}  {string.Join(" ", expectedMovesLongAlgebraic),16}  {Move.ToLongAlgebraic(bestMove),5}  {correct,7}  {correctFraction,5:0.0}");
             }
         }
 
         _commandStopwatch.Stop();
 
         // Display score, node count, and stats.
-        WriteMessageLine();
-        WriteMessageLine($"Solved {correctPositions} of {positions} positions in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
+        _messenger.WriteMessageLine();
+        _messenger.WriteMessageLine($"Solved {correctPositions} of {positions} positions in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
 
         var nodesPerSecond = _board.Nodes / _commandStopwatch.Elapsed.TotalSeconds;
-        WriteMessageLine($"Counted {_board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
+        _messenger.WriteMessageLine($"Counted {_board.Nodes:n0} nodes ({nodesPerSecond:n0} nodes per second).");
 
-        WriteMessageLine();
-        DisplayStats();
-    }
-
-
-    private void DisplayStats()
-    {
-        var nullMoveCutoffFraction = (100d * _stats.NullMoveCutoffs) / _stats.NullMoves;
-        var betaCutoffMoveNumber = (double) _stats.BetaCutoffMoveNumber / _stats.MovesCausingBetaCutoff;
-        var betaCutoffFirstMoveFraction = (100d * _stats.BetaCutoffFirstMove) / _stats.MovesCausingBetaCutoff;
-        var cacheHitFraction = (100d * _stats.CacheHits) / _stats.CacheProbes;
-        var scoreCutoffFraction = (100d * _stats.CacheScoreCutoff) / _stats.CacheHits;
-        var bestMoveHitFraction = (100d * _stats.CacheValidBestMove) / _stats.CacheBestMoveProbes;
-
-        WriteMessageLine($"info string Cache Hit = {cacheHitFraction:0.00}% Score Cutoff = {scoreCutoffFraction:0.00}% Best Move Hit = {bestMoveHitFraction:0.00}% Invalid Best Moves = {_stats.CacheInvalidBestMove:n0}");
-        WriteMessageLine($"info string Null Move Cutoffs = {nullMoveCutoffFraction:0.00}% Beta Cutoff Move Number = {betaCutoffMoveNumber:0.00} Beta Cutoff First Move = {betaCutoffFirstMoveFraction:0.00}%");
-        WriteMessageLine($"info string Evals = {_stats.Evaluations:n0}");
+        _messenger.WriteMessageLine();
+        _messenger.WriteMessageLine(_stats.ToString());
     }
 
 
@@ -1109,13 +1050,13 @@ public sealed class UciStream : IDisposable
         var winScale = int.Parse(tokens[4].Trim()); // Use 581 for MadChessGauntlets.pgn.
         var iterations = int.Parse(tokens[5].Trim());
 
-        var particleSwarms = new ParticleSwarms(pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale, DisplayStats, WriteMessageLine);
+        var particleSwarms = new ParticleSwarms(_messenger, pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale);
         particleSwarms.Optimize(iterations);
 
         _commandStopwatch.Stop();
 
-        WriteMessageLine();
-        WriteMessageLine("Tuning complete.");
+        _messenger.WriteMessageLine();
+        _messenger.WriteMessageLine("Tuning complete.");
     }
 
 
@@ -1126,9 +1067,9 @@ public sealed class UciStream : IDisposable
 
         // Load games.
         _commandStopwatch.Restart();
-        WriteMessageLine("Loading games.");
-        var pgnGames = new PgnGames();
-        pgnGames.Load(_board, pgnFilename, WriteMessageLine);
+        _messenger.WriteMessageLine("Loading games.");
+        var pgnGames = new PgnGames(_messenger);
+        pgnGames.Load(_board, pgnFilename);
 
         // Count positions.
         long positions = 0;
@@ -1141,9 +1082,9 @@ public sealed class UciStream : IDisposable
 
         // Display game and position counts.
         var positionsPerSecond = (int)(positions / _commandStopwatch.Elapsed.TotalSeconds);
-        WriteMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
-        WriteMessageLine("Tuning win scale.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {_commandStopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
+        _messenger.WriteMessageLine("Tuning win scale.");
+        _messenger.WriteMessageLine();
 
         // Create game objects.
         var parameters = ParticleSwarms.CreateParameters();
@@ -1154,13 +1095,13 @@ public sealed class UciStream : IDisposable
         {
             var particle = new Particle(pgnGames, parameters);
 
-            var board = new Board(WriteMessageLine, NodesInfoInterval);
+            var board = new Board(_messenger);
             var stats = new Stats();
-            var cache = new Cache(1, stats, board.ValidateMove);
+            var cache = new Cache(stats, 1);
             var killerMoves = new KillerMoves();
             var moveHistory = new MoveHistory();
-            var eval = new Eval(stats, board.IsRepeatPosition, () => false, WriteMessageLine);
-            var search = new Search(stats, cache, killerMoves, moveHistory, eval, () => false, DisplayStats, WriteMessageLine);
+            var eval = new Eval(_messenger, stats);
+            var search = new Search(_messenger, stats, cache, killerMoves, moveHistory, eval);
 
             gameObjects[thread] = (particle, board, search);
         }
@@ -1201,7 +1142,7 @@ public sealed class UciStream : IDisposable
                 var winScale = tasks[thread].Result;
                 var evaluationError = gameObjects[thread].Particle.EvaluationError;
 
-                WriteMessageLine($"Win Scale = {winScale:0000}, Evaluation Error = {evaluationError:0.000}");
+                _messenger.WriteMessageLine($"Win Scale = {winScale:0000}, Evaluation Error = {evaluationError:0.000}");
 
                 if (evaluationError < bestEvaluationError)
                 {
@@ -1214,100 +1155,67 @@ public sealed class UciStream : IDisposable
 
         } while (true);
 
-        WriteMessageLine();
-        WriteMessageLine($"Best win scale = {bestWinScale}.");
+        _messenger.WriteMessageLine();
+        _messenger.WriteMessageLine($"Best win scale = {bestWinScale}.");
 
         _commandStopwatch.Stop();
-        WriteMessageLine($"Completed tuning of win scale in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
+        _messenger.WriteMessageLine($"Completed tuning of win scale in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
     }
 
     
     private void Help()
     {
-        WriteMessageLine("MadChess by Erik Madsen.  See https://www.madchess.net/.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("MadChess by Erik Madsen.  See https://www.madchess.net/.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("In addition to standard UCI commands, MadChess supports the following custom commands.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("In addition to standard UCI commands, MadChess supports the following custom commands.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("showboard                             Display current position.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("showboard                             Display current position.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("findmagics                            Find magic multipliers not already hard-coded into engine.  Not useful without first");
-        WriteMessageLine("                                      removing hard-coded magic multipliers from source code, then recompiling.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("findmagics                            Find magic multipliers not already hard-coded into engine.  Not useful without first");
+        _messenger.WriteMessageLine("                                      removing hard-coded magic multipliers from source code, then recompiling.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("countmoves [depth]                    Count legal moves at depth.   Count only leaf nodes, not internal nodes.");
-        WriteMessageLine("                                      Known by chess programmers as perft.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("countmoves [depth]                    Count legal moves at depth.   Count only leaf nodes, not internal nodes.");
+        _messenger.WriteMessageLine("                                      Known by chess programmers as perft.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("dividemoves [depth]                   Count legal moves following each legal root move.  Count only leaf nodes.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("dividemoves [depth]                   Count legal moves following each legal root move.  Count only leaf nodes.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("listmoves                             List moves in order of priority.  Display history heuristics for each move.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("listmoves                             List moves in order of priority.  Display history heuristics for each move.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("shiftkillermoves [depth]              Shift killer moves deeper by depth.");
-        WriteMessageLine("                                      Useful after go command followed by a position command that includes moves.");
-        WriteMessageLine("                                      Without shifting killer moves, the listmoves command will display incorrect killer values.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("shiftkillermoves [depth]              Shift killer moves deeper by depth.");
+        _messenger.WriteMessageLine("                                      Useful after go command followed by a position command that includes moves.");
+        _messenger.WriteMessageLine("                                      Without shifting killer moves, the listmoves command will display incorrect killer values.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("resetstats                            Set NullMoves, NullMoveCutoffs, MovesCausingBetaCutoff, etc to 0.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("resetstats                            Set NullMoves, NullMoveCutoffs, MovesCausingBetaCutoff, etc to 0.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("showevalparams                        Display evaluation parameters used to calculate static score for a position.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("showevalparams                        Display evaluation parameters used to calculate static score for a position.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("staticscore                           Display evaluation details of current position.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("staticscore                           Display evaluation details of current position.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("testpositions [filename]              Calculate legal moves for positions in file and compare to expected results.");
-        WriteMessageLine("                                      Each line of file must be formatted as [FEN]|[Depth]|[Legal Move Count].");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("testpositions [filename]              Calculate legal moves for positions in file and compare to expected results.");
+        _messenger.WriteMessageLine("                                      Each line of file must be formatted as [FEN]|[Depth]|[Legal Move Count].");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("analyzepositions [filename] [msec]    Search for best move for positions in file and compare to expected results.");
-        WriteMessageLine("                                      File must be in EPD format.  Search of each move is limited to time in milliseconds.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("analyzepositions [filename] [msec]    Search for best move for positions in file and compare to expected results.");
+        _messenger.WriteMessageLine("                                      File must be in EPD format.  Search of each move is limited to time in milliseconds.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("tune [pgn] [ps] [pps] [ws] [i]        Tune evaluation parameters using a particle swarm algorithm.");
-        WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");
-        WriteMessageLine("                                      ws = Win Scale, i = Iterations.");
-        WriteMessageLine();
+        _messenger.WriteMessageLine("tune [pgn] [ps] [pps] [ws] [i]        Tune evaluation parameters using a particle swarm algorithm.");
+        _messenger.WriteMessageLine("                                      pgn = PGN filename, ps = Particle Swarms, pps = Particles Per Swarm.");
+        _messenger.WriteMessageLine("                                      ws = Win Scale, i = Iterations.");
+        _messenger.WriteMessageLine();
 
-        WriteMessageLine("tunewinscale [pgn] [threads]          Compute a scale constant used in the sigmoid function of the tuning algorithm.");
-        WriteMessageLine("                                      The sigmoid function maps evaluation score to expected win fraction.");
-    }
-
-
-    private void WriteMessageLine()
-    {
-        lock (_messageLock)
-        {
-            Console.WriteLine();
-            if (Log) WriteMessageLine(null, CommandDirection.Out);
-        }
-    }
-
-
-    private void WriteMessageLine(string message)
-    {
-        lock (_messageLock)
-        {
-            Console.WriteLine(message);
-            if (Log) WriteMessageLine(message, CommandDirection.Out);
-        }
-    }
-
-
-    private void WriteMessageLine(string message, CommandDirection direction)
-    {
-        lock (_messageLock)
-        {
-            var elapsed = _stopwatch.Elapsed;
-
-            _logWriter.Write($"{elapsed.Hours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}.{elapsed.Milliseconds:000}  ");
-            _logWriter.Write(direction == CommandDirection.In ? " In   " : " Out  ");
-            _logWriter.WriteLine(message);
-        }
+        _messenger.WriteMessageLine("tunewinscale [pgn] [threads]          Compute a scale constant used in the sigmoid function of the tuning algorithm.");
+        _messenger.WriteMessageLine("                                      The sigmoid function maps evaluation score to expected win fraction.");
     }
 }
