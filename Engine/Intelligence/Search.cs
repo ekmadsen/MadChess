@@ -59,18 +59,18 @@ public sealed class Search : IDisposable
     private const int _adjustMoveTimeMinScoreDecrease = 33;
     private const int _adjustMoveTimePer128 = 32;
     private const int _haveTimeSearchNextPlyPer128 = 70;
-    private const int _nullMoveReduction = 2;
-    private const int _nullStaticScoreReduction = 300;
-    private const int _nullStaticScoreMaxReduction = 2;
+    private const int _nullMoveReduction = 3;
+    private const int _nullStaticScoreReduction = 200;
+    private const int _nullStaticScoreMaxReduction = 3;
     private const int _iidReduction = 2;
     private const int _singularMoveMinToHorizon = 7;
     private const int _singularMoveMaxInsufficientDraft = 3;
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 32;
-    private const int _lmrConstPer128 = -32;
-    private const int _quietSearchMaxFromHorizon = 8;
+    private const int _lmrScalePer128 = 40;
+    private const int _lmrConstPer128 = -96;
+    private const int _quietSearchMaxFromHorizon = 3;
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
     private static MoveScoreComparer _moveScoreComparer;
@@ -167,9 +167,9 @@ public sealed class Search : IDisposable
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
 
-        // To Horizon =                   000  001  002  003  004  005
-        _futilityPruningMargins = new[] { 064, 096, 192, 352, 576, 864 }; // (32 * (toHorizon Pow 2)) + 64
-        _lateMovePruningMargins = new[] { 999, 003, 009, 019, 033, 051 }; // (02 * (toHorizon Pow 2)) + 01... quiet search excluded
+        // To Horizon =                   000  001  002  003  004  005  006  007
+        _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50
+        _lateMovePruningMargins = new[] { 999, 004, 007, 012, 019, 028, 039, 052 }; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         _lateMoveReductions = GetLateMoveReductions();
 
@@ -610,7 +610,7 @@ public sealed class Search : IDisposable
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
-        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, depth, horizon, alpha, beta))
+        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, alpha, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -843,11 +843,11 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetQuietScore(Board board, int depth, int horizon, int alpha, int beta) => GetQuietScore(board, depth, horizon, Board.AllSquaresMask, alpha, beta);
+    public int GetQuietScore(Board board, int depth, int horizon, int alpha, int beta) => GetQuietScore(board, depth, horizon, Board.AllSquaresMask, 0, alpha, beta);
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private int GetQuietScore(Board board, int depth, int horizon, ulong toSquareMask, int alpha, int beta)
+    private int GetQuietScore(Board board, int depth, int horizon, ulong toSquareMask, int checksInQuietSearch, int alpha, int beta)
     {
         if ((board.Nodes > NodesExamineTime) || _nodesPerSecond.HasValue)
         {
@@ -879,7 +879,6 @@ public sealed class Search : IDisposable
         }
 
         // Search for a quiet position where no captures are possible.
-        var fromHorizon = depth - horizon;
         _selectiveHorizon = FastMath.Max(depth, _selectiveHorizon);
         bool drawnEndgame;
         int phase;
@@ -889,6 +888,7 @@ public sealed class Search : IDisposable
         if (board.CurrentPosition.KingInCheck)
         {
             // King is in check.  Search all moves.
+            checksInQuietSearch++;
             getNextMove = _getNextMove;
             moveGenerationToSquareMask = Board.AllSquaresMask;
             board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score because no moves are futile when king is in check.
@@ -899,7 +899,8 @@ public sealed class Search : IDisposable
         {
             // King is not in check.  Search only captures.
             getNextMove = _getNextCapture;
-            if ((fromHorizon > _quietSearchMaxFromHorizon) && !board.PreviousPosition.KingInCheck)
+            var fromHorizonExcludingChecks = depth - horizon - checksInQuietSearch;
+            if ((fromHorizonExcludingChecks > _quietSearchMaxFromHorizon) && !board.PreviousPosition.KingInCheck)
             {
                 var lastMoveToSquare = Move.To(board.PreviousPosition.PlayedMove);
                 moveGenerationToSquareMask = lastMoveToSquare == Square.Illegal
@@ -945,7 +946,7 @@ public sealed class Search : IDisposable
             Move.SetPlayed(ref move, true);
             board.PreviousPosition.Moves[moveIndex] = move;
 
-            var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, -beta, -alpha);
+            var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, checksInQuietSearch, - beta, -alpha);
             board.UndoMove();
 
             if (FastMath.Abs(score) == SpecialScore.Interrupted) return score; // Stop searching.
@@ -1013,12 +1014,10 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsNullMovePermitted(Position position, int depth, int horizon, int alpha, int beta)
+    private bool IsNullMovePermitted(Position position, int alpha, int beta)
     {
-        if ((horizon - depth) == 1) return false; // Prevent dropping into quiet search.
-        if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
         if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Do not attempt null move when analyzing a principal variation so moves aren't truncated.
-
+        if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
@@ -1028,13 +1027,10 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
-        var staticScoreReduction = FastMath.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
-        var maxReduction = horizon - depth - 1; // Prevent dropping into quiet search.
-        var reduction = FastMath.Min(_nullMoveReduction + staticScoreReduction, maxReduction);
+        var reduction = _nullMoveReduction + Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
 
         board.PlayNullMove();
-        // Do not play two null moves consecutively.  Search with zero alpha / beta window.
-        var score = -GetDynamicScore(board, depth + 1, horizon - reduction, false, -beta, -beta + 1);
+        var score = -GetDynamicScore(board, depth + 1, horizon - reduction, false, -beta, -beta + 1);  // Do not play two null moves consecutively.
         board.UndoMove();
 
         return score >= beta;
@@ -1188,14 +1184,11 @@ public sealed class Search : IDisposable
             return horizon + 1;
         }
 
-        var toHorizon = horizon - depth;
-        if (toHorizon == 1) return horizon; // Prevent dropping into quiet search.
-
         if ((depth == 0) && (legalMoveNumber <= MultiPv)) return horizon; // Do not reduce Multi-PV root move.
         if (Move.CaptureVictim(move) != Piece.None) return horizon; // Do not reduce capture.
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
         if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return horizon; // Do not reduce killer move, pawn promotion, or castling.
-        
+
         if (Move.IsPawnMove(move))
         {
             var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
@@ -1203,13 +1196,11 @@ public sealed class Search : IDisposable
         }
 
         if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
-        
+
         // Reduce search horizon of late move.
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
-        var toHorizonIndex = FastMath.Min(toHorizon, _lmrMaxIndex);
-        var maxReduction = toHorizon - 1; // Prevent dropping into quiet search. 
-        var reduction = FastMath.Min(_lateMoveReductions[quietMoveIndex][toHorizonIndex], maxReduction);
-        return horizon - reduction;
+        var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
+        return horizon - _lateMoveReductions[quietMoveIndex][toHorizonIndex];
     }
 
 
