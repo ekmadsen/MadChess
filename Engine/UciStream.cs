@@ -813,7 +813,7 @@ public sealed class UciStream : IDisposable
             stringBuilder.Append(PieceHelper.GetName(Move.CaptureVictim(move)).PadLeft(12));
             stringBuilder.Append(PieceHelper.GetName(Move.CaptureAttacker(move)).PadLeft(14));
 
-            var promotedPiece = Move.PromotedPiece(move) == Piece.None ? string.Empty : PieceHelper.GetName(Move.PromotedPiece(move));
+            var promotedPiece = PieceHelper.GetName(Move.PromotedPiece(move));
             stringBuilder.Append(promotedPiece.PadLeft(7));
 
             stringBuilder.Append(Move.Killer(move).ToString().PadLeft(8));

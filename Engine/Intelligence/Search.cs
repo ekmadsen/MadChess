@@ -682,7 +682,7 @@ public sealed class Search : IDisposable
             // +---------------------------------------------------------------------------+
 
             if (Move.IsQuiet(move)) quietMoveNumber++;
-            var futileMove = IsMoveFutile(board.CurrentPosition, depth, horizon, move, quietMoveNumber, drawnEndgame, phase, alpha, beta);
+            var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, horizon, move, quietMoveNumber, drawnEndgame, phase, alpha, beta);
             var searchHorizon = GetSearchHorizon(board, depth, horizon, move, cachedPosition, legalMoveNumber, quietMoveNumber, drawnEndgame);
             
             // Play move.
@@ -880,7 +880,6 @@ public sealed class Search : IDisposable
 
         // Search for a quiet position where no captures are possible.
         _selectiveHorizon = FastMath.Max(depth, _selectiveHorizon);
-        bool drawnEndgame;
         int phase;
         GetNextMove getNextMove;
         ulong moveGenerationToSquareMask;
@@ -892,7 +891,6 @@ public sealed class Search : IDisposable
             getNextMove = _getNextMove;
             moveGenerationToSquareMask = Board.AllSquaresMask;
             board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score because no moves are futile when king is in check.
-            drawnEndgame = false;
             phase = Eval.DetermineGamePhase(board.CurrentPosition);
         }
         else
@@ -908,7 +906,7 @@ public sealed class Search : IDisposable
                     : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
             }
             else moveGenerationToSquareMask = toSquareMask;
-            (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _eval.GetStaticScore(board.CurrentPosition);
+            (board.CurrentPosition.StaticScore, _, phase) = _eval.GetStaticScore(board.CurrentPosition);
             if (board.CurrentPosition.StaticScore >= beta) return beta; // Prevent worsening of position by making a bad capture.  Stand pat.
             alpha = FastMath.Max(board.CurrentPosition.StaticScore, alpha);
         }
@@ -923,7 +921,7 @@ public sealed class Search : IDisposable
             var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
 
-            var futileMove = IsMoveFutile(board.CurrentPosition, depth, horizon, move, 0, drawnEndgame, phase, alpha, beta);
+            var futileMove = IsMoveInQuietSearchFutile(board.CurrentPosition, move, phase, alpha);
             
             // Play and search move.
             var (legalMove, checkingMove) = board.PlayMove(move);
@@ -1008,8 +1006,7 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
         
         // Determine if any move can lower score to beta.
-        var futilityPruningMargin = toHorizon <= 0 ? _futilityPruningMargins[0] : _futilityPruningMargins[toHorizon];
-        return position.StaticScore - futilityPruningMargin > beta;
+        return position.StaticScore - _futilityPruningMargins[toHorizon] > beta;
     }
 
 
@@ -1111,7 +1108,7 @@ public sealed class Search : IDisposable
                 var moveIndex = position.CurrentMoveIndex;
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
-                if (Move.CaptureVictim(move) == Piece.None) continue;
+                Debug.Assert(Move.CaptureVictim(move) != Piece.None);
                 return (move, moveIndex);
             }
 
@@ -1137,19 +1134,18 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private bool IsMoveFutile(Position position, int depth, int horizon, ulong move, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsMoveInDynamicSearchFutile(Position position, int depth, int horizon, ulong move, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         var toHorizon = horizon - depth;
 
+        if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
+        if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return false; // Killer move or castling is not futile.
         if ((FastMath.Abs(alpha) >= SpecialScore.Checkmate) || (FastMath.Abs(beta) >= SpecialScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
-        var captureVictim = Move.CaptureVictim(move);
-        if ((captureVictim != Piece.None) && (toHorizon > 0)) return false; // Capture in main search is not futile.
-        if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return false; // Killer move, pawn promotion, or castling is not futile.
-        
+
         if (Move.IsPawnMove(move))
         {
             var rank = Board.Ranks[(int)position.ColorToMove][(int)Move.To(move)];
@@ -1161,18 +1157,39 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
 
         // Determine if quiet move is too late to be worth searching.
-        var lateMoveNumber = toHorizon <= 0 ? _lateMovePruningMargins[0] : _lateMovePruningMargins[toHorizon];
-        if (Move.IsQuiet(move) && (quietMoveNumber >= lateMoveNumber)) return true; 
-        
-        // Determine if move can raise score to alpha.
-        var materialImprovement = captureVictim == Piece.None ? 0 : _eval.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
+        if (quietMoveNumber >= _lateMovePruningMargins[toHorizon]) return true;
+
+        // No material improvement is possible because captures are not futile.
+        // Determine if static score is within futility margin of alpha.
+        // Avoid costly calculation of location improvement unless necessary.
+        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[toHorizon];
+        if (improvedStaticScore >= alpha) return false;
+
+        // Determine if location improvement raises score to within futility margin of alpha.
         var locationImprovement = _eval.GetPieceLocationImprovement(move, phase);
-        var futilityPruningMargin = toHorizon <= 0 ? _futilityPruningMargins[0] : _futilityPruningMargins[toHorizon];
-        return position.StaticScore + materialImprovement + locationImprovement + futilityPruningMargin < alpha;
+        return (improvedStaticScore + locationImprovement) < alpha;
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsMoveInQuietSearchFutile(Position position, ulong move, int phase, int alpha)
+    {
+        if (position.KingInCheck) return false; // Move when king is in check is not futile.
+
+        // Determine if material improvement raises score to within futility margin of alpha.
+        // Avoid costly calculation of location improvement unless necessary.
+        var captureVictim = Move.CaptureVictim(move);
+        var materialImprovement = _eval.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
+        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[0] + materialImprovement;
+        if (improvedStaticScore >= alpha) return false;
+
+        // Determine if material and location improvements raise score to within futility margin of alpha.
+        var locationImprovement = _eval.GetPieceLocationImprovement(move, phase);
+        return (improvedStaticScore + locationImprovement) < alpha;
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, CachedPosition cachedPosition, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
     {
         if (Move.IsBest(move) && IsBestMoveSingular(board, depth, horizon, move, cachedPosition))
@@ -1184,18 +1201,16 @@ public sealed class Search : IDisposable
             return horizon + 1;
         }
 
+        if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
         if ((depth == 0) && (legalMoveNumber <= MultiPv)) return horizon; // Do not reduce Multi-PV root move.
-        if (Move.CaptureVictim(move) != Piece.None) return horizon; // Do not reduce capture.
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
-        if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return horizon; // Do not reduce killer move, pawn promotion, or castling.
+        if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return horizon; // Do not reduce killer move or castling.
 
         if (Move.IsPawnMove(move))
         {
             var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
             if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
         }
-
-        if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
 
         // Reduce search horizon of late move.
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
