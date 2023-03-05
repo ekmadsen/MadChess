@@ -60,15 +60,15 @@ public sealed class Search : IDisposable
     private const int _adjustMoveTimePer128 = 32;
     private const int _haveTimeSearchNextPlyPer128 = 70;
     private const int _nullMoveReduction = 3;
-    private const int _nullStaticScoreReduction = 200;
-    private const int _nullStaticScoreMaxReduction = 3;
+    private const int _nullStaticScoreReduction = 180;
+    private const int _nullStaticScoreMaxReduction = 5;
     private const int _iidReduction = 2;
     private const int _singularMoveMinToHorizon = 7;
     private const int _singularMoveMaxInsufficientDraft = 3;
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 44;
+    private const int _lmrScalePer128 = 40;
     private const int _lmrConstPer128 = -96;
     private const int _quietSearchMaxFromHorizon = 3;
     private static MovePriorityComparer _movePriorityComparer;
@@ -167,9 +167,9 @@ public sealed class Search : IDisposable
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
 
-        // To Horizon =                   000  001  002  003  004  005  006  007
-        _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50
-        _lateMovePruningMargins = new[] { 999, 004, 007, 012, 019, 028, 039, 052 }; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
+        // To Horizon =                   000  001  002  003  004  005  006  007  008
+        _futilityPruningMargins = new[] { 050, 062, 098, 158, 242, 350, 482, 638, 818 }; // (12.00 * (toHorizon Pow 2)) + 50
+        _lateMovePruningMargins = new[] { 999, 003, 006, 010, 015, 023, 031, 042, 054 }; // (00.80 * (toHorizon Pow 2)) + 03... quiet search excluded
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         _lateMoveReductions = GetLateMoveReductions();
 
@@ -606,7 +606,7 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |                       Search Step 3: Null Move                            |
+        // |          Search Step 3: Null Move & Internal Iterative Deepening          |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
@@ -802,23 +802,19 @@ public sealed class Search : IDisposable
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
-            if (depth == 0)
+            if ((depth == 0) && (MultiPv > 1))
             {
-                // Searching root moves.
-                if (MultiPv > 1)
+                // Searching root moves for multiple principal variations.
+                var multiPvIndex = legalMoveNumber - 1;
+                _multiPvMoves[multiPvIndex] = _rootMoves[multiPvIndex];
+                if (legalMoveNumber >= MultiPv)
                 {
-                    // Searching multiple principal variations.
-                    var multiPvIndex = legalMoveNumber - 1;
-                    _multiPvMoves[multiPvIndex] = _rootMoves[multiPvIndex];
-                    if (legalMoveNumber >= MultiPv)
-                    {
-                        // Determine worst score among multiple principal variations.
-                        // For example: If MultiPV = 4 and legalMoveNumber = 8, find the 4th best move among the 8 moves searched.
-                        SortMovesByScore(_multiPvMoves, multiPvIndex);
-                        var worstPvScore = _multiPvMoves[MultiPv - 1].Score;
-                        // Raise alpha because MultiPV best moves have been found.
-                        alpha = worstPvScore;
-                    }
+                    // Determine worst score among multiple principal variations.
+                    // For example: If MultiPV = 4 and legalMoveNumber = 8, find the 4th best move among the 8 moves searched.
+                    SortMovesByScore(_multiPvMoves, multiPvIndex);
+                    var worstPvScore = _multiPvMoves[MultiPv - 1].Score;
+                    // Raise alpha because MultiPV best moves have been found.
+                    alpha = worstPvScore;
                 }
             }
 
@@ -922,7 +918,7 @@ public sealed class Search : IDisposable
             if (move == Move.Null) break; // All moves have been searched.
 
             var futileMove = IsMoveInQuietSearchFutile(board.CurrentPosition, move, phase, alpha);
-            
+
             // Play and search move.
             var (legalMove, checkingMove) = board.PlayMove(move);
             if (!legalMove)
@@ -933,7 +929,7 @@ public sealed class Search : IDisposable
             }
 
             legalMoveNumber++;
-            
+
             if ((legalMoveNumber > 1) && futileMove && !checkingMove)
             {
                 // Skip futile move that doesn't deliver check.
@@ -1160,16 +1156,12 @@ public sealed class Search : IDisposable
         if (quietMoveNumber >= _lateMovePruningMargins[toHorizon]) return true;
 
         // No material improvement is possible because captures are not futile.
-        // Determine if static score is within futility margin of alpha.
-        // Avoid costly calculation of location improvement unless necessary.
-        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[toHorizon];
-        if (improvedStaticScore >= alpha) return false;
-
-        // Determine if location improvement raises score to within futility margin of alpha.
+        // Determine if improved static score is within futility margin of alpha.
         var locationImprovement = _eval.GetPieceLocationImprovement(move, phase);
-        return (improvedStaticScore + locationImprovement) < alpha;
+        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[toHorizon] + locationImprovement;
+        
+        return improvedStaticScore < alpha;
     }
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMoveInQuietSearchFutile(Position position, ulong move, int phase, int alpha)

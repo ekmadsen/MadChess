@@ -235,6 +235,7 @@ public sealed class UciStream : IDisposable
             case "position":
                 Position(tokens);
                 break;
+
             case "go":
                 GoSync(tokens);
                 writeMessageLine = false;
@@ -532,8 +533,6 @@ public sealed class UciStream : IDisposable
 
     private void GoSync(List<string> tokens)
     {
-        _commandStopwatch.Restart();
-
         // Reset stats and search and shift killer moves.
         _stats.Reset();
         _search.Reset();
@@ -617,7 +616,6 @@ public sealed class UciStream : IDisposable
         _messenger.WriteMessageLine($"bestmove {Move.ToLongAlgebraic(bestMove)}");
 
         // Signal search has stopped.
-        _commandStopwatch.Stop();
         _search.Signal.Set();
 
         // Collect memory from unreferenced objects in generations 0 and 1.
@@ -758,8 +756,6 @@ public sealed class UciStream : IDisposable
             rootMoves[moveIndex] = horizon == 1 ? 1 : CountMoves(1, horizon);
             _board.UndoMove();
         }
-
-        _commandStopwatch.Stop();
 
         // Display move count for each root move.
         _messenger.WriteMessageLine("Root Move    Moves");
@@ -1042,7 +1038,6 @@ public sealed class UciStream : IDisposable
 
     private void Tune(IList<string> tokens)
     {
-        _commandStopwatch.Restart();
 
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
@@ -1052,8 +1047,6 @@ public sealed class UciStream : IDisposable
 
         var particleSwarms = new ParticleSwarms(_messenger, pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale);
         particleSwarms.Optimize(iterations);
-
-        _commandStopwatch.Stop();
 
         _messenger.WriteMessageLine();
         _messenger.WriteMessageLine("Tuning complete.");
