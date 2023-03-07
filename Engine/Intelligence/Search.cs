@@ -61,7 +61,7 @@ public sealed class Search : IDisposable
     private const int _haveTimeSearchNextPlyPer128 = 70;
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 180;
-    private const int _nullStaticScoreMaxReduction = 5;
+    private const int _nullStaticScoreMaxReduction = 3;
     private const int _iidReduction = 2;
     private const int _singularMoveMinToHorizon = 7;
     private const int _singularMoveMaxInsufficientDraft = 3;
@@ -1156,11 +1156,14 @@ public sealed class Search : IDisposable
         if (quietMoveNumber >= _lateMovePruningMargins[toHorizon]) return true;
 
         // No material improvement is possible because captures are not futile.
-        // Determine if improved static score is within futility margin of alpha.
+        // Determine if static score is within futility margin of alpha.
+        // Avoid costly calculation of location improvement unless necessary.
+        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[toHorizon];
+        if (improvedStaticScore >= alpha) return false;
+
+        // Determine if location improvement raises score to within futility margin of alpha.
         var locationImprovement = _eval.GetPieceLocationImprovement(move, phase);
-        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[toHorizon] + locationImprovement;
-        
-        return improvedStaticScore < alpha;
+        return (improvedStaticScore + locationImprovement) < alpha;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
