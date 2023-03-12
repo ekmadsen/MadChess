@@ -491,30 +491,32 @@ public sealed class Eval
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public (int StaticScore, bool DrawnEndgame, int phase) GetStaticScore(Position position)
+    public (int StaticScore, bool DrawnEndgame, int Phase) GetStaticScore(Position position)
     {
         // TODO: Handicap knowledge of checkmates and endgames when in limited strength mode.
+        // TODO: Evaluate space.  Perhaps squares attacked by more of own pieces than enemy pieces?  Or squares behind own pawns not occupied by enemy pieces?
+        // TODO: Evaluate rooks on open files.
         Debug.Assert(!position.KingInCheck);
 
         _stats.Evaluations++;
         Reset();
 
+        _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
         var phase = DetermineGamePhase(position);
 
+        // Determine if position is a pawnless draw or simple endgame.
+        if (IsPawnlessDraw(position, Color.White) || IsPawnlessDraw(position, Color.Black)) return (0, true, phase);
         if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position, Color.Black))
         {
-            // Position is a simple endgame.
-            return _staticScore.EgScalePer128 == 0
-                ? (0, true, phase) // Drawn Endgame
-                : (_staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved), false, phase);
+            // Simple Endgame
+            var drawnEndgame = _staticScore.EgScalePer128 == 0;
+            var staticScore = drawnEndgame
+                ? 0
+                : _staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved);
+            return (staticScore, drawnEndgame, phase);
         }
 
-        // Position is not a simple endgame.
-        _staticScore.PlySinceCaptureOrPawnMove = position.PlySinceCaptureOrPawnMove;
-
-        // TODO: Evaluate space.  Perhaps squares attacked by more of own pieces than enemy pieces?  Or squares behind own pawns not occupied by enemy pieces?
-        // TODO: Evaluate rooks on open files.
-
+        // Position is not a pawnless draw or simple endgame.
         // Explicit array lookups are faster than looping through colors.
         EvaluateMaterial(position, Color.White);
         EvaluateMaterial(position, Color.Black);
@@ -557,19 +559,80 @@ public sealed class Eval
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private static bool IsPawnlessDraw(Position position, Color color)
+    {
+        var enemyColor = 1 - color;
+        var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
+        var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));
+        if ((pawnCount + enemyPawnCount) > 0) return false;
+
+        // Consider material combinations excluding pawns.
+        var knightCount = Bitwise.CountSetBits(position.GetKnights(color));
+        var bishopCount = Bitwise.CountSetBits(position.GetBishops(color));
+        var rookCount = Bitwise.CountSetBits(position.GetRooks(color));
+        var queenCount = Bitwise.CountSetBits(position.GetQueens(color));
+
+        var minorPieceCount = knightCount + bishopCount;
+        var majorPieceCount = rookCount + queenCount;
+
+        var enemyKnightCount = Bitwise.CountSetBits(position.GetKnights(enemyColor));
+        var enemyBishopCount = Bitwise.CountSetBits(position.GetBishops(enemyColor));
+        var enemyRookCount = Bitwise.CountSetBits(position.GetRooks(enemyColor));
+        var enemyQueenCount = Bitwise.CountSetBits(position.GetQueens(enemyColor));
+
+        var enemyMinorPieceCount = enemyKnightCount + enemyBishopCount;
+        var enemyMajorPieceCount = enemyRookCount + enemyQueenCount;
+
+        var totalMajorPieces = majorPieceCount + enemyMajorPieceCount;
+
+        switch (totalMajorPieces)
+        {
+            case 0:
+                if ((knightCount == 2) && (minorPieceCount == 2) && (enemyMinorPieceCount <= 1)) return true; // 2N vrs <= 1 Minor
+                break;
+
+            case 1:
+                if ((queenCount == 1) && (minorPieceCount == 0))
+                {
+                    if ((enemyBishopCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2B
+                    if ((enemyKnightCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2N
+                }
+
+                if ((rookCount == 1) && (minorPieceCount == 0) && (enemyMinorPieceCount == 1)) return true; // R vrs Minor
+                break;
+
+            case 2:
+                if ((queenCount == 1) && (minorPieceCount == 0))
+                {
+                    if ((enemyQueenCount == 1) && (enemyMinorPieceCount == 0)) return true; // Q vrs Q
+                    if ((enemyRookCount == 1) && (enemyMinorPieceCount == 1)) return true; // Q vrs R + Minor
+                }
+
+                if ((rookCount == 1) && (minorPieceCount == 0) && (enemyRookCount == 1) && (enemyMinorPieceCount <= 1)) return true; // R vrs R + <= 1 Minor
+                break;
+
+            case 3:
+                if ((queenCount == 1) && (minorPieceCount == 0) && (enemyRookCount == 2) && (enemyMinorPieceCount == 0)) return true; // Q vrs 2R
+                if ((rookCount == 2) & (minorPieceCount == 0) && (enemyRookCount == 1) && (enemyMinorPieceCount == 1)) return true; // 2R vrs R + Minor
+                break;
+
+            case 4:
+                if ((rookCount == 2) && (minorPieceCount == 0) && (enemyRookCount == 2) && (enemyMinorPieceCount == 0)) return true; // 2R vrs 2R
+                break;
+        }
+
+        return false;
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool EvaluateSimpleEndgame(Position position, Color color)
     {
         // TODO: Add detection of unwinnable KBPk endgame, where enemy king prevents pawn from promoting, and bishop is wrong color.
-        var (pawnCount, enemyPawnCount, pawnlessDraw) = IsPawnlessDraw(position, color);
-
-        if (pawnlessDraw)
-        {
-            // Game is pawnless draw.
-            _staticScore.EgScalePer128 = 0;
-            return true;
-        }
 
         var enemyColor = 1 - color;
+        var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
+        var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));
 
         var minorPieceCount = Bitwise.CountSetBits(position.GetMinorPieces(color));
         var majorPieceCount = Bitwise.CountSetBits(position.GetMajorPieces(color));
@@ -618,87 +681,6 @@ public sealed class Eval
         }
 
         // Use regular evaluation.
-        return false;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static (int pawnCount, int enemyPawnCount, bool pawnlessDraw) IsPawnlessDraw(Position position, Color color)
-    {
-        var enemyColor = 1 - color;
-
-        var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
-        var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));
-
-        if ((pawnCount + enemyPawnCount) > 0) return (pawnCount, enemyPawnCount, false); // Pawns remain on board.
-
-        // TODO: Should IsPawnlessDraw call only IsDrawishEndgame(position, color) and not also IsDrawishEndgame(position, enemyColor)?
-        var drawishEndgame = IsDrawishEndgame(position, color) || IsDrawishEndgame(position, enemyColor);
-
-        return (pawnCount, enemyPawnCount, drawishEndgame);
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private static bool IsDrawishEndgame(Position position, Color color)
-    {
-        // Consider material combinations excluding pawns.
-        var knightCount = Bitwise.CountSetBits(position.GetKnights(color));
-        var bishopCount = Bitwise.CountSetBits(position.GetBishops(color));
-        var rookCount = Bitwise.CountSetBits(position.GetRooks(color));
-        var queenCount = Bitwise.CountSetBits(position.GetQueens(color));
-
-        var minorPieceCount = knightCount + bishopCount;
-        var majorPieceCount = rookCount + queenCount;
-
-        var enemyColor = 1 - color;
-
-        var enemyKnightCount = Bitwise.CountSetBits(position.GetKnights(enemyColor));
-        var enemyBishopCount = Bitwise.CountSetBits(position.GetBishops(enemyColor));
-        var enemyRookCount = Bitwise.CountSetBits(position.GetRooks(enemyColor));
-        var enemyQueenCount = Bitwise.CountSetBits(position.GetQueens(enemyColor));
-
-        var enemyMinorPieceCount = enemyKnightCount + enemyBishopCount;
-        var enemyMajorPieceCount = enemyRookCount + enemyQueenCount;
-
-        var totalMajorPieces = majorPieceCount + enemyMajorPieceCount;
-
-        switch (totalMajorPieces)
-        {
-            case 0:
-                if ((knightCount == 2) && (minorPieceCount == 2) && (enemyMinorPieceCount <= 1)) return true; // 2N vrs <= 1 Minor
-                break;
-
-            case 1:
-                if ((queenCount == 1) && (minorPieceCount == 0))
-                {
-                    if ((enemyBishopCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2B
-                    if ((enemyKnightCount == 2) && (enemyMinorPieceCount == 2)) return true; // Q vrs 2N
-                }
-
-                if ((rookCount == 1) && (minorPieceCount == 0) && (enemyMinorPieceCount == 1)) return true; // R vrs Minor
-                break;
-
-            case 2:
-                if ((queenCount == 1) && (minorPieceCount == 0))
-                {
-                    if ((enemyQueenCount == 1) && (enemyMinorPieceCount == 0)) return true; // Q vrs Q
-                    if ((enemyRookCount == 1) && (enemyMinorPieceCount == 1)) return true; // Q vrs R + Minor
-                }
-
-                if ((rookCount == 1) && (minorPieceCount == 0) && (enemyRookCount == 1) && (enemyMinorPieceCount <= 1)) return true; // R vrs R + <= 1 Minor
-                break;
-
-            case 3:
-                if ((queenCount == 1) && (minorPieceCount == 0) && (enemyRookCount == 2) && (enemyMinorPieceCount == 0)) return true; // Q vrs 2R
-                if ((rookCount == 2) & (minorPieceCount == 0) && (enemyRookCount == 1) && (enemyMinorPieceCount == 1)) return true; // 2R vrs R + Minor
-                break;
-
-            case 4:
-                if ((rookCount == 2) && (minorPieceCount == 0) && (enemyRookCount == 2) && (enemyMinorPieceCount == 0)) return true; // 2R vrs 2R
-                break;
-        }
-
         return false;
     }
 
