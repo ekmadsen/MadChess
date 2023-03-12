@@ -74,7 +74,8 @@ public sealed class Search : IDisposable
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
     private static MoveScoreComparer _moveScoreComparer;
-    private static int[] _futilityPruningMargins;
+    private static int[] _mgFutilityPruningMargins;
+    private static int[] _egFutilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
     private readonly Messenger _messenger; // Lifetime managed by caller.
     private int[] _lateMovePruningMargins;
@@ -167,10 +168,12 @@ public sealed class Search : IDisposable
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
 
-        // To Horizon =                   000  001  002  003  004  005  006  007  008
-        _futilityPruningMargins = new[] { 050, 062, 098, 158, 242, 350, 482, 638, 818 }; // (12.00 * (toHorizon Pow 2)) + 50
-        _lateMovePruningMargins = new[] { 999, 003, 006, 010, 015, 023, 031, 042, 054 }; // (00.80 * (toHorizon Pow 2)) + 03... quiet search excluded
-        Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
+        // To Horizon =                     000  001  002  003  004  005  006  007  0008
+        _mgFutilityPruningMargins = new[] { 050, 062, 098, 158, 242, 350, 482, 638, 0818 }; // (12.00 * (toHorizon Pow 2)) + 50
+        _egFutilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834, 1074 }; // (16.00 * (toHorizon Pow 2)) + 50
+        _lateMovePruningMargins =   new[] { 999, 003, 006, 010, 015, 023, 031, 042, 0054 }; // (00.80 * (toHorizon Pow 2)) + 03... quiet search excluded
+        Debug.Assert(_mgFutilityPruningMargins.Length == _lateMovePruningMargins.Length);
+        Debug.Assert(_egFutilityPruningMargins.Length == _lateMovePruningMargins.Length);
         _lateMoveReductions = GetLateMoveReductions();
 
         // Create scored move and principal variation arrays.
@@ -227,7 +230,8 @@ public sealed class Search : IDisposable
             _movePriorityComparer = null;
             _scoredMovePriorityComparer = null;
             _moveScoreComparer = null;
-            _futilityPruningMargins = null;
+            _mgFutilityPruningMargins = null;
+            _egFutilityPruningMargins = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
             _rootMoves = null;
@@ -596,7 +600,7 @@ public sealed class Search : IDisposable
         else (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _eval.GetStaticScore(board.CurrentPosition);
         
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
-        if (IsPositionFutile(board.CurrentPosition, depth, horizon, drawnEndgame, alpha, beta))
+        if (IsPositionFutile(board.CurrentPosition, depth, horizon, drawnEndgame, phase, alpha, beta))
         {
             // Position is futile.
             // Position is not the result of best play by both players.
@@ -990,10 +994,10 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsPositionFutile(Position position, int depth, int horizon, bool isDrawnEndgame, int alpha, int beta)
+    private static bool IsPositionFutile(Position position, int depth, int horizon, bool isDrawnEndgame, int phase, int alpha, int beta)
     {
         var toHorizon = horizon - depth;
-        if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root position or position far from search horizon is not futile.
+        if ((depth == 0) || (toHorizon >= _mgFutilityPruningMargins.Length)) return false; // Root position or position far from search horizon is not futile.
         if (isDrawnEndgame || position.KingInCheck) return false; // Position in drawn endgame or when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= SpecialScore.Checkmate) || (FastMath.Abs(beta) >= SpecialScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
         
@@ -1002,7 +1006,8 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
         
         // Determine if any move can lower score to beta.
-        return position.StaticScore - _futilityPruningMargins[toHorizon] > beta;
+        var futilityPruningMargin = StaticScore.GetTaperedScore(_mgFutilityPruningMargins[toHorizon], _egFutilityPruningMargins[toHorizon], phase);
+        return position.StaticScore - futilityPruningMargin > beta;
     }
 
 
@@ -1133,11 +1138,11 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMoveInDynamicSearchFutile(Position position, int depth, int horizon, ulong move, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
-        Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
+        Debug.Assert(_mgFutilityPruningMargins.Length == _lateMovePruningMargins.Length);
         var toHorizon = horizon - depth;
 
         if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
-        if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
+        if ((depth == 0) || (toHorizon >= _mgFutilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
         if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return false; // Killer move or castling is not futile.
         if ((FastMath.Abs(alpha) >= SpecialScore.Checkmate) || (FastMath.Abs(beta) >= SpecialScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
@@ -1158,7 +1163,8 @@ public sealed class Search : IDisposable
         // No material improvement is possible because captures are not futile.
         // Determine if static score is within futility margin of alpha.
         // Avoid costly calculation of location improvement unless necessary.
-        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[toHorizon];
+        var futilityPruningMargin = StaticScore.GetTaperedScore(_mgFutilityPruningMargins[toHorizon], _egFutilityPruningMargins[toHorizon], phase);
+        var improvedStaticScore = position.StaticScore + futilityPruningMargin;
         if (improvedStaticScore >= alpha) return false;
 
         // Determine if location improvement raises score to within futility margin of alpha.
@@ -1175,7 +1181,8 @@ public sealed class Search : IDisposable
         // Avoid costly calculation of location improvement unless necessary.
         var captureVictim = Move.CaptureVictim(move);
         var materialImprovement = _eval.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
-        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[0] + materialImprovement;
+        var futilityPruningMargin = StaticScore.GetTaperedScore(_mgFutilityPruningMargins[0], _egFutilityPruningMargins[0], phase);
+        var improvedStaticScore = position.StaticScore + futilityPruningMargin + materialImprovement;
         if (improvedStaticScore >= alpha) return false;
 
         // Determine if material and location improvements raise score to within futility margin of alpha.
