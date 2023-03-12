@@ -508,6 +508,7 @@ public sealed class Eval
         if (IsPawnlessDraw(position, Color.White) || IsPawnlessDraw(position, Color.Black)) return (0, true, phase);
         if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position, Color.Black))
         {
+            // Simple Endgame
             var drawnEndgame = _staticScore.EgScalePer128 == 0;
             var staticScore = drawnEndgame
                 ? 0
