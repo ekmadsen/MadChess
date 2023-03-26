@@ -6,10 +6,13 @@
 /MadChess.sln.DotSettings.user
 /src/Core/bin
 /src/Core/obj
+/src/Core/Core.csproj.user
 /src/Engine/bin
 /src/Engine/obj
 /src/Engine/Engine.csproj.user
 /tests/Tests/bin
 /tests/Tests/obj
-/tests/Tests/Tests.csproj.user
-/Tests/obj
+"/tests/Unit Tests/Unit Tests.user"
+/tests/Unit Tests/obj
+/tests/Unit Tests/bin/x64/Debug/net7.0
+/tests/Unit Tests/Unit Tests.user
