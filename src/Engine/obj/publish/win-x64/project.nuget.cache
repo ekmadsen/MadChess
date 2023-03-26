@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "Yo+HA1j++WhFtiNaLB4wYzUuGTS9ZNME40jiCYtxycFj7bkhtWxI7IfODM4A+4Zf9/xzFdOKR3Zvf8Ctlm4Caw==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Erik\\Documents\\Visual Studio 2022\\Projects\\MadChess\\src\\Engine\\Engine.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Erik\\.nuget\\packages\\jetbrains.annotations\\2022.3.1\\jetbrains.annotations.2022.3.1.nupkg.sha512",
+    "C:\\Users\\Erik\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\7.0.4\\microsoft.netcore.app.runtime.win-x64.7.0.4.nupkg.sha512",
+    "C:\\Users\\Erik\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\7.0.4\\microsoft.windowsdesktop.app.runtime.win-x64.7.0.4.nupkg.sha512",
+    "C:\\Users\\Erik\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\7.0.4\\microsoft.aspnetcore.app.runtime.win-x64.7.0.4.nupkg.sha512"
+  ],
+  "logs": []
+}
