@@ -10,6 +10,9 @@
 /src/Engine/bin
 /src/Engine/obj
 /src/Engine/Engine.csproj.user
+src/Engine/Properties/PublishProfiles/Debug.pubxml.user
+src/Engine/Properties/PublishProfiles/Release-x64.pubxml.user
+src/Engine/Properties/PublishProfiles/Release-x86.pubxml.user
 /tests/Unit Tests/bin
 /tests/Unit Tests/obj
 /tests/Unit Tests/Unit Tests.user
