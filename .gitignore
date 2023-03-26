@@ -2,15 +2,14 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/Engine/bin
 /.vs
-/Engine/obj
-/Tests/bin
-/Tests/obj
 /MadChess.sln.DotSettings.user
-/Engine/Engine.csproj.user
-/Tests/Tests.csproj.user
-/Core/obj
-/Core/bin
-/Engine/~$LateMoveReductions.xlsx
-/~$LateMoveReductions.xlsx
+/src/Core/bin
+/src/Core/obj
+/src/Engine/bin
+/src/Engine/obj
+/src/Engine/Engine.csproj.user
+/tests/Tests/bin
+/tests/Tests/obj
+/tests/Tests/Tests.csproj.user
+/Tests/obj
