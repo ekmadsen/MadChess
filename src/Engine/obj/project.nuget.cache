@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "0QXIQOJfmimvP7/q19G8e5VbLa+TILvFd3Oig79r5oI15oe3LL5tsbtWU1mdE/CJhA2amFGxx8uRUQ0asptg+g==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Erik\\Documents\\Visual Studio 2022\\Projects\\MadChess\\src\\Engine\\Engine.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Erik\\.nuget\\packages\\jetbrains.annotations\\2022.3.1\\jetbrains.annotations.2022.3.1.nupkg.sha512"
+  ],
+  "logs": []
+}
