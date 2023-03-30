@@ -37,17 +37,13 @@ public sealed class ParticleSwarm
     }
 
 
-    public Particle GetBestParticle()
+    public void SetDefaultParameters()
     {
-        var bestParticle = Particles[0];
-
-        for (var index = 1; index < Particles.Count; index++)
+        for (var index = 0; index < Particles.Count; index++)
         {
             var particle = Particles[index];
-            if (particle.BestEvaluationError < bestParticle.BestEvaluationError) bestParticle = particle;
+            particle.SetDefaultParameters();
         }
-
-        return bestParticle;
     }
 
 
@@ -70,6 +66,20 @@ public sealed class ParticleSwarm
 
             particle.Move();
         }
+    }
+
+
+    public Particle GetBestParticle()
+    {
+        var bestParticle = Particles[0];
+
+        for (var index = 1; index < Particles.Count; index++)
+        {
+            var particle = Particles[index];
+            if (particle.BestEvaluationError < bestParticle.BestEvaluationError) bestParticle = particle;
+        }
+
+        return bestParticle;
     }
 
 

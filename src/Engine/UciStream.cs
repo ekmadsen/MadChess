@@ -1038,11 +1038,10 @@ public sealed class UciStream : IDisposable
 
     private void Tune(IList<string> tokens)
     {
-
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 581 for MadChessGauntlets.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 561 for MadChessGauntletsRecent.pgn.
         var iterations = int.Parse(tokens[5].Trim());
 
         var particleSwarms = new ParticleSwarms(_messenger, pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale);
@@ -1070,7 +1069,6 @@ public sealed class UciStream : IDisposable
         {
             var pgnGame = pgnGames[index];
             positions += pgnGame.Moves.Count;
-
         }
 
         // Display game and position counts.
@@ -1155,7 +1153,7 @@ public sealed class UciStream : IDisposable
         _messenger.WriteMessageLine($"Completed tuning of win scale in {_commandStopwatch.Elapsed.TotalSeconds:0} seconds.");
     }
 
-    
+
     private void Help()
     {
         _messenger.WriteMessageLine("MadChess by Erik Madsen.  See https://www.madchess.net/.");

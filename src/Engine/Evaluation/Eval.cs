@@ -48,6 +48,7 @@ public sealed class Eval
     private readonly int[] _mgPassedPawns; // [rank]
     private readonly int[] _egPassedPawns; // [rank]
     private readonly int[] _egFreePassedPawns; // [rank]
+    private readonly int[] _egConnectedPassedPawns; // [rank]
     // King Safety
     private readonly int[][] _mgKingSafetyAttackWeights; // [colorlessPiece][kingRing]
     private readonly int[] _mgKingSafety; // [threatsToEnemyKingSafety]
@@ -80,6 +81,7 @@ public sealed class Eval
         _mgPassedPawns = new int[8];
         _egPassedPawns = new int[8];
         _egFreePassedPawns = new int[8];
+        _egConnectedPassedPawns = new int[8];
 
         // King Safety
         _mgKingSafetyAttackWeights = new[]
@@ -152,12 +154,14 @@ public sealed class Eval
         var mgScale = Config.MgPassedPawnScalePer128 / 128d;
         var egScale = Config.EgPassedPawnScalePer128 / 128d;
         var egFreeScale = Config.EgFreePassedPawnScalePer128 / 128d;
+        var egConnectedScale = Config.EgConnectedPassedPawnScalePer128 / 128d;
 
         for (var rank = 1; rank < 7; rank++)
         {
             _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
             _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
             _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
+            _egConnectedPassedPawns[rank] = GetNonLinearBonus(rank, egConnectedScale, passedPawnPower, 0);
         }
 
         // Calculate king safety values.
@@ -870,6 +874,7 @@ public sealed class Eval
             _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgPawnThreatenMajor;
         }
 
+        // Evaluate doubled pawns.
         for (var file = 0; file < 8; file++)
         {
             var pawnCount = Bitwise.CountSetBits(Board.FileMasks[file] & pawns);
@@ -881,9 +886,19 @@ public sealed class Eval
                 _staticScore.EgPawnStructure[(int)color] -= extraPawnCount * Config.EgDoubledPawn;
             }
         }
+
+        // Evaluate connected passed pawns.
+        var allPassedPawns = _passedPawns[(int)color];
+        var passedPawns = allPassedPawns; // Store into second variable because while loop will pop all pawn squares.
+        while ((square = Bitwise.PopFirstSetSquare(ref passedPawns)) != Square.Illegal)
+        {
+            var connectedPassedPawnCount = Bitwise.CountSetBits(Board.PawnAttackMasks[(int)color][(int)square] & allPassedPawns);
+            var rank = Board.Ranks[(int)color][(int)square];
+            _staticScore.EgConnectedPassedPawns[(int)color] += connectedPassedPawnCount * _egConnectedPassedPawns[rank];
+        }
     }
 
-        
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsPassedPawn(Position position, Square square, Color color)
     {
@@ -1290,6 +1305,10 @@ public sealed class Eval
 
         stringBuilder.Append("Endgame Free Passed Pawns:          ");
         ShowParameterArray(_egFreePassedPawns, stringBuilder);
+        stringBuilder.AppendLine();
+
+        stringBuilder.Append("Endgame Connected Passed Pawns:     ");
+        ShowParameterArray(_egConnectedPassedPawns, stringBuilder);
         stringBuilder.AppendLine();
 
         stringBuilder.AppendLine($"Endgame King Escorted Passed Pawn:  {Config.EgKingEscortedPassedPawn}");
