@@ -177,11 +177,6 @@ public sealed class Particle
         // Major Pieces
         Parameters[nameof(evalConfig.MgRook7thRank)].Value = evalConfig.MgRook7thRank;
         Parameters[nameof(evalConfig.EgRook7thRank)].Value = evalConfig.EgRook7thRank;
-
-        // Endgame Scale
-        Parameters[nameof(evalConfig.EgScaleMinorAdvantage)].Value = evalConfig.EgScaleMinorAdvantage;
-        Parameters[nameof(evalConfig.EgScaleOppBishopsPerPassedPawn)].Value = evalConfig.EgScaleOppBishopsPerPassedPawn;
-        Parameters[nameof(evalConfig.EgScalePerPawnAdvantage)].Value = evalConfig.EgScalePerPawnAdvantage;
     }
 
 
@@ -298,11 +293,6 @@ public sealed class Particle
         // Major Pieces
         eval.Config.MgRook7thRank = Parameters[nameof(EvalConfig.MgRook7thRank)].Value;
         eval.Config.EgRook7thRank = Parameters[nameof(EvalConfig.EgRook7thRank)].Value;
-
-        // Endgame Scale
-        eval.Config.EgScaleMinorAdvantage = Parameters[nameof(EvalConfig.EgScaleMinorAdvantage)].Value;
-        eval.Config.EgScaleOppBishopsPerPassedPawn = Parameters[nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn)].Value;
-        eval.Config.EgScalePerPawnAdvantage = Parameters[nameof(EvalConfig.EgScalePerPawnAdvantage)].Value;
 
         // Calculate positional factors after updating evaluation config.
         eval.CalculatePositionalFactors();

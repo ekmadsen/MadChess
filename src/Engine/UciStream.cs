@@ -35,8 +35,8 @@ public sealed class UciStream : IDisposable
     public const long NodesTimeInterval = 1_000;
     private string[] _defaultPlyAndFullMove;
     private const int _cacheSizeMegabytes = 128;
-    private const int _minWinScale = 550;
-    private const int _maxWinScale = 650;
+    private const int _minWinScale = 400;
+    private const int _maxWinScale = 800;
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(100);
     private readonly Messenger _messenger; // Lifetime managed by caller.
     private Board _board;
@@ -1041,7 +1041,7 @@ public sealed class UciStream : IDisposable
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 561 for MadChessGauntletsRecent.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 591 for MadChessGauntletsRecent.pgn.
         var iterations = int.Parse(tokens[5].Trim());
 
         var particleSwarms = new ParticleSwarms(_messenger, pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale);

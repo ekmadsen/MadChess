@@ -390,12 +390,6 @@ public sealed class Eval
             Config.LsMajorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Master - 1);
         }
 
-        if (elo < Elo.InternationalMaster)
-        {
-            // Misplay endgames.
-            Config.LsEndgameScalePer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.InternationalMaster - 1);
-        }
-
         if (_messenger.Debug)
         {
             _messenger.WriteMessageLine($"info string {nameof(Config.MgPawnMaterial)} = {Config.MgPawnMaterial}");
@@ -421,7 +415,6 @@ public sealed class Eval
             _messenger.WriteMessageLine($"info string {nameof(Config.LsThreatsPer128)} = {Config.LsThreatsPer128}");
             _messenger.WriteMessageLine($"info string {nameof(Config.LsMinorPiecesPer128)} = {Config.LsMinorPiecesPer128}");
             _messenger.WriteMessageLine($"info string {nameof(Config.LsMajorPiecesPer128)} = {Config.LsMajorPiecesPer128}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsEndgameScalePer128)} = {Config.LsEndgameScalePer128}");
         }
     }
 
@@ -513,10 +506,8 @@ public sealed class Eval
         if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position, Color.Black))
         {
             // Simple Endgame
-            var drawnEndgame = _staticScore.EgScalePer128 == 0;
-            var staticScore = drawnEndgame
-                ? 0
-                : _staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved);
+            var staticScore = _staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved);
+            var drawnEndgame = staticScore == 0;
             return (staticScore, drawnEndgame, phase);
         }
 
@@ -540,13 +531,10 @@ public sealed class Eval
         EvaluateMajorPieces(position, Color.White);
         EvaluateMajorPieces(position, Color.Black);
 
-        // Determine endgame scale, limit strength, and return total score.
-        DetermineEndgameScale(position); // Scale endgame score based on difficulty to win.
+        // Limit strength if necessary and return total score.
         if (Config.LimitedStrength) LimitStrength();
 
-        return _staticScore.EgScalePer128 == 0
-            ? (0, true, phase) // Drawn Endgame
-            : (_staticScore.GetTotalScore(position.ColorToMove, phase), false, phase);
+        return (_staticScore.GetTotalScore(position.ColorToMove, phase), false, phase);
     }
 
 
@@ -713,8 +701,6 @@ public sealed class Eval
             {
                 // Defending king is in front of pawn and on same file.
                 // Game is drawn.
-                _staticScore.EgScalePer128 = 0;
-                return;
             }
         }
 
@@ -739,13 +725,11 @@ public sealed class Eval
             {
                 // Pawn promotes.
                 _staticScore.EgSimple[(int)lonePawnColor] = SpecialScore.SimpleEndgame + pawnRank;
-                return;
             }
         }
 
         // Pawn does not promote.
         // Game is drawn.
-        _staticScore.EgScalePer128 = 0;
     }
 
 
@@ -892,9 +876,10 @@ public sealed class Eval
         var passedPawns = allPassedPawns; // Store into second variable because while loop will pop all pawn squares.
         while ((square = Bitwise.PopFirstSetSquare(ref passedPawns)) != Square.Illegal)
         {
-            var connectedPassedPawnCount = Bitwise.CountSetBits(Board.PawnAttackMasks[(int)color][(int)square] & allPassedPawns);
             var rank = Board.Ranks[(int)color][(int)square];
-            _staticScore.EgConnectedPassedPawns[(int)color] += connectedPassedPawnCount * _egConnectedPassedPawns[rank];
+            var file = Board.Files[(int)square];
+            if ((file > 0) && ((Board.FileMasks[file - 1] & allPassedPawns) > 0)) _staticScore.EgConnectedPassedPawns[(int)color] += _egConnectedPassedPawns[rank]; // File Left of Passed Pawn
+            if ((file < 7) && ((Board.FileMasks[file + 1] & allPassedPawns) > 0)) _staticScore.EgConnectedPassedPawns[(int)color] += _egConnectedPassedPawns[rank]; // File Right of Passed Pawn
         }
     }
 
@@ -1147,48 +1132,6 @@ public sealed class Eval
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void DetermineEndgameScale(Position position)
-    {
-        // Determine which side is winning the endgame.
-        var winningColor = _staticScore.GetEg(Color.White) >= _staticScore.GetEg(Color.Black) ? Color.White : Color.Black;
-        var losingColor = 1 - winningColor;
-
-        // Count pawns and determine material difference between sides (excluding pawns).
-        var winningPawnCount = Bitwise.CountSetBits(position.GetPawns(winningColor));
-        var winningPieceMaterial = _staticScore.EgPieceMaterial[(int)winningColor];
-        var losingPieceMaterial = _staticScore.EgPieceMaterial[(int)losingColor];
-        var pieceMaterialDiff = winningPieceMaterial - losingPieceMaterial;
-
-        if ((winningPawnCount == 0) && ((pieceMaterialDiff == Config.EgKnightMaterial) || (pieceMaterialDiff == Config.EgBishopMaterial)))
-        {
-            // Winning side has no pawns and is up by a minor piece.
-            _staticScore.EgScalePer128 = winningPieceMaterial >= Config.EgRookMaterial
-                ? Config.EgScaleMinorAdvantage // Winning side has a rook or more.
-                : 0; // Winning side has less than a rook.
-            return;
-        }
-
-        // Determine if sides have opposite colored bishops.
-        var whiteBishops = position.GetBishops(Color.White);
-        var blackBishops = position.GetBishops(Color.Black);
-        var oppositeColoredBishops = (Bitwise.CountSetBits(whiteBishops) == 1) && (Bitwise.CountSetBits(blackBishops) == 1) &&
-                                     (Bitwise.CountSetBits(Board.SquareColors[(int)Color.White] & (whiteBishops | blackBishops)) == 1);
-
-        if (oppositeColoredBishops && (winningPieceMaterial == Config.EgBishopMaterial) && (losingPieceMaterial == Config.EgBishopMaterial))
-        {
-            // Sides have opposite colored bishops and no other pieces, but may have pawns.
-            var winningPassedPawnCount = Bitwise.CountSetBits(_passedPawns[(int)winningColor]);
-            _staticScore.EgScalePer128 = winningPassedPawnCount * Config.EgScaleOppBishopsPerPassedPawn;
-            return;
-        }
-
-        // When ahead, trace pieces.  When behind, trade pawns.
-        var winningPawnAdvantage = winningPawnCount - Bitwise.CountSetBits(position.GetPawns(losingColor));
-        _staticScore.EgScalePer128 = (winningPawnAdvantage * Config.EgScalePerPawnAdvantage) + 128;
-    }
-
-
     private void LimitStrength()
     {
         for (var color = Color.White; color <= Color.Black; color++)
@@ -1228,12 +1171,6 @@ public sealed class Eval
             // Limit understanding of major pieces.
             _staticScore.MgRookOn7thRank[(int)color] = (_staticScore.MgRookOn7thRank[(int)color] * Config.LsMajorPiecesPer128) / 128;
             _staticScore.EgRookOn7thRank[(int)color] = (_staticScore.EgRookOn7thRank[(int)color] * Config.LsMajorPiecesPer128) / 128;
-
-            if (_staticScore.EgScalePer128 != 0)
-            {
-                // Limit understanding of endgames.
-                _staticScore.EgScalePer128 = GetLinearlyInterpolatedValue(128, _staticScore.EgScalePer128, Config.LsEndgameScalePer128, 0, 128);
-            }
         }
     }
 

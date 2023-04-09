@@ -28,7 +28,7 @@ public static class Elo
 
     public const int CandidateMaster = 2200;
     public const int Master = 2300;
-    public const int InternationalMaster = 2400;
+    //public const int InternationalMaster = 2400;
     //public const int Grandmaster = 2500;
 
     public const int Max = 2600;

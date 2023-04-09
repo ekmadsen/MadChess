@@ -8,10 +8,11 @@
 // +---------------------------------------------------------------------------+
 
 
+using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
-using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
@@ -61,7 +62,6 @@ public sealed class StaticScore
     public readonly int[] EgRookOn7thRank;
     // ReSharper restore InconsistentNaming
 
-    public int EgScalePer128;
     public int PlySinceCaptureOrPawnMove;
 
     public StaticScore()
@@ -127,12 +127,8 @@ public sealed class StaticScore
                                      EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgConnectedPassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
                                      EgPieceLocation[(int)color] + EgPieceMobility[(int)color] + EgPawnStructure[(int)color] +
                                      EgThreats[(int)color] + EgBishopPair[(int)color] + EgOutposts[(int)color] + EgRookOn7thRank[(int)color];
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetEgScaled(Color color) => (EgScalePer128 * GetEg(color)) / 128;
-
-
+    
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetTaperedScore(Color color, int phase)
     {
@@ -141,10 +137,10 @@ public sealed class StaticScore
         var mgScore = GetMg(color);
         var mgEnemyScore = GetMg(enemyColor);
 
-        var egScaledScore = GetEgScaled(color);
-        var egEnemyScaledScore = GetEgScaled(enemyColor);
+        var egScore = GetEg(color);
+        var egEnemyScore = GetEg(enemyColor);
 
-        return GetTaperedScore(mgScore - mgEnemyScore, egScaledScore - egEnemyScaledScore, phase);
+        return GetTaperedScore(mgScore - mgEnemyScore, egScore - egEnemyScore, phase);
     }
 
 
@@ -161,8 +157,8 @@ public sealed class StaticScore
         // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
         var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
 
-        // Evaluation never scores checkmate positions.  Search identifies checkmates.
-        return FastMath.Clamp(scaledTaperedScore, -SpecialScore.LargestNonMate, SpecialScore.LargestNonMate);
+        Debug.Assert(Math.Abs(scaledTaperedScore) <= SpecialScore.LargestNonMate); // Evaluation never scores checkmate positions.  Search identifies checkmates.
+        return scaledTaperedScore;
     }
 
 
@@ -234,15 +230,12 @@ public sealed class StaticScore
         EgRookOn7thRank[(int)Color.White] = 0;
         EgRookOn7thRank[(int)Color.Black] = 0;
 
-        EgScalePer128 = 128;
         PlySinceCaptureOrPawnMove = 0;
     }
 
 
     public string ToString(int phase)
     {
-        var egScale = (100 * EgScalePer128) / 128;
-
         var stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("                             |         Middlegame        |          Endgame          |           Total           |");
         stringBuilder.AppendLine("Evaluation Param             |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |");
@@ -274,9 +267,7 @@ public sealed class StaticScore
         var mgWhite = GetMg(Color.White);
         var mgBlack = GetMg(Color.Black);
 
-        AppendStaticScoreLine(stringBuilder, "Subtotal", mgWhite, mgBlack, GetEg(Color.White), GetEg(Color.Black), phase);
-        AppendStaticScoreLine(stringBuilder, "Scale", 100, 100, egScale, egScale, phase);
-        AppendStaticScoreLine(stringBuilder, "Total", mgWhite, mgBlack, GetEgScaled(Color.White), GetEgScaled(Color.Black), phase);
+        AppendStaticScoreLine(stringBuilder, "Total", mgWhite, mgBlack, GetEg(Color.White), GetEg(Color.Black), phase);
         stringBuilder.AppendLine();
 
         var phaseFraction = (100 * phase) / Eval.MiddlegamePhase;

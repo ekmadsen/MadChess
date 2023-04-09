@@ -191,7 +191,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 
             // Minor Pieces
             new(nameof(EvalConfig.MgBishopPair), 0, 128),
-            new(nameof(EvalConfig.EgBishopPair), 0, 128),
+            new(nameof(EvalConfig.EgBishopPair), 0, 256),
             new(nameof(EvalConfig.MgKnightOutpost), 0, 128),
             new(nameof(EvalConfig.EgKnightOutpost), 0, 128),
             new(nameof(EvalConfig.MgBishopOutpost), 0, 128),
@@ -199,12 +199,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 
             // Major Pieces
             new(nameof(EvalConfig.MgRook7thRank), 0, 128),
-            new(nameof(EvalConfig.EgRook7thRank), 0, 64),
-
-            // Endgame Scale
-            new(nameof(EvalConfig.EgScaleMinorAdvantage), 0, 128),
-            new(nameof(EvalConfig.EgScaleOppBishopsPerPassedPawn), 0, 128),
-            new(nameof(EvalConfig.EgScalePerPawnAdvantage), 0, 64)
+            new(nameof(EvalConfig.EgRook7thRank), 0, 64)
         };
     }
 
