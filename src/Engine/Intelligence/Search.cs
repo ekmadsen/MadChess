@@ -895,8 +895,9 @@ public sealed class Search : IDisposable
             // King is not in check.  Search only captures.
             getNextMove = _getNextCapture;
             var fromHorizonExcludingChecks = depth - horizon - checksInQuietSearch;
-            if ((fromHorizonExcludingChecks > _quietSearchMaxFromHorizon) && !board.PreviousPosition.KingInCheck) // TODO: Should the last condition be instead previous move was a capture?
+            if ((fromHorizonExcludingChecks > _quietSearchMaxFromHorizon) && !Move.IsKingMove(board.PreviousPosition.PlayedMove))
             {
+                // Past max distance from horizon and last move was not by king.
                 var lastMoveToSquare = Move.To(board.PreviousPosition.PlayedMove);
                 moveGenerationToSquareMask = lastMoveToSquare == Square.Illegal
                     ? toSquareMask

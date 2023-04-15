@@ -26,7 +26,8 @@ namespace ErikTheCoder.MadChess.Engine.Evaluation;
 
 public sealed class Eval
 {
-    private const int _egKingCornerFactor = 32;
+    private const int _egKingCornerFactor = 50;
+    private const int _egKbnPenalty = 300;
     private readonly Messenger _messenger; // Lifetime managed by caller.
     private readonly Stats _stats;
     private readonly EvalConfig _defaultConfig;
@@ -656,17 +657,19 @@ public sealed class Eval
             // See https://macechess.blogspot.com/2013/08/bahrs-rule.html and http://www.fraserheightschess.com/Documents/Bahrs_Rule.pdf.
 
             case 0 when (enemyPawnCount == 0) && (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
-                // TODO: Lower value of K vrs KBN so engine, with a knight, prefers to promote pawn to Q for K vrs KQN instead of promoting pawn to B for K vrs KBN.
                 // K vrs KBN
                 // Push lone king to corner with same color square as occupied by bishop.  Push winning king close to lone king.
                 var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;
                 var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
-                _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - distanceToCorrectColorCorner - Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare];
+                // Penalize K vrs KBN so engine, with a knight, prefers to promote pawn to Q for K vrs KQN instead of promoting pawn to B for K vrs KBN.
+                _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - distanceToCorrectColorCorner -
+                                                         Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare] - _egKbnPenalty;
                 return true;
 
             case 0 when enemyMajorPieceCount > 0:
                 // K vrs K + Major Piece
                 // Push lone king to corner.  Push winning king close to lone king.
+                // Multiply king distances by a factor to overcome piece location values.
                 EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
                 _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
                 return true;

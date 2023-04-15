@@ -154,7 +154,6 @@ public sealed class StaticScore
     {
         var taperedScore = GetTaperedScore(color, phase);
 
-        // TODO: Consider lowering 50 move scaling to 25 moves or less.
         // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
         var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
 
