@@ -344,6 +344,7 @@ public sealed class Search : IDisposable
 
         if ((legalMoveIndex == 1) && (CandidateMoves.Count == 0) && !AnalyzeMode)
         {
+            // TODO: Output dynamic score from previous search so GUI evaluation chart does show discontinuous drop to zero score.
             // Only one legal move found.  Play it immediately.
             _stopwatch.Stop();
             return board.CurrentPosition.Moves[0];

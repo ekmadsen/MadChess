@@ -72,9 +72,9 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         var eval = new Eval(messenger, stats);
         var search = new Search(messenger, stats, cache, killerMoves, moveHistory, eval);
         
-        // Set default parameters and determine original evaluation error.
-        SetDefaultParameters();
+        // Set default parameters for one particle and determine original evaluation error.
         var firstParticleInFirstSwarm = this[0].Particles[0];
+        firstParticleInFirstSwarm.SetDefaultParameters();
         firstParticleInFirstSwarm.ConfigureEvaluation(eval);
         firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
 
@@ -107,16 +107,16 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             // King Safety
             new(nameof(EvalConfig.MgKingSafetyPowerPer128), 128, 512),
             new(nameof(EvalConfig.MgKingSafetyScalePer128), 0, 128),
-            new(nameof(EvalConfig.MgKingSafetyMinorAttackOuterRingPer8), 0, 32),
-            new(nameof(EvalConfig.MgKingSafetyMinorAttackInnerRingPer8), 0, 32),
+            new(nameof(EvalConfig.MgKingSafetyKnightAttackOuterRingPer8), 0, 32),
+            new(nameof(EvalConfig.MgKingSafetyKnightAttackInnerRingPer8), 0, 32),
+            new(nameof(EvalConfig.MgKingSafetyBishopAttackOuterRingPer8), 0, 32),
+            new(nameof(EvalConfig.MgKingSafetyBishopAttackInnerRingPer8), 0, 32),
             new(nameof(EvalConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 32),
             new(nameof(EvalConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 32),
             new(nameof(EvalConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 32),
             new(nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 32),
             new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 32),
             new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 32),
-            new(nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8), 0, 32),
-            new(nameof(EvalConfig.MgKingSafetyAttackingPiecesPer8), 0, 32),
 
             // Pawn Location
             new(nameof(EvalConfig.MgPawnAdvancement), 0, 32),
@@ -201,16 +201,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgRook7thRank), 0, 128),
             new(nameof(EvalConfig.EgRook7thRank), 0, 64)
         };
-    }
-
-
-    private void SetDefaultParameters()
-    {
-        for (var index = 0; index < Count; index++)
-        {
-            var particleSwarm = this[index];
-            particleSwarm.SetDefaultParameters();
-        }
     }
 
 

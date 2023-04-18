@@ -166,10 +166,10 @@ public sealed class Eval
         }
 
         // Calculate king safety values.
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Knight][(int)KingRing.Outer] = Config.MgKingSafetyMinorAttackOuterRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Knight][(int)KingRing.Inner] = Config.MgKingSafetyMinorAttackInnerRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Bishop][(int)KingRing.Outer] = Config.MgKingSafetyMinorAttackOuterRingPer8;
-        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Bishop][(int)KingRing.Inner] = Config.MgKingSafetyMinorAttackInnerRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Knight][(int)KingRing.Outer] = Config.MgKingSafetyKnightAttackOuterRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Knight][(int)KingRing.Inner] = Config.MgKingSafetyKnightAttackInnerRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Bishop][(int)KingRing.Outer] = Config.MgKingSafetyBishopAttackOuterRingPer8;
+        _mgKingSafetyAttackWeights[(int)ColorlessPiece.Bishop][(int)KingRing.Inner] = Config.MgKingSafetyBishopAttackInnerRingPer8;
         _mgKingSafetyAttackWeights[(int)ColorlessPiece.Rook][(int)KingRing.Outer] = Config.MgKingSafetyRookAttackOuterRingPer8;
         _mgKingSafetyAttackWeights[(int)ColorlessPiece.Rook][(int)KingRing.Inner] = Config.MgKingSafetyRookAttackInnerRingPer8;
         _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Outer] = Config.MgKingSafetyQueenAttackOuterRingPer8;
@@ -960,9 +960,6 @@ public sealed class Eval
         enemyPawns = position.GetPawns(enemyColor); // Repopulate after above while loop popped all enemy pawn squares.
 
         // Evaluate mobility of individual pieces.
-        var attackingPieceCount = 0;
-        var attackingPieceDistance = 0;
-
         for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
         {
             var piece = PieceHelper.GetPieceOfColor(colorlessPiece, color);
@@ -973,9 +970,6 @@ public sealed class Eval
 
             while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
-                attackingPieceCount++;
-                attackingPieceDistance += Board.SquareDistances[(int)square][(int)enemyKingSquare];
-
                 var pieceMovesMask = getPieceMovesMask(square, position.Occupancy);
                 var pieceXrayMovesMask = getPieceXrayMovesMask(square, color, position);
 
@@ -1012,25 +1006,6 @@ public sealed class Eval
         // Evaluate enemy king pawn shield.
         var pawnsMissingFromShield = 3 - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
         mgThreatsToEnemyKingSafety += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
-
-        // Evaluate average distance of defending pieces from enemy king.
-        var defendingPieces = position.GetMajorAndMinorPieces(enemyColor);
-        var defendingPieceCount = Bitwise.CountSetBits(defendingPieces);
-        if (defendingPieceCount > 0)
-        {
-            var defendingPieceDistance = 0;
-            while ((square = Bitwise.PopFirstSetSquare(ref defendingPieces)) != Square.Illegal)
-            {
-                defendingPieceDistance += Board.SquareDistances[(int)square][(int)enemyKingSquare];
-            }
-            mgThreatsToEnemyKingSafety += (defendingPieceDistance * Config.MgKingSafetyDefendingPiecesPer8) / defendingPieceCount;
-        }
-
-        // Evaluate average distance of attacking pieces from enemy king.
-        if (attackingPieceCount > 0)
-        {
-            mgThreatsToEnemyKingSafety += (((7 * attackingPieceCount) - attackingPieceDistance) * Config.MgKingSafetyAttackingPiecesPer8) / attackingPieceCount;
-        }
 
         // Lookup king safety score in array.
         var maxIndex = _mgKingSafety.Length - 1;
@@ -1271,8 +1246,10 @@ public sealed class Eval
             stringBuilder.AppendLine();
         }
         // King Safety
-        stringBuilder.AppendLine($"King Safety MinorAttackOuterRingPer8:  {Config.MgKingSafetyMinorAttackOuterRingPer8:000}");
-        stringBuilder.AppendLine($"King Safety MinorAttackInnerRingPer8:  {Config.MgKingSafetyMinorAttackInnerRingPer8:000}");
+        stringBuilder.AppendLine($"King Safety KnightAttackOuterRingPer8:  {Config.MgKingSafetyKnightAttackOuterRingPer8:000}");
+        stringBuilder.AppendLine($"King Safety KnightAttackInnerRingPer8:  {Config.MgKingSafetyKnightAttackInnerRingPer8:000}");
+        stringBuilder.AppendLine($"King Safety BishopAttackOuterRingPer8:  {Config.MgKingSafetyBishopAttackOuterRingPer8:000}");
+        stringBuilder.AppendLine($"King Safety BishopAttackInnerRingPer8:  {Config.MgKingSafetyBishopAttackInnerRingPer8:000}");
         stringBuilder.AppendLine($"King Safety RookAttackOuterRingPer8:   {Config.MgKingSafetyRookAttackOuterRingPer8:000}");
         stringBuilder.AppendLine($"King Safety RookAttackInnerRingPer8:   {Config.MgKingSafetyRookAttackInnerRingPer8:000}");
         stringBuilder.AppendLine($"King Safety QueenAttackOuterRingPer8:  {Config.MgKingSafetyQueenAttackOuterRingPer8:000}");

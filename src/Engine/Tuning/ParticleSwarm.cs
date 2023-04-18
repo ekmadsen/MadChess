@@ -37,16 +37,6 @@ public sealed class ParticleSwarm
     }
 
 
-    public void SetDefaultParameters()
-    {
-        for (var index = 0; index < Particles.Count; index++)
-        {
-            var particle = Particles[index];
-            particle.SetDefaultParameters();
-        }
-    }
-
-
     public void Iterate(Board board, Search search, Eval eval)
     {
         var bestParticle = GetBestParticle();
