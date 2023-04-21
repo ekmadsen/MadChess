@@ -117,6 +117,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             new(nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 32),
             new(nameof(EvalConfig.MgKingSafetySemiOpenFilePer8), 0, 32),
             new(nameof(EvalConfig.MgKingSafetyPawnShieldPer8), 0, 32),
+            new(nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8), 0, 32),
 
             // Pawn Location
             new(nameof(EvalConfig.MgPawnAdvancement), 0, 32),
