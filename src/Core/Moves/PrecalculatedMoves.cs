@@ -280,6 +280,7 @@ public sealed class PrecalculatedMoves
                 var occupancy = occupancyPermutations[occupancyIndex];
                 var movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
                 occupancyToMovesMask.Add(occupancy, movesMask);
+                // ReSharper disable once RedundantSetContainsBeforeAdding
                 if (!uniqueMovesMasks.Contains(movesMask)) uniqueMovesMasks.Add(movesMask);
             }
 
