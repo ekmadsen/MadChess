@@ -288,7 +288,7 @@ public sealed class PrecalculatedMoves
 
             // Determine bit shift that produces number >= unique occupancies.
             // A stricter condition is number >= unique moves but this requires more computing time to find magic multipliers.
-            var shift = 64 - (int)Math.Ceiling(Math.Log(uniqueOccupancies, 2d));
+            var shift = 64 - (int)Math.Ceiling(Math.Log2(uniqueOccupancies));
             shifts[(int)square] = shift;
 
             var magicMultiplier = magicMultipliers[(int)square];

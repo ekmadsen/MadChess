@@ -312,83 +312,88 @@ public sealed class Eval
         if (elo < Elo.Beginner)
         {
             // Undervalue pawns.
-            Config.MgPawnMaterial = GetLinearlyInterpolatedValue(0, _defaultConfig.MgPawnMaterial, elo, Elo.Min, Elo.Beginner - 1);
-            Config.EgPawnMaterial = GetLinearlyInterpolatedValue(0, _defaultConfig.EgPawnMaterial, elo, Elo.Min, Elo.Beginner - 1);
+            Config.MgPawnMaterial = GetLinearlyInterpolatedValue(0, _defaultConfig.MgPawnMaterial, elo, Elo.Min, Elo.Beginner);
+            Config.EgPawnMaterial = GetLinearlyInterpolatedValue(0, _defaultConfig.EgPawnMaterial, elo, Elo.Min, Elo.Beginner);
         }
 
         if (elo < Elo.Novice)
         {
             // Undervalue rook and overvalue queen.
-            Config.MgRookMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.MgRookMaterial * 0.67), _defaultConfig.MgRookMaterial, elo, Elo.Min, Elo.Novice - 1);
-            Config.EgRookMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgRookMaterial * 0.67), _defaultConfig.EgRookMaterial, elo, Elo.Min, Elo.Novice - 1);
-            Config.MgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.MgQueenMaterial * 1.33), _defaultConfig.MgQueenMaterial, elo, Elo.Min, Elo.Novice - 1);
-            Config.EgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgQueenMaterial * 1.33), _defaultConfig.EgQueenMaterial, elo, Elo.Min, Elo.Novice - 1);
+            Config.MgRookMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.MgRookMaterial * 0.67), _defaultConfig.MgRookMaterial, elo, Elo.Min, Elo.Novice);
+            Config.EgRookMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgRookMaterial * 0.67), _defaultConfig.EgRookMaterial, elo, Elo.Min, Elo.Novice);
+            Config.MgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.MgQueenMaterial * 1.33), _defaultConfig.MgQueenMaterial, elo, Elo.Min, Elo.Novice);
+            Config.EgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgQueenMaterial * 1.33), _defaultConfig.EgQueenMaterial, elo, Elo.Min, Elo.Novice);
 
             // Value knight and bishop equally.
             if (_defaultConfig.MgBishopMaterial > _defaultConfig.MgKnightMaterial)
             {
                 // Bishop worth more than knight in middlegame.
-                Config.MgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgKnightMaterial, _defaultConfig.MgBishopMaterial, elo, Elo.Min, Elo.Novice - 1);
+                Config.MgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgKnightMaterial, _defaultConfig.MgBishopMaterial, elo, Elo.Min, Elo.Novice);
             }
             else
             {
                 // Knight worth more than bishop in middlegame.
-                Config.MgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgBishopMaterial, _defaultConfig.MgKnightMaterial, elo, Elo.Min, Elo.Novice - 1);
+                Config.MgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgBishopMaterial, _defaultConfig.MgKnightMaterial, elo, Elo.Min, Elo.Novice);
             }
 
             if (_defaultConfig.EgBishopMaterial > _defaultConfig.EgKnightMaterial)
             {
                 // Bishop worth more than knight in endgame.
-                Config.EgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgKnightMaterial, _defaultConfig.EgBishopMaterial, elo, Elo.Min, Elo.Novice - 1);
+                Config.EgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgKnightMaterial, _defaultConfig.EgBishopMaterial, elo, Elo.Min, Elo.Novice);
             }
             else
             {
                 // Knight worth more than bishop in endgame.
-                Config.EgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgBishopMaterial, _defaultConfig.EgKnightMaterial, elo, Elo.Min, Elo.Novice - 1);
+                Config.EgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgBishopMaterial, _defaultConfig.EgKnightMaterial, elo, Elo.Min, Elo.Novice);
             }
         }
 
         if (elo < Elo.Social)
         {
             // Misjudge danger of passed pawns.
-            Config.LsPassedPawnsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Social - 1);
+            Config.LsPassedPawnsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Social);
         }
 
         if (elo < Elo.StrongSocial)
         {
             // Inattentive to defense of king.
-            Config.LsKingSafetyPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.StrongSocial - 1);
+            Config.LsKingSafetyPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.StrongSocial);
         }
 
         if (elo < Elo.Club)
         {
             // Misplace pieces.
-            Config.LsPieceLocationPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Club - 1);
+            Config.LsPieceLocationPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Club);
         }
 
         if (elo < Elo.StrongClub)
         {
             // Underestimate attacking potential of mobile pieces.
-            Config.LsPieceMobilityPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.StrongClub - 1);
+            Config.LsPieceMobilityPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.StrongClub);
         }
 
         if (elo < Elo.Expert)
         {
             // Allow pawn structure to be damaged.
-            Config.LsPawnStructurePer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Expert - 1);
+            Config.LsPawnStructurePer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Expert);
         }
 
         if (elo < Elo.CandidateMaster)
         {
             // Underestimate threats (lesser-value pieces attacking greater-value pieces).
-            Config.LsThreatsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.CandidateMaster - 1);
+            Config.LsThreatsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.CandidateMaster);
         }
 
         if (elo < Elo.Master)
         {
-            // Poor maneuvering of minor and major pieces.
-            Config.LsMinorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Master - 1);
-            Config.LsMajorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Master - 1);
+            // Poor maneuvering of minor pieces.
+            Config.LsMinorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Master);
+        }
+
+        if (elo < Elo.InternationalMaster)
+        {
+            // Poor maneuvering of major pieces.
+            Config.LsMajorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.InternationalMaster);
         }
 
         if (_messenger.Debug)

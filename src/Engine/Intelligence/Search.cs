@@ -68,8 +68,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 40;
-    private const int _lmrConstPer128 = -96;
+    private const int _lmrScalePer128 = 80;
+    private const int _lmrConstPer128 = -32;
     private const int _quietSearchMaxFromHorizon = 3;
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -168,7 +168,7 @@ public sealed class Search : IDisposable
         TimeIncrement = new TimeSpan?[2];
 
         // To Horizon =                   000  001  002  003  004  005  006  007
-        _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50ow 2)) + 50
+        _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50
         _lateMovePruningMargins = new[] { 999, 004, 007, 012, 019, 028, 039, 052 }; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
@@ -261,7 +261,7 @@ public sealed class Search : IDisposable
             lateMoveReductions[quietMoveNumber] = new int[_lmrMaxIndex + 1];
             for (var toHorizon = 0; toHorizon <= _lmrMaxIndex; toHorizon++)
             {
-                var logReduction = (double)_lmrScalePer128 / 128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon);
+                var logReduction = (double)_lmrScalePer128 / 128 * Math.Log(quietMoveNumber) * Math.Log(toHorizon);
                 lateMoveReductions[quietMoveNumber][toHorizon] = (int)Math.Max(logReduction + constReduction, 0);
             }
         }
@@ -280,7 +280,7 @@ public sealed class Search : IDisposable
         // See https://www.madchess.net/the-madchess-uci_limitstrength-algorithm/ for chart with NPS, Move Error, Blunder Error, and Blunder Percent values.
         var scale = 192d;
         var power = 4d; 
-        var constant = 32;
+        var constant = 1024;
         var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
         _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
         
@@ -1192,7 +1192,7 @@ public sealed class Search : IDisposable
     {
         if (Move.IsBest(move) && IsBestMoveSingular(board, depth, horizon, move, cachedPosition))
         {
-            // The best move (from the cache) is singular.  That is, it's the only good move in the position.
+            // The best move from the cache is singular.  That is, it's the only good move in the position.
             // Evaluation of the current position relies on the accuracy of the singular move's score.
             // If the engine misjudges the singular move, the position could deteriorate because no alternative strong moves exist.
             // To increase confidence in the singular move's score, search it one ply deeper.
@@ -1219,7 +1219,7 @@ public sealed class Search : IDisposable
 
     // Singular move idea from Stockfish chess engine.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong move, CachedPosition cachedPosition)
+    private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong bestMove, CachedPosition cachedPosition)
     {
         // Determine if best move that had failed high in recent searches is best by a significant margin.
         var toHorizon = horizon - depth;
@@ -1233,7 +1233,7 @@ public sealed class Search : IDisposable
 
         var beta = dynamicScore - (_singularMoveMargin * toHorizon);
         var searchHorizon = depth + ((toHorizon * _singularMoveReductionPer128) / 128);
-        dynamicScore = GetDynamicScore(board, depth, searchHorizon, false, beta - 1, beta, move); // Exclude best move from search.
+        dynamicScore = GetDynamicScore(board, depth, searchHorizon, false, beta - 1, beta, bestMove); // Exclude best move from search.
         return dynamicScore < beta;
     }
 
