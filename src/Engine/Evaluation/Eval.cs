@@ -1070,6 +1070,7 @@ public sealed class Eval
         }
 
         // Outposts
+        // TODO: Consider including Board.RankMasks[(int)color][6] in outpostMask.
         var outpostMask = (Board.RankMasks[(int)color][3] | Board.RankMasks[(int)color][4] | Board.RankMasks[(int)color][5]) & ~(Board.FileMasks[0] | Board.FileMasks[7]);
         ulong supportingPawnsMask;
         ulong potentialAttackMask;

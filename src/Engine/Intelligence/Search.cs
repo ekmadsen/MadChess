@@ -68,8 +68,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 80;
-    private const int _lmrConstPer128 = -32;
+    private const int _lmrScalePer128 = 32;
+    private const int _lmrConstPer128 = 32;
     private const int _quietSearchMaxFromHorizon = 3;
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -261,7 +261,7 @@ public sealed class Search : IDisposable
             lateMoveReductions[quietMoveNumber] = new int[_lmrMaxIndex + 1];
             for (var toHorizon = 0; toHorizon <= _lmrMaxIndex; toHorizon++)
             {
-                var logReduction = (double)_lmrScalePer128 / 128 * Math.Log(quietMoveNumber) * Math.Log(toHorizon);
+                var logReduction = (double)_lmrScalePer128 / 128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon);
                 lateMoveReductions[quietMoveNumber][toHorizon] = (int)Math.Max(logReduction + constReduction, 0);
             }
         }
@@ -280,7 +280,7 @@ public sealed class Search : IDisposable
         // See https://www.madchess.net/the-madchess-uci_limitstrength-algorithm/ for chart with NPS, Move Error, Blunder Error, and Blunder Percent values.
         var scale = 192d;
         var power = 4d; 
-        var constant = 1024;
+        var constant = 512;
         var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
         _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
         
