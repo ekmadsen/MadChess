@@ -51,14 +51,14 @@ public sealed class Search : IDisposable
     public int MultiPv;
     public long NodesExamineTime;
     public long NodesInfoUpdate;
+    public int Count;
     public bool Continue;
-    private const int _minMovesRemaining = 8;
-    private const int _piecesMovesPer128 = 160;
-    private const int _moveTimeHardLimitPer128 = 512;
-    private const int _adjustMoveTimeMinDepth = 9;
+    private const int _minMovesRemaining = 20;
+    private const int _moveTimeHardLimitPer128 = 652;
+    private const int _adjustMoveTimeMinHorizon = 9;
     private const int _adjustMoveTimeMinScoreDecrease = 33;
-    private const int _adjustMoveTimePer128 = 32;
-    private const int _haveTimeSearchNextPlyPer128 = 70;
+    private const int _adjustMoveTimePer128 = 64;
+    private const int _haveTimeSearchNextPlyPer128 = 72;
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 3;
@@ -77,6 +77,7 @@ public sealed class Search : IDisposable
     private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
     private readonly Messenger _messenger; // Lifetime managed by caller.
+    private int[] _earlyMoveTimeFactorsPer128;
     private int[] _lateMovePruningMargins;
     private int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
     private ScoredMove[] _rootMoves;
@@ -166,6 +167,7 @@ public sealed class Search : IDisposable
         CandidateMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
+        _earlyMoveTimeFactorsPer128 = new[] { 256, 256, 256, 128 }; // Use more time to search the first two moves out of an opening book than for later moves (lookup into array is one-based).
 
         // To Horizon =                   000  001  002  003  004  005  006  007
         _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50
@@ -227,6 +229,7 @@ public sealed class Search : IDisposable
             _scoredMovePriorityComparer = null;
             _moveScoreComparer = null;
             _futilityPruningMargins = null;
+            _earlyMoveTimeFactorsPer128 = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
             _rootMoves = null;
@@ -261,7 +264,7 @@ public sealed class Search : IDisposable
             lateMoveReductions[quietMoveNumber] = new int[_lmrMaxIndex + 1];
             for (var toHorizon = 0; toHorizon <= _lmrMaxIndex; toHorizon++)
             {
-                var logReduction = (double)_lmrScalePer128 / 128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon);
+                var logReduction = _lmrScalePer128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon) / 128;
                 lateMoveReductions[quietMoveNumber][toHorizon] = (int)Math.Max(logReduction + constReduction, 0);
             }
         }
@@ -344,7 +347,7 @@ public sealed class Search : IDisposable
 
         if ((legalMoveIndex == 1) && (CandidateMoves.Count == 0) && !AnalyzeMode)
         {
-            // TODO: Output dynamic score from previous search so GUI evaluation chart does show discontinuous drop to zero score.
+            // TODO: Output dynamic score from previous search so GUI evaluation chart doesn't show discontinuous drop to zero score.
             // Only one legal move found.  Play it immediately.
             _stopwatch.Stop();
             return board.CurrentPosition.Moves[0];
@@ -424,34 +427,28 @@ public sealed class Search : IDisposable
         // No need to calculate move time if go command specified move time, horizon limit, or nodes..
         if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon) || (NodeLimit != long.MaxValue)) return;
 
-        // Retrieve time remaining, increment, and moves remaining until next time control.
-        if (!TimeRemaining[(int)position.ColorToMove].HasValue) throw new Exception($"{nameof(TimeRemaining)} for {position.ColorToMove} is null.");
-        var timeRemaining = TimeRemaining[(int)position.ColorToMove] ?? TimeSpan.Zero;
+        // Retrieve time remaining, time increment, and moves remaining until next time control.
+        var timeRemaining = TimeRemaining[(int)position.ColorToMove] ?? throw new Exception($"{nameof(TimeRemaining)} for {position.ColorToMove} is null.");
         var timeIncrement = TimeIncrement[(int)position.ColorToMove] ?? TimeSpan.Zero;
         if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate move time if go command specified infinite search.
-        timeRemaining -= _stopwatch.Elapsed; // Account for lag between receiving go command and now.
-        int movesRemaining;
-        if (MovesToTimeControl.HasValue) movesRemaining = MovesToTimeControl.Value; // Moves remaining is specified.
-        else
-        {
-            // Moves remaining is not specified.  Estimate it.
-            var pieces = Bitwise.CountSetBits(position.Occupancy) - 2; // Do not include kings.
-            movesRemaining = (pieces * _piecesMovesPer128) / 128;
-        }
-        movesRemaining = FastMath.Max(movesRemaining, _minMovesRemaining);
-        
+        timeRemaining -= _stopwatch.Elapsed + _moveTimeReserved; // Hold time in reserve.
+        var movesRemaining = MovesToTimeControl ?? _minMovesRemaining;
+
         // Calculate move time.
+        var timeFactor = _earlyMoveTimeFactorsPer128[FastMath.Min(Count, _earlyMoveTimeFactorsPer128.Length - 1)];
         var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
-        var milliseconds = millisecondsRemaining / movesRemaining;
+        var milliseconds = (timeFactor * millisecondsRemaining / movesRemaining) / 128;
         MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
         MoveTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _moveTimeHardLimitPer128) / 128);
-        if (MoveTimeHardLimit > (timeRemaining - _moveTimeReserved))
+        
+        if (MoveTimeHardLimit > timeRemaining)
         {
             // Prevent loss on time.
             MoveTimeSoftLimit = TimeSpan.FromMilliseconds(timeRemaining.TotalMilliseconds / movesRemaining);
             MoveTimeHardLimit = MoveTimeSoftLimit;
             if (_messenger.Debug) _messenger.WriteMessageLine($"info string Preventing loss on time.  Moves Remaining = {movesRemaining}");
         }
+
         if (_messenger.Debug) _messenger.WriteMessageLine($"info string MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0}");
     }
 
@@ -459,7 +456,7 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AdjustMoveTime()
     {
-        if (!CanAdjustMoveTime || (_originalHorizon < _adjustMoveTimeMinDepth) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
+        if (!CanAdjustMoveTime || (_originalHorizon < _adjustMoveTimeMinHorizon) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
         if (_bestMovePlies[_originalHorizon].Score >= (_bestMovePlies[_originalHorizon - 1].Score - _adjustMoveTimeMinScoreDecrease)) return;
 
         // Score has decreased significantly from last ply.
@@ -473,7 +470,7 @@ public sealed class Search : IDisposable
     private bool HaveTimeForNextHorizon()
     {
         if (MoveTimeSoftLimit == TimeSpan.MaxValue) return true;
-        var moveTimePer128 = (int)((128 * _stopwatch.Elapsed.TotalMilliseconds) / MoveTimeSoftLimit.TotalMilliseconds);
+        var moveTimePer128 = (int)(128 * _stopwatch.Elapsed.TotalMilliseconds / MoveTimeSoftLimit.TotalMilliseconds);
         return moveTimePer128 <= _haveTimeSearchNextPlyPer128;
     }
 
@@ -551,7 +548,7 @@ public sealed class Search : IDisposable
         // Get cached position.
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
-        var cachedPosition = _cache[board.CurrentPosition.Key];
+        var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
         ulong bestMove;
         if ((cachedPosition.Key != _cache.NullPosition.Key) && (depth > 0) && !repeatPosition)
         {
@@ -632,7 +629,7 @@ public sealed class Search : IDisposable
             // Cached position in a principal variation does not specify a best move.
             // Find best move via Internal Iterative Deepening.
             GetDynamicScore(board, depth, horizon - _iidReduction, false, alpha, beta);
-            cachedPosition = _cache[board.CurrentPosition.Key];
+            cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
             bestMove = _cache.GetBestMove(board.CurrentPosition, cachedPosition.Data);
         }
 
@@ -1366,7 +1363,7 @@ public sealed class Search : IDisposable
         }
 
         // Update cache.
-        _cache[cachedPosition.Key] = cachedPosition;
+        _cache.SetPosition(cachedPosition, Count);
     }
 
     
@@ -1451,7 +1448,7 @@ public sealed class Search : IDisposable
 
         // Enable PV update, increment search counter, and continue search.
         PvInfoUpdate = true;
-        _cache.Searches++;
+        Count++;
         Continue = true;
     }
 }
