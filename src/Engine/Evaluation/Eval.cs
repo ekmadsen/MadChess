@@ -496,6 +496,7 @@ public sealed class Eval
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (int StaticScore, bool DrawnEndgame, int Phase) GetStaticScore(Position position)
     {
+        // TODO: Penalize loss of castling rights to discourage limit-strength engine from moving king early in game.
         // TODO: Handicap knowledge of checkmates and endgames when in limited strength mode.
         // TODO: Evaluate space.  Perhaps squares attacked by more of own pieces than enemy pieces?  Or squares behind own pawns not occupied by enemy pieces?
         // TODO: Evaluate rooks on open files.
