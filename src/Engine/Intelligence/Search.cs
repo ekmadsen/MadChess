@@ -55,9 +55,9 @@ public sealed class Search : IDisposable
     public bool Continue;
     private const int _movesRemainingDefault = 20;
     private const int _movesRemainingTimePressure = 4;
-    private const int _moveTimeHardLimitPer128 = 672;
+    private const int _moveTimeHardLimitPer128 = 536;
     private const int _adjustMoveTimeMinHorizon = 9;
-    private const int _adjustMoveTimeMinScoreDecrease = 33;
+    private const int _adjustMoveTimeMinScoreDecrease = 50;
     private const int _adjustMoveTimePer128 = 64;
     private const int _haveTimeSearchNextPlyPer128 = 70;
     private const int _nullMoveReduction = 3;
@@ -425,14 +425,14 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void GetMoveTime(Position position)
     {
-        // No need to calculate move time if go command specified move time, horizon limit, or nodes..
+        // No need to calculate move time if go command specifies move time, horizon limit, or nodes.
         if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon) || (NodeLimit != long.MaxValue)) return;
 
         // Retrieve time remaining, time increment, and moves remaining until next time control.
         var timeRemaining = TimeRemaining[(int)position.ColorToMove] ?? throw new Exception($"{nameof(TimeRemaining)} for {position.ColorToMove} is null.");
-        var timeIncrement = TimeIncrement[(int)position.ColorToMove] ?? TimeSpan.Zero;
-        if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate move time if go command specified infinite search.
+        if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate move time if go command specifies infinite search.
         timeRemaining -= _stopwatch.Elapsed + _moveTimeReserved; // Reserve time to prevent flagging.
+        var timeIncrement = TimeIncrement[(int)position.ColorToMove] ?? TimeSpan.Zero;
         var movesRemaining = MovesToTimeControl ?? _movesRemainingDefault;
 
         // Calculate move time.
