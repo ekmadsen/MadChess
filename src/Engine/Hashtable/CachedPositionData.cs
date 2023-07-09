@@ -53,44 +53,44 @@ public static class CachedPositionData
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // To Horizon |Best From    |Best To      |BMP    |Dynamic Score                                              |DSP|Last
+    // To Horizon   |Best From    |Best To      |BMP    |Dynamic Score                            |DSP|Last Accessed
 
-    // Best From = Best Move From (one extra bit for illegal square)
-    // Best To =   Best Move To   (one extra bit for illegal square)
-    // BMP =       Best Move Promoted Piece
-    // DSP =       Dynamic Score Precision
-    // Last =      Last Accessed
+    // To Horizon = (one extra bit for 0..64)
+    // Best From =  Best Move From (one extra bit for illegal square)
+    // Best To =    Best Move To   (one extra bit for illegal square)
+    // BMP =        Best Move Promoted Piece
+    // DSP =        Dynamic Score Precision
 
 
     static CachedPositionData()
     {
         // Create bit shifts and masks.
-        _toHorizonShift = 58;
-        _toHorizonMask = Bitwise.CreateULongMask(58, 63);
-        _toHorizonUnmask = Bitwise.CreateULongUnmask(58, 63);
+        _toHorizonShift = 57;
+        _toHorizonMask = Bitwise.CreateULongMask(57, 63);
+        _toHorizonUnmask = Bitwise.CreateULongUnmask(57, 63);
 
-        _bestMoveFromShift = 51;
-        _bestMoveFromMask = Bitwise.CreateULongMask(51, 57);
-        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(51, 57);
+        _bestMoveFromShift = 50;
+        _bestMoveFromMask = Bitwise.CreateULongMask(50, 56);
+        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(50, 56);
 
-        _bestMoveToShift = 44;
-        _bestMoveToMask = Bitwise.CreateULongMask(44, 50);
-        _bestMoveToUnmask = Bitwise.CreateULongUnmask(44, 50);
+        _bestMoveToShift = 43;
+        _bestMoveToMask = Bitwise.CreateULongMask(43, 49);
+        _bestMoveToUnmask = Bitwise.CreateULongUnmask(43, 49);
 
-        _bestMovePromotedPieceShift = 40;
-        _bestMovePromotedPieceMask = Bitwise.CreateULongMask(40, 43);
-        _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(40, 43);
+        _bestMovePromotedPieceShift = 39;
+        _bestMovePromotedPieceMask = Bitwise.CreateULongMask(39, 42);
+        _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(39, 42);
 
-        _dynamicScoreShift = 10;
-        _dynamicScoreMask = Bitwise.CreateULongMask(10, 39);
-        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(10, 39);
+        _dynamicScoreShift = 18;
+        _dynamicScoreMask = Bitwise.CreateULongMask(18, 38);
+        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(18, 38);
 
-        _scorePrecisionShift = 8;
-        _scorePrecisionMask = Bitwise.CreateULongMask(8, 9);
-        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(8, 9);
+        _scorePrecisionShift = 16;
+        _scorePrecisionMask = Bitwise.CreateULongMask(16, 17);
+        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(16, 17);
 
-        _lastAccessedMask = Bitwise.CreateULongMask(0, 7);
-        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 7);
+        _lastAccessedMask = Bitwise.CreateULongMask(0, 15);
+        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 15);
     }
 
 
@@ -194,16 +194,16 @@ public static class CachedPositionData
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static byte LastAccessed(ulong cachedPositionData) => (byte)(cachedPositionData & _lastAccessedMask);
+    public static int LastAccessed(ulong cachedPositionData) => (int)(cachedPositionData & _lastAccessedMask);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetLastAccessed(ref ulong cachedPositionData, byte lastAccessed)
+    public static void SetLastAccessed(ref ulong cachedPositionData, int lastAccessed)
     {
         // Clear
         cachedPositionData &= _lastAccessedUnmask;
         // Set
-        cachedPositionData |= lastAccessed & _lastAccessedMask;
+        cachedPositionData |= (ulong)lastAccessed & _lastAccessedMask;
         // Validate cached position.
         Debug.Assert(LastAccessed(cachedPositionData) == lastAccessed);
     }

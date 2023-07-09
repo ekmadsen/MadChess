@@ -27,7 +27,6 @@ public sealed class Cache
     public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf(typeof(CachedPosition));
     public readonly CachedPosition NullPosition;
     public int Positions;
-    public byte Searches;
     private const int _buckets = 4;
     private readonly Stats _stats;
     private int _indices;
@@ -70,77 +69,73 @@ public sealed class Cache
     }
 
 
-    public CachedPosition this[ulong key]
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    public CachedPosition GetPosition(ulong key, int searchCount)
     {
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        get
+        _stats.CacheProbes++;
+
+        var index = GetIndex(key);
+        var maxBucketIndex = index + _buckets - 1;
+
+        for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
         {
-            _stats.CacheProbes++;
-
-            var index = GetIndex(key);
-            var maxBucketIndex = index + _buckets - 1;
-
-            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
+            var position = _positions[bucketIndex];
+            if (position.Key == key)
             {
-                var position = _positions[bucketIndex];
-                if (position.Key == key)
-                {
-                    // Position is cached.
-                    _stats.CacheHits++;
-                    CachedPositionData.SetLastAccessed(ref position.Data, Searches);
-                    _positions[bucketIndex] = position;
+                // Position is cached.
+                _stats.CacheHits++;
+                CachedPositionData.SetLastAccessed(ref position.Data, searchCount);
+                _positions[bucketIndex] = position;
 
-                    Debug.Assert(CachedPositionData.IsValid(position.Data));
-                    return position;
-                }
+                Debug.Assert(CachedPositionData.IsValid(position.Data));
+                return position;
             }
-            
-            // Position is not cached.
-            Debug.Assert(CachedPositionData.IsValid(NullPosition.Data));
-            return NullPosition;
         }
 
+        // Position is not cached.
+        Debug.Assert(CachedPositionData.IsValid(NullPosition.Data));
+        return NullPosition;
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        set
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    public void SetPosition(CachedPosition cachedPosition, int searchCount)
+    {
+        Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
+
+        CachedPositionData.SetLastAccessed(ref cachedPosition.Data, searchCount);
+
+        var index = GetIndex(cachedPosition.Key);
+        var maxBucketIndex = index + _buckets - 1;
+
+        // Find oldest bucket.
+        var earliestAccess = int.MaxValue;
+        var oldestBucketIndex = index;
+
+        for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
         {
-            Debug.Assert(value.Key == key);
-            Debug.Assert(CachedPositionData.IsValid(value.Data));
-
-            CachedPositionData.SetLastAccessed(ref value.Data, Searches);
-
-            var index = GetIndex(key);
-            var maxBucketIndex = index + _buckets - 1;
-
-            // Find oldest bucket.
-            var earliestAccess = byte.MaxValue;
-            var oldestBucketIndex = index;
-
-            for (var bucketIndex = index; bucketIndex <= maxBucketIndex; bucketIndex++)
+            var position = _positions[bucketIndex];
+            if (position.Key == cachedPosition.Key)
             {
-                var position = _positions[bucketIndex];
-                if (position.Key == key)
-                {
-                    // Position is cached.  Overwrite position.
-                    Debug.Assert(CachedPositionData.IsValid(value.Data));
-                    _positions[bucketIndex] = value;
-                    return;
-                }
-
-                var lastAccessed = CachedPositionData.LastAccessed(position.Data);
-                if (lastAccessed < earliestAccess)
-                {
-                    earliestAccess = lastAccessed;
-                    oldestBucketIndex = bucketIndex;
-                }
+                // Position is cached.  Overwrite position.
+                Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
+                _positions[bucketIndex] = cachedPosition;
+                return;
             }
 
-            if (_positions[oldestBucketIndex].Key == NullPosition.Key) Positions++; // Oldest bucket has not been used.
-
-            // Overwrite oldest bucket.
-            Debug.Assert(CachedPositionData.IsValid(value.Data));
-            _positions[oldestBucketIndex] = value;
+            var lastAccessed = CachedPositionData.LastAccessed(position.Data);
+            if (lastAccessed < earliestAccess)
+            {
+                earliestAccess = lastAccessed;
+                oldestBucketIndex = bucketIndex;
+            }
         }
+
+        if (_positions[oldestBucketIndex].Key == NullPosition.Key) Positions++; // Oldest bucket has not been used.
+
+        // Overwrite oldest bucket.
+        Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
+        _positions[oldestBucketIndex] = cachedPosition;
     }
 
 
@@ -177,7 +172,6 @@ public sealed class Cache
             _positions[index] = NullPosition;
 
         Positions = 0;
-        Searches = 0;
     }
 
 

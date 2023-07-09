@@ -458,7 +458,8 @@ public sealed class UciStream : IDisposable
 
     private void UciNewGame(bool preserveMoveCount = false)
     {
-        // Reset cache and move heuristics.
+        // Reset search count, cache, and move heuristics.
+        _search.Count = 0;
         _cache.Reset();
         _killerMoves.Reset();
         _moveHistory.Reset();
@@ -775,7 +776,7 @@ public sealed class UciStream : IDisposable
     private void ListMoves(Position position)
     {
         // Get cached position.
-        var cachedPosition = _cache[_board.CurrentPosition.Key];
+        var cachedPosition = _cache.GetPosition(_board.CurrentPosition.Key, _search.Count);
         var bestMove = _cache.GetBestMove(position, cachedPosition.Data);
 
         // Generate and sort moves.
