@@ -78,7 +78,6 @@ public sealed class Search : IDisposable
     private static int[] _futilityPruningMargins;
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
     private readonly Messenger _messenger; // Lifetime managed by caller.
-    private int[] _earlyMoveTimeFactorsPer128;
     private int[] _lateMovePruningMargins;
     private int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
     private ScoredMove[] _rootMoves;
@@ -168,7 +167,6 @@ public sealed class Search : IDisposable
         CandidateMoves = new List<ulong>();
         TimeRemaining = new TimeSpan?[2];
         TimeIncrement = new TimeSpan?[2];
-        _earlyMoveTimeFactorsPer128 = new[] { 256, 256, 256, 128 }; // Use more time to search the first two moves out of an opening book than for later moves (lookup into array is one-based).
 
         // To Horizon =                   000  001  002  003  004  005  006  007
         _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50
@@ -230,7 +228,6 @@ public sealed class Search : IDisposable
             _scoredMovePriorityComparer = null;
             _moveScoreComparer = null;
             _futilityPruningMargins = null;
-            _earlyMoveTimeFactorsPer128 = null;
             _lateMovePruningMargins = null;
             _lateMoveReductions = null;
             _rootMoves = null;
@@ -436,9 +433,8 @@ public sealed class Search : IDisposable
         var movesRemaining = MovesToTimeControl ?? _movesRemainingDefault;
 
         // Calculate move time.
-        var timeFactor = _earlyMoveTimeFactorsPer128[FastMath.Min(Count, _earlyMoveTimeFactorsPer128.Length - 1)];
         var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
-        var milliseconds = (timeFactor * millisecondsRemaining / movesRemaining) / 128;
+        var milliseconds = millisecondsRemaining / movesRemaining;
         MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
         MoveTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _moveTimeHardLimitPer128) / 128);
 
