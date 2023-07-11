@@ -443,7 +443,7 @@ public sealed class Search : IDisposable
             // Prevent loss on time.
             movesRemaining = MovesToTimeControl ?? _movesRemainingTimePressure;
             millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
-            milliseconds = FastMath.Min(millisecondsRemaining / movesRemaining, timeRemaining.TotalMicroseconds);
+            milliseconds = FastMath.Min(millisecondsRemaining / movesRemaining, timeRemaining.TotalMilliseconds);
             MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
             MoveTimeHardLimit = timeRemaining;
             if (_messenger.Debug) _messenger.WriteMessageLine("info string Preventing loss on time.");
