@@ -66,11 +66,15 @@ public sealed class Particle
     {
         var evalConfig = new EvalConfig();
 
-        // Endgame Material
+        // Material
         Parameters[nameof(evalConfig.EgPawnMaterial)].Value = evalConfig.EgPawnMaterial;
+        Parameters[nameof(evalConfig.MgKnightMaterial)].Value = evalConfig.MgKnightMaterial;
         Parameters[nameof(evalConfig.EgKnightMaterial)].Value = evalConfig.EgKnightMaterial;
+        Parameters[nameof(evalConfig.MgBishopMaterial)].Value = evalConfig.MgBishopMaterial;
         Parameters[nameof(evalConfig.EgBishopMaterial)].Value = evalConfig.EgBishopMaterial;
+        Parameters[nameof(evalConfig.MgRookMaterial)].Value = evalConfig.MgRookMaterial;
         Parameters[nameof(evalConfig.EgRookMaterial)].Value = evalConfig.EgRookMaterial;
+        Parameters[nameof(evalConfig.MgQueenMaterial)].Value = evalConfig.MgQueenMaterial;
         Parameters[nameof(evalConfig.EgQueenMaterial)].Value = evalConfig.EgQueenMaterial;
 
         // Passed Pawns
@@ -182,11 +186,15 @@ public sealed class Particle
 
     public void ConfigureEvaluation(Eval eval)
     {
-        // Endgame Material
+        // Material
         eval.Config.EgPawnMaterial = Parameters[nameof(EvalConfig.EgPawnMaterial)].Value;
+        eval.Config.MgKnightMaterial = Parameters[nameof(EvalConfig.MgKnightMaterial)].Value;
         eval.Config.EgKnightMaterial = Parameters[nameof(EvalConfig.EgKnightMaterial)].Value;
+        eval.Config.MgBishopMaterial = Parameters[nameof(EvalConfig.MgBishopMaterial)].Value;
         eval.Config.EgBishopMaterial = Parameters[nameof(EvalConfig.EgBishopMaterial)].Value;
+        eval.Config.MgRookMaterial = Parameters[nameof(EvalConfig.MgRookMaterial)].Value;
         eval.Config.EgRookMaterial = Parameters[nameof(EvalConfig.EgRookMaterial)].Value;
+        eval.Config.MgQueenMaterial = Parameters[nameof(EvalConfig.MgQueenMaterial)].Value;
         eval.Config.EgQueenMaterial = Parameters[nameof(EvalConfig.EgQueenMaterial)].Value;
 
         // Passed Pawns
