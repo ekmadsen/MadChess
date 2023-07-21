@@ -89,11 +89,15 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
     {
         return new Parameters
         {
-            // Endgame Material
+            // Material
             new(nameof(EvalConfig.EgPawnMaterial), 50, 200),
+            new(nameof(EvalConfig.MgKnightMaterial), 200, 900),
             new(nameof(EvalConfig.EgKnightMaterial), 200, 900),
+            new(nameof(EvalConfig.MgBishopMaterial), 200, 900),
             new(nameof(EvalConfig.EgBishopMaterial), 200, 900),
+            new(nameof(EvalConfig.MgRookMaterial), 400, 2000),
             new(nameof(EvalConfig.EgRookMaterial), 400, 2000),
+            new(nameof(EvalConfig.MgQueenMaterial), 800, 4000),
             new(nameof(EvalConfig.EgQueenMaterial), 800, 4000),
 
             // Passed Pawns
