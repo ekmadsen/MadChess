@@ -53,11 +53,9 @@ public static class CachedPositionData
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // To Horizon   |Best From    |Best To      |BMP    |Dynamic Score                            |DSP|Last Accessed
-
-    // To Horizon = (one extra bit for 0..64)
-    // Best From =  Best Move From (one extra bit for illegal square)
-    // Best To =    Best Move To   (one extra bit for illegal square)
+    // To Horizon |Best From    |Best To    |BMP    |Dynamic Score                                |DSP|Last Accessed
+    
+    // Best From =  Best Move From (one extra bit for Square.Illegal)
     // BMP =        Best Move Promoted Piece
     // DSP =        Dynamic Score Precision
 
@@ -65,25 +63,25 @@ public static class CachedPositionData
     static CachedPositionData()
     {
         // Create bit shifts and masks.
-        _toHorizonShift = 57;
-        _toHorizonMask = Bitwise.CreateULongMask(57, 63);
-        _toHorizonUnmask = Bitwise.CreateULongUnmask(57, 63);
+        _toHorizonShift = 58;
+        _toHorizonMask = Bitwise.CreateULongMask(58, 63);
+        _toHorizonUnmask = Bitwise.CreateULongUnmask(58, 63);
 
-        _bestMoveFromShift = 50;
-        _bestMoveFromMask = Bitwise.CreateULongMask(50, 56);
-        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(50, 56);
+        _bestMoveFromShift = 51;
+        _bestMoveFromMask = Bitwise.CreateULongMask(51, 57);
+        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(51, 57);
 
-        _bestMoveToShift = 43;
-        _bestMoveToMask = Bitwise.CreateULongMask(43, 49);
-        _bestMoveToUnmask = Bitwise.CreateULongUnmask(43, 49);
+        _bestMoveToShift = 45;
+        _bestMoveToMask = Bitwise.CreateULongMask(45, 50);
+        _bestMoveToUnmask = Bitwise.CreateULongUnmask(45, 50);
 
-        _bestMovePromotedPieceShift = 39;
-        _bestMovePromotedPieceMask = Bitwise.CreateULongMask(39, 42);
-        _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(39, 42);
+        _bestMovePromotedPieceShift = 41;
+        _bestMovePromotedPieceMask = Bitwise.CreateULongMask(41, 44);
+        _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(41, 44);
 
         _dynamicScoreShift = 18;
-        _dynamicScoreMask = Bitwise.CreateULongMask(18, 38);
-        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(18, 38);
+        _dynamicScoreMask = Bitwise.CreateULongMask(18, 40);
+        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(18, 40);
 
         _scorePrecisionShift = 16;
         _scorePrecisionMask = Bitwise.CreateULongMask(16, 17);
@@ -214,7 +212,7 @@ public static class CachedPositionData
         Debug.Assert(ToHorizon(cachedPositionData) <= Search.MaxHorizon, $"ToHorizon(CachedPosition) = {ToHorizon(cachedPositionData)}, Search.MaxHorizon = {Search.MaxHorizon}{Environment.NewLine}{ToString(cachedPositionData)}");
 
         Debug.Assert(BestMoveFrom(cachedPositionData) <= Square.Illegal, $"BestMoveFrom(CachedPosition) = {BestMoveFrom(cachedPositionData)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(cachedPositionData)}");
-        Debug.Assert(BestMoveTo(cachedPositionData) <= Square.Illegal, $"BestMoveTo(CachedPosition) = {BestMoveTo(cachedPositionData)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(cachedPositionData)}");
+        Debug.Assert(BestMoveTo(cachedPositionData) < Square.Illegal, $"BestMoveTo(CachedPosition) = {BestMoveTo(cachedPositionData)}, Square.Illegal = {Square.Illegal}{Environment.NewLine}{ToString(cachedPositionData)}");
 
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) >= Piece.None, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.None = {Piece.None}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) != Piece.WhitePawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.WhitePawn = {Piece.WhitePawn}{Environment.NewLine}{ToString(cachedPositionData)}");

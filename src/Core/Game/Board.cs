@@ -381,8 +381,8 @@ public sealed class Board
         {
             var whiteSquare = squareShades[(int)square] == Color.White;
             var squareMask = squareMasks[(int)square];
-            squareColors[(int)Color.White] |= whiteSquare ? squareMask : 0ul;
-            squareColors[(int)Color.Black] |= whiteSquare ? 0ul : squareMask;
+            squareColors[(int)Color.White] |= whiteSquare ? squareMask : 0;
+            squareColors[(int)Color.Black] |= whiteSquare ? 0 : squareMask;
         }
 
         // All and Edge Squares

@@ -15,7 +15,7 @@ namespace ErikTheCoder.MadChess.Engine.Score;
 
 public static class SpecialScore
 {
-    public const int Max = 32_768;
+    public const int Max = 30_000;
     public const int Checkmate = Max - Search.MaxHorizon;
     public const int Interrupted = Max - Search.MaxHorizon - 1;
     public const int NotCached = Max - Search.MaxHorizon - 2;

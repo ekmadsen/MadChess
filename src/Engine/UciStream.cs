@@ -633,6 +633,7 @@ public sealed class UciStream : IDisposable
         _search.Signal.WaitOne(_maxStopTime);
 
         _search.Continue = false;
+        _board.Nodes = 0; // Prevent incorrect NPS calculation by GUI when number of Multi-PV lines is modified.
     }
 
 

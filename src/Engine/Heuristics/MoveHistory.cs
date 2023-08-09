@@ -19,9 +19,8 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 public sealed class MoveHistory
 {
-    private const int _multiplier = 128;
-    private const int _divisor = Move.HistoryMaxValue / _multiplier;
-    private const int _agePer256 = 244;
+    private const int _agePer128 = 125;
+    private const int _scalePer128 = 64;
     private readonly int[][] _moveHistory; // [piece][toSquare]
 
 
@@ -51,24 +50,29 @@ public sealed class MoveHistory
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateValue(ulong move, int increment)
     {
-        // Update value with decay.  Idea from Ethereal chess engine.
-        // This function approaches an asymptotic limit of +/- Move.HistoryMaxValue.
         var piece = Move.Piece(move);
         var toSquare = Move.To(move);
 
-        var value = _moveHistory[(int)piece][(int)toSquare];
-        value += (increment * _multiplier) - ((value * FastMath.Abs(increment)) / _divisor);
-
-        _moveHistory[(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
+        var value = _moveHistory[(int)piece][(int)toSquare] + increment;
+        if (FastMath.Abs(value) > Move.HistoryMaxValue)
+        {
+            Scale(_scalePer128);
+            value = _moveHistory[(int)piece][(int)toSquare] + increment;
+            _moveHistory[(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
+        }
+        else _moveHistory[(int)piece][(int)toSquare] = value;
     }
 
 
-    public void Age()
+    public void Age() => Scale(_agePer128);
+
+
+    private void Scale(int scalePer128)
     {
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
             for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
-                _moveHistory[(int)piece][(int)toSquare] = (_agePer256 * _moveHistory[(int)piece][(int)toSquare]) / 256;
+                _moveHistory[(int)piece][(int)toSquare] = (scalePer128 * _moveHistory[(int)piece][(int)toSquare]) / 128;
         }
     }
 

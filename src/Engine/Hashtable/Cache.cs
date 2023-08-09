@@ -58,7 +58,7 @@ public sealed class Cache
         NullPosition = new CachedPosition(0, 0);
         CachedPositionData.SetToHorizon(ref NullPosition.Data, 0);
         CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
-        CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.Illegal);
+        CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.A8);
         CachedPositionData.SetBestMovePromotedPiece(ref NullPosition.Data, Piece.None);
         CachedPositionData.SetDynamicScore(ref NullPosition.Data, SpecialScore.NotCached);
         CachedPositionData.SetScorePrecision(ref NullPosition.Data, ScorePrecision.Unknown);
@@ -99,11 +99,9 @@ public sealed class Cache
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public void SetPosition(CachedPosition cachedPosition, int searchCount)
+    public void SetPosition(CachedPosition cachedPosition)
     {
         Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
-
-        CachedPositionData.SetLastAccessed(ref cachedPosition.Data, searchCount);
 
         var index = GetIndex(cachedPosition.Key);
         var maxBucketIndex = index + _buckets - 1;

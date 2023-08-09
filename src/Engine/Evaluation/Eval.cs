@@ -659,7 +659,7 @@ public sealed class Eval
                 EvaluateKingVersusPawn(position, enemyColor);
                 return true;
 
-            // TODO: Implement Bahr's rule to evaluate a blocked rook pawn and passed pawn.
+            // TODO: Implement Bahr rule to evaluate a blocked rook pawn and passed pawn.
             // See https://macechess.blogspot.com/2013/08/bahrs-rule.html and http://www.fraserheightschess.com/Documents/Bahrs_Rule.pdf.
 
             case 0 when (enemyPawnCount == 0) && (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):
@@ -1072,6 +1072,7 @@ public sealed class Eval
 
         // Outposts
         // TODO: Consider including Board.RankMasks[(int)color][6] in outpostMask.
+        // TODO: Move outpost mask to Board class.
         var outpostMask = (Board.RankMasks[(int)color][3] | Board.RankMasks[(int)color][4] | Board.RankMasks[(int)color][5]) & ~(Board.FileMasks[0] | Board.FileMasks[7]);
         ulong supportingPawnsMask;
         ulong potentialAttackMask;

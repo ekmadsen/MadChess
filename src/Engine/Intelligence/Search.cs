@@ -33,7 +33,6 @@ public delegate (ulong Move, int MoveIndex) GetNextMove(Position position, ulong
 public sealed class Search : IDisposable
 {
     public const int MaxHorizon = 64;
-    public const int MaxQuietDepth = 8;
     public const int MaxPlyWithoutCaptureOrPawnMove = 100;
     public AutoResetEvent Signal;
     public bool PvInfoUpdate;
@@ -1330,6 +1329,7 @@ public sealed class Search : IDisposable
 
         var cachedPosition = _cache.NullPosition;
         cachedPosition.Key = currentPosition.Key;
+        CachedPositionData.SetLastAccessed(ref cachedPosition.Data, Count);
         CachedPositionData.SetToHorizon(ref cachedPosition.Data, horizon - depth);
 
         if (bestMove != Move.Null)
@@ -1363,7 +1363,7 @@ public sealed class Search : IDisposable
         }
 
         // Update cache.
-        _cache.SetPosition(cachedPosition, Count);
+        _cache.SetPosition(cachedPosition);
     }
 
 

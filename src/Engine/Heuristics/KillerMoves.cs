@@ -23,10 +23,9 @@ public sealed class KillerMoves
 
     public KillerMoves()
     {
-        const int maxDepth = Search.MaxHorizon + Search.MaxQuietDepth;
-        _killerMoves = new KillerMove[maxDepth + 1][];
+        _killerMoves = new KillerMove[Search.MaxHorizon + 1][];
 
-        for (var depth = 0; depth <= maxDepth; depth++)
+        for (var depth = 0; depth <= Search.MaxHorizon; depth++)
         {
             _killerMoves[depth] = new[]
             {
@@ -40,6 +39,9 @@ public sealed class KillerMoves
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetValue(int depth, ulong move)
     {
+        // This method is called from Search.GetNextMove, which is called in Search.GetQuietScore, so selective depth can exceed MaxHorizon.
+        if (depth > Search.MaxHorizon) return 0;
+
         var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return 2;
         return killerMove == _killerMoves[depth][1] ? 1 : 0;
@@ -49,6 +51,8 @@ public sealed class KillerMoves
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Update(int depth, ulong move)
     {
+        // This method only is called from Search.GetDynamicScore, so depth cannot exceed MaxHorizon.
+
         var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return; // Move already is the best killer move.
 
