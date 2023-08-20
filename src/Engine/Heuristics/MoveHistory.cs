@@ -19,8 +19,9 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 public sealed class MoveHistory
 {
-    private const int _agePer128 = 125;
-    private const int _scalePer128 = 64;
+    private const int _increments = 524_288;
+    private const int _agePer128 = 116;
+    private const int _scalePer128 = 32;
     private readonly int[][] _moveHistory; // [piece][toSquare]
 
 
@@ -53,20 +54,19 @@ public sealed class MoveHistory
         var piece = Move.Piece(move);
         var toSquare = Move.To(move);
 
-        var value = _moveHistory[(int)piece][(int)toSquare] + increment;
-        if (FastMath.Abs(value) > Move.HistoryMaxValue)
-        {
-            Scale(_scalePer128);
-            value = _moveHistory[(int)piece][(int)toSquare] + increment;
-            _moveHistory[(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
-        }
-        else _moveHistory[(int)piece][(int)toSquare] = value;
+        // Scale increment so it's larger when current move history value is near zero.
+        var value = _moveHistory[(int)piece][(int)toSquare];
+        var scaledIncrement = ((Move.HistoryMaxValue - FastMath.Abs(value)) * increment) / _increments;
+        value = FastMath.Clamp(value + scaledIncrement, -Move.HistoryMaxValue, Move.HistoryMaxValue);
+
+        _moveHistory[(int)piece][(int)toSquare] = value;
+        if (FastMath.Abs(value) == Move.HistoryMaxValue) Scale(_scalePer128);
     }
 
-
+    
     public void Age() => Scale(_agePer128);
-
-
+    
+    
     private void Scale(int scalePer128)
     {
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
