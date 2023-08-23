@@ -73,6 +73,8 @@ public sealed class Board
 
     public static readonly ulong[][] PawnShieldMasks; // [color][square]
 
+    public static readonly ulong[] OutpostMasks; // [color]
+
     public static readonly ulong[][] RankFileBetweenSquares; // [square1][square2]
     public static readonly ulong[][] DiagonalBetweenSquares; // [square1][square2]
 
@@ -171,9 +173,10 @@ public sealed class Board
         PassedPawnMasks = CreatePassedPawnMasks();
         FreePawnMasks = CreateFreePawnMasks();
 
-        // Create ring and pawn shield masks.
+        // Create ring, pawn shield, and outpost masks.
         (InnerRingMasks, OuterRingMasks) = CreateRingMasks();
         PawnShieldMasks = CreatePawnShieldMasks();
+        OutpostMasks = CreateOutpostMasks();
     }
 
 
@@ -883,6 +886,17 @@ public sealed class Board
                 masks[(int)color][(int)square] = mask;
             }
         }
+
+        return masks;
+    }
+
+
+    private static ulong[] CreateOutpostMasks()
+    {
+        var masks = new ulong[2];
+
+        for (var color = Color.White; color <= Color.Black; color++)
+            masks[(int)color] = (RankMasks[(int)color][3] | RankMasks[(int)color][4] | RankMasks[(int)color][5]) & ~(FileMasks[0] | FileMasks[7]);
 
         return masks;
     }

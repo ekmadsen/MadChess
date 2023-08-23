@@ -534,7 +534,7 @@ public sealed class UciStream : IDisposable
 
     private void GoSync(List<string> tokens)
     {
-        // Reset stats and search and shift killer moves.
+        // Reset stats and search, then shift killer moves.
         _stats.Reset();
         _search.Reset();
         _killerMoves.Shift(2);

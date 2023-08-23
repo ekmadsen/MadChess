@@ -26,15 +26,4 @@ public static class FastMath
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double Min(double value1, double value2) => value1 < value2 ? value1 : value2;
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Clamp(int value, int min, int max)
-    {
-        if (value < min) return min;
-
-        return (value > max)
-            ? max
-            : value;
-    }
 }

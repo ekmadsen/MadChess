@@ -50,10 +50,10 @@ public static class CachedPositionData
     private static readonly ulong _lastAccessedMask;
     private static readonly ulong _lastAccessedUnmask;
 
-
+    
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // To Horizon |Best From    |Best To    |BMP    |Dynamic Score                                |DSP|Last Accessed
+    // To Horizon   |Best From    |Best To    |BMP    |Dynamic Score                                          |DSP|Last Accessed
     
     // Best From =  Best Move From (one extra bit for Square.Illegal)
     // BMP =        Best Move Promoted Piece
@@ -63,32 +63,32 @@ public static class CachedPositionData
     static CachedPositionData()
     {
         // Create bit shifts and masks.
-        _toHorizonShift = 58;
-        _toHorizonMask = Bitwise.CreateULongMask(58, 63);
-        _toHorizonUnmask = Bitwise.CreateULongUnmask(58, 63);
+        _toHorizonShift = 57;
+        _toHorizonMask = Bitwise.CreateULongMask(57, 63);
+        _toHorizonUnmask = Bitwise.CreateULongUnmask(57, 63);
 
-        _bestMoveFromShift = 51;
-        _bestMoveFromMask = Bitwise.CreateULongMask(51, 57);
-        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(51, 57);
+        _bestMoveFromShift = 50;
+        _bestMoveFromMask = Bitwise.CreateULongMask(50, 56);
+        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(50, 56);
 
-        _bestMoveToShift = 45;
-        _bestMoveToMask = Bitwise.CreateULongMask(45, 50);
-        _bestMoveToUnmask = Bitwise.CreateULongUnmask(45, 50);
+        _bestMoveToShift = 44;
+        _bestMoveToMask = Bitwise.CreateULongMask(44, 49);
+        _bestMoveToUnmask = Bitwise.CreateULongUnmask(44, 49);
 
-        _bestMovePromotedPieceShift = 41;
-        _bestMovePromotedPieceMask = Bitwise.CreateULongMask(41, 44);
-        _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(41, 44);
+        _bestMovePromotedPieceShift = 40;
+        _bestMovePromotedPieceMask = Bitwise.CreateULongMask(40, 43);
+        _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(40, 43);
 
-        _dynamicScoreShift = 18;
-        _dynamicScoreMask = Bitwise.CreateULongMask(18, 40);
-        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(18, 40);
+        _dynamicScoreShift = 12;
+        _dynamicScoreMask = Bitwise.CreateULongMask(12, 39);
+        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(12, 39);
 
-        _scorePrecisionShift = 16;
-        _scorePrecisionMask = Bitwise.CreateULongMask(16, 17);
-        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(16, 17);
+        _scorePrecisionShift = 10;
+        _scorePrecisionMask = Bitwise.CreateULongMask(10, 11);
+        _scorePrecisionUnmask = Bitwise.CreateULongUnmask(10, 11);
 
-        _lastAccessedMask = Bitwise.CreateULongMask(0, 15);
-        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 15);
+        _lastAccessedMask = Bitwise.CreateULongMask(0, 9);
+        _lastAccessedUnmask = Bitwise.CreateULongUnmask(0, 9);
     }
 
 

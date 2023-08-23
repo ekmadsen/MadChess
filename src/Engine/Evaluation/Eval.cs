@@ -1071,12 +1071,10 @@ public sealed class Eval
         }
 
         // Outposts
-        // TODO: Consider including Board.RankMasks[(int)color][6] in outpostMask.
-        // TODO: Move outpost mask to Board class.
-        var outpostMask = (Board.RankMasks[(int)color][3] | Board.RankMasks[(int)color][4] | Board.RankMasks[(int)color][5]) & ~(Board.FileMasks[0] | Board.FileMasks[7]);
         ulong supportingPawnsMask;
         ulong potentialAttackMask;
         Square square;
+        var outpostMask = Board.OutpostMasks[(int)color];
 
         // Knight Outposts
         while ((square = Bitwise.PopFirstSetSquare(ref knights)) != Square.Illegal)

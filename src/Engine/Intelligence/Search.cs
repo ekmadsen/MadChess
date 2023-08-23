@@ -33,6 +33,7 @@ public delegate (ulong Move, int MoveIndex) GetNextMove(Position position, ulong
 public sealed class Search : IDisposable
 {
     public const int MaxHorizon = 64;
+    public const int MaxQuietDepth = 8;
     public const int MaxPlyWithoutCaptureOrPawnMove = 100;
     public AutoResetEvent Signal;
     public bool PvInfoUpdate;
@@ -365,18 +366,16 @@ public sealed class Search : IDisposable
         GetMoveTime(board.CurrentPosition);
         NodesExamineTime = _nodesPerSecond.HasValue ? 1 : UciStream.NodesTimeInterval;
 
-        // Age move history to lessen influence of history heuristic from earlier in game on move ordering of current board position.
-        _moveHistory.Age();
-
         // Iteratively deepen search.
         _originalHorizon = 0;
         var bestMove = new ScoredMove(Move.Null, -SpecialScore.Max);
         do
         {
-            // Increment horizon and reset root move number.
+            // Increment horizon, reset root move number, and age move history.
             _originalHorizon++;
             _selectiveHorizon = 0;
             _rootMoveNumber = 1;
+            _moveHistory.Age();
 
             // Reset move scores, then search moves.
             for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)

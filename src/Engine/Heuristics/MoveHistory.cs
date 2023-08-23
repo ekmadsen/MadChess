@@ -19,9 +19,9 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 public sealed class MoveHistory
 {
-    private const int _increments = 524_288;
-    private const int _agePer128 = 116;
-    private const int _scalePer128 = 32;
+    private const int _multiplier = 64;
+    private const int _divisor = Move.HistoryMaxValue / _multiplier;
+    private const int _agePer128 = 122;
     private readonly int[][] _moveHistory; // [piece][toSquare]
 
 
@@ -51,28 +51,24 @@ public sealed class MoveHistory
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateValue(ulong move, int increment)
     {
+        // Update value with decay.  Idea from Ethereal chess engine.
+        // This function approaches an asymptotic limit of +/- Move.HistoryMaxValue.
         var piece = Move.Piece(move);
         var toSquare = Move.To(move);
 
-        // Scale increment so it's larger when current move history value is near zero.
         var value = _moveHistory[(int)piece][(int)toSquare];
-        var scaledIncrement = ((Move.HistoryMaxValue - FastMath.Abs(value)) * increment) / _increments;
-        value = FastMath.Clamp(value + scaledIncrement, -Move.HistoryMaxValue, Move.HistoryMaxValue);
+        value += (increment * _multiplier) - (value * FastMath.Abs(increment) / _divisor);
 
         _moveHistory[(int)piece][(int)toSquare] = value;
-        if (FastMath.Abs(value) == Move.HistoryMaxValue) Scale(_scalePer128);
     }
 
     
-    public void Age() => Scale(_agePer128);
-    
-    
-    private void Scale(int scalePer128)
+    public void Age()
     {
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
             for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
-                _moveHistory[(int)piece][(int)toSquare] = (scalePer128 * _moveHistory[(int)piece][(int)toSquare]) / 128;
+                _moveHistory[(int)piece][(int)toSquare] = (_agePer128 * _moveHistory[(int)piece][(int)toSquare]) / 128;
         }
     }
 
