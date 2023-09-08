@@ -1173,7 +1173,7 @@ public sealed class Board
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public (bool isLegal, bool deliversCheck) PlayMove(ulong move)
+    public (bool legalMove, bool checkingMove) PlayMove(ulong move)
     {
         Debug.Assert(Move.IsValid(move));
         Debug.Assert(AssertMoveIntegrity(move));

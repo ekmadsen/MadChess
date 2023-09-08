@@ -19,9 +19,9 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 public sealed class MoveHistory
 {
-    private const int _multiplier = 384;
+    private const int _multiplier = 256;
     private const int _divisor = Move.HistoryMaxValue / _multiplier;
-    private const int _agePer128 = 124;
+    private const int _agePer128 = 118;
     private readonly int[][] _moveHistory; // [piece][toSquare]
 
 

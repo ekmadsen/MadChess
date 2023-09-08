@@ -678,9 +678,10 @@ public sealed class Search : IDisposable
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
+            // Must call IsMoveInDynamicSearchFutile and GetSearchHorizon before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
             if (Move.IsQuiet(move)) quietMoveNumber++;
-            var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, horizon, move, quietMoveNumber, drawnEndgame, phase, alpha, beta);
-            var searchHorizon = GetSearchHorizon(board, depth, horizon, move, cachedPosition, legalMoveNumber, quietMoveNumber, drawnEndgame);
+            var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame, phase, alpha, beta);
+            var searchHorizon = GetSearchHorizon(board, depth, horizon, move, cachedPosition, legalMoveNumber + 1, quietMoveNumber, drawnEndgame);
 
             // Play move.
             var (legalMove, checkingMove) = board.PlayMove(move);
@@ -691,21 +692,21 @@ public sealed class Search : IDisposable
                 board.UndoMove();
                 continue;
             }
-
+            
             legalMoveNumber++;
-            if ((legalMoveNumber > 1) && futileMove && !checkingMove)
+            if (futileMove && !checkingMove)
             {
-                // Skip futile move that doesn't deliver check.
+                // Skip futile move that doesn't check enemy king.
                 board.UndoMove();
                 continue;
             }
 
-            if (checkingMove) searchHorizon = horizon; // Do not reduce move that delivers check.
+            if (checkingMove) searchHorizon = FastMath.Max(searchHorizon, horizon); // Do not reduce move that delivers check.
 
             // Search move.
             Move.SetPlayed(ref move, true);
             board.PreviousPosition.Moves[moveIndex] = move;
-            var moveBeta = (legalMoveNumber == 1) || ((MultiPv > 1) && (depth == 0))
+            var moveBeta = (legalMoveNumber == 1) || ((depth == 0) && (MultiPv > 1))
                 ? beta // Search with full alpha / beta window.
                 : bestScore + 1; // Search with zero alpha / beta window.
             var score = -GetDynamicScore(board, depth + 1, searchHorizon, true, -moveBeta, -alpha);
@@ -722,7 +723,7 @@ public sealed class Search : IDisposable
                 if ((moveBeta < beta) || (searchHorizon < horizon))
                 {
                     // Search move at unreduced horizon with full alpha / beta window.
-                    score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
+                    score = -GetDynamicScore(board, depth + 1, FastMath.Max(searchHorizon, horizon), true, -beta, -alpha);
                 }
             }
 
@@ -917,6 +918,7 @@ public sealed class Search : IDisposable
             var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
 
+            // Must call IsMoveInQuietSearchFutile before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
             var futileMove = IsMoveInQuietSearchFutile(board.CurrentPosition, move, drawnEndgame, phase, alpha);
 
             // Play and search move.
@@ -929,10 +931,9 @@ public sealed class Search : IDisposable
             }
 
             legalMoveNumber++;
-
-            if ((legalMoveNumber > 1) && futileMove && !checkingMove)
+            if (futileMove && !checkingMove)
             {
-                // Skip futile move that doesn't deliver check.
+                // Skip futile move that doesn't check enemy king.
                 board.UndoMove();
                 continue;
             }
@@ -1131,11 +1132,12 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsMoveInDynamicSearchFutile(Position position, int depth, int horizon, ulong move, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
+    private bool IsMoveInDynamicSearchFutile(Position position, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
         var toHorizon = horizon - depth;
 
+        if (legalMoveNumber == 1) return false; // First legal move is not futile.
         if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
@@ -1196,8 +1198,9 @@ public sealed class Search : IDisposable
             return horizon + 1;
         }
 
+        if (legalMoveNumber == 1) return horizon; // Do not reduce first legal move.
         if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
-        if ((depth == 0) && (legalMoveNumber <= MultiPv)) return horizon; // Do not reduce Multi-PV root move.
+        if ((depth == 0) && (MultiPv > 1)) return horizon; // Do not reduce Multi-PV root move.
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
         if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return horizon; // Do not reduce killer move or castling.
 
