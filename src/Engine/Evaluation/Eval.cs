@@ -659,7 +659,7 @@ public sealed class Eval
                 EvaluateKingVersusPawn(position, enemyColor);
                 return true;
 
-            // TODO: Implement Bahr rule to evaluate a blocked rook pawn and passed pawn.
+            // TODO: Implement Bahr's rule to evaluate a blocked rook pawn and passed pawn.
             // See https://macechess.blogspot.com/2013/08/bahrs-rule.html and http://www.fraserheightschess.com/Documents/Bahrs_Rule.pdf.
 
             case 0 when (enemyPawnCount == 0) && (enemyBishopCount == 1) && (enemyKnightCount == 1) && (enemyMajorPieceCount == 0):

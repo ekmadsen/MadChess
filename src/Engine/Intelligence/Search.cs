@@ -71,6 +71,7 @@ public sealed class Search : IDisposable
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 40;
     private const int _lmrConstPer128 = 16;
+    private const int _moveHistoryDecrementPer128 = 96;
     private const int _quietSearchMaxFromHorizon = 3;
     private static MovePriorityComparer _movePriorityComparer;
     private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
@@ -279,27 +280,27 @@ public sealed class Search : IDisposable
         _elo = elo;
 
         // See https://www.madchess.net/the-madchess-uci_limitstrength-algorithm/ for chart with NPS, Move Error, Blunder Error, and Blunder Percent values.
-        var scale = 192d;
-        var power = 4d;
-        var constant = 512;
+        var scale = 20d;
+        var power = 5d;
+        var constant = 200;
         var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
         _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
 
         // Enable errors on every move.
-        scale = 0.5d;
-        power = 2d;
+        scale = 0.3d;
+        power = 2.5d;
         constant = 5;
         ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200;
         _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
 
         // Enable occasional blunders.
-        scale = 1d;
+        scale = 0.95d;
         power = 2.5d;
         constant = 25;
         _blunderError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
-        scale = 0.16d;
-        power = 2d;
-        constant = 5;
+        scale = 0.04d;
+        power = 2.5d;
+        constant = 4;
         _blunderPer128 = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
 
         if (_messenger.Debug)
@@ -548,6 +549,7 @@ public sealed class Search : IDisposable
         // Get cached position.
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
+        var historyDecrement = (-historyIncrement * _moveHistoryDecrementPer128) / 128;
         var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
         ulong bestMove;
         if ((cachedPosition.Key != _cache.NullPosition.Key) && (depth > 0) && !repeatPosition)
@@ -755,7 +757,7 @@ public sealed class Search : IDisposable
                         if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                         {
                             // Update history of prior quiet move that failed to produce cutoff.
-                            _moveHistory.UpdateValue(priorMove, -historyIncrement);
+                            _moveHistory.UpdateValue(priorMove, historyDecrement);
                         }
                         moveIndex--;
                     }
