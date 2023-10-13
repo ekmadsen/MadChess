@@ -17,10 +17,10 @@ using System.Threading;
 using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
-using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Core.Utilities;
-using ErikTheCoder.MadChess.Engine.Evaluation;
+using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Hashtable;
+using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
 
 
@@ -35,11 +35,13 @@ public sealed class Search : IDisposable
     public const int MaxHorizon = 64;
     public const int MaxQuietDepth = 8;
     public const int MaxPlyWithoutCaptureOrPawnMove = 100;
-    public AutoResetEvent Signal;
+
+    public readonly AutoResetEvent Signal;
+    public readonly List<ulong> CandidateMoves;
+    public readonly TimeSpan?[] TimeRemaining;
+    public readonly TimeSpan?[] TimeIncrement;
+
     public bool PvInfoUpdate;
-    public List<ulong> CandidateMoves;
-    public TimeSpan?[] TimeRemaining;
-    public TimeSpan?[] TimeIncrement;
     public int? MovesToTimeControl;
     public int? MateInMoves;
     public int HorizonLimit;
@@ -53,6 +55,7 @@ public sealed class Search : IDisposable
     public long NodesInfoUpdate;
     public int Count;
     public bool Continue;
+
     private const int _movesRemainingDefault = 20;
     private const int _movesRemainingTimePressure = 4;
     private const int _moveTimeHardLimitPer128 = 536;
@@ -73,27 +76,31 @@ public sealed class Search : IDisposable
     private const int _lmrConstPer128 = 16;
     private const int _moveHistoryDecrementPer128 = 96;
     private const int _quietSearchMaxFromHorizon = 3;
-    private static MovePriorityComparer _movePriorityComparer;
-    private static ScoredMovePriorityComparer _scoredMovePriorityComparer;
-    private static MoveScoreComparer _moveScoreComparer;
-    private static int[] _futilityPruningMargins;
+
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
+    private readonly LimitStrengthSearchConfig _limitStrengthConfig;
+    private readonly int[] _limitStrengthElos;
     private readonly Messenger _messenger; // Lifetime managed by caller.
-    private int[] _lateMovePruningMargins;
-    private int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
-    private ScoredMove[] _rootMoves;
-    private ScoredMove[] _bestMoves;
-    private ScoredMove[] _bestMovePlies;
-    private ScoredMove[] _multiPvMoves;
-    private ulong[][][] _principalVariations; // [rootMoveIndex][depth][pvMoveIndex]
-    private Stats _stats;
-    private Cache _cache;
-    private KillerMoves _killerMoves;
-    private MoveHistory _moveHistory;
-    private Eval _eval;
-    private GetNextMove _getNextMove;
-    private GetNextMove _getNextCapture;
-    private Stopwatch _stopwatch;
+    private readonly Stats _stats;
+    private readonly Cache _cache;
+    private readonly KillerMoves _killerMoves;
+    private readonly MoveHistory _moveHistory;
+    private readonly Evaluation _evaluation;
+    private readonly MovePriorityComparer _movePriorityComparer;
+    private readonly ScoredMovePriorityComparer _scoredMovePriorityComparer;
+    private readonly MoveScoreComparer _moveScoreComparer;
+    private readonly GetNextMove _getNextMove;
+    private readonly GetNextMove _getNextCapture;
+    private readonly Stopwatch _stopwatch;
+    private readonly int[] _futilityPruningMargins;
+    private readonly int[] _lateMovePruningMargins;
+    private readonly int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
+    private readonly ScoredMove[] _rootMoves;
+    private readonly ScoredMove[] _bestMoves;
+    private readonly ScoredMove[] _bestMovePlies;
+    private readonly ScoredMove[] _multiPvMoves;
+    private readonly ulong[][][] _principalVariations; // [rootMoveIndex][depth][pvMoveIndex]
+    
     private int _originalHorizon;
     private int _selectiveHorizon;
     private ulong _rootMove;
@@ -103,8 +110,7 @@ public sealed class Search : IDisposable
     private int? _nodesPerSecond;
     private int _moveError;
     private int _blunderError;
-    private int _blunderPer128;
-    private bool _disposed;
+    private int _blunderPer1024;
 
 
     public bool LimitedStrength
@@ -116,12 +122,12 @@ public sealed class Search : IDisposable
             if (_limitedStrength)
             {
                 ConfigureLimitedStrength();
-                _eval.ConfigureLimitedStrength(_elo);
+                _evaluation.ConfigureLimitedStrength(_elo);
             }
             else
             {
                 ConfigureFullStrength();
-                _eval.ConfigureFullStrength();
+                _evaluation.ConfigureFullStrength();
             }
         }
     }
@@ -136,27 +142,28 @@ public sealed class Search : IDisposable
             if (_limitedStrength)
             {
                 ConfigureLimitedStrength();
-                _eval.ConfigureLimitedStrength(_elo);
+                _evaluation.ConfigureLimitedStrength(_elo);
             }
         }
     }
 
-    static Search()
-    {
-        _movePriorityComparer = new MovePriorityComparer();
-        _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
-        _moveScoreComparer = new MoveScoreComparer();
-    }
 
-
-    public Search(Messenger messenger, Stats stats, Cache cache, KillerMoves killerMoves, MoveHistory moveHistory, Eval eval)
+    public Search(LimitStrengthSearchConfig limitStrengthConfig, Messenger messenger, Stats stats, Cache cache, KillerMoves killerMoves, MoveHistory moveHistory, Evaluation evaluation)
     {
+        _limitStrengthConfig = limitStrengthConfig;
         _messenger = messenger;
         _stats = stats;
         _cache = cache;
         _killerMoves = killerMoves;
         _moveHistory = moveHistory;
-        _eval = eval;
+        _evaluation = evaluation;
+
+        _limitStrengthElos = new[] { 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400, 2600 };
+
+        _movePriorityComparer = new MovePriorityComparer();
+        _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
+        _moveScoreComparer = new MoveScoreComparer();
+
         _getNextMove = GetNextMove;
         _getNextCapture = GetNextCapture;
 
@@ -180,6 +187,7 @@ public sealed class Search : IDisposable
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
         _multiPvMoves = new ScoredMove[Position.MaxMoves];
         _principalVariations = new ulong[Position.MaxMoves][][];
+
         for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
         {
             _principalVariations[rootMoveIndex] = new ulong[MaxHorizon + 2][]; // Guarantees var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1] is in bounds.
@@ -196,61 +204,12 @@ public sealed class Search : IDisposable
         MultiPv = 1;
         AnalyzeMode = false;
         ConfigureFullStrength();
-        _disposed = false;
     }
 
-
-    ~Search()
-    {
-        Dispose(false);
-    }
-
-
+    
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-
-    private void Dispose(bool disposing)
-    {
-        if (_disposed) return;
-
-        if (disposing)
-        {
-            // Release managed resources.
-            CandidateMoves = null;
-            TimeRemaining = null;
-            TimeIncrement = null;
-            MovesToTimeControl = null;
-            MateInMoves = null;
-            _movePriorityComparer = null;
-            _scoredMovePriorityComparer = null;
-            _moveScoreComparer = null;
-            _futilityPruningMargins = null;
-            _lateMovePruningMargins = null;
-            _lateMoveReductions = null;
-            _rootMoves = null;
-            _bestMoves = null;
-            _bestMovePlies = null;
-            _multiPvMoves = null;
-            _principalVariations = null;
-            _stats = null;
-            _cache = null;
-            _killerMoves = null;
-            _moveHistory = null;
-            _eval = null;
-            _getNextMove = null;
-            _getNextCapture = null;
-            _stopwatch = null;
-        }
-
-        // Release unmanaged resources.
         Signal?.Dispose();
-        Signal = null;
-
-        _disposed = true;
     }
 
 
@@ -278,35 +237,23 @@ public sealed class Search : IDisposable
         ConfigureFullStrength();
         _limitedStrength = true;
         _elo = elo;
-
-        // See https://www.madchess.net/the-madchess-uci_limitstrength-algorithm/ for chart with NPS, Move Error, Blunder Error, and Blunder Percent values.
-        var scale = 20d;
-        var power = 5d;
-        var constant = 200;
+        
+        // Limit search speed.
         var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
-        _nodesPerSecond = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        _nodesPerSecond = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.NpsScale, _limitStrengthConfig.NpsPower, _limitStrengthConfig.NpsConstant);
 
         // Enable errors on every move.
-        scale = 0.3d;
-        power = 2.5d;
-        constant = 5;
         ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200;
-        _moveError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        _moveError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.MoveErrorScale, _limitStrengthConfig.MoveErrorPower, _limitStrengthConfig.MoveErrorConstant);
 
         // Enable occasional blunders.
-        scale = 0.95d;
-        power = 2.5d;
-        constant = 25;
-        _blunderError = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
-        scale = 0.04d;
-        power = 2.5d;
-        constant = 4;
-        _blunderPer128 = Eval.GetNonLinearBonus(ratingClass, scale, power, constant);
+        _blunderError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderErrorScale , _limitStrengthConfig.BlunderErrorPower, _limitStrengthConfig.BlunderErrorConstant);
+        _blunderPer1024 = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderPer1024Scale, _limitStrengthConfig.BlunderPer1024Power, _limitStrengthConfig.BlunderPer1024Constant);
 
         if (_messenger.Debug)
         {
-            _messenger.WriteMessageLine($"info string LimitStrength = {LimitedStrength}, ELO = {Elo}.");
-            _messenger.WriteMessageLine($"info string NPS = {_nodesPerSecond}, MoveError = {_moveError}, BlunderError = {_blunderError}, BlunderPer128 = {_blunderPer128}.");
+            _messenger.WriteLine($"info string LimitStrength = {LimitedStrength}, ELO = {Elo}.");
+            _messenger.WriteLine($"info string NPS = {_nodesPerSecond}, MoveError = {_moveError}, BlunderError = {_blunderError}, BlunderPer1024 = {_blunderPer1024}.");
         }
     }
 
@@ -318,7 +265,7 @@ public sealed class Search : IDisposable
         _nodesPerSecond = null;
         _moveError = 0;
         _blunderError = 0;
-        _blunderPer128 = 0;
+        _blunderPer1024 = 0;
     }
 
 
@@ -360,7 +307,7 @@ public sealed class Search : IDisposable
         }
 
         // Determine score error and move time.
-        var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 128) < _blunderPer128))
+        var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 1024) < _blunderPer1024))
             ? _blunderError // Blunder
             : 0;
         scoreError = FastMath.Max(scoreError, _moveError);
@@ -393,7 +340,7 @@ public sealed class Search : IDisposable
 
             // Update principal variation status and determine whether to keep searching.
             if (PvInfoUpdate) UpdateStatus(board, true);
-            if (MateInMoves.HasValue && (bestMove.Score >= SpecialScore.Checkmate) && (Eval.GetMateMoveCount(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
+            if (MateInMoves.HasValue && (bestMove.Score >= SpecialScore.Checkmate) && (Evaluation.GetMateMoveCount(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
             AdjustMoveTime();
             if (!HaveTimeForNextHorizon()) break; // Do not have time to search next ply.
 
@@ -401,7 +348,8 @@ public sealed class Search : IDisposable
 
         // Search is complete.  Return best move.
         _stopwatch.Stop();
-        if (_messenger.Debug) _messenger.WriteMessageLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
+        if (_messenger.Debug) _messenger.WriteLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
+        UpdateStatus(board, true);
         return scoreError == 0 ? bestMove.Move : GetInferiorMove(board.CurrentPosition, scoreError);
     }
 
@@ -447,10 +395,10 @@ public sealed class Search : IDisposable
             milliseconds = FastMath.Min(millisecondsRemaining / movesRemaining, timeRemaining.TotalMilliseconds);
             MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
             MoveTimeHardLimit = timeRemaining;
-            if (_messenger.Debug) _messenger.WriteMessageLine("info string Preventing loss on time.");
+            if (_messenger.Debug) _messenger.WriteLine("info string Preventing loss on time.");
         }
 
-        if (_messenger.Debug) _messenger.WriteMessageLine($"info string Moves Remaining = {movesRemaining} MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0}");
+        if (_messenger.Debug) _messenger.WriteLine($"info string Moves Remaining = {movesRemaining} MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0}");
     }
 
 
@@ -461,7 +409,7 @@ public sealed class Search : IDisposable
         if (_bestMovePlies[_originalHorizon].Score >= (_bestMovePlies[_originalHorizon - 1].Score - _adjustMoveTimeMinScoreDecrease)) return;
 
         // Score has decreased significantly from last ply.
-        if (_messenger.Debug) _messenger.WriteMessageLine("Adjusting move time because score has decreased significantly from previous ply.");
+        if (_messenger.Debug) _messenger.WriteLine("Adjusting move time because score has decreased significantly from previous ply.");
         MoveTimeSoftLimit += TimeSpan.FromMilliseconds((MoveTimeSoftLimit.TotalMilliseconds * _adjustMoveTimePer128) / 128);
         if (MoveTimeSoftLimit > MoveTimeHardLimit) MoveTimeSoftLimit = MoveTimeHardLimit;
     }
@@ -522,16 +470,16 @@ public sealed class Search : IDisposable
         if (!Continue && (_bestMoves[0].Move != Move.Null)) return SpecialScore.Interrupted; // Search was interrupted.
 
         // Mate Distance Pruning
-        var (terminalDraw, repeatPosition) = _eval.IsTerminalDraw(board.CurrentPosition);
+        var (terminalDraw, repeatPosition) = _evaluation.IsTerminalDraw(board.CurrentPosition);
         if (depth > 0)
         {
-            var lowestPossibleScore = Eval.GetMatedScore(depth);
+            var lowestPossibleScore = Evaluation.GetMatedScore(depth);
             if (alpha < lowestPossibleScore)
             {
                 alpha = lowestPossibleScore;
                 if (lowestPossibleScore >= beta) return beta;
             }
-            var highestPossibleScore = Eval.GetMatingScore(depth);
+            var highestPossibleScore = Evaluation.GetMatingScore(depth);
             if (beta > highestPossibleScore)
             {
                 beta = highestPossibleScore;
@@ -584,15 +532,15 @@ public sealed class Search : IDisposable
         {
             board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score because no moves are futile when king is in check.
             drawnEndgame = false;
-            phase = Eval.DetermineGamePhase(board.CurrentPosition);
+            phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
         }
         else if (board.PreviousPosition?.PlayedMove == Move.Null)
         {
             board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
             drawnEndgame = false;
-            phase = Eval.DetermineGamePhase(board.CurrentPosition);
+            phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
         }
-        else (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _eval.GetStaticScore(board.CurrentPosition);
+        else (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _evaluation.GetStaticScore(board.CurrentPosition);
 
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         if (IsPositionFutile(board.CurrentPosition, depth, horizon, drawnEndgame, alpha, beta))
@@ -818,7 +766,8 @@ public sealed class Search : IDisposable
                 }
             }
 
-            if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= NodesInfoUpdate)) UpdateStatus(board, false); // Update status.
+            // Update status.
+            if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= NodesInfoUpdate)) UpdateStatus(board, false);
 
         } while (true);
 
@@ -827,11 +776,11 @@ public sealed class Search : IDisposable
         // |            Search Step 8: End Move Loop & Return Dynamic Score            |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
-
+        
         if (legalMoveNumber == 0)
         {
             // Checkmate or Stalemate
-            bestScore = board.CurrentPosition.KingInCheck ? Eval.GetMatedScore(depth) : 0;
+            bestScore = board.CurrentPosition.KingInCheck ? Evaluation.GetMatedScore(depth) : 0;
         }
         if (bestScore <= originalAlpha) UpdateCache(board.CurrentPosition, depth, horizon, Move.Null, bestScore, originalAlpha, beta); // Score failed low.
         return bestScore;
@@ -856,16 +805,16 @@ public sealed class Search : IDisposable
         if (!Continue && (_bestMoves[0].Move != Move.Null)) return SpecialScore.Interrupted; // Search was interrupted.
 
         // Mate Distance Pruning
-        var (terminalDraw, _) = _eval.IsTerminalDraw(board.CurrentPosition);
+        var (terminalDraw, _) = _evaluation.IsTerminalDraw(board.CurrentPosition);
         if (depth > 0)
         {
-            var lowestPossibleScore = Eval.GetMatedScore(depth);
+            var lowestPossibleScore = Evaluation.GetMatedScore(depth);
             if (alpha < lowestPossibleScore)
             {
                 alpha = lowestPossibleScore;
                 if (lowestPossibleScore >= beta) return beta;
             }
-            var highestPossibleScore = Eval.GetMatingScore(depth);
+            var highestPossibleScore = Evaluation.GetMatingScore(depth);
             if (beta > highestPossibleScore)
             {
                 beta = highestPossibleScore;
@@ -889,7 +838,7 @@ public sealed class Search : IDisposable
             moveGenerationToSquareMask = Board.AllSquaresMask;
             board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score because no moves are futile when king is in check.
             drawnEndgame = false;
-            phase = Eval.DetermineGamePhase(board.CurrentPosition);
+            phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
         }
         else
         {
@@ -905,7 +854,7 @@ public sealed class Search : IDisposable
                     : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
             }
             else moveGenerationToSquareMask = toSquareMask;
-            (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _eval.GetStaticScore(board.CurrentPosition);
+            (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _evaluation.GetStaticScore(board.CurrentPosition);
             if (board.CurrentPosition.StaticScore >= beta) return beta; // Prevent worsening of position by making a bad capture.  Stand pat.
             alpha = FastMath.Max(board.CurrentPosition.StaticScore, alpha);
         }
@@ -953,7 +902,7 @@ public sealed class Search : IDisposable
 
         } while (true);
 
-        if ((legalMoveNumber == 0) && board.CurrentPosition.KingInCheck) return Eval.GetMatedScore(depth); // Game ends on this move.
+        if ((legalMoveNumber == 0) && board.CurrentPosition.KingInCheck) return Evaluation.GetMatedScore(depth); // Game ends on this move.
 
         // Return score of best move.
         return alpha;
@@ -993,7 +942,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsPositionFutile(Position position, int depth, int horizon, bool isDrawnEndgame, int alpha, int beta)
+    private bool IsPositionFutile(Position position, int depth, int horizon, bool isDrawnEndgame, int alpha, int beta)
     {
         var toHorizon = horizon - depth;
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root position or position far from search horizon is not futile.
@@ -1098,7 +1047,7 @@ public sealed class Search : IDisposable
 
     // Pass bestMove parameter even though it isn't referenced to satisfy GetNextMove delegate signature.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private static (ulong Move, int MoveIndex) GetNextCapture(Position position, ulong toSquareMask, int depth, ulong bestMove)
+    private (ulong Move, int MoveIndex) GetNextCapture(Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
         while (true)
         {
@@ -1166,7 +1115,7 @@ public sealed class Search : IDisposable
         if (improvedStaticScore >= alpha) return false;
 
         // Determine if location improvement raises score to within futility margin of alpha.
-        var locationImprovement = _eval.GetPieceLocationImprovement(move, phase);
+        var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
         return (improvedStaticScore + locationImprovement) < alpha;
     }
 
@@ -1178,12 +1127,12 @@ public sealed class Search : IDisposable
         // Determine if material improvement raises score to within futility margin of alpha.
         // Avoid costly calculation of location improvement unless necessary.
         var captureVictim = Move.CaptureVictim(move);
-        var materialImprovement = _eval.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
+        var materialImprovement = _evaluation.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
         var improvedStaticScore = position.StaticScore + _futilityPruningMargins[0] + materialImprovement;
         if (improvedStaticScore >= alpha) return false;
 
         // Determine if material and location improvements raise score to within futility margin of alpha.
-        var locationImprovement = _eval.GetPieceLocationImprovement(move, phase);
+        var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
         return (improvedStaticScore + locationImprovement) < alpha;
     }
 
@@ -1313,19 +1262,19 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SortMovesByPriority(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMovePriorityComparer);
+    private void SortMovesByPriority(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMovePriorityComparer);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SortMovesByPriority(ulong[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _movePriorityComparer);
+    public void SortMovesByPriority(ulong[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _movePriorityComparer);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SortMovesByPriority(ulong[] moves, int firstMoveIndex, int lastMoveIndex) => Array.Sort(moves, firstMoveIndex, lastMoveIndex - firstMoveIndex + 1, _movePriorityComparer);
+    private void SortMovesByPriority(ulong[] moves, int firstMoveIndex, int lastMoveIndex) => Array.Sort(moves, firstMoveIndex, lastMoveIndex - firstMoveIndex + 1, _movePriorityComparer);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SortMovesByScore(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _moveScoreComparer);
+    private void SortMovesByScore(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _moveScoreComparer);
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -1408,20 +1357,20 @@ public sealed class Search : IDisposable
                 var pvLongAlgebraic = stringBuilder.ToString();
                 var score = bestMove.Score;
                 var multiPvPhrase = MultiPv > 1 ? $"multipv {pv + 1} " : null;
-                var scorePhrase = FastMath.Abs(score) >= SpecialScore.Checkmate ? $"mate {Eval.GetMateMoveCount(score)}" : $"cp {score}";
-                _messenger.WriteMessageLine(
+                var scorePhrase = FastMath.Abs(score) >= SpecialScore.Checkmate ? $"mate {Evaluation.GetMateMoveCount(score)}" : $"cp {score}";
+                _messenger.WriteLine(
                     $"info {multiPvPhrase}depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
             }
         }
         else
         {
             // Write message without principal variation(s).
-            _messenger.WriteMessageLine($"info depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
+            _messenger.WriteLine($"info depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} nps {nodesPerSecond:0}");
         }
 
         // Write message regarding hash and current move.
-        _messenger.WriteMessageLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
-        if (_messenger.Debug) _messenger.WriteMessageLine(_stats.ToString());
+        _messenger.WriteLine($"info hashfull {hashFull:0} currmove {Move.ToLongAlgebraic(_rootMove)} currmovenumber {_rootMoveNumber}");
+        if (_messenger.Debug) _messenger.WriteLine(_stats.ToString());
 
         // Calculate node count for next status update.
         var intervals = (int)(board.Nodes / UciStream.NodesInfoInterval);
@@ -1456,5 +1405,33 @@ public sealed class Search : IDisposable
         PvInfoUpdate = true;
         Count++;
         Continue = true;
+    }
+
+
+    public string ShowLimitStrengthParameters()
+    {
+        var stringBuilder = new StringBuilder();
+        stringBuilder.AppendLine("Rating (Elo)  Search Speed (NPS)  Move Error  Blunder Error  Blunder Percent");
+        stringBuilder.AppendLine();
+        stringBuilder.Append('=', 76);
+        stringBuilder.AppendLine();
+
+        for (var index = 0; index < _limitStrengthElos.Length; index++)
+        {
+            var elo = _limitStrengthElos[index];
+
+            var ratingClass = (double)(elo - Intelligence.Elo.Min) / 200;
+            var nodesPerSecond = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.NpsScale, _limitStrengthConfig.NpsPower, _limitStrengthConfig.NpsConstant);
+
+            ratingClass = (double)(Intelligence.Elo.Max - elo) / 200;
+            var moveError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.MoveErrorScale, _limitStrengthConfig.MoveErrorPower, _limitStrengthConfig.MoveErrorConstant);
+            var blunderError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderErrorScale, _limitStrengthConfig.BlunderErrorPower, _limitStrengthConfig.BlunderErrorConstant);
+            var blunderPer1024 = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderPer1024Scale, _limitStrengthConfig.BlunderPer1024Power, _limitStrengthConfig.BlunderPer1024Constant);
+            var blunderPercent = 100d * blunderPer1024 / 1024d;
+
+            stringBuilder.AppendLine($"{elo,12}{nodesPerSecond.ToString("n0").PadLeft(20)}{moveError,12}{blunderError,15}{blunderPercent.ToString("0.0").PadLeft(17)}");
+        }
+
+        return stringBuilder.ToString();
     }
 }

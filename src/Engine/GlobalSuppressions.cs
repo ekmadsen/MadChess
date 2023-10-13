@@ -5,4 +5,5 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Style", "IDE0063:Use simple 'using' statement", Justification = "<Pending>", Scope = "member", Target = "~M:ErikTheCoder.MadChess.Engine.Program.Main")]
+[assembly: SuppressMessage("Style", "IDE0063:Use simple 'using' statement", Justification = "<Pending>", Scope = "member", Target = "~M:ErikTheCoder.MadChess.Engine.Program.Main~System.Threading.Tasks.Task")]
+[assembly: SuppressMessage("Style", "IDE0063:Use simple 'using' statement", Justification = "<Pending>", Scope = "member", Target = "~M:ErikTheCoder.MadChess.Engine.Program.LoadAdvancedConfig~System.Threading.Tasks.Task{ErikTheCoder.MadChess.Engine.Config.AdvancedConfig}")]

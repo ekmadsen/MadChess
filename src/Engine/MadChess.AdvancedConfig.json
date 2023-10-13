@@ -1,0 +1,71 @@
+// After adjusting values in this JSON file, run MadChess.Engine.exe from the command line and enter the following command...
+
+// showlimitstrengthparams
+
+// ... to see evaluation Knowledge Ppercent and Search Speed (NPS), Move Error, Blunder Error, and Blunder Percent parameter values
+//     calculated from these limit stregnth config values.
+
+// You must restart MadChess.Engine.exe to load changed values in this JSON file.
+// In other words, these limit strength config values are only read at engine startup.
+// They are not read when changing UCI options nor when starting a new game.
+
+{
+  "limitStrength": {
+
+    "evaluation": {
+
+      // Knowledge Percent is calculated by linearly interpolating 0% - 100% between MinElo of 600 and the MaxElo specified in the JSON below.
+
+      //private static int GetLinearlyInterpolatedValue(int minValue, int maxValue, int correlatedValue, int minCorrelatedValue, int maxCorrelatedValue)
+      //{
+      //    Debug.Assert(maxValue >= minValue);
+      //    Debug.Assert(maxCorrelatedValue >= minCorrelatedValue);
+      //
+      //    var valueRange = maxValue - minValue;
+      //    double correlatedRange = maxCorrelatedValue - minCorrelatedValue;
+      //    correlatedValue = Math.Clamp(correlatedValue, minCorrelatedValue, maxCorrelatedValue);
+      //    var fraction = (correlatedValue - minCorrelatedValue) / correlatedRange;
+      //    
+      //    return (int) (minValue + (fraction * valueRange));
+      //}
+
+      "undervaluePawnsMaxElo": 800,
+      "undervalueRookOvervalueQueenMaxElo": 1000,
+      "valueKnightBishopEquallyMaxElo": 1000,
+      "misjudgePassedPawnsMaxElo": 1200,
+      "inattentiveKingDefenseMaxElo": 1400,
+      "misplacePiecesMaxElo": 1600,
+      "underestimateMobilePiecesMaxElo": 1800,
+      "allowPawnStructureDamageMaxElo": 2000,
+      "underestimateThreatsMaxElo": 2200,
+      "poorManeuveringMinorPiecesMaxElo": 2300,
+      "poorManeuveringMajorPiecesMaxElo": 2400
+    },
+
+    "search": {
+
+      // Search parameters are calculated via a non-linear formula.
+
+      // public static int GetNonLinearBonus(double bonus, double scale, double power, int constant) => (int)(scale * Math.Pow(bonus, power)) + constant;
+
+      // The scale, power, and constant parameters in the above formula are specified in the JSON below.
+      // The bonus parameter in the above formula is ratingClass.
+
+      // For _nodePerSecond:                                  var ratingClass = (double)(elo -  600) / 200;
+      // For _moveError, _blunderError, and _blunderPer1024:  var ratingClass = (double)(2600 - elo) / 200;
+
+      "npsScale": 100,
+      "npsPower": 4,
+      "npsConstant": 200,
+      "moveErrorScale": 1,
+      "moveErrorPower": 2,
+      "moveErrorConstant": 10,
+      "blunderErrorScale": 4,
+      "blunderErrorPower": 2,
+      "blunderErrorConstant": 50,
+      "blunderPer1024Scale": 0.8,
+      "blunderPer1024Power": 2,
+      "blunderPer1024Constant": 40
+    }
+  }
+}

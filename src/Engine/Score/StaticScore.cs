@@ -13,7 +13,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
-using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
@@ -127,8 +126,21 @@ public sealed class StaticScore
                                      EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgConnectedPassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
                                      EgPieceLocation[(int)color] + EgPieceMobility[(int)color] + EgPawnStructure[(int)color] +
                                      EgThreats[(int)color] + EgBishopPair[(int)color] + EgOutposts[(int)color] + EgRookOn7thRank[(int)color];
-    
-    
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetTotalScore(Color color, int phase)
+    {
+        var taperedScore = GetTaperedScore(color, phase);
+
+        // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
+        var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
+
+        Debug.Assert(Math.Abs(scaledTaperedScore) <= SpecialScore.LargestNonMate); // Evaluation never scores checkmate positions.  Search identifies checkmates.
+        return scaledTaperedScore;
+    }
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetTaperedScore(Color color, int phase)
     {
@@ -146,20 +158,7 @@ public sealed class StaticScore
 
     // Linearly interpolate between middlegame and endgame scores.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetTaperedScore(int middlegameScore, int endgameScore, int phase) => ((middlegameScore * phase) + (endgameScore * (Eval.MiddlegamePhase - phase))) / Eval.MiddlegamePhase;
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetTotalScore(Color color, int phase)
-    {
-        var taperedScore = GetTaperedScore(color, phase);
-
-        // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
-        var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
-
-        Debug.Assert(Math.Abs(scaledTaperedScore) <= SpecialScore.LargestNonMate); // Evaluation never scores checkmate positions.  Search identifies checkmates.
-        return scaledTaperedScore;
-    }
+    public static int GetTaperedScore(int middlegameScore, int endgameScore, int phase) => ((middlegameScore * phase) + (endgameScore * (Evaluation.MiddlegamePhase - phase))) / Evaluation.MiddlegamePhase;
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -270,10 +269,10 @@ public sealed class StaticScore
         AppendStaticScoreLine(stringBuilder, "Total", mgWhite, mgBlack, GetEg(Color.White), GetEg(Color.Black), phase);
         stringBuilder.AppendLine();
 
-        var phaseFraction = (100 * phase) / Eval.MiddlegamePhase;
+        var phaseFraction = (100 * phase) / Evaluation.MiddlegamePhase;
         var totalScore = GetTotalScore(Color.White, phase) / 100d;
 
-        stringBuilder.AppendLine($"Middlegame   = {phase} of {Eval.MiddlegamePhase} ({phaseFraction}%)");
+        stringBuilder.AppendLine($"Middlegame   = {phase} of {Evaluation.MiddlegamePhase} ({phaseFraction}%)");
         stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
         stringBuilder.Append($"Total Score  = {totalScore:0.00}");
 

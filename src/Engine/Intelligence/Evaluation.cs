@@ -16,60 +16,72 @@ using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
+using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Heuristics;
-using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Score;
 
 
-namespace ErikTheCoder.MadChess.Engine.Evaluation;
+namespace ErikTheCoder.MadChess.Engine.Intelligence;
 
 
-public sealed class Eval
+public sealed class Evaluation
 {
     private const int _egKingCornerFactor = 50;
     private const int _egKbnPenalty = 300;
+    private readonly LimitStrengthEvalConfig _limitStrengthConfig;
+    private readonly int[] _limitStrengthElos;
     private readonly Messenger _messenger; // Lifetime managed by caller.
     private readonly Stats _stats;
-    private readonly EvalConfig _defaultConfig;
+    private readonly EvaluationConfig _defaultConfig;
     private readonly StaticScore _staticScore;
-    public readonly EvalConfig Config;
+
+    public readonly EvaluationConfig Config;
+
     // Game Phase (constants selected such that starting material = 128)
     public const int MiddlegamePhase = 4 * (_knightPhaseWeight + _bishopPhaseWeight + _rookPhaseWeight) + (2 * _queenPhaseWeight);
     private const int _knightPhaseWeight = 5; //   4 *  5 =  20
     private const int _bishopPhaseWeight = 5; // + 4 *  5 =  40
     private const int _rookPhaseWeight =  11; // + 4 * 11 =  84
     private const int _queenPhaseWeight = 22; // + 2 * 22 = 128
+
     // Draw by Repetition
     public int DrawMoves;
+
     // Material
     private readonly int[] _mgMaterialScores; // [colorlessPiece]
     private readonly int[] _egMaterialScores; // [colorlessPiece]
+
     // Passed Pawns
     private readonly ulong[] _passedPawns; // [color]
     private readonly int[] _mgPassedPawns; // [rank]
     private readonly int[] _egPassedPawns; // [rank]
     private readonly int[] _egFreePassedPawns; // [rank]
     private readonly int[] _egConnectedPassedPawns; // [rank]
+
     // King Safety
     private readonly int[][] _mgKingSafetyAttackWeights; // [colorlessPiece][kingRing]
     private readonly int[] _mgKingSafety; // [threatsToEnemyKingSafety]
+
     // Piece Location
     private readonly int[][] _mgPieceLocations; // [colorlessPiece][square]
     private readonly int[][] _egPieceLocations; // [colorlessPiece][square]
+
     // Piece Mobility
     private readonly int[][] _mgPieceMobility; // [colorlessPiece][moves]
     private readonly int[][] _egPieceMobility; // [colorlessPiece][moves]
 
 
-    public Eval(Messenger messenger, Stats stats)
+    public Evaluation(LimitStrengthEvalConfig limitStrengthConfig, Messenger messenger, Stats stats)
     {
+        _limitStrengthConfig = limitStrengthConfig;
         _messenger = messenger;
         _stats = stats;
         _staticScore = new StaticScore();
 
         // Do not set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
-        Config = new EvalConfig();
-        _defaultConfig = new EvalConfig();
+        Config = new EvaluationConfig();
+        _defaultConfig = new EvaluationConfig();
+        _limitStrengthElos = new[] { 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400 };
 
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
 
@@ -159,10 +171,10 @@ public sealed class Eval
 
         for (var rank = 1; rank < 7; rank++)
         {
-            _mgPassedPawns[rank] = GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
-            _egPassedPawns[rank] = GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
-            _egFreePassedPawns[rank] = GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
-            _egConnectedPassedPawns[rank] = GetNonLinearBonus(rank, egConnectedScale, passedPawnPower, 0);
+            _mgPassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
+            _egPassedPawns[rank] = Formula.GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
+            _egFreePassedPawns[rank] = Formula.GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
+            _egConnectedPassedPawns[rank] = Formula.GetNonLinearBonus(rank, egConnectedScale, passedPawnPower, 0);
         }
 
         // Calculate king safety values.
@@ -179,7 +191,7 @@ public sealed class Eval
         var scale = -Config.MgKingSafetyScalePer128 / 128d; // Note the negative scale.  More threats to king == less safety.
 
         for (var index = 0; index < _mgKingSafety.Length; index++)
-            _mgKingSafety[index] = GetNonLinearBonus(index, scale, kingSafetyPower, 0);
+            _mgKingSafety[index] = Formula.GetNonLinearBonus(index, scale, kingSafetyPower, 0);
 
         // Calculate piece location values.
         for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
@@ -286,8 +298,8 @@ public sealed class Eval
         for (var moves = 0; moves <= maxMoves; moves++)
         {
             var fractionOfMaxMoves = (double) moves / maxMoves;
-            mgPieceMobility[moves] = GetNonLinearBonus(fractionOfMaxMoves, mgMobilityScale, pieceMobilityPower, -mgMobilityScale / 2);
-            egPieceMobility[moves] = GetNonLinearBonus(fractionOfMaxMoves, egMobilityScale, pieceMobilityPower, -egMobilityScale / 2);
+            mgPieceMobility[moves] = Formula.GetNonLinearBonus(fractionOfMaxMoves, mgMobilityScale, pieceMobilityPower, -mgMobilityScale / 2);
+            egPieceMobility[moves] = Formula.GetNonLinearBonus(fractionOfMaxMoves, egMobilityScale, pieceMobilityPower, -egMobilityScale / 2);
         }
 
         // Adjust constant so piece mobility bonus for average number of moves is zero.
@@ -309,139 +321,94 @@ public sealed class Eval
         ConfigureFullStrength();
         Config.LimitedStrength = true;
 
-        if (elo < Elo.Beginner)
+        // Undervalue pawns.
+        Config.MgPawnMaterial = Formula.GetLinearlyInterpolatedValue(50, _defaultConfig.MgPawnMaterial, elo, Elo.Min, _limitStrengthConfig.UndervaluePawnsMaxElo);
+        Config.EgPawnMaterial = Formula.GetLinearlyInterpolatedValue(50, _defaultConfig.EgPawnMaterial, elo, Elo.Min, _limitStrengthConfig.UndervaluePawnsMaxElo);
+
+        // Undervalue rook and overvalue queen.
+        Config.MgRookMaterial = Formula.GetLinearlyInterpolatedValue((_defaultConfig.MgRookMaterial * 2) / 3, _defaultConfig.MgRookMaterial, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
+        Config.EgRookMaterial = Formula.GetLinearlyInterpolatedValue((_defaultConfig.EgRookMaterial * 2) / 3, _defaultConfig.EgRookMaterial, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
+        var queenMaterialAccuracyPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
+        Config.MgQueenMaterial = _defaultConfig.MgQueenMaterial + ((128 - queenMaterialAccuracyPer128) * _defaultConfig.MgQueenMaterial) / (128 * 3);
+        Config.EgQueenMaterial = _defaultConfig.EgQueenMaterial + ((128 - queenMaterialAccuracyPer128) * _defaultConfig.EgQueenMaterial) / (128 * 3);
+
+        // Value knight and bishop equally.
+        if (_defaultConfig.MgBishopMaterial > _defaultConfig.MgKnightMaterial)
         {
-            // Undervalue pawns.
-            Config.MgPawnMaterial = GetLinearlyInterpolatedValue(0, _defaultConfig.MgPawnMaterial, elo, Elo.Min, Elo.Beginner);
-            Config.EgPawnMaterial = GetLinearlyInterpolatedValue(0, _defaultConfig.EgPawnMaterial, elo, Elo.Min, Elo.Beginner);
+            // Bishop worth more than knight in middlegame.
+            Config.MgBishopMaterial = Formula.GetLinearlyInterpolatedValue(_defaultConfig.MgKnightMaterial, _defaultConfig.MgBishopMaterial, elo, Elo.Min, _limitStrengthConfig.ValueKnightBishopEquallyMaxElo);
+        }
+        else
+        {
+            // Knight worth more than bishop in middlegame.
+            Config.MgKnightMaterial = Formula.GetLinearlyInterpolatedValue(_defaultConfig.MgBishopMaterial, _defaultConfig.MgKnightMaterial, elo, Elo.Min, _limitStrengthConfig.ValueKnightBishopEquallyMaxElo);
         }
 
-        if (elo < Elo.Novice)
+        if (_defaultConfig.EgBishopMaterial > _defaultConfig.EgKnightMaterial)
         {
-            // Undervalue rook and overvalue queen.
-            Config.MgRookMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.MgRookMaterial * 0.67), _defaultConfig.MgRookMaterial, elo, Elo.Min, Elo.Novice);
-            Config.EgRookMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgRookMaterial * 0.67), _defaultConfig.EgRookMaterial, elo, Elo.Min, Elo.Novice);
-            Config.MgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.MgQueenMaterial * 1.33), _defaultConfig.MgQueenMaterial, elo, Elo.Min, Elo.Novice);
-            Config.EgQueenMaterial = GetLinearlyInterpolatedValue((int)(_defaultConfig.EgQueenMaterial * 1.33), _defaultConfig.EgQueenMaterial, elo, Elo.Min, Elo.Novice);
-
-            // Value knight and bishop equally.
-            if (_defaultConfig.MgBishopMaterial > _defaultConfig.MgKnightMaterial)
-            {
-                // Bishop worth more than knight in middlegame.
-                Config.MgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgKnightMaterial, _defaultConfig.MgBishopMaterial, elo, Elo.Min, Elo.Novice);
-            }
-            else
-            {
-                // Knight worth more than bishop in middlegame.
-                Config.MgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.MgBishopMaterial, _defaultConfig.MgKnightMaterial, elo, Elo.Min, Elo.Novice);
-            }
-
-            if (_defaultConfig.EgBishopMaterial > _defaultConfig.EgKnightMaterial)
-            {
-                // Bishop worth more than knight in endgame.
-                Config.EgBishopMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgKnightMaterial, _defaultConfig.EgBishopMaterial, elo, Elo.Min, Elo.Novice);
-            }
-            else
-            {
-                // Knight worth more than bishop in endgame.
-                Config.EgKnightMaterial = GetLinearlyInterpolatedValue(_defaultConfig.EgBishopMaterial, _defaultConfig.EgKnightMaterial, elo, Elo.Min, Elo.Novice);
-            }
+            // Bishop worth more than knight in endgame.
+            Config.EgBishopMaterial = Formula.GetLinearlyInterpolatedValue(_defaultConfig.EgKnightMaterial, _defaultConfig.EgBishopMaterial, elo, Elo.Min, _limitStrengthConfig.ValueKnightBishopEquallyMaxElo);
+        }
+        else
+        {
+            // Knight worth more than bishop in endgame.
+            Config.EgKnightMaterial = Formula.GetLinearlyInterpolatedValue(_defaultConfig.EgBishopMaterial, _defaultConfig.EgKnightMaterial, elo, Elo.Min, _limitStrengthConfig.ValueKnightBishopEquallyMaxElo);
         }
 
-        if (elo < Elo.Social)
-        {
-            // Misjudge danger of passed pawns.
-            Config.LsPassedPawnsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Social);
-        }
+        // Misjudge danger of passed pawns.
+        Config.LsPassedPawnsPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.MisjudgePassedPawnsMaxElo);
 
-        if (elo < Elo.StrongSocial)
-        {
-            // Inattentive to defense of king.
-            Config.LsKingSafetyPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.StrongSocial);
-        }
+        // Inattentive to defense of king.
+        Config.LsKingSafetyPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.InattentiveKingDefenseMaxElo);
 
-        if (elo < Elo.Club)
-        {
-            // Misplace pieces.
-            Config.LsPieceLocationPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Club);
-        }
+        // Misplace pieces.
+        Config.LsPieceLocationPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.MisplacePiecesMaxElo);
 
-        if (elo < Elo.StrongClub)
-        {
-            // Underestimate attacking potential of mobile pieces.
-            Config.LsPieceMobilityPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.StrongClub);
-        }
+        // Underestimate attacking potential of mobile pieces.
+        Config.LsPieceMobilityPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.UnderestimateMobilePiecesMaxElo);
 
-        if (elo < Elo.Expert)
-        {
-            // Allow pawn structure to be damaged.
-            Config.LsPawnStructurePer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Expert);
-        }
+        // Allow pawn structure to be damaged.
+        Config.LsPawnStructurePer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.AllowPawnStructureDamageMaxElo);
 
-        if (elo < Elo.CandidateMaster)
-        {
-            // Underestimate threats (lesser-value pieces attacking greater-value pieces).
-            Config.LsThreatsPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.CandidateMaster);
-        }
+        // Underestimate threats (lesser-value pieces attacking greater-value pieces).
+        Config.LsThreatsPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.UnderestimateThreatsMaxElo);
 
-        if (elo < Elo.Master)
-        {
-            // Poor maneuvering of minor pieces.
-            Config.LsMinorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.Master);
-        }
+        // Poor maneuvering of minor pieces.
+        Config.LsMinorPiecesPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.PoorManeuveringMinorPiecesMaxElo);
 
-        if (elo < Elo.InternationalMaster)
-        {
-            // Poor maneuvering of major pieces.
-            Config.LsMajorPiecesPer128 = GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, Elo.InternationalMaster);
-        }
+        // Poor maneuvering of major pieces.
+        Config.LsMajorPiecesPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.PoorManeuveringMajorPiecesMaxElo);
 
         if (_messenger.Debug)
         {
-            _messenger.WriteMessageLine($"info string {nameof(Config.MgPawnMaterial)} = {Config.MgPawnMaterial}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.EgPawnMaterial)} = {Config.EgPawnMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.MgPawnMaterial)} = {Config.MgPawnMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.EgPawnMaterial)} = {Config.EgPawnMaterial}");
 
-            _messenger.WriteMessageLine($"info string {nameof(Config.MgKnightMaterial)} = {Config.MgKnightMaterial}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.EgKnightMaterial)} = {Config.EgKnightMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.MgKnightMaterial)} = {Config.MgKnightMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.EgKnightMaterial)} = {Config.EgKnightMaterial}");
 
-            _messenger.WriteMessageLine($"info string {nameof(Config.MgBishopMaterial)} = {Config.MgBishopMaterial}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.EgBishopMaterial)} = {Config.EgBishopMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.MgBishopMaterial)} = {Config.MgBishopMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.EgBishopMaterial)} = {Config.EgBishopMaterial}");
 
-            _messenger.WriteMessageLine($"info string {nameof(Config.MgRookMaterial)} = {Config.MgRookMaterial}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.EgRookMaterial)} = {Config.EgRookMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.MgRookMaterial)} = {Config.MgRookMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.EgRookMaterial)} = {Config.EgRookMaterial}");
 
-            _messenger.WriteMessageLine($"info string {nameof(Config.MgQueenMaterial)} = {Config.MgQueenMaterial}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.EgQueenMaterial)} = {Config.EgQueenMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.MgQueenMaterial)} = {Config.MgQueenMaterial}");
+            _messenger.WriteLine($"info string {nameof(Config.EgQueenMaterial)} = {Config.EgQueenMaterial}");
 
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsPassedPawnsPer128)} = {Config.LsPassedPawnsPer128}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsKingSafetyPer128)} = {Config.LsKingSafetyPer128}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsPieceLocationPer128)} = {Config.LsPieceLocationPer128}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsPieceMobilityPer128)} = {Config.LsPieceMobilityPer128}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsPawnStructurePer128)} = {Config.LsPawnStructurePer128}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsThreatsPer128)} = {Config.LsThreatsPer128}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsMinorPiecesPer128)} = {Config.LsMinorPiecesPer128}");
-            _messenger.WriteMessageLine($"info string {nameof(Config.LsMajorPiecesPer128)} = {Config.LsMajorPiecesPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LsPassedPawnsPer128)} = {Config.LsPassedPawnsPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LsKingSafetyPer128)} = {Config.LsKingSafetyPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LsPieceLocationPer128)} = {Config.LsPieceLocationPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LsPieceMobilityPer128)} = {Config.LsPieceMobilityPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LsPawnStructurePer128)} = {Config.LsPawnStructurePer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LsThreatsPer128)} = {Config.LsThreatsPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LsMinorPiecesPer128)} = {Config.LsMinorPiecesPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LsMajorPiecesPer128)} = {Config.LsMajorPiecesPer128}");
         }
     }
 
 
     public void ConfigureFullStrength() => Config.Set(_defaultConfig);
-
-
-    private static int GetLinearlyInterpolatedValue(int minValue, int maxValue, int correlatedValue, int minCorrelatedValue, int maxCorrelatedValue)
-    {
-        Debug.Assert(maxValue >= minValue);
-        Debug.Assert(maxCorrelatedValue >= minCorrelatedValue);
-
-        var correlatedRange = maxCorrelatedValue - minCorrelatedValue;
-        var fraction = (double) (FastMath.Max(correlatedValue, minCorrelatedValue) - minCorrelatedValue) / correlatedRange;
-        var valueRange = maxValue - minValue;
-        var value = (int) ((fraction * valueRange) + minValue);
-
-        return maxValue > minValue
-            ? Math.Clamp(value, minValue, maxValue)
-            : Math.Clamp(value, maxValue, minValue);
-    }
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -496,7 +463,7 @@ public sealed class Eval
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (int StaticScore, bool DrawnEndgame, int Phase) GetStaticScore(Position position)
     {
-        // TODO: Penalize loss of castling rights to discourage limit-strength engine from moving king early in game.
+        // TODO: Penalize loss of castling rights to discourage limited strength engine from moving king or rook early in game.
         // TODO: Handicap knowledge of checkmates and endgames when in limited strength mode.
         // TODO: Evaluate space.  Perhaps squares attacked by more of own pieces than enemy pieces?  Or squares behind own pawns not occupied by enemy pieces?
         // TODO: Evaluate rooks on open files.
@@ -1190,9 +1157,6 @@ public sealed class Eval
     }
 
 
-    public static int GetNonLinearBonus(double bonus, double scale, double power, int constant) => (int)(scale * Math.Pow(bonus, power)) + constant;
-
-
     public string ShowParameters()
     {
         var stringBuilder = new StringBuilder();
@@ -1269,12 +1233,12 @@ public sealed class Eval
         stringBuilder.AppendLine($"King Safety KnightAttackInnerRingPer8:  {Config.MgKingSafetyKnightAttackInnerRingPer8:000}");
         stringBuilder.AppendLine($"King Safety BishopAttackOuterRingPer8:  {Config.MgKingSafetyBishopAttackOuterRingPer8:000}");
         stringBuilder.AppendLine($"King Safety BishopAttackInnerRingPer8:  {Config.MgKingSafetyBishopAttackInnerRingPer8:000}");
-        stringBuilder.AppendLine($"King Safety RookAttackOuterRingPer8:   {Config.MgKingSafetyRookAttackOuterRingPer8:000}");
-        stringBuilder.AppendLine($"King Safety RookAttackInnerRingPer8:   {Config.MgKingSafetyRookAttackInnerRingPer8:000}");
-        stringBuilder.AppendLine($"King Safety QueenAttackOuterRingPer8:  {Config.MgKingSafetyQueenAttackOuterRingPer8:000}");
-        stringBuilder.AppendLine($"King Safety QueenAttackInnerRingPer8:  {Config.MgKingSafetyQueenAttackInnerRingPer8:000}");
-        stringBuilder.AppendLine($"King Safety SemiOpenFilePer8:          {Config.MgKingSafetySemiOpenFilePer8:000}");
-        stringBuilder.AppendLine($"King Safety PawnShieldPer8:            {Config.MgKingSafetyPawnShieldPer8:000}");
+        stringBuilder.AppendLine($"King Safety RookAttackOuterRingPer8:    {Config.MgKingSafetyRookAttackOuterRingPer8:000}");
+        stringBuilder.AppendLine($"King Safety RookAttackInnerRingPer8:    {Config.MgKingSafetyRookAttackInnerRingPer8:000}");
+        stringBuilder.AppendLine($"King Safety QueenAttackOuterRingPer8:   {Config.MgKingSafetyQueenAttackOuterRingPer8:000}");
+        stringBuilder.AppendLine($"King Safety QueenAttackInnerRingPer8:   {Config.MgKingSafetyQueenAttackInnerRingPer8:000}");
+        stringBuilder.AppendLine($"King Safety SemiOpenFilePer8:           {Config.MgKingSafetySemiOpenFilePer8:000}");
+        stringBuilder.AppendLine($"King Safety PawnShieldPer8:             {Config.MgKingSafetyPawnShieldPer8:000}");
         stringBuilder.AppendLine();
 
         stringBuilder.Append("Middlegame King Safety:  ");
@@ -1302,6 +1266,70 @@ public sealed class Eval
     {
         for (var index = 0; index < parameters.Length; index++)
             stringBuilder.Append(parameters[index].ToString("+000;-000").PadRight(5));
+    }
+
+
+    public string ShowLimitStrengthParameters()
+    {
+        var stringBuilder = new StringBuilder();
+        stringBuilder.AppendLine("Evaluation Term    Knowledge Percent");
+        stringBuilder.AppendLine();
+        
+        stringBuilder.Append("Rating (Elo)    ");
+        for (var index = 0; index < _limitStrengthElos.Length; index++)
+        {
+            var elo = _limitStrengthElos[index];
+            stringBuilder.Append($"{elo,6}");
+        }
+        stringBuilder.AppendLine();
+        stringBuilder.Append('=', 82);
+        stringBuilder.AppendLine();
+
+        // Passed Pawns
+        ShowPositionalKnowledgeGain("Passed Pawns", _limitStrengthConfig.MisjudgePassedPawnsMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // King Safety
+        ShowPositionalKnowledgeGain("King Safety", _limitStrengthConfig.InattentiveKingDefenseMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // Piece Location
+        ShowPositionalKnowledgeGain("Piece Location", _limitStrengthConfig.MisplacePiecesMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // Piece Mobility
+        ShowPositionalKnowledgeGain("Piece Mobility", _limitStrengthConfig.UnderestimateMobilePiecesMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // Pawn Structure
+        ShowPositionalKnowledgeGain("Pawn Structure", _limitStrengthConfig.AllowPawnStructureDamageMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // Threats
+        ShowPositionalKnowledgeGain("Threats", _limitStrengthConfig.UnderestimateThreatsMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // Minor Pieces
+        ShowPositionalKnowledgeGain("Minor Pieces", _limitStrengthConfig.PoorManeuveringMinorPiecesMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // Major Pieces
+        ShowPositionalKnowledgeGain("Major Pieces", _limitStrengthConfig.PoorManeuveringMajorPiecesMaxElo, stringBuilder);
+
+        return stringBuilder.ToString();
+    }
+
+
+    private void ShowPositionalKnowledgeGain(string evaluationTerm, int maxElo, StringBuilder stringBuilder)
+    {
+        stringBuilder.Append(evaluationTerm.PadRight(16));
+
+        for (var index = 0; index < _limitStrengthElos.Length; index++)
+        {
+            var elo = _limitStrengthElos[index];
+            var knowledgePercent = Formula.GetLinearlyInterpolatedValue(0, 100, elo, Elo.Min, maxElo);
+            stringBuilder.Append($"{knowledgePercent}%".PadLeft(6));
+        }
     }
 
 

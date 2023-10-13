@@ -12,7 +12,7 @@ using System;
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
-using ErikTheCoder.MadChess.Engine.Evaluation;
+using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Score;
 
@@ -64,7 +64,7 @@ public sealed class Particle
 
     public void SetDefaultParameters()
     {
-        var evalConfig = new EvalConfig();
+        var evalConfig = new EvaluationConfig();
 
         // Material
         Parameters[nameof(evalConfig.EgPawnMaterial)].Value = evalConfig.EgPawnMaterial;
@@ -184,127 +184,127 @@ public sealed class Particle
     }
 
 
-    public void ConfigureEvaluation(Eval eval)
+    public void ConfigureEvaluation(Evaluation evaluation)
     {
         // Material
-        eval.Config.EgPawnMaterial = Parameters[nameof(EvalConfig.EgPawnMaterial)].Value;
-        eval.Config.MgKnightMaterial = Parameters[nameof(EvalConfig.MgKnightMaterial)].Value;
-        eval.Config.EgKnightMaterial = Parameters[nameof(EvalConfig.EgKnightMaterial)].Value;
-        eval.Config.MgBishopMaterial = Parameters[nameof(EvalConfig.MgBishopMaterial)].Value;
-        eval.Config.EgBishopMaterial = Parameters[nameof(EvalConfig.EgBishopMaterial)].Value;
-        eval.Config.MgRookMaterial = Parameters[nameof(EvalConfig.MgRookMaterial)].Value;
-        eval.Config.EgRookMaterial = Parameters[nameof(EvalConfig.EgRookMaterial)].Value;
-        eval.Config.MgQueenMaterial = Parameters[nameof(EvalConfig.MgQueenMaterial)].Value;
-        eval.Config.EgQueenMaterial = Parameters[nameof(EvalConfig.EgQueenMaterial)].Value;
+        evaluation.Config.EgPawnMaterial = Parameters[nameof(EvaluationConfig.EgPawnMaterial)].Value;
+        evaluation.Config.MgKnightMaterial = Parameters[nameof(EvaluationConfig.MgKnightMaterial)].Value;
+        evaluation.Config.EgKnightMaterial = Parameters[nameof(EvaluationConfig.EgKnightMaterial)].Value;
+        evaluation.Config.MgBishopMaterial = Parameters[nameof(EvaluationConfig.MgBishopMaterial)].Value;
+        evaluation.Config.EgBishopMaterial = Parameters[nameof(EvaluationConfig.EgBishopMaterial)].Value;
+        evaluation.Config.MgRookMaterial = Parameters[nameof(EvaluationConfig.MgRookMaterial)].Value;
+        evaluation.Config.EgRookMaterial = Parameters[nameof(EvaluationConfig.EgRookMaterial)].Value;
+        evaluation.Config.MgQueenMaterial = Parameters[nameof(EvaluationConfig.MgQueenMaterial)].Value;
+        evaluation.Config.EgQueenMaterial = Parameters[nameof(EvaluationConfig.EgQueenMaterial)].Value;
 
         // Passed Pawns
-        eval.Config.PassedPawnPowerPer128 = Parameters[nameof(EvalConfig.PassedPawnPowerPer128)].Value;
-        eval.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvalConfig.MgPassedPawnScalePer128)].Value;
-        eval.Config.EgPassedPawnScalePer128 = Parameters[nameof(EvalConfig.EgPassedPawnScalePer128)].Value;
-        eval.Config.EgFreePassedPawnScalePer128 = Parameters[nameof(EvalConfig.EgFreePassedPawnScalePer128)].Value;
-        eval.Config.EgConnectedPassedPawnScalePer128 = Parameters[nameof(EvalConfig.EgConnectedPassedPawnScalePer128)].Value;
-        eval.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvalConfig.EgKingEscortedPassedPawn)].Value;
+        evaluation.Config.PassedPawnPowerPer128 = Parameters[nameof(EvaluationConfig.PassedPawnPowerPer128)].Value;
+        evaluation.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.MgPassedPawnScalePer128)].Value;
+        evaluation.Config.EgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePer128)].Value;
+        evaluation.Config.EgFreePassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgFreePassedPawnScalePer128)].Value;
+        evaluation.Config.EgConnectedPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgConnectedPassedPawnScalePer128)].Value;
+        evaluation.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value;
 
         // King Safety
-        eval.Config.MgKingSafetyPowerPer128 = Parameters[nameof(EvalConfig.MgKingSafetyPowerPer128)].Value;
-        eval.Config.MgKingSafetyScalePer128 = Parameters[nameof(EvalConfig.MgKingSafetyScalePer128)].Value;
-        eval.Config.MgKingSafetyKnightAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyKnightAttackOuterRingPer8)].Value;
-        eval.Config.MgKingSafetyKnightAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyKnightAttackInnerRingPer8)].Value;
-        eval.Config.MgKingSafetyBishopAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyBishopAttackOuterRingPer8)].Value;
-        eval.Config.MgKingSafetyBishopAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyBishopAttackInnerRingPer8)].Value;
-        eval.Config.MgKingSafetyRookAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyRookAttackOuterRingPer8)].Value;
-        eval.Config.MgKingSafetyRookAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyRookAttackInnerRingPer8)].Value;
-        eval.Config.MgKingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value;
-        eval.Config.MgKingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvalConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value;
-        eval.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvalConfig.MgKingSafetySemiOpenFilePer8)].Value;
-        eval.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvalConfig.MgKingSafetyPawnShieldPer8)].Value;
-        eval.Config.MgKingSafetyDefendingPiecesPer8 = Parameters[nameof(EvalConfig.MgKingSafetyDefendingPiecesPer8)].Value;
+        evaluation.Config.MgKingSafetyPowerPer128 = Parameters[nameof(EvaluationConfig.MgKingSafetyPowerPer128)].Value;
+        evaluation.Config.MgKingSafetyScalePer128 = Parameters[nameof(EvaluationConfig.MgKingSafetyScalePer128)].Value;
+        evaluation.Config.MgKingSafetyKnightAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyKnightAttackOuterRingPer8)].Value;
+        evaluation.Config.MgKingSafetyKnightAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyKnightAttackInnerRingPer8)].Value;
+        evaluation.Config.MgKingSafetyBishopAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyBishopAttackOuterRingPer8)].Value;
+        evaluation.Config.MgKingSafetyBishopAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyBishopAttackInnerRingPer8)].Value;
+        evaluation.Config.MgKingSafetyRookAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyRookAttackOuterRingPer8)].Value;
+        evaluation.Config.MgKingSafetyRookAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyRookAttackInnerRingPer8)].Value;
+        evaluation.Config.MgKingSafetyQueenAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyQueenAttackOuterRingPer8)].Value;
+        evaluation.Config.MgKingSafetyQueenAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyQueenAttackInnerRingPer8)].Value;
+        evaluation.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value;
+        evaluation.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyPawnShieldPer8)].Value;
+        evaluation.Config.MgKingSafetyDefendingPiecesPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyDefendingPiecesPer8)].Value;
 
         // Pawn Location
-        eval.Config.MgPawnAdvancement = Parameters[nameof(EvalConfig.MgPawnAdvancement)].Value;
-        eval.Config.EgPawnAdvancement = Parameters[nameof(EvalConfig.EgPawnAdvancement)].Value;
-        eval.Config.MgPawnCentrality = Parameters[nameof(EvalConfig.MgPawnCentrality)].Value;
-        eval.Config.EgPawnCentrality = Parameters[nameof(EvalConfig.EgPawnCentrality)].Value;
+        evaluation.Config.MgPawnAdvancement = Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value;
+        evaluation.Config.EgPawnAdvancement = Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value;
+        evaluation.Config.MgPawnCentrality = Parameters[nameof(EvaluationConfig.MgPawnCentrality)].Value;
+        evaluation.Config.EgPawnCentrality = Parameters[nameof(EvaluationConfig.EgPawnCentrality)].Value;
 
         // Knight Location
-        eval.Config.MgKnightAdvancement = Parameters[nameof(EvalConfig.MgKnightAdvancement)].Value;
-        eval.Config.EgKnightAdvancement = Parameters[nameof(EvalConfig.EgKnightAdvancement)].Value;
-        eval.Config.MgKnightCentrality = Parameters[nameof(EvalConfig.MgKnightCentrality)].Value;
-        eval.Config.EgKnightCentrality = Parameters[nameof(EvalConfig.EgKnightCentrality)].Value;
-        eval.Config.MgKnightCorner = Parameters[nameof(EvalConfig.MgKnightCorner)].Value;
-        eval.Config.EgKnightCorner = Parameters[nameof(EvalConfig.EgKnightCorner)].Value;
+        evaluation.Config.MgKnightAdvancement = Parameters[nameof(EvaluationConfig.MgKnightAdvancement)].Value;
+        evaluation.Config.EgKnightAdvancement = Parameters[nameof(EvaluationConfig.EgKnightAdvancement)].Value;
+        evaluation.Config.MgKnightCentrality = Parameters[nameof(EvaluationConfig.MgKnightCentrality)].Value;
+        evaluation.Config.EgKnightCentrality = Parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value;
+        evaluation.Config.MgKnightCorner = Parameters[nameof(EvaluationConfig.MgKnightCorner)].Value;
+        evaluation.Config.EgKnightCorner = Parameters[nameof(EvaluationConfig.EgKnightCorner)].Value;
 
         // Bishop Location
-        eval.Config.MgBishopAdvancement = Parameters[nameof(EvalConfig.MgBishopAdvancement)].Value;
-        eval.Config.EgBishopAdvancement = Parameters[nameof(EvalConfig.EgBishopAdvancement)].Value;
-        eval.Config.MgBishopCentrality = Parameters[nameof(EvalConfig.MgBishopCentrality)].Value;
-        eval.Config.EgBishopCentrality = Parameters[nameof(EvalConfig.EgBishopCentrality)].Value;
-        eval.Config.MgBishopCorner = Parameters[nameof(EvalConfig.MgBishopCorner)].Value;
-        eval.Config.EgBishopCorner = Parameters[nameof(EvalConfig.EgBishopCorner)].Value;
+        evaluation.Config.MgBishopAdvancement = Parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value;
+        evaluation.Config.EgBishopAdvancement = Parameters[nameof(EvaluationConfig.EgBishopAdvancement)].Value;
+        evaluation.Config.MgBishopCentrality = Parameters[nameof(EvaluationConfig.MgBishopCentrality)].Value;
+        evaluation.Config.EgBishopCentrality = Parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value;
+        evaluation.Config.MgBishopCorner = Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value;
+        evaluation.Config.EgBishopCorner = Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value;
 
         // Rook Location
-        eval.Config.MgRookAdvancement = Parameters[nameof(EvalConfig.MgRookAdvancement)].Value;
-        eval.Config.EgRookAdvancement = Parameters[nameof(EvalConfig.EgRookAdvancement)].Value;
-        eval.Config.MgRookCentrality = Parameters[nameof(EvalConfig.MgRookCentrality)].Value;
-        eval.Config.EgRookCentrality = Parameters[nameof(EvalConfig.EgRookCentrality)].Value;
-        eval.Config.MgRookCorner = Parameters[nameof(EvalConfig.MgRookCorner)].Value;
-        eval.Config.EgRookCorner = Parameters[nameof(EvalConfig.EgRookCorner)].Value;
+        evaluation.Config.MgRookAdvancement = Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value;
+        evaluation.Config.EgRookAdvancement = Parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value;
+        evaluation.Config.MgRookCentrality = Parameters[nameof(EvaluationConfig.MgRookCentrality)].Value;
+        evaluation.Config.EgRookCentrality = Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value;
+        evaluation.Config.MgRookCorner = Parameters[nameof(EvaluationConfig.MgRookCorner)].Value;
+        evaluation.Config.EgRookCorner = Parameters[nameof(EvaluationConfig.EgRookCorner)].Value;
 
         // Queen Location
-        eval.Config.MgQueenAdvancement = Parameters[nameof(EvalConfig.MgQueenAdvancement)].Value;
-        eval.Config.EgQueenAdvancement = Parameters[nameof(EvalConfig.EgQueenAdvancement)].Value;
-        eval.Config.MgQueenCentrality = Parameters[nameof(EvalConfig.MgQueenCentrality)].Value;
-        eval.Config.EgQueenCentrality = Parameters[nameof(EvalConfig.EgQueenCentrality)].Value;
-        eval.Config.MgQueenCorner = Parameters[nameof(EvalConfig.MgQueenCorner)].Value;
-        eval.Config.EgQueenCorner = Parameters[nameof(EvalConfig.EgQueenCorner)].Value;
+        evaluation.Config.MgQueenAdvancement = Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value;
+        evaluation.Config.EgQueenAdvancement = Parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value;
+        evaluation.Config.MgQueenCentrality = Parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value;
+        evaluation.Config.EgQueenCentrality = Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value;
+        evaluation.Config.MgQueenCorner = Parameters[nameof(EvaluationConfig.MgQueenCorner)].Value;
+        evaluation.Config.EgQueenCorner = Parameters[nameof(EvaluationConfig.EgQueenCorner)].Value;
 
         // King Location
-        eval.Config.MgKingAdvancement = Parameters[nameof(EvalConfig.MgKingAdvancement)].Value;
-        eval.Config.EgKingAdvancement = Parameters[nameof(EvalConfig.EgKingAdvancement)].Value;
-        eval.Config.MgKingCentrality = Parameters[nameof(EvalConfig.MgKingCentrality)].Value;
-        eval.Config.EgKingCentrality = Parameters[nameof(EvalConfig.EgKingCentrality)].Value;
-        eval.Config.MgKingCorner = Parameters[nameof(EvalConfig.MgKingCorner)].Value;
-        eval.Config.EgKingCorner = Parameters[nameof(EvalConfig.EgKingCorner)].Value;
+        evaluation.Config.MgKingAdvancement = Parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value;
+        evaluation.Config.EgKingAdvancement = Parameters[nameof(EvaluationConfig.EgKingAdvancement)].Value;
+        evaluation.Config.MgKingCentrality = Parameters[nameof(EvaluationConfig.MgKingCentrality)].Value;
+        evaluation.Config.EgKingCentrality = Parameters[nameof(EvaluationConfig.EgKingCentrality)].Value;
+        evaluation.Config.MgKingCorner = Parameters[nameof(EvaluationConfig.MgKingCorner)].Value;
+        evaluation.Config.EgKingCorner = Parameters[nameof(EvaluationConfig.EgKingCorner)].Value;
 
         // Piece Mobility
-        eval.Config.PieceMobilityPowerPer128 = Parameters[nameof(EvalConfig.PieceMobilityPowerPer128)].Value;
-        eval.Config.MgKnightMobilityScale = Parameters[nameof(EvalConfig.MgKnightMobilityScale)].Value;
-        eval.Config.EgKnightMobilityScale = Parameters[nameof(EvalConfig.EgKnightMobilityScale)].Value;
-        eval.Config.MgBishopMobilityScale = Parameters[nameof(EvalConfig.MgBishopMobilityScale)].Value;
-        eval.Config.EgBishopMobilityScale = Parameters[nameof(EvalConfig.EgBishopMobilityScale)].Value;
-        eval.Config.MgRookMobilityScale = Parameters[nameof(EvalConfig.MgRookMobilityScale)].Value;
-        eval.Config.EgRookMobilityScale = Parameters[nameof(EvalConfig.EgRookMobilityScale)].Value;
-        eval.Config.MgQueenMobilityScale = Parameters[nameof(EvalConfig.MgQueenMobilityScale)].Value;
-        eval.Config.EgQueenMobilityScale = Parameters[nameof(EvalConfig.EgQueenMobilityScale)].Value;
+        evaluation.Config.PieceMobilityPowerPer128 = Parameters[nameof(EvaluationConfig.PieceMobilityPowerPer128)].Value;
+        evaluation.Config.MgKnightMobilityScale = Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value;
+        evaluation.Config.EgKnightMobilityScale = Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value;
+        evaluation.Config.MgBishopMobilityScale = Parameters[nameof(EvaluationConfig.MgBishopMobilityScale)].Value;
+        evaluation.Config.EgBishopMobilityScale = Parameters[nameof(EvaluationConfig.EgBishopMobilityScale)].Value;
+        evaluation.Config.MgRookMobilityScale = Parameters[nameof(EvaluationConfig.MgRookMobilityScale)].Value;
+        evaluation.Config.EgRookMobilityScale = Parameters[nameof(EvaluationConfig.EgRookMobilityScale)].Value;
+        evaluation.Config.MgQueenMobilityScale = Parameters[nameof(EvaluationConfig.MgQueenMobilityScale)].Value;
+        evaluation.Config.EgQueenMobilityScale = Parameters[nameof(EvaluationConfig.EgQueenMobilityScale)].Value;
 
         // Pawn Structure
-        eval.Config.MgIsolatedPawn = Parameters[nameof(EvalConfig.MgIsolatedPawn)].Value;
-        eval.Config.EgIsolatedPawn = Parameters[nameof(EvalConfig.EgIsolatedPawn)].Value;
-        eval.Config.MgDoubledPawn = Parameters[nameof(EvalConfig.MgDoubledPawn)].Value;
-        eval.Config.EgDoubledPawn = Parameters[nameof(EvalConfig.EgDoubledPawn)].Value;
+        evaluation.Config.MgIsolatedPawn = Parameters[nameof(EvaluationConfig.MgIsolatedPawn)].Value;
+        evaluation.Config.EgIsolatedPawn = Parameters[nameof(EvaluationConfig.EgIsolatedPawn)].Value;
+        evaluation.Config.MgDoubledPawn = Parameters[nameof(EvaluationConfig.MgDoubledPawn)].Value;
+        evaluation.Config.EgDoubledPawn = Parameters[nameof(EvaluationConfig.EgDoubledPawn)].Value;
 
         // Threats
-        eval.Config.MgPawnThreatenMinor = Parameters[nameof(EvalConfig.MgPawnThreatenMinor)].Value;
-        eval.Config.EgPawnThreatenMinor = Parameters[nameof(EvalConfig.EgPawnThreatenMinor)].Value;
-        eval.Config.MgPawnThreatenMajor = Parameters[nameof(EvalConfig.MgPawnThreatenMajor)].Value;
-        eval.Config.EgPawnThreatenMajor = Parameters[nameof(EvalConfig.EgPawnThreatenMajor)].Value;
-        eval.Config.MgMinorThreatenMajor = Parameters[nameof(EvalConfig.MgMinorThreatenMajor)].Value;
-        eval.Config.EgMinorThreatenMajor = Parameters[nameof(EvalConfig.EgMinorThreatenMajor)].Value;
+        evaluation.Config.MgPawnThreatenMinor = Parameters[nameof(EvaluationConfig.MgPawnThreatenMinor)].Value;
+        evaluation.Config.EgPawnThreatenMinor = Parameters[nameof(EvaluationConfig.EgPawnThreatenMinor)].Value;
+        evaluation.Config.MgPawnThreatenMajor = Parameters[nameof(EvaluationConfig.MgPawnThreatenMajor)].Value;
+        evaluation.Config.EgPawnThreatenMajor = Parameters[nameof(EvaluationConfig.EgPawnThreatenMajor)].Value;
+        evaluation.Config.MgMinorThreatenMajor = Parameters[nameof(EvaluationConfig.MgMinorThreatenMajor)].Value;
+        evaluation.Config.EgMinorThreatenMajor = Parameters[nameof(EvaluationConfig.EgMinorThreatenMajor)].Value;
 
         // Minor Pieces
-        eval.Config.MgBishopPair = Parameters[nameof(EvalConfig.MgBishopPair)].Value;
-        eval.Config.EgBishopPair = Parameters[nameof(EvalConfig.EgBishopPair)].Value;
-        eval.Config.MgKnightOutpost = Parameters[nameof(EvalConfig.MgKnightOutpost)].Value;
-        eval.Config.EgKnightOutpost = Parameters[nameof(EvalConfig.EgKnightOutpost)].Value;
-        eval.Config.MgBishopOutpost = Parameters[nameof(EvalConfig.MgBishopOutpost)].Value;
-        eval.Config.EgBishopOutpost = Parameters[nameof(EvalConfig.EgBishopOutpost)].Value;
+        evaluation.Config.MgBishopPair = Parameters[nameof(EvaluationConfig.MgBishopPair)].Value;
+        evaluation.Config.EgBishopPair = Parameters[nameof(EvaluationConfig.EgBishopPair)].Value;
+        evaluation.Config.MgKnightOutpost = Parameters[nameof(EvaluationConfig.MgKnightOutpost)].Value;
+        evaluation.Config.EgKnightOutpost = Parameters[nameof(EvaluationConfig.EgKnightOutpost)].Value;
+        evaluation.Config.MgBishopOutpost = Parameters[nameof(EvaluationConfig.MgBishopOutpost)].Value;
+        evaluation.Config.EgBishopOutpost = Parameters[nameof(EvaluationConfig.EgBishopOutpost)].Value;
 
         // Major Pieces
-        eval.Config.MgRook7thRank = Parameters[nameof(EvalConfig.MgRook7thRank)].Value;
-        eval.Config.EgRook7thRank = Parameters[nameof(EvalConfig.EgRook7thRank)].Value;
+        evaluation.Config.MgRook7thRank = Parameters[nameof(EvaluationConfig.MgRook7thRank)].Value;
+        evaluation.Config.EgRook7thRank = Parameters[nameof(EvaluationConfig.EgRook7thRank)].Value;
 
         // Calculate positional factors after updating evaluation config.
-        eval.CalculatePositionalFactors();
+        evaluation.CalculatePositionalFactors();
     }
 
 

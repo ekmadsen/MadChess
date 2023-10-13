@@ -42,7 +42,7 @@ public sealed class PgnGames : List<PgnGame>
 
                 gameNumber++;
 
-                if ((gameNumber % 1000) == 0) _messenger.WriteMessageLine($"Loaded {gameNumber:n0} games.");
+                if ((gameNumber % 1000) == 0) _messenger.WriteLine($"Loaded {gameNumber:n0} games.");
 
             } while (pgnGame != null);
         }

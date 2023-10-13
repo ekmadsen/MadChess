@@ -106,11 +106,7 @@ public sealed class Board
 
 
     public Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
-
-
     public Position CurrentPosition => _positions[_positionIndex];
-
-
     private Position NextPosition => _positions[_positionIndex + 1];
 
 
@@ -1588,7 +1584,7 @@ public sealed class Board
         }
 
         var matches = fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey;
-        if (!matches) _messenger.WriteMessageLine(ToString(true));
+        if (!matches) _messenger.WriteLine(ToString(true));
 
         return matches;
     }

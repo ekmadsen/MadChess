@@ -10,7 +10,6 @@
 
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
-using ErikTheCoder.MadChess.Engine.Evaluation;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
@@ -37,14 +36,14 @@ public sealed class ParticleSwarm
     }
 
 
-    public void Iterate(Board board, Search search, Eval eval)
+    public void Iterate(Board board, Search search, Evaluation evaluation)
     {
         var bestParticle = GetBestParticle();
 
         for (var index = 0; index < Particles.Count; index++)
         {
             var particle = Particles[index];
-            particle.ConfigureEvaluation(eval);
+            particle.ConfigureEvaluation(evaluation);
             particle.CalculateEvaluationError(board, search, _winScale);
 
             if ((particle != bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
