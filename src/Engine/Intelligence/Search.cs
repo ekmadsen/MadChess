@@ -108,6 +108,7 @@ public sealed class Search : IDisposable
     private bool _limitedStrength;
     private int _elo;
     private int? _nodesPerSecond;
+    private int _phasedNodesPerSecond;
     private int _moveError;
     private int _blunderError;
     private int _blunderPer1024;
@@ -237,18 +238,9 @@ public sealed class Search : IDisposable
         ConfigureFullStrength();
         _limitedStrength = true;
         _elo = elo;
-        
-        // Limit search speed.
-        var ratingClass = (double)(_elo - Intelligence.Elo.Min) / 200;
-        _nodesPerSecond = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.NpsScale, _limitStrengthConfig.NpsPower, _limitStrengthConfig.NpsConstant);
 
-        // Enable errors on every move.
-        ratingClass = (double)(Intelligence.Elo.Max - _elo) / 200;
-        _moveError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.MoveErrorScale, _limitStrengthConfig.MoveErrorPower, _limitStrengthConfig.MoveErrorConstant);
-
-        // Enable occasional blunders.
-        _blunderError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderErrorScale , _limitStrengthConfig.BlunderErrorPower, _limitStrengthConfig.BlunderErrorConstant);
-        _blunderPer1024 = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderPer1024Scale, _limitStrengthConfig.BlunderPer1024Power, _limitStrengthConfig.BlunderPer1024Constant);
+        // Limit search speed, enable errors on every move, and enable occasional blunders.
+        (_nodesPerSecond, _moveError, _blunderError, _blunderPer1024) = CalculateLimitStrengthParams(_elo);
 
         if (_messenger.Debug)
         {
@@ -258,11 +250,26 @@ public sealed class Search : IDisposable
     }
 
 
+    private (int nodesPerSecond, int moveError, int blunderError, int blunderPer1024) CalculateLimitStrengthParams(int elo)
+    {
+        var ratingClass = elo / 200d;
+        var nodesPerSecond = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.NpsScale, _limitStrengthConfig.NpsPower, _limitStrengthConfig.NpsConstant);
+
+        ratingClass = (Intelligence.Elo.Max - elo) / 200d;
+        var moveError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.MoveErrorScale, _limitStrengthConfig.MoveErrorPower, _limitStrengthConfig.MoveErrorConstant);
+        var blunderError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderErrorScale, _limitStrengthConfig.BlunderErrorPower, _limitStrengthConfig.BlunderErrorConstant);
+        var blunderPer1024 = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderPer1024Scale, _limitStrengthConfig.BlunderPer1024Power, _limitStrengthConfig.BlunderPer1024Constant);
+
+        return (nodesPerSecond, moveError, blunderError, blunderPer1024);
+    }
+
+
     private void ConfigureFullStrength()
     {
         _elo = Intelligence.Elo.Min;
         _limitedStrength = false;
         _nodesPerSecond = null;
+        _phasedNodesPerSecond = 0;
         _moveError = 0;
         _blunderError = 0;
         _blunderPer1024 = 0;
@@ -291,6 +298,9 @@ public sealed class Search : IDisposable
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
 
+        // If strength is limited, slow search speed as game progresses towards the endgame.
+        if (LimitedStrength) DeterminePhasedSearchSpeed(board.CurrentPosition);
+
         if ((legalMoveIndex == 1) && (CandidateMoves.Count == 0) && !AnalyzeMode)
         {
             // TODO: Output dynamic score from previous search so GUI evaluation chart doesn't show discontinuous drop to zero score.
@@ -311,7 +321,7 @@ public sealed class Search : IDisposable
             ? _blunderError // Blunder
             : 0;
         scoreError = FastMath.Max(scoreError, _moveError);
-        GetMoveTime(board.CurrentPosition);
+        DetermineMoveTime(board.CurrentPosition);
         NodesExamineTime = _nodesPerSecond.HasValue ? 1 : UciStream.NodesTimeInterval;
 
         // Iteratively deepen search.
@@ -355,6 +365,16 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private void DeterminePhasedSearchSpeed(Position position)
+    {
+        var phase = Evaluation.DetermineGamePhase(position);
+        var maxNps = _nodesPerSecond ?? int.MaxValue;
+        var minNps = (maxNps * _limitStrengthConfig.NpsEndgamePer128) / 128;
+        _phasedNodesPerSecond = Formula.GetLinearlyInterpolatedValue(minNps, maxNps, phase, 0, Evaluation.MiddlegamePhase);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool ShouldSearchMove(ulong move)
     {
         if (CandidateMoves.Count == 0) return true; // Search all moves.
@@ -369,7 +389,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void GetMoveTime(Position position)
+    private void DetermineMoveTime(Position position)
     {
         // No need to calculate move time if go command specifies move time, horizon limit, or nodes.
         if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon) || (NodeLimit != long.MaxValue)) return;
@@ -426,8 +446,11 @@ public sealed class Search : IDisposable
 
     private ulong GetInferiorMove(Position position, int scoreError)
     {
+        var bestMove = _bestMoves[0];
+        var bestScore = bestMove.Score;
+        if (bestScore >= SpecialScore.SimpleEndgame) return bestMove.Move; // Ensure engine progresses towards checkmate.
+
         // Determine how many moves are within score error.
-        var bestScore = _bestMoves[0].Score;
         var worstScore = bestScore - scoreError;
         var inferiorMoves = 0;
         for (var moveIndex = 1; moveIndex < position.MoveIndex; moveIndex++)
@@ -451,6 +474,8 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int GetDynamicScore(Board board, int depth, int horizon, bool nullMovePermitted, int alpha, int beta, ulong excludedMove)
     {
+        _principalVariations[_rootMoveNumber - 1][depth][0] = Move.Null;
+
         // +---------------------------------------------------------------------------+
         // |                                                                           |
         // |                     Search Step 1: Terminate Search?                      |
@@ -458,7 +483,6 @@ public sealed class Search : IDisposable
         // +---------------------------------------------------------------------------+
 
         // Determine whether time allotted to play a move has elapsed.
-        _principalVariations[_rootMoveNumber - 1][depth][0] = Move.Null;
         if ((board.Nodes > NodesExamineTime) || _nodesPerSecond.HasValue)
         {
             ExamineTimeAndNodes(board.Nodes);
@@ -921,19 +945,18 @@ public sealed class Search : IDisposable
 
         if (_nodesPerSecond.HasValue && (_originalHorizon > 1)) // Guarantee to search at least one ply.
         {
-            // Slow search until it's less than specified nodes per second or until soft time limit is exceeded.
-            var nodesPerSecond = int.MaxValue;
-            while (nodesPerSecond > _nodesPerSecond)
+            double nps;
+            do
             {
-                // Delay search but keep CPU busy to simulate "thinking".
-                nodesPerSecond = (int)(nodes / _stopwatch.Elapsed.TotalSeconds);
+                // Slow search until it's less than phased nodes per second (NPS at game phase of root search position) or until soft time limit is exceeded.
                 if (_stopwatch.Elapsed >= MoveTimeSoftLimit)
                 {
                     // No time is available to continue searching.
                     Continue = false;
                     return;
                 }
-            }
+                nps = nodes / _stopwatch.Elapsed.TotalSeconds;
+            } while (nps > _phasedNodesPerSecond);
         }
 
         // Search at full speed until hard time limit is exceeded.
@@ -1420,18 +1443,14 @@ public sealed class Search : IDisposable
         {
             var elo = _limitStrengthElos[index];
 
-            var ratingClass = (double)(elo - Intelligence.Elo.Min) / 200;
-            var nodesPerSecond = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.NpsScale, _limitStrengthConfig.NpsPower, _limitStrengthConfig.NpsConstant);
-
-            ratingClass = (double)(Intelligence.Elo.Max - elo) / 200;
-            var moveError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.MoveErrorScale, _limitStrengthConfig.MoveErrorPower, _limitStrengthConfig.MoveErrorConstant);
-            var blunderError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderErrorScale, _limitStrengthConfig.BlunderErrorPower, _limitStrengthConfig.BlunderErrorConstant);
-            var blunderPer1024 = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderPer1024Scale, _limitStrengthConfig.BlunderPer1024Power, _limitStrengthConfig.BlunderPer1024Constant);
+            var (nodesPerSecond, moveError, blunderError, blunderPer1024) = CalculateLimitStrengthParams(elo);
             var blunderPercent = 100d * blunderPer1024 / 1024d;
 
             stringBuilder.AppendLine($"{elo,12}{nodesPerSecond.ToString("n0").PadLeft(20)}{moveError,12}{blunderError,15}{blunderPercent.ToString("0.0").PadLeft(17)}");
         }
 
+        stringBuilder.AppendLine();
+        stringBuilder.Append($"NpsEndgamePer128 = {_limitStrengthConfig.NpsEndgamePer128}");
         return stringBuilder.ToString();
     }
 }

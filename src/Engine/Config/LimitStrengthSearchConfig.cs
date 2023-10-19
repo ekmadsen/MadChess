@@ -21,6 +21,7 @@ public sealed class LimitStrengthSearchConfig
     public double NpsScale { get; set; }
     public double NpsPower { get; set; }
     public int NpsConstant { get; set; }
+    public int NpsEndgamePer128 { get; set; }
     public double MoveErrorScale { get; set; }
     public double MoveErrorPower { get; set; }
     public int MoveErrorConstant { get; set; }
