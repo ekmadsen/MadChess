@@ -51,8 +51,8 @@
       // The scale, power, and constant parameters in the above formula are specified in the JSON below.
       // The bonus parameter in the above formula is ratingClass.
 
-      // For _nodePerSecond:                                  var ratingClass = elo / 200d;
-      // For _moveError, _blunderError, and _blunderPer1024:  var ratingClass = (2600 - elo) / 200d;
+      // For nodePerSecond:                                var ratingClass = elo / 200d;
+      // For moveError, blunderError, and blunderPer1024:  var ratingClass = (2600 - elo) / 200d;
 
       "npsScale": 0.032,
       "npsPower": 6.4,

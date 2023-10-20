@@ -1435,7 +1435,6 @@ public sealed class Search : IDisposable
     {
         var stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("Rating (Elo)  Search Speed (NPS)  Move Error  Blunder Error  Blunder Percent");
-        stringBuilder.AppendLine();
         stringBuilder.Append('=', 76);
         stringBuilder.AppendLine();
 
