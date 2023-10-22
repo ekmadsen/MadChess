@@ -11,23 +11,23 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 
 namespace ErikTheCoder.MadChess.Core;
 
-public sealed class Messenger : IDisposable
+public sealed class Messenger : IAsyncDisposable
 {
-    private StreamReader _inputStreamReader;
-    private StreamWriter _outputStreamWriter;
-    private StreamWriter _logWriter;
-    private Stopwatch _stopwatch;
-    private object _inputStreamLock;
-    private object _outputStreamLock;
-    private object _logLock;
-    private bool _disposed;
-
-
     public bool Debug;
+
+    private readonly StreamReader _inputStreamReader;
+    private readonly StreamWriter _outputStreamWriter;
+    private readonly Stopwatch _stopwatch;
+    private readonly object _inputStreamLock;
+    private readonly object _outputStreamLock;
+    private readonly object _logLock;
+
+    private StreamWriter _logWriter;
 
 
     public bool Log
@@ -75,51 +75,15 @@ public sealed class Messenger : IDisposable
     }
 
 
-    ~Messenger()
+    public async ValueTask DisposeAsync()
     {
-        Dispose(false);
+        // ReSharper disable InconsistentlySynchronizedField
+        await (_outputStreamWriter?.DisposeAsync() ?? ValueTask.CompletedTask);
+        await (_logWriter?.DisposeAsync() ?? ValueTask.CompletedTask);
+        _inputStreamReader?.Dispose();
+        // ReSharper restore InconsistentlySynchronizedField
     }
 
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-
-    private void Dispose(bool disposing)
-    {
-        if (_disposed) return;
-
-        // Release unmanaged resources.
-        lock (_inputStreamLock)
-        {
-            _inputStreamReader?.Dispose();
-            _inputStreamReader = null;
-        }
-        lock (_outputStreamLock)
-        {
-            _outputStreamWriter?.Dispose();
-            _outputStreamWriter = null;
-        }
-        lock (_logLock)
-        {
-            _logWriter?.Dispose();
-            _logWriter = null;
-        }
-
-        if (disposing)
-        {
-            // Release managed resources.
-            _stopwatch = null;
-            _inputStreamLock = null;
-            _outputStreamLock = null;
-            _logLock = null;
-        }
-
-        _disposed = true;
-    }
 
     public string ReadLine()
     {
@@ -131,7 +95,8 @@ public sealed class Messenger : IDisposable
         }
     }
 
-    public void WriteMessageLine()
+
+    public void WriteLine()
     {
         lock (_outputStreamLock)
         {
@@ -141,7 +106,7 @@ public sealed class Messenger : IDisposable
     }
 
 
-    public void WriteMessageLine(string message)
+    public void WriteLine(string message)
     {
         lock (_outputStreamLock)
         {

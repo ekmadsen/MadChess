@@ -8,17 +8,10 @@
 // +---------------------------------------------------------------------------+
 
 
-using ErikTheCoder.MadChess.Engine.Intelligence;
+namespace ErikTheCoder.MadChess.Engine.Config;
 
 
-namespace ErikTheCoder.MadChess.Engine.Score;
-
-public static class SpecialScore
+public sealed class AdvancedConfig
 {
-    public const int Max = 30_000;
-    public const int Checkmate = Max - Search.MaxHorizon;
-    public const int Interrupted = Max - Search.MaxHorizon - 1;
-    public const int NotCached = Max - Search.MaxHorizon - 2;
-    public const int LargestNonMate = Max - Search.MaxHorizon - 3;
-    public const int SimpleEndgame = 20_000;
+    public LimitStrengthConfig LimitStrength { get; set; }
 }

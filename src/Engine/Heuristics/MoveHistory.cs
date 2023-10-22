@@ -19,9 +19,9 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 public sealed class MoveHistory
 {
-    private const int _multiplier = 128;
+    private const int _multiplier = 256;
     private const int _divisor = Move.HistoryMaxValue / _multiplier;
-    private const int _agePer256 = 244;
+    private const int _agePer128 = 118;
     private readonly int[][] _moveHistory; // [piece][toSquare]
 
 
@@ -57,18 +57,18 @@ public sealed class MoveHistory
         var toSquare = Move.To(move);
 
         var value = _moveHistory[(int)piece][(int)toSquare];
-        value += (increment * _multiplier) - ((value * FastMath.Abs(increment)) / _divisor);
+        value += (increment * _multiplier) - (value * FastMath.Abs(increment) / _divisor);
 
         _moveHistory[(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
     }
 
-
+    
     public void Age()
     {
         for (var piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
             for (var toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
-                _moveHistory[(int)piece][(int)toSquare] = (_agePer256 * _moveHistory[(int)piece][(int)toSquare]) / 256;
+                _moveHistory[(int)piece][(int)toSquare] = (_agePer128 * _moveHistory[(int)piece][(int)toSquare]) / 128;
         }
     }
 

@@ -742,7 +742,7 @@ public sealed class Position
         stringBuilder.AppendLine();
         stringBuilder.AppendLine();
 
-        // Display FEN, key, position count, and check.
+        // Display position properties.
         stringBuilder.AppendLine($"FEN:             {ToFen()}");
         stringBuilder.AppendLine($"Key:             {Key:X16}");
         stringBuilder.AppendLine($"Position Count:  {_board.GetPositionCount()}");

@@ -8,17 +8,17 @@
 // +---------------------------------------------------------------------------+
 
 
-using ErikTheCoder.MadChess.Engine.Intelligence;
+using JetBrains.Annotations;
 
 
-namespace ErikTheCoder.MadChess.Engine.Score;
+namespace ErikTheCoder.MadChess.Engine.Config;
 
-public static class SpecialScore
+
+[UsedImplicitly]
+public sealed class LimitStrengthConfig
 {
-    public const int Max = 30_000;
-    public const int Checkmate = Max - Search.MaxHorizon;
-    public const int Interrupted = Max - Search.MaxHorizon - 1;
-    public const int NotCached = Max - Search.MaxHorizon - 2;
-    public const int LargestNonMate = Max - Search.MaxHorizon - 3;
-    public const int SimpleEndgame = 20_000;
+    // ReSharper disable UnusedAutoPropertyAccessor.Global
+    public LimitStrengthEvalConfig Evaluation { get; set; }
+    public LimitStrengthSearchConfig Search { get; set; }
+    // ReSharper restore UnusedAutoPropertyAccessor.Global
 }

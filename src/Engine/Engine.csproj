@@ -25,26 +25,40 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
 		<DefineConstants>TRACE;CPU64</DefineConstants>
+		<NoWarn>1701;1702</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
 	  <DefineConstants>TRACE</DefineConstants>
+	  <NoWarn>1701;1702</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
 		<DefineConstants>TRACE;CPU64</DefineConstants>
+		<NoWarn>1701;1702</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
 	  <DefineConstants>TRACE</DefineConstants>
+	  <NoWarn>1701;1702</NoWarn>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="MadChess.AdvancedConfig.json" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <Content Include="MadChess.Engine.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="JetBrains.Annotations" Version="2022.3.1" />
+	  <EmbeddedResource Include="MadChess.AdvancedConfig.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="JetBrains.Annotations" Version="2023.2.0" />
 	</ItemGroup>
 
 	<ItemGroup>

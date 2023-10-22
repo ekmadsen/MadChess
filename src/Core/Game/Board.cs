@@ -73,6 +73,8 @@ public sealed class Board
 
     public static readonly ulong[][] PawnShieldMasks; // [color][square]
 
+    public static readonly ulong[] OutpostMasks; // [color]
+
     public static readonly ulong[][] RankFileBetweenSquares; // [square1][square2]
     public static readonly ulong[][] DiagonalBetweenSquares; // [square1][square2]
 
@@ -104,11 +106,7 @@ public sealed class Board
 
 
     public Position PreviousPosition => _positionIndex > 0 ? _positions[_positionIndex - 1] : null;
-
-
     public Position CurrentPosition => _positions[_positionIndex];
-
-
     private Position NextPosition => _positions[_positionIndex + 1];
 
 
@@ -171,9 +169,10 @@ public sealed class Board
         PassedPawnMasks = CreatePassedPawnMasks();
         FreePawnMasks = CreateFreePawnMasks();
 
-        // Create ring and pawn shield masks.
+        // Create ring, pawn shield, and outpost masks.
         (InnerRingMasks, OuterRingMasks) = CreateRingMasks();
         PawnShieldMasks = CreatePawnShieldMasks();
+        OutpostMasks = CreateOutpostMasks();
     }
 
 
@@ -381,8 +380,8 @@ public sealed class Board
         {
             var whiteSquare = squareShades[(int)square] == Color.White;
             var squareMask = squareMasks[(int)square];
-            squareColors[(int)Color.White] |= whiteSquare ? squareMask : 0ul;
-            squareColors[(int)Color.Black] |= whiteSquare ? 0ul : squareMask;
+            squareColors[(int)Color.White] |= whiteSquare ? squareMask : 0;
+            squareColors[(int)Color.Black] |= whiteSquare ? 0 : squareMask;
         }
 
         // All and Edge Squares
@@ -888,6 +887,17 @@ public sealed class Board
     }
 
 
+    private static ulong[] CreateOutpostMasks()
+    {
+        var masks = new ulong[2];
+
+        for (var color = Color.White; color <= Color.Black; color++)
+            masks[(int)color] = (RankMasks[(int)color][3] | RankMasks[(int)color][4] | RankMasks[(int)color][5]) & ~(FileMasks[0] | FileMasks[7]);
+
+        return masks;
+    }
+
+
     private static ulong[] CreateKnightMoveMasks()
     {
         var masks = new ulong[64];
@@ -1159,7 +1169,7 @@ public sealed class Board
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public (bool isLegal, bool deliversCheck) PlayMove(ulong move)
+    public (bool legalMove, bool checkingMove) PlayMove(ulong move)
     {
         Debug.Assert(Move.IsValid(move));
         Debug.Assert(AssertMoveIntegrity(move));
@@ -1574,7 +1584,7 @@ public sealed class Board
         }
 
         var matches = fullyUpdatedPiecesSquaresKey == CurrentPosition.PiecesSquaresKey;
-        if (!matches) _messenger.WriteMessageLine(ToString(true));
+        if (!matches) _messenger.WriteLine(ToString(true));
 
         return matches;
     }
