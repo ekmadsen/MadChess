@@ -39,7 +39,7 @@ public static class Program
     }
 
 
-    // Attribute required to prevent Publish Profile from trimming Config constructors because it believes it's unreferenced code.
+    // Attribute required to prevent Publish Profile from trimming Config constructors because it believes they're unreferenced code.
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AdvancedConfig))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(LimitStrengthConfig))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(LimitStrengthEvalConfig))]
