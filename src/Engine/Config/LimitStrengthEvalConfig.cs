@@ -19,8 +19,8 @@ public sealed class LimitStrengthEvalConfig
 {
     // ReSharper disable UnusedAutoPropertyAccessor.Global
     public int UndervaluePawnsMaxElo { get; set; }
-    public int UndervalueRookOvervalueQueenMaxElo { get; set; }
     public int ValueKnightBishopEquallyMaxElo { get; set; }
+    public int UndervalueRookOvervalueQueenMaxElo { get; set; }
     public int MisjudgePassedPawnsMaxElo { get; set; }
     public int InattentiveKingDefenseMaxElo { get; set; }
     public int MisplacePiecesMaxElo { get; set; }

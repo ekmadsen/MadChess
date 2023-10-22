@@ -325,13 +325,6 @@ public sealed class Evaluation
         Config.MgPawnMaterial = Formula.GetLinearlyInterpolatedValue(50, _defaultConfig.MgPawnMaterial, elo, Elo.Min, _limitStrengthConfig.UndervaluePawnsMaxElo);
         Config.EgPawnMaterial = Formula.GetLinearlyInterpolatedValue(50, _defaultConfig.EgPawnMaterial, elo, Elo.Min, _limitStrengthConfig.UndervaluePawnsMaxElo);
 
-        // Undervalue rook and overvalue queen.
-        Config.MgRookMaterial = Formula.GetLinearlyInterpolatedValue((_defaultConfig.MgRookMaterial * 2) / 3, _defaultConfig.MgRookMaterial, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
-        Config.EgRookMaterial = Formula.GetLinearlyInterpolatedValue((_defaultConfig.EgRookMaterial * 2) / 3, _defaultConfig.EgRookMaterial, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
-        var queenMaterialAccuracyPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
-        Config.MgQueenMaterial = _defaultConfig.MgQueenMaterial + ((128 - queenMaterialAccuracyPer128) * _defaultConfig.MgQueenMaterial) / (128 * 3);
-        Config.EgQueenMaterial = _defaultConfig.EgQueenMaterial + ((128 - queenMaterialAccuracyPer128) * _defaultConfig.EgQueenMaterial) / (128 * 3);
-
         // Value knight and bishop equally.
         if (_defaultConfig.MgBishopMaterial > _defaultConfig.MgKnightMaterial)
         {
@@ -354,6 +347,13 @@ public sealed class Evaluation
             // Knight worth more than bishop in endgame.
             Config.EgKnightMaterial = Formula.GetLinearlyInterpolatedValue(_defaultConfig.EgBishopMaterial, _defaultConfig.EgKnightMaterial, elo, Elo.Min, _limitStrengthConfig.ValueKnightBishopEquallyMaxElo);
         }
+
+        // Undervalue rook and overvalue queen.
+        Config.MgRookMaterial = Formula.GetLinearlyInterpolatedValue((_defaultConfig.MgRookMaterial * 2) / 3, _defaultConfig.MgRookMaterial, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
+        Config.EgRookMaterial = Formula.GetLinearlyInterpolatedValue((_defaultConfig.EgRookMaterial * 2) / 3, _defaultConfig.EgRookMaterial, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
+        var queenMaterialAccuracyPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo);
+        Config.MgQueenMaterial = _defaultConfig.MgQueenMaterial + ((128 - queenMaterialAccuracyPer128) * _defaultConfig.MgQueenMaterial) / (128 * 3);
+        Config.EgQueenMaterial = _defaultConfig.EgQueenMaterial + ((128 - queenMaterialAccuracyPer128) * _defaultConfig.EgQueenMaterial) / (128 * 3);
 
         // Misjudge danger of passed pawns.
         Config.LsPassedPawnsPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.MisjudgePassedPawnsMaxElo);
@@ -463,8 +463,6 @@ public sealed class Evaluation
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (int StaticScore, bool DrawnEndgame, int Phase) GetStaticScore(Position position)
     {
-        // TODO: Penalize loss of castling rights to discourage limited strength engine from moving king or rook early in game.
-        // TODO: Handicap knowledge of checkmates and endgames when in limited strength mode.
         // TODO: Evaluate space.  Perhaps squares attacked by more of own pieces than enemy pieces?  Or squares behind own pawns not occupied by enemy pieces?
         // TODO: Evaluate rooks on open files.
         Debug.Assert(!position.KingInCheck);
@@ -1272,17 +1270,29 @@ public sealed class Evaluation
     public string ShowLimitStrengthParameters()
     {
         var stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine("Evaluation Term    Knowledge Percent");
+        stringBuilder.AppendLine("Evaluation Term                    Knowledge Percent");
         stringBuilder.AppendLine();
         
-        stringBuilder.Append("Rating (Elo)    ");
+        stringBuilder.Append("Rating (Elo)                    ");
         for (var index = 0; index < _limitStrengthElos.Length; index++)
         {
             var elo = _limitStrengthElos[index];
             stringBuilder.Append($"{elo,6}");
         }
         stringBuilder.AppendLine();
-        stringBuilder.Append('=', 82);
+        stringBuilder.Append('=', 98);
+        stringBuilder.AppendLine();
+
+        // Pawn Material Value
+        ShowPositionalKnowledgeGain("Pawn Material Value", _limitStrengthConfig.UndervaluePawnsMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // Knight and Bishop Material Value
+        ShowPositionalKnowledgeGain("Knight and Bishop Material Value", _limitStrengthConfig.ValueKnightBishopEquallyMaxElo, stringBuilder);
+        stringBuilder.AppendLine();
+
+        // Rook and Queen Material Value
+        ShowPositionalKnowledgeGain("Rook and Queen Material Value", _limitStrengthConfig.UndervalueRookOvervalueQueenMaxElo, stringBuilder);
         stringBuilder.AppendLine();
 
         // Passed Pawns
@@ -1322,7 +1332,7 @@ public sealed class Evaluation
 
     private void ShowPositionalKnowledgeGain(string evaluationTerm, int maxElo, StringBuilder stringBuilder)
     {
-        stringBuilder.Append(evaluationTerm.PadRight(16));
+        stringBuilder.Append(evaluationTerm.PadRight(32));
 
         for (var index = 0; index < _limitStrengthElos.Length; index++)
         {

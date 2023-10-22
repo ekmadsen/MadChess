@@ -30,8 +30,8 @@
       //}
 
       "undervaluePawnsMaxElo": 800,
-      "undervalueRookOvervalueQueenMaxElo": 1000,
       "valueKnightBishopEquallyMaxElo": 1000,
+      "undervalueRookOvervalueQueenMaxElo": 1000,
       "misjudgePassedPawnsMaxElo": 1200,
       "inattentiveKingDefenseMaxElo": 1400,
       "misplacePiecesMaxElo": 1600,

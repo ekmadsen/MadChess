@@ -360,7 +360,7 @@ public sealed class Search : IDisposable
         _stopwatch.Stop();
         if (_messenger.Debug) _messenger.WriteLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
         UpdateStatus(board, true);
-        return scoreError == 0 ? bestMove.Move : GetInferiorMove(board.CurrentPosition, scoreError);
+        return scoreError == 0 ? bestMove.Move : SelectInferiorMove(board, scoreError);
     }
 
 
@@ -444,7 +444,7 @@ public sealed class Search : IDisposable
     }
 
 
-    private ulong GetInferiorMove(Position position, int scoreError)
+    private ulong SelectInferiorMove(Board board, int scoreError)
     {
         var bestMove = _bestMoves[0];
         var bestScore = bestMove.Score;
@@ -452,15 +452,79 @@ public sealed class Search : IDisposable
 
         // Determine how many moves are within score error.
         var worstScore = bestScore - scoreError;
+        var anyUnreasonableInferiorMoves = false;
         var inferiorMoves = 0;
-        for (var moveIndex = 1; moveIndex < position.MoveIndex; moveIndex++)
+
+        for (var moveIndex = 1; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
         {
-            if (_bestMoves[moveIndex].Score < worstScore) break;
+            var inferiorMove = _bestMoves[moveIndex];
+            if (inferiorMove.Score < worstScore) break;
+            if (IsInferiorMoveUnreasonable(board, inferiorMove.Move))
+            {
+                // Inferior move is unreasonable.
+                _bestMoves[moveIndex].Score = -SpecialScore.Max;
+                anyUnreasonableInferiorMoves = true;
+                continue;
+            }
             inferiorMoves++;
         }
 
+        if (anyUnreasonableInferiorMoves) SortMovesByScore(_bestMoves, board.CurrentPosition.MoveIndex - 1);  // Sort moves again so an unreasonable inferior move is not selected.
+
         // Randomly select a move within score error.
         return _bestMoves[SafeRandom.NextInt(0, inferiorMoves + 1)].Move;
+    }
+
+
+    private bool IsInferiorMoveUnreasonable(Board board, ulong move)
+    {
+        var fromSquare = Move.From(move);
+        var kingMove = Move.IsKingMove(move);
+        var rookMove = (Board.SquareMasks[(int)fromSquare] & board.CurrentPosition.GetRooks(board.CurrentPosition.ColorToMove)) > 0;
+
+        if (Castling.Permitted(board.CurrentPosition.Castling) && (kingMove || rookMove))
+        {
+            var castlingMove = Move.IsCastling(move);
+            var piece = board.CurrentPosition.GetPiece(fromSquare);
+            if (Castling.Permitted(board.CurrentPosition.Castling, board.CurrentPosition.ColorToMove, BoardSide.Queen))
+            {
+                if (kingMove && !castlingMove) return true; // King move that forfeits queenside castling rights is unreasonable.
+                if (rookMove && (piece == Piece.WhiteRook) && (fromSquare == Square.A1)) return true; // White rook move that forfeits queenside castling rights is unreasonable.
+                if (rookMove && (piece == Piece.BlackRook) && (fromSquare == Square.A8)) return true; // Black rook move that forfeits queenside castling rights is unreasonable.
+            }
+            if (Castling.Permitted(board.CurrentPosition.Castling, board.CurrentPosition.ColorToMove, BoardSide.King))
+            {
+                if (kingMove && !castlingMove) return true; // King move that forfeits kingside castling rights is unreasonable.
+                if (rookMove && (piece == Piece.WhiteRook) && (fromSquare == Square.H1)) return true; // White rook move that forfeits kingside castling rights is unreasonable.
+                if (rookMove && (piece == Piece.BlackRook) && (fromSquare == Square.H8)) return true; // Black rook move that forfeits kingside castling rights is unreasonable.
+            }
+        }
+
+        var colorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(move));
+        var pieceMove = (Board.SquareMasks[(int)fromSquare] & board.CurrentPosition.GetMajorAndMinorPieces(board.CurrentPosition.ColorToMove)) > 0;
+        if ((colorlessCaptureVictim == ColorlessPiece.None) && pieceMove)
+        {
+            // Non-Capture Piece Move
+            var toSquare = Move.To(move);
+            if ((Board.PawnAttackMasks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] & board.CurrentPosition.GetPawns(board.CurrentPosition.ColorLastMoved)) > 0)
+            {
+                // Moving piece to square attacked by enemy pawn(s) is unreasonable.
+                return true;
+            }
+        }
+        
+        var lastMoveColorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(board.PreviousPosition?.PlayedMove ?? Move.Null));
+        if ((lastMoveColorlessCaptureVictim != ColorlessPiece.None) && (lastMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
+        {
+            // Last move captured a minor or major piece.
+            if (_evaluation.GetPieceMaterialScore(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialScore(lastMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
+            {
+                // Move that fails to recapture equal or greater value piece is unreasonable.
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
@@ -1449,7 +1513,7 @@ public sealed class Search : IDisposable
         }
 
         stringBuilder.AppendLine();
-        stringBuilder.Append($"NpsEndgamePer128 = {_limitStrengthConfig.NpsEndgamePer128}");
+        stringBuilder.Append($"NpsEndgamePer128: {_limitStrengthConfig.NpsEndgamePer128}");
         return stringBuilder.ToString();
     }
 }
