@@ -481,11 +481,11 @@ public sealed class Search : IDisposable
         var fromSquare = Move.From(move);
         var kingMove = Move.IsKingMove(move);
         var rookMove = (Board.SquareMasks[(int)fromSquare] & board.CurrentPosition.GetRooks(board.CurrentPosition.ColorToMove)) > 0;
+        var piece = board.CurrentPosition.GetPiece(fromSquare);
 
         if (Castling.Permitted(board.CurrentPosition.Castling) && (kingMove || rookMove))
         {
             var castlingMove = Move.IsCastling(move);
-            var piece = board.CurrentPosition.GetPiece(fromSquare);
             if (Castling.Permitted(board.CurrentPosition.Castling, board.CurrentPosition.ColorToMove, BoardSide.Queen))
             {
                 if (kingMove && !castlingMove) return true; // King move that forfeits queenside castling rights is unreasonable.
@@ -500,12 +500,12 @@ public sealed class Search : IDisposable
             }
         }
 
+        var toSquare = Move.To(move);
         var colorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(move));
         var pieceMove = (Board.SquareMasks[(int)fromSquare] & board.CurrentPosition.GetMajorAndMinorPieces(board.CurrentPosition.ColorToMove)) > 0;
         if ((colorlessCaptureVictim == ColorlessPiece.None) && pieceMove)
         {
             // Non-Capture Piece Move
-            var toSquare = Move.To(move);
             if ((Board.PawnAttackMasks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] & board.CurrentPosition.GetPawns(board.CurrentPosition.ColorLastMoved)) > 0)
             {
                 // Moving piece to square attacked by enemy pawn(s) is unreasonable.
@@ -524,7 +524,25 @@ public sealed class Search : IDisposable
             }
         }
 
-        return false;
+        for (var previousMoves = 2; previousMoves <= 6; previousMoves += 2)
+        {
+            var previousPosition = board.GetPreviousPosition(previousMoves);
+            if (previousPosition == null) break;
+
+            var previousMove = previousPosition.PlayedMove;
+            var previousFromSquare = Move.From(previousMove);
+            var previousToSquare = Move.To(previousMove);
+            var previouslyMovedPiece = previousPosition.GetPiece(previousFromSquare);
+
+            if ((previouslyMovedPiece == piece) && (previousToSquare == fromSquare) && (previousFromSquare == toSquare))
+            {
+                return true; // Shuffling piece between same two squares is unreasonable.
+            }
+        }
+
+        var fromOwnBackRank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)fromSquare] == 0;
+        var toOwnBackRank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] == 0;
+        return !kingMove && !fromOwnBackRank && toOwnBackRank; // Retreating minor or major piece to own back rank is unreasonable.
     }
 
 

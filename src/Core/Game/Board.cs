@@ -265,6 +265,13 @@ public sealed class Board
     }
 
 
+    public Position GetPreviousPosition(int previousMoves)
+    {
+        var positionIndex = _positionIndex - previousMoves;
+        return positionIndex >= 0 ? _positions[positionIndex] : null;
+    }
+
+
     private static int[][] CreateSquareDistances()
     {
         var squareDistances = new int[64][];
