@@ -60,7 +60,8 @@ public sealed class Evaluation
 
     // King Safety
     private readonly int[][] _mgKingSafetyAttackWeights; // [colorlessPiece][kingRing]
-    private readonly int[] _mgKingSafety; // [threatsToEnemyKingSafety]
+    private readonly int[] _mgKingSafetyPieceProximityWeights; // [colorlessPiece]
+    private readonly int[] _mgKingSafety; // [attacks]
 
     // Piece Location
     private readonly int[][] _mgPieceLocations; // [colorlessPiece][square]
@@ -106,6 +107,7 @@ public sealed class Evaluation
             new int[2],         // Rook
             new int[2]          // Queen
         };
+        _mgKingSafetyPieceProximityWeights = new int[(int)ColorlessPiece.King];
         _mgKingSafety = new int[64];
 
         // Piece Location
@@ -186,12 +188,15 @@ public sealed class Evaluation
         _mgKingSafetyAttackWeights[(int)ColorlessPiece.Rook][(int)KingRing.Inner] = Config.MgKingSafetyRookAttackInnerRingPer8;
         _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Outer] = Config.MgKingSafetyQueenAttackOuterRingPer8;
         _mgKingSafetyAttackWeights[(int)ColorlessPiece.Queen][(int)KingRing.Inner] = Config.MgKingSafetyQueenAttackInnerRingPer8;
+        _mgKingSafetyPieceProximityWeights[(int)ColorlessPiece.Knight] = Config.MgKingSafetyKnightProximityPer8;
+        _mgKingSafetyPieceProximityWeights[(int)ColorlessPiece.Bishop] = Config.MgKingSafetyBishopProximityPer8;
+        _mgKingSafetyPieceProximityWeights[(int)ColorlessPiece.Rook] = Config.MgKingSafetyRookProximityPer8;
+        _mgKingSafetyPieceProximityWeights[(int)ColorlessPiece.Queen] = Config.MgKingSafetyQueenProximityPer8;
 
         var kingSafetyPower = Config.MgKingSafetyPowerPer128 / 128d;
-        var scale = -Config.MgKingSafetyScalePer128 / 128d; // Note the negative scale.  More threats to king == less safety.
-
+        var kingSafetyScale = Config.MgKingSafetyScalePer128 / 128d;
         for (var index = 0; index < _mgKingSafety.Length; index++)
-            _mgKingSafety[index] = Formula.GetNonLinearBonus(index, scale, kingSafetyPower, 0);
+            _mgKingSafety[index] = Formula.GetNonLinearBonus(index, kingSafetyScale, kingSafetyPower, 0);
 
         // Calculate piece location values.
         for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
@@ -449,10 +454,9 @@ public sealed class Evaluation
 
         var fromSquare = Move.From(move);
         var fromSquareWhitePerspective = Board.GetSquareFromWhitePerspective(fromSquare, color);
-
         var toSquare = Move.To(move);
         var toSquareWhitePerspective = Board.GetSquareFromWhitePerspective(toSquare, color);
-
+        
         var mgImprovement = _mgPieceLocations[(int)colorlessPiece][(int)toSquareWhitePerspective] - _mgPieceLocations[(int)colorlessPiece][(int)fromSquareWhitePerspective];
         var egImprovement = _egPieceLocations[(int)colorlessPiece][(int)toSquareWhitePerspective] - _egPieceLocations[(int)colorlessPiece][(int)fromSquareWhitePerspective];
 
@@ -761,7 +765,6 @@ public sealed class Evaluation
             while ((square = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
             {
                 var squareFromWhitePerspective = Board.GetSquareFromWhitePerspective(square, color);
-
                 _staticScore.MgPieceLocation[(int)color] += _mgPieceLocations[(int)colorlessPiece][(int)squareFromWhitePerspective];
                 _staticScore.EgPieceLocation[(int)color] += _egPieceLocations[(int)colorlessPiece][(int)squareFromWhitePerspective];
             }
@@ -909,17 +912,16 @@ public sealed class Evaluation
     private void EvaluateMobilityKingSafetyThreats(Position position, Color color)
     {
         var enemyColor = 1 - color;
-
         var enemyKingSquare = Bitwise.FirstSetSquare(position.GetKing(enemyColor));
-        var enemyKingInnerRing = Board.InnerRingMasks[(int)enemyKingSquare];
         var enemyKingOuterRing = Board.OuterRingMasks[(int)enemyKingSquare];
+        var enemyKingInnerRing = Board.InnerRingMasks[(int)enemyKingSquare];
         var enemyKingFile = Board.Files[(int)enemyKingSquare];
 
         var enemyMajorPieces = position.GetMajorPieces(enemyColor);
         var enemyPawns = position.GetPawns(enemyColor);
         var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
-        
-        var mgThreatsToEnemyKingSafety = 0;
+
+        var mgThreatsEnemyKingSafety = 0;
 
         // Determine safe squares (not attacked by enemy pawns).
         Square square;
@@ -945,22 +947,26 @@ public sealed class Evaluation
                 var pieceXrayMovesMask = getPieceXrayMovesMask(square, color, position);
 
                 // Evaluate piece mobility using safe moves.
-                var safeMoves = pieceMovesMask & unOrEnemyOccupiedSquares & safeSquares;
-                var (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(safeMoves, _mgPieceMobility[(int)colorlessPiece], _egPieceMobility[(int)colorlessPiece]);
+                var moves = pieceMovesMask & unOrEnemyOccupiedSquares & safeSquares;
+                var (mgPieceMobilityScore, egPieceMobilityScore) = GetPieceMobilityScore(moves, _mgPieceMobility[(int)colorlessPiece], _egPieceMobility[(int)colorlessPiece]);
                 _staticScore.MgPieceMobility[(int)color] += mgPieceMobilityScore;
                 _staticScore.EgPieceMobility[(int)color] += egPieceMobilityScore;
 
                 // Evaluate king safety using safe xray moves.
-                safeMoves = pieceXrayMovesMask & unOrEnemyOccupiedSquares & safeSquares;
-                var outerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Outer];
-                var innerRingAttackWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Inner];
-                mgThreatsToEnemyKingSafety += GetKingSafetyIndexIncrement(safeMoves, enemyKingOuterRing, enemyKingInnerRing, outerRingAttackWeight, innerRingAttackWeight);
+                moves = pieceXrayMovesMask & unOrEnemyOccupiedSquares & safeSquares;
+                var outerRingWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Outer];
+                var innerRingWeight = _mgKingSafetyAttackWeights[(int)colorlessPiece][(int)KingRing.Inner];
+                mgThreatsEnemyKingSafety += GetKingSafetyIndexIncrement(moves, enemyKingOuterRing, enemyKingInnerRing, outerRingWeight, innerRingWeight);
+
+                // Evaluate piece proximity to enemy king.
+                var distanceToEnemyKing = Board.SquareDistances[(int)square][(int)enemyKingSquare];
+                mgThreatsEnemyKingSafety += (7 - distanceToEnemyKing) * _mgKingSafetyPieceProximityWeights[(int)colorlessPiece];
 
                 if (colorlessPiece < ColorlessPiece.Rook)
                 {
                     // Evaluate threats using safe moves.
-                    safeMoves = pieceMovesMask & enemyMajorPieces & safeSquares;
-                    var majorPiecesAttacked = Bitwise.CountSetBits(safeMoves);
+                    moves = pieceMovesMask & enemyMajorPieces & safeSquares;
+                    var majorPiecesAttacked = Bitwise.CountSetBits(moves);
                     _staticScore.MgThreats[(int)color] += majorPiecesAttacked * Config.MgMinorThreatenMajor;
                     _staticScore.EgThreats[(int)color] += majorPiecesAttacked * Config.EgMinorThreatenMajor;
                 }
@@ -972,28 +978,15 @@ public sealed class Evaluation
         if ((enemyKingFile > 0) && ((Board.FileMasks[enemyKingFile - 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Left of Enemy King
         if ((Board.FileMasks[enemyKingFile] & enemyPawns) == 0) semiOpenFilesNearEnemyKing++; // Enemy King File
         if ((enemyKingFile < 7) && ((Board.FileMasks[enemyKingFile + 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Right of Enemy King
-        mgThreatsToEnemyKingSafety += semiOpenFilesNearEnemyKing * Config.MgKingSafetySemiOpenFilePer8;
+        mgThreatsEnemyKingSafety += semiOpenFilesNearEnemyKing * Config.MgKingSafetySemiOpenFilePer8;
 
         // Evaluate enemy king pawn shield.
         var pawnsMissingFromShield = 3 - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
-        mgThreatsToEnemyKingSafety += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
-
-        // Evaluate average distance of defending pieces from enemy king.
-        var defendingPieces = position.GetMajorAndMinorPieces(enemyColor);
-        var defendingPieceCount = Bitwise.CountSetBits(defendingPieces);
-        if (defendingPieceCount > 0)
-        {
-            var defendingPieceDistance = 0;
-            while ((square = Bitwise.PopFirstSetSquare(ref defendingPieces)) != Square.Illegal)
-            {
-                defendingPieceDistance += Board.SquareDistances[(int)square][(int)enemyKingSquare];
-            }
-            mgThreatsToEnemyKingSafety += (defendingPieceDistance * Config.MgKingSafetyDefendingPiecesPer8) / defendingPieceCount;
-        }
+        mgThreatsEnemyKingSafety += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
 
         // Lookup king safety score in array.
         var maxIndex = _mgKingSafety.Length - 1;
-        _staticScore.MgKingSafety[(int)enemyColor] = _mgKingSafety[FastMath.Min(mgThreatsToEnemyKingSafety / 8, maxIndex)];
+        _staticScore.MgKingSafety[(int)enemyColor] = -_mgKingSafety[FastMath.Min(mgThreatsEnemyKingSafety / 8, maxIndex)]; // Negative value because more threats == less safety.
     }
 
 

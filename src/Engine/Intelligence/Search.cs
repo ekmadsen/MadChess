@@ -359,7 +359,7 @@ public sealed class Search : IDisposable
         // Search is complete.  Return best move.
         _stopwatch.Stop();
         if (_messenger.Debug) _messenger.WriteLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
-        UpdateStatus(board, true);
+        if (PvInfoUpdate) UpdateStatus(board, true);
         return scoreError == 0 ? bestMove.Move : SelectInferiorMove(board, scoreError);
     }
 
