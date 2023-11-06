@@ -102,6 +102,7 @@ public sealed class Particle
         Parameters[nameof(evalConfig.MgKingSafetyQueenProximityPer8)].Value = evalConfig.MgKingSafetyQueenProximityPer8;
         Parameters[nameof(evalConfig.MgKingSafetySemiOpenFilePer8)].Value = evalConfig.MgKingSafetySemiOpenFilePer8;
         Parameters[nameof(evalConfig.MgKingSafetyPawnShieldPer8)].Value = evalConfig.MgKingSafetyPawnShieldPer8;
+        Parameters[nameof(evalConfig.MgKingSafetyDefendingPiecesPer8)].Value = evalConfig.MgKingSafetyDefendingPiecesPer8;
 
         // Pawn Location
         //Parameters[nameof(evalConfig.MgPawnAdvancement)].Value = evalConfig.MgPawnAdvancement;
@@ -226,6 +227,7 @@ public sealed class Particle
         evaluation.Config.MgKingSafetyQueenProximityPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyQueenProximityPer8)].Value;
         evaluation.Config.MgKingSafetySemiOpenFilePer8 = Parameters[nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8)].Value;
         evaluation.Config.MgKingSafetyPawnShieldPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyPawnShieldPer8)].Value;
+        evaluation.Config.MgKingSafetyDefendingPiecesPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyDefendingPiecesPer8)].Value;
 
         // Pawn Location
         //evaluation.Config.MgPawnAdvancement = Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value;

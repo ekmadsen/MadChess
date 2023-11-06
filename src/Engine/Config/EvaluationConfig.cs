@@ -39,22 +39,23 @@ public sealed class EvaluationConfig
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial); // Incentivize engine to promote pawns.
 
     // King Safety
-    public int MgKingSafetyPowerPer128 = 248;
-    public int MgKingSafetyScalePer128 = 56;
+    public int MgKingSafetyPowerPer128 = 253;
+    public int MgKingSafetyScalePer128 = 43;
     public int MgKingSafetyKnightAttackOuterRingPer8 = 31;
-    public int MgKingSafetyKnightAttackInnerRingPer8 = 26;
+    public int MgKingSafetyKnightAttackInnerRingPer8 = 23;
     public int MgKingSafetyKnightProximityPer8 = 0;
     public int MgKingSafetyBishopAttackOuterRingPer8 = 14;
-    public int MgKingSafetyBishopAttackInnerRingPer8 = 32;
+    public int MgKingSafetyBishopAttackInnerRingPer8 = 30;
     public int MgKingSafetyBishopProximityPer8 = 0;
-    public int MgKingSafetyRookAttackOuterRingPer8 = 14;
-    public int MgKingSafetyRookAttackInnerRingPer8 = 18;
+    public int MgKingSafetyRookAttackOuterRingPer8 = 15;
+    public int MgKingSafetyRookAttackInnerRingPer8 = 17;
     public int MgKingSafetyRookProximityPer8 = 0;
     public int MgKingSafetyQueenAttackOuterRingPer8 = 16;
-    public int MgKingSafetyQueenAttackInnerRingPer8 = 21;
-    public int MgKingSafetyQueenProximityPer8 = 8;
-    public int MgKingSafetySemiOpenFilePer8 = 6;
+    public int MgKingSafetyQueenAttackInnerRingPer8 = 19;
+    public int MgKingSafetyQueenProximityPer8 = 7;
+    public int MgKingSafetySemiOpenFilePer8 = 8;
     public int MgKingSafetyPawnShieldPer8 = 17;
+    public int MgKingSafetyDefendingPiecesPer8 = 10;
 
     // Pawn Location
     public int MgPawnAdvancement = 1;
@@ -194,6 +195,7 @@ public sealed class EvaluationConfig
         MgKingSafetyQueenProximityPer8 = copyFromConfig.MgKingSafetyQueenProximityPer8;
         MgKingSafetySemiOpenFilePer8 = copyFromConfig.MgKingSafetySemiOpenFilePer8;
         MgKingSafetyPawnShieldPer8 = copyFromConfig.MgKingSafetyPawnShieldPer8;
+        MgKingSafetyDefendingPiecesPer8 = copyFromConfig.MgKingSafetyDefendingPiecesPer8;
 
         // Copy piece location values.
         MgPawnAdvancement = copyFromConfig.MgPawnAdvancement;

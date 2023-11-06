@@ -983,6 +983,19 @@ public sealed class Evaluation
         var pawnsMissingFromShield = 3 - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
         mgThreatsToEnemyKingSafety += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
 
+        // Evaluate average distance of defending pieces from enemy king.
+        var defendingPieces = position.GetMajorAndMinorPieces(enemyColor);
+        var defendingPieceCount = Bitwise.CountSetBits(defendingPieces);
+        if (defendingPieceCount > 0)
+        {
+            var defendingPieceDistance = 0;
+            while ((square = Bitwise.PopFirstSetSquare(ref defendingPieces)) != Square.Illegal)
+            {
+                defendingPieceDistance += Board.SquareDistances[(int)square][(int)enemyKingSquare];
+            }
+            mgThreatsToEnemyKingSafety += (defendingPieceDistance * Config.MgKingSafetyDefendingPiecesPer8) / defendingPieceCount;
+        }
+
         // Lookup king safety score in array.
         var maxIndex = _mgKingSafety.Length - 1;
         _staticScore.MgKingSafety[(int)enemyColor] = -_mgKingSafety[FastMath.Min(mgThreatsToEnemyKingSafety / 8, maxIndex)]; // Negative value because more threats == less safety.
