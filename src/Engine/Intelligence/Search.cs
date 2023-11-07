@@ -619,7 +619,8 @@ public sealed class Search : IDisposable
                     if ((bestMove != Move.Null) && Move.IsQuiet(bestMove))
                     {
                         // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
-                        // Update history heuristic.
+                        // Update move heuristics.
+                        _killerMoves.Update(depth, bestMove);
                         _moveHistory.UpdateValue(bestMove, historyIncrement);
                     }
                 }
