@@ -188,7 +188,6 @@ public sealed class Search : IDisposable
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
         _multiPvMoves = new ScoredMove[Position.MaxMoves];
         _principalVariations = new ulong[Position.MaxMoves][][];
-
         for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
         {
             _principalVariations[rootMoveIndex] = new ulong[MaxHorizon + 2][]; // Guarantees var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1] is in bounds.

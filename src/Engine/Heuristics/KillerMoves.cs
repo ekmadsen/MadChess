@@ -19,7 +19,7 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics;
 public sealed class KillerMoves
 {
     private const int _maxDepth = Search.MaxHorizon + Search.MaxQuietDepth;
-    private readonly KillerMove[][] _killerMoves;
+    private readonly KillerMove[][] _killerMoves; // [depth][slot]
 
 
     public KillerMoves()
@@ -55,6 +55,12 @@ public sealed class KillerMoves
 
         var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return; // Move already is the best killer move.
+
+        if (killerMove == _killerMoves[depth][1])
+        {
+            // Avoid storing same killer move in both slots.  Swap slots.
+            (_killerMoves[depth][0], _killerMoves[depth][1]) = (_killerMoves[depth][1], _killerMoves[depth][0]);
+        }
 
         // Shift and update killer move.
         _killerMoves[depth][1] = _killerMoves[depth][0];

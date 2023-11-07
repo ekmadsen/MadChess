@@ -93,8 +93,5 @@ public static class Program
     }
 
 
-    private static async Task<AdvancedConfig> DeserializeConfigJson(Stream stream)
-    {
-        return await JsonSerializer.DeserializeAsync<AdvancedConfig>(stream, _jsonOptions);
-    }
+    private static async Task<AdvancedConfig> DeserializeConfigJson(Stream stream) => await JsonSerializer.DeserializeAsync<AdvancedConfig>(stream, _jsonOptions);
 }
