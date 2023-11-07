@@ -60,6 +60,7 @@ public sealed class KillerMoves
         {
             // Avoid storing same killer move in both slots.  Swap slots.
             (_killerMoves[depth][0], _killerMoves[depth][1]) = (_killerMoves[depth][1], _killerMoves[depth][0]);
+            return;
         }
 
         // Shift and update killer move.
