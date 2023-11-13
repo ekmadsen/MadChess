@@ -19,7 +19,7 @@ namespace ErikTheCoder.MadChess.Core.Game;
 
 public sealed class PgnGames : List<PgnGame>
 {
-    private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly Messenger _messenger;
 
 
     public PgnGames(Messenger messenger)

@@ -30,7 +30,7 @@ public sealed class Evaluation
     private const int _egKbnPenalty = 300;
     private readonly LimitStrengthEvalConfig _limitStrengthConfig;
     private readonly int[] _limitStrengthElos;
-    private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly Messenger _messenger;
     private readonly Stats _stats;
     private readonly EvaluationConfig _defaultConfig;
     private readonly StaticScore _staticScore;
@@ -467,7 +467,7 @@ public sealed class Evaluation
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (int StaticScore, bool DrawnEndgame, int Phase) GetStaticScore(Position position)
     {
-        // TODO: Evaluate space.  Perhaps squares attacked by more of own pieces than enemy pieces?  Or squares behind own pawns not occupied by enemy pieces?
+        // TODO: Evaluate space.  See https://www.chess.com/forum/view/general/gm-larry-evans-method-of-static-analysis#comment-31672572.
         // TODO: Evaluate rooks on open files.
         Debug.Assert(!position.KingInCheck);
 

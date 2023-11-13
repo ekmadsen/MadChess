@@ -93,7 +93,7 @@ public sealed class Board
     private static readonly Square[] _enPassantTargetSquares; // [square]
     private static readonly Square[] _enPassantVictimSquares; // [square]
 
-    private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly Messenger _messenger;
     private readonly Position[] _positions; // [distanceFromRoot]
 
     private readonly ulong[][] _pieceSquareKeys; // [piece][square]

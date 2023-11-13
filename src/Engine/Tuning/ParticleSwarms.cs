@@ -26,7 +26,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 {
     public const double Influence = 0.375d;
     private readonly AdvancedConfig _advancedConfig;
-    private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly Messenger _messenger;
     private readonly double _originalEvaluationError;
     private int _iterations;
 
