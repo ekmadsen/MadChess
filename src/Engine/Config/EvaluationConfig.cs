@@ -19,123 +19,127 @@ public sealed class EvaluationConfig
 
     // Material
     public int MgPawnMaterial = 100;
-    public int EgPawnMaterial = 168;
-    public int MgKnightMaterial = 449;
-    public int EgKnightMaterial = 577;
-    public int MgBishopMaterial = 470;
-    public int EgBishopMaterial = 614;
-    public int MgRookMaterial = 547;
-    public int EgRookMaterial = 1112;
-    public int MgQueenMaterial = 1368;
-    public int EgQueenMaterial = 1958;
+    public int EgPawnMaterial = 179;
+    public int MgKnightMaterial = 493;
+    public int EgKnightMaterial = 550;
+    public int MgBishopMaterial = 517;
+    public int EgBishopMaterial = 591;
+    public int MgRookMaterial = 593;
+    public int EgRookMaterial = 1088;
+    public int MgQueenMaterial = 1537;
+    public int EgQueenMaterial = 1844;
 
     // Passed Pawns
     public int PassedPawnPowerPer128 = 322;
-    public int MgPassedPawnScalePer128 = 85;
-    public int EgPassedPawnScalePer128 = 379;
-    public int EgFreePassedPawnScalePer128 = 698;
-    public int EgConnectedPassedPawnScalePer128 = 81;
-    public int EgKingEscortedPassedPawn = 14;
+    public int MgPassedPawnScalePer128 = 78;
+    public int EgPassedPawnScalePer128 = 378;
+    public int EgFreePassedPawnScalePer128 = 685;
+    public int EgConnectedPassedPawnScalePer128 = 66;
+    public int EgKingEscortedPassedPawn = 13;
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial); // Incentivize engine to promote pawns.
 
     // King Safety
-    public int MgKingSafetyPowerPer128 = 241;
-    public int MgKingSafetyScalePer128 = 56;
-    public int MgKingSafetyKnightAttackOuterRingPer8 = 32;
-    public int MgKingSafetyKnightAttackInnerRingPer8 = 25;
-    public int MgKingSafetyBishopAttackOuterRingPer8 = 12;
+    public int MgKingSafetyPowerPer128 = 253;
+    public int MgKingSafetyScalePer128 = 43;
+    public int MgKingSafetyKnightAttackOuterRingPer8 = 31;
+    public int MgKingSafetyKnightAttackInnerRingPer8 = 23;
+    public int MgKingSafetyKnightProximityPer8 = 0;
+    public int MgKingSafetyBishopAttackOuterRingPer8 = 14;
     public int MgKingSafetyBishopAttackInnerRingPer8 = 30;
-    public int MgKingSafetyRookAttackOuterRingPer8 = 13;
+    public int MgKingSafetyBishopProximityPer8 = 0;
+    public int MgKingSafetyRookAttackOuterRingPer8 = 15;
     public int MgKingSafetyRookAttackInnerRingPer8 = 17;
-    public int MgKingSafetyQueenAttackOuterRingPer8 = 21;
-    public int MgKingSafetyQueenAttackInnerRingPer8 = 22;
-    public int MgKingSafetySemiOpenFilePer8 = 9;
-    public int MgKingSafetyPawnShieldPer8 = 15;
-    public int MgKingSafetyDefendingPiecesPer8 = 16;
+    public int MgKingSafetyRookProximityPer8 = 0;
+    public int MgKingSafetyQueenAttackOuterRingPer8 = 16;
+    public int MgKingSafetyQueenAttackInnerRingPer8 = 19;
+    public int MgKingSafetyQueenProximityPer8 = 7;
+    public int MgKingSafetySemiOpenFilePer8 = 8;
+    public int MgKingSafetyPawnShieldPer8 = 17;
+    public int MgKingSafetyDefendingPiecesPer8 = 10;
 
     // Pawn Location
-    public int MgPawnAdvancement = 2;
+    public int MgPawnAdvancement = 1;
     public int EgPawnAdvancement = 11;
-    public int MgPawnCentrality = 1;
-    public int EgPawnCentrality = -7;
+    public int MgPawnCentrality = 0;
+    public int EgPawnCentrality = -9;
 
     // Knight Location 
-    public int MgKnightAdvancement = 2;
-    public int EgKnightAdvancement = 7;
-    public int MgKnightCentrality = 6;
-    public int EgKnightCentrality = 17;
-    public int MgKnightCorner = -1;
-    public int EgKnightCorner = -25;
+    public int MgKnightAdvancement = 4;
+    public int EgKnightAdvancement = 8;
+    public int MgKnightCentrality = 5;
+    public int EgKnightCentrality = 20;
+    public int MgKnightCorner = -2;
+    public int EgKnightCorner = -31;
 
     // Bishop Location
     public int MgBishopAdvancement = -2;
-    public int EgBishopAdvancement = 5;
-    public int MgBishopCentrality = 11;
-    public int EgBishopCentrality = 5;
+    public int EgBishopAdvancement = 4;
+    public int MgBishopCentrality = 10;
+    public int EgBishopCentrality = 6;
     public int MgBishopCorner = 0;
-    public int EgBishopCorner = -5;
+    public int EgBishopCorner = -7;
 
     // Rook Location
-    public int MgRookAdvancement = 5;
-    public int EgRookAdvancement = 14;
-    public int MgRookCentrality = 9;
+    public int MgRookAdvancement = 6;
+    public int EgRookAdvancement = 13;
+    public int MgRookCentrality = 14;
     public int EgRookCentrality = -2;
     public int MgRookCorner = -1;
-    public int EgRookCorner = -4;
+    public int EgRookCorner = -2;
 
     // Queen Location
-    public int MgQueenAdvancement = -8;
-    public int EgQueenAdvancement = 31;
-    public int MgQueenCentrality = 2;
-    public int EgQueenCentrality = 16;
+    public int MgQueenAdvancement = -7;
+    public int EgQueenAdvancement = 32;
+    public int MgQueenCentrality = 3;
+    public int EgQueenCentrality = 24;
     public int MgQueenCorner = -4;
-    public int EgQueenCorner = -13;
+    public int EgQueenCorner = -11;
 
     // King Location
-    public int MgKingAdvancement = -9;
-    public int EgKingAdvancement = 16;
-    public int MgKingCentrality = -2;
-    public int EgKingCentrality = 20;
-    public int MgKingCorner = 10;
-    public int EgKingCorner = -3;
+    public int MgKingAdvancement = -3;
+    public int EgKingAdvancement = 15;
+    public int MgKingCentrality = 0;
+    public int EgKingCentrality = 23;
+    public int MgKingCorner = 1;
+    public int EgKingCorner = -4;
 
     // Piece Mobility
-    public int PieceMobilityPowerPer128 = 109;
-    public int MgKnightMobilityScale = 59;
+    public int PieceMobilityPowerPer128 = 100;
+    public int MgKnightMobilityScale = 77;
     public int EgKnightMobilityScale = 39;
-    public int MgBishopMobilityScale = 61;
-    public int EgBishopMobilityScale = 161;
-    public int MgRookMobilityScale = 89;
-    public int EgRookMobilityScale = 153;
-    public int MgQueenMobilityScale = 86;
-    public int EgQueenMobilityScale = 75;
+    public int MgBishopMobilityScale = 62;
+    public int EgBishopMobilityScale = 185;
+    public int MgRookMobilityScale = 85;
+    public int EgRookMobilityScale = 154;
+    public int MgQueenMobilityScale = 87;
+    public int EgQueenMobilityScale = 78;
 
     // Pawn Structure
-    public int MgIsolatedPawn = 11;
+    public int MgIsolatedPawn = 12;
     public int EgIsolatedPawn = 36;
-    public int MgDoubledPawn = 12;
-    public int EgDoubledPawn = 25;
+    public int MgDoubledPawn = 10;
+    public int EgDoubledPawn = 27;
 
     // Threats
     public int MgPawnThreatenMinor = 50;
-    public int EgPawnThreatenMinor = 42;
-    public int MgPawnThreatenMajor = 72;
-    public int EgPawnThreatenMajor = 67;
-    public int MgMinorThreatenMajor = 29;
-    public int EgMinorThreatenMajor = 37;
+    public int EgPawnThreatenMinor = 44;
+    public int MgPawnThreatenMajor = 59;
+    public int EgPawnThreatenMajor = 62;
+    public int MgMinorThreatenMajor = 31;
+    public int EgMinorThreatenMajor = 35;
 
     // Minor Pieces
-    public int MgBishopPair = 33;
-    public int EgBishopPair = 97;
-    public int MgKnightOutpost = 56;
-    public int EgKnightOutpost = 34;
-    public int MgBishopOutpost = 30;
-    public int EgBishopOutpost = 20;
+    public int MgBishopPair = 35;
+    public int EgBishopPair = 86;
+    public int MgKnightOutpost = 59;
+    public int EgKnightOutpost = 36;
+    public int MgBishopOutpost = 26;
+    public int EgBishopOutpost = 22;
 
     // Major Pieces
     // ReSharper disable InconsistentNaming
     public int MgRook7thRank = 20;
-    public int EgRook7thRank = 52;
+    public int EgRook7thRank = 53;
     // ReSharper restore InconsistentNaming
 
     // Limit Strength
@@ -179,12 +183,16 @@ public sealed class EvaluationConfig
         MgKingSafetyScalePer128 = copyFromConfig.MgKingSafetyScalePer128;
         MgKingSafetyKnightAttackOuterRingPer8 = copyFromConfig.MgKingSafetyKnightAttackOuterRingPer8;
         MgKingSafetyKnightAttackInnerRingPer8 = copyFromConfig.MgKingSafetyKnightAttackInnerRingPer8;
+        MgKingSafetyKnightProximityPer8 = copyFromConfig.MgKingSafetyKnightProximityPer8;
         MgKingSafetyBishopAttackOuterRingPer8 = copyFromConfig.MgKingSafetyBishopAttackOuterRingPer8;
         MgKingSafetyBishopAttackInnerRingPer8 = copyFromConfig.MgKingSafetyBishopAttackInnerRingPer8;
+        MgKingSafetyBishopProximityPer8 = copyFromConfig.MgKingSafetyBishopProximityPer8;
         MgKingSafetyRookAttackOuterRingPer8 = copyFromConfig.MgKingSafetyRookAttackOuterRingPer8;
         MgKingSafetyRookAttackInnerRingPer8 = copyFromConfig.MgKingSafetyRookAttackInnerRingPer8;
+        MgKingSafetyRookProximityPer8 = copyFromConfig.MgKingSafetyRookProximityPer8;
         MgKingSafetyQueenAttackOuterRingPer8 = copyFromConfig.MgKingSafetyQueenAttackOuterRingPer8;
         MgKingSafetyQueenAttackInnerRingPer8 = copyFromConfig.MgKingSafetyQueenAttackInnerRingPer8;
+        MgKingSafetyQueenProximityPer8 = copyFromConfig.MgKingSafetyQueenProximityPer8;
         MgKingSafetySemiOpenFilePer8 = copyFromConfig.MgKingSafetySemiOpenFilePer8;
         MgKingSafetyPawnShieldPer8 = copyFromConfig.MgKingSafetyPawnShieldPer8;
         MgKingSafetyDefendingPiecesPer8 = copyFromConfig.MgKingSafetyDefendingPiecesPer8;

@@ -16,17 +16,14 @@ public static class Elo
     public const int Min = 600;
 
     // ReSharper disable UnusedMember.Global
-    public const int Beginner = 800;
+    public const int Beginner = 600;
+    public const int Patzer = 800;
     public const int Novice = 1000;
-
     public const int Social = 1200;
     public const int StrongSocial = 1400;
-
     public const int Club = 1600;
     public const int StrongClub = 1800;
-
     public const int Expert = 2000;
-
     public const int CandidateMaster = 2200;
     public const int Master = 2300;
     public const int InternationalMaster = 2400;

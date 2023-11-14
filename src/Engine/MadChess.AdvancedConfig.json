@@ -2,7 +2,7 @@
 
 // showlimitstrengthparams
 
-// ... to see evaluation Knowledge Ppercent and Search Speed (NPS), Move Error, Blunder Error, and Blunder Percent parameter values
+// ... to see evaluation Knowledge Percent and Search Speed (NPS), Move Error, Blunder Error, and Blunder Percent parameter values
 //     calculated from these limit stregnth config values.
 
 // You must restart MadChess.Engine.exe to load changed values in this JSON file.

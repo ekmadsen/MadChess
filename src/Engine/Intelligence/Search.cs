@@ -74,7 +74,6 @@ public sealed class Search : IDisposable
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 40;
     private const int _lmrConstPer128 = 16;
-    private const int _moveHistoryDecrementPer128 = 96;
     private const int _quietSearchMaxFromHorizon = 3;
 
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
@@ -188,7 +187,6 @@ public sealed class Search : IDisposable
         _bestMovePlies = new ScoredMove[MaxHorizon + 1];
         _multiPvMoves = new ScoredMove[Position.MaxMoves];
         _principalVariations = new ulong[Position.MaxMoves][][];
-
         for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
         {
             _principalVariations[rootMoveIndex] = new ulong[MaxHorizon + 2][]; // Guarantees var pvNextDepth = _principalVariations[rootMoveIndex][depth + 1] is in bounds.
@@ -359,7 +357,7 @@ public sealed class Search : IDisposable
         // Search is complete.  Return best move.
         _stopwatch.Stop();
         if (_messenger.Debug) _messenger.WriteLine($"info string Stopping search at {_stopwatch.Elapsed.TotalMilliseconds:0} milliseconds.");
-        UpdateStatus(board, true);
+        if (PvInfoUpdate) UpdateStatus(board, true);
         return scoreError == 0 ? bestMove.Move : SelectInferiorMove(board, scoreError);
     }
 
@@ -603,7 +601,6 @@ public sealed class Search : IDisposable
         // Get cached position.
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
-        var historyDecrement = (-historyIncrement * _moveHistoryDecrementPer128) / 128;
         var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
         ulong bestMove;
         if ((cachedPosition.Key != _cache.NullPosition.Key) && (depth > 0) && !repeatPosition)
@@ -811,7 +808,7 @@ public sealed class Search : IDisposable
                         if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                         {
                             // Update history of prior quiet move that failed to produce cutoff.
-                            _moveHistory.UpdateValue(priorMove, historyDecrement);
+                            _moveHistory.UpdateValue(priorMove, -historyIncrement);
                         }
                         moveIndex--;
                     }

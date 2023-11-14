@@ -19,7 +19,7 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics;
 public sealed class KillerMoves
 {
     private const int _maxDepth = Search.MaxHorizon + Search.MaxQuietDepth;
-    private readonly KillerMove[][] _killerMoves;
+    private readonly KillerMove[][] _killerMoves; // [depth][slot]
 
 
     public KillerMoves()
