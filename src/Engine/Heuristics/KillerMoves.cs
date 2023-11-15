@@ -56,7 +56,7 @@ public sealed class KillerMoves
         var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return; // Move already is the best killer move.
 
-        // Shift and update killer move.
+        // Shift killer move slots and update best killer move.
         _killerMoves[depth][1] = _killerMoves[depth][0];
         _killerMoves[depth][0] = killerMove;
     }

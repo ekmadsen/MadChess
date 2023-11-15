@@ -513,11 +513,11 @@ public sealed class Position
         if (attacker == Piece.None) return false; // No piece on from square.
 
         var attackerColor = PieceHelper.GetColor(attacker);
-        if (ColorToMove != attackerColor) return false; // Piece is wrong color.
+        if (attackerColor != ColorToMove) return false; // Piece is wrong color.
 
         var colorlessAttacker = PieceHelper.GetColorlessPiece(attacker);
         var victim = GetPiece(toSquare);
-        if ((victim != Piece.None) && (attackerColor == PieceHelper.GetColor(victim))) return false; // Piece cannot attack its own color.
+        if ((victim != Piece.None) && (PieceHelper.GetColor(victim) == attackerColor)) return false; // Piece cannot attack its own color.
         if ((victim == Piece.WhiteKing) || (victim == Piece.BlackKing)) return false;  // Piece cannot attack king.
 
         var promotedPiece = Move.PromotedPiece(move);
@@ -552,7 +552,9 @@ public sealed class Position
 
         var pawn = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorToMove);
         var king = PieceHelper.GetPieceOfColor(ColorlessPiece.King, ColorToMove);
+        var toRank = Board.Ranks[(int)ColorToMove][(int)toSquare];
 
+        if ((attacker == pawn) && (toRank == 7) && (promotedPiece == Piece.None)) return false; // Pawn cannot move to back rank without promoting.
         if ((promotedPiece != Piece.None) && (attacker != pawn)) return false; // Only pawns can promote.
         if ((promotedPiece == pawn) || (promotedPiece == king)) return false; // Cannot promote pawn to pawn or king.
 
@@ -560,9 +562,9 @@ public sealed class Position
         if (castling)
         {
             var boardSide = Board.Files[(int)toSquare] < 4 ? BoardSide.Queen : BoardSide.King;
-            if (!Game.Castling.Permitted(Castling, attackerColor, boardSide)) return false; // Castle not possible.
-            if (toSquare != Board.CastleToSquares[(int)attackerColor][(int)boardSide]) return false; // Castle destination square invalid.
-            if ((Occupancy & Board.CastleEmptySquaresMask[(int)attackerColor][(int)boardSide]) > 0) return false; // Castle squares occupied.
+            if (!Game.Castling.Permitted(Castling, ColorToMove, boardSide)) return false; // Castle not possible.
+            if (toSquare != Board.CastleToSquares[(int)ColorToMove][(int)boardSide]) return false; // Castle destination square invalid.
+            if ((Occupancy & Board.CastleEmptySquaresMask[(int)ColorToMove][(int)boardSide]) > 0) return false; // Castle squares occupied.
         }
 
         // Set move properties.

@@ -452,7 +452,7 @@ public sealed class UciStream : IDisposable
 
         for (var index = 2; index < tokens.Count; index++)
         {
-            if (tokens[index].ToLower() == "moves")
+            if (string.Equals(tokens[index], "moves", StringComparison.OrdinalIgnoreCase))
             {
                 // Position specifies moves.
                 specifiesMoves = true;
@@ -660,12 +660,13 @@ public sealed class UciStream : IDisposable
 
         // Count moves using staged moved generation (as is done when searching moves).
         var toHorizon = horizon - depth;
+        var previousMove = _board.PreviousPosition?.PlayedMove ?? Move.Null;
         _board.CurrentPosition.PrepareMoveGeneration();
         long moves = 0;
 
         while (true)
         {
-            var (move, moveIndex) = _search.GetNextMove(_board.CurrentPosition, Board.AllSquaresMask, depth, Move.Null);
+            var (move, moveIndex) = _search.GetNextMove(previousMove, _board.CurrentPosition, Board.AllSquaresMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
 
             var (legalMove, _) = _board.PlayMove(move);
@@ -748,12 +749,13 @@ public sealed class UciStream : IDisposable
     {
         // Get cached position.
         var cachedPosition = _cache.GetPosition(_board.CurrentPosition.Key, _search.Count);
+        var previousMove = _board.PreviousPosition?.PlayedMove ?? Move.Null;
         var bestMove = _cache.GetBestMove(position, cachedPosition.Data);
 
         // Generate and sort moves.
         _board.CurrentPosition.GenerateMoves();
         var lastMoveIndex = _board.CurrentPosition.MoveIndex - 1;
-        _search.PrioritizeMoves(_board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
+        _search.PrioritizeMoves(previousMove, _board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
         _search.SortMovesByPriority(_board.CurrentPosition.Moves, lastMoveIndex);
 
         _messenger.WriteLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer   History              Priority");
@@ -905,7 +907,7 @@ public sealed class UciStream : IDisposable
 
                     }
 
-                    if (parsedToken.EndsWith(";"))
+                    if (parsedToken.EndsWith(';'))
                     {
                         expectedMovesIndex = index;
                         break;
