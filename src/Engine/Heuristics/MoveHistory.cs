@@ -22,7 +22,7 @@ public sealed class MoveHistory
     private const int _multiplier = 256;
     private const int _divisor = Move.HistoryMaxValue / _multiplier;
     private const int _moveHistoryWeight = 1;
-    private const int _counterMoveHistoryWeight = 36;
+    private const int _counterMoveHistoryWeight = 384; //  6 pieces * 64 squares.  Counter move history is more specific than move history and therefore is updated less often.
     private const int _agePer128 = 118;
     private readonly int[][] _moveHistory; // [piece][toSquare]
     private readonly int[][][][] _counterMoveHistory; // [previousPiece][previousToSquare][piece][toSquare]
@@ -69,6 +69,8 @@ public sealed class MoveHistory
         var toSquare = Move.To(move);
         var moveHistory = _moveHistory[(int)piece][(int)toSquare];
 
+        if (previousMove == Move.Null) return moveHistory;
+
         // Get counter move history.
         var previousPiece = Move.Piece(previousMove);
         var previousToSquare = Move.To(previousMove);
@@ -91,8 +93,9 @@ public sealed class MoveHistory
         value += (increment * _multiplier) - (value * FastMath.Abs(increment) / _divisor);
         _moveHistory[(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
 
+        if (previousMove == Move.Null) return;
+
         // Update counter move history.
-        // TODO: Consider updating counter move history only if previous move was a best move (from cache).
         var previousPiece = Move.Piece(previousMove);
         var previousToSquare = Move.To(previousMove);
         value = _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare];
