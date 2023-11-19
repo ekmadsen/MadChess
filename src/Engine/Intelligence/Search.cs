@@ -27,7 +27,7 @@ using ErikTheCoder.MadChess.Engine.Score;
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
 
 
-public delegate (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove);
+public delegate (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove);
 
 
 public sealed class Search : IDisposable
@@ -298,14 +298,7 @@ public sealed class Search : IDisposable
 
         // If strength is limited, slow search speed as game progresses towards the endgame.
         if (LimitedStrength) DeterminePhasedSearchSpeed(board.CurrentPosition);
-
-        if ((legalMoveIndex == 1) && (CandidateMoves.Count == 0) && !AnalyzeMode)
-        {
-            // TODO: Output dynamic score from previous search so GUI evaluation chart doesn't show discontinuous drop to zero score.
-            // Only one legal move found.  Play it immediately.
-            _stopwatch.Stop();
-            return board.CurrentPosition.Moves[0];
-        }
+        
         // Copy legal moves to root moves and principal variations.
         for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
         {
@@ -385,7 +378,7 @@ public sealed class Search : IDisposable
         return false;
     }
 
-
+    // TODO: Move DetermineMoveTime, AdjustMoveTime, and HaveTimeForNextHorizon methods to a TimeManagement class.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DetermineMoveTime(Position position)
     {
@@ -602,6 +595,7 @@ public sealed class Search : IDisposable
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
         var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
+        var previousMove = board.PreviousPosition?.PlayedMove ?? Move.Null;
         ulong bestMove;
         if ((cachedPosition.Key != _cache.NullPosition.Key) && (depth > 0) && !repeatPosition)
         {
@@ -618,7 +612,7 @@ public sealed class Search : IDisposable
                     {
                         // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
                         // Update history heuristic.
-                        _moveHistory.UpdateValue(bestMove, historyIncrement);
+                        _moveHistory.UpdateValue(previousMove, bestMove, historyIncrement);
                     }
                 }
                 _stats.CacheScoreCutoff++;
@@ -709,7 +703,7 @@ public sealed class Search : IDisposable
                 moveIndex++;
                 if (moveIndex == 0)
                 {
-                    PrioritizeMoves(_rootMoves, lastMoveIndex, bestMove, depth);
+                    PrioritizeMoves(previousMove, _rootMoves, lastMoveIndex, bestMove, depth);
                     SortMovesByPriority(_rootMoves, lastMoveIndex);
                 }
                 if (moveIndex > lastMoveIndex) break;
@@ -720,7 +714,7 @@ public sealed class Search : IDisposable
             else
             {
                 // Search moves at current position.
-                (move, moveIndex) = GetNextMove(board.CurrentPosition, Board.AllSquaresMask, depth, bestMove);
+                (move, moveIndex) = GetNextMove(previousMove, board.CurrentPosition, Board.AllSquaresMask, depth, bestMove);
                 if (move == Move.Null) break; // All moves have been searched.
             }
             if (Move.Equals(move, excludedMove)) continue; // Do not search excluded (potentially singular) move.
@@ -782,7 +776,6 @@ public sealed class Search : IDisposable
 
             board.UndoMove();
             if (FastMath.Abs(score) == SpecialScore.Interrupted) return score; // Stop searching.
-            if ((score > alpha) && (score < beta) && (depth == 0)) _rootMoves[moveIndex].Score = score; // Update root move score.
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
@@ -797,7 +790,7 @@ public sealed class Search : IDisposable
                 {
                     // Update move heuristics.
                     _killerMoves.Update(depth, move);
-                    _moveHistory.UpdateValue(move, historyIncrement);
+                    _moveHistory.UpdateValue(previousMove, move, historyIncrement);
 
                     // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
                     moveIndex--;
@@ -808,7 +801,7 @@ public sealed class Search : IDisposable
                         if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
                         {
                             // Update history of prior quiet move that failed to produce cutoff.
-                            _moveHistory.UpdateValue(priorMove, -historyIncrement);
+                            _moveHistory.UpdateValue(previousMove, priorMove, -historyIncrement);
                         }
                         moveIndex--;
                     }
@@ -826,6 +819,8 @@ public sealed class Search : IDisposable
             if (score > alpha)
             {
                 // Found new principal variation.
+                if (depth == 0) _rootMoves[moveIndex].Score = score; // Update root move score.
+
                 var rootMoveIndex = _rootMoveNumber - 1;
                 var pvThisDepth = _principalVariations[rootMoveIndex][depth];
                 pvThisDepth[0] = move;
@@ -964,12 +959,13 @@ public sealed class Search : IDisposable
 
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         var legalMoveNumber = 0;
+        var previousMove = board.PreviousPosition?.PlayedMove ?? Move.Null;
         board.CurrentPosition.PrepareMoveGeneration();
 
         do
         {
             // Do not retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
-            var (move, moveIndex) = getNextMove(board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
+            var (move, moveIndex) = getNextMove(previousMove, board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
 
             // Must call IsMoveInQuietSearchFutile before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
@@ -1085,7 +1081,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public (ulong Move, int MoveIndex) GetNextMove(Position position, ulong toSquareMask, int depth, ulong bestMove)
+    public (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
         while (true)
         {
@@ -1131,7 +1127,7 @@ public sealed class Search : IDisposable
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
-                        PrioritizeMoves(position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
                     position.MoveGenerationStage++;
@@ -1145,11 +1141,10 @@ public sealed class Search : IDisposable
 
         return (Move.Null, position.CurrentMoveIndex);
     }
-
-
-    // Pass bestMove parameter even though it isn't referenced to satisfy GetNextMove delegate signature.
+    
+    
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private (ulong Move, int MoveIndex) GetNextCapture(Position position, ulong toSquareMask, int depth, ulong bestMove)
+    private (ulong Move, int MoveIndex) GetNextCapture(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
         while (true)
         {
@@ -1330,7 +1325,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void PrioritizeMoves(ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
+    private void PrioritizeMoves(ulong previousMove, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
         {
@@ -1338,18 +1333,18 @@ public sealed class Search : IDisposable
             var move = moves[moveIndex].Move;
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
-            Move.SetHistory(ref move, _moveHistory.GetValue(move));
+            Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
             moves[moveIndex].Move = move;
         }
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void PrioritizeMoves(ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(moves, 0, lastMoveIndex, bestMove, depth);
+    public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, depth);
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void PrioritizeMoves(ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
+    private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
         {
@@ -1357,7 +1352,7 @@ public sealed class Search : IDisposable
             var move = moves[moveIndex];
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
             Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
-            Move.SetHistory(ref move, _moveHistory.GetValue(move));
+            Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
             moves[moveIndex] = move;
         }
     }

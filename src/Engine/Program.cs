@@ -26,16 +26,17 @@ public static class Program
 {
     private const string _advancedConfigFilename = "MadChess.AdvancedConfig.json";
     private const string _advancedConfigResource = "ErikTheCoder.MadChess.Engine.MadChess.AdvancedConfig.json";
-    private static readonly JsonSerializerOptions _jsonOptions;
+    private static readonly JsonContext _jsonContext;
 
     
     static Program()
     {
-        _jsonOptions = new JsonSerializerOptions
+        var jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip
         };
+        _jsonContext = new JsonContext(jsonOptions);
     }
 
 
@@ -93,5 +94,5 @@ public static class Program
     }
 
 
-    private static async Task<AdvancedConfig> DeserializeConfigJson(Stream stream) => await JsonSerializer.DeserializeAsync<AdvancedConfig>(stream, _jsonOptions);
+    private static async Task<AdvancedConfig> DeserializeConfigJson(Stream stream) => await JsonSerializer.DeserializeAsync(stream, _jsonContext.AdvancedConfig);
 }

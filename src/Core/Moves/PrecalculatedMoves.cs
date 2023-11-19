@@ -281,7 +281,7 @@ public sealed class PrecalculatedMoves
                 var movesMask = Board.CreateMoveDestinationsMask(square, occupancy, directions);
                 occupancyToMovesMask.Add(occupancy, movesMask);
                 // ReSharper disable once RedundantSetContainsBeforeAdding
-                if (!uniqueMovesMasks.Contains(movesMask)) uniqueMovesMasks.Add(movesMask);
+                uniqueMovesMasks.Add(movesMask);
             }
 
             Debug.Assert(occupancyToMovesMask.Count == uniqueOccupancies);
