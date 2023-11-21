@@ -22,7 +22,7 @@ public sealed class MoveHistory
     private const int _multiplier = 256;
     private const int _divisor = Move.HistoryMaxValue / _multiplier;
     private const int _moveHistoryWeight = 1;
-    private const int _counterMoveHistoryWeight = 384; //  6 pieces * 64 squares.  Counter move history is more specific than move history and therefore is updated less often.
+    private const int _counterMoveHistoryWeight = 64; // Counter move history is more specific than move history, and consequently, is updated less often.  Therefore, weight it more heavily than move history.
     private const int _agePer128 = 118;
     private readonly int[][] _moveHistory; // [piece][toSquare]
     private readonly int[][][][] _counterMoveHistory; // [previousPiece][previousToSquare][piece][toSquare]

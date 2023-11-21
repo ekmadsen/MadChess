@@ -678,6 +678,7 @@ public sealed class UciStream : IDisposable
             }
 
             Move.SetPlayed(ref move, true);
+            // ReSharper disable once PossibleNullReferenceException
             _board.PreviousPosition.Moves[moveIndex] = move;
 
             if (toHorizon > 1) moves += CountMoves(depth + 1, horizon);

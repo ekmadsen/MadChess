@@ -739,15 +739,14 @@ public sealed class Search : IDisposable
                 board.UndoMove();
                 continue;
             }
-            
             legalMoveNumber++;
+
             if (futileMove && !checkingMove)
             {
                 // Skip futile move that doesn't check enemy king.
                 board.UndoMove();
                 continue;
             }
-
             if (checkingMove) searchHorizon = FastMath.Max(searchHorizon, horizon); // Do not reduce move that delivers check.
 
             // Search move.
@@ -934,7 +933,7 @@ public sealed class Search : IDisposable
             checksInQuietSearch++;
             getNextMove = _getNextMove;
             moveGenerationToSquareMask = Board.AllSquaresMask;
-            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score because no moves are futile when king is in check.
+            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score when king is in check.
             drawnEndgame = false;
             phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
         }
@@ -979,8 +978,8 @@ public sealed class Search : IDisposable
                 board.UndoMove();
                 continue;
             }
-
             legalMoveNumber++;
+
             if (futileMove && !checkingMove)
             {
                 // Skip futile move that doesn't check enemy king.
@@ -989,6 +988,7 @@ public sealed class Search : IDisposable
             }
 
             Move.SetPlayed(ref move, true);
+            // ReSharper disable once PossibleNullReferenceException
             board.PreviousPosition.Moves[moveIndex] = move;
 
             var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, checksInQuietSearch, -beta, -alpha);
@@ -1051,8 +1051,8 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
 
-        // Determine if any move can lower score to beta.
-        return position.StaticScore - _futilityPruningMargins[toHorizon] > beta;
+        // Determine if any move can lower score under beta.
+        return position.StaticScore - _futilityPruningMargins[toHorizon] >= beta;
     }
 
 
@@ -1205,15 +1205,10 @@ public sealed class Search : IDisposable
         // Determine if quiet move is too late to be worth searching.
         if (quietMoveNumber >= _lateMovePruningMargins[toHorizon]) return true;
 
-        // No material improvement is possible because captures are not futile.
-        // Determine if static score is within futility margin of alpha.
-        // Avoid costly calculation of location improvement unless necessary.
-        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[toHorizon];
-        if (improvedStaticScore >= alpha) return false;
-
+        // No material improvement is possible because captures and pawn promotions are not futile.
         // Determine if location improvement raises score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        return (improvedStaticScore + locationImprovement) < alpha;
+        return (position.StaticScore + locationImprovement + _futilityPruningMargins[toHorizon]) < alpha;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1221,16 +1216,11 @@ public sealed class Search : IDisposable
     {
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
 
-        // Determine if material improvement raises score to within futility margin of alpha.
-        // Avoid costly calculation of location improvement unless necessary.
+        // Determine if material and location improvements raise score to within futility margin of alpha.
         var captureVictim = Move.CaptureVictim(move);
         var materialImprovement = _evaluation.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
-        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[0] + materialImprovement;
-        if (improvedStaticScore >= alpha) return false;
-
-        // Determine if material and location improvements raise score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        return (improvedStaticScore + locationImprovement) < alpha;
+        return (position.StaticScore + materialImprovement + locationImprovement + _futilityPruningMargins[0]) < alpha;
     }
 
 
