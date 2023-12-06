@@ -17,17 +17,8 @@ using System.Text;
 namespace ErikTheCoder.MadChess.Core.Game;
 
 
-public sealed class PgnGames : List<PgnGame>
+public sealed class PgnGames(Messenger messenger) : List<PgnGame>
 {
-    private readonly Messenger _messenger;
-
-
-    public PgnGames(Messenger messenger)
-    {
-        _messenger = messenger;
-    }
-
-
     public void Load(Board board, string filename)
     {
         using (var pgnReader = File.OpenText(filename))
@@ -42,7 +33,7 @@ public sealed class PgnGames : List<PgnGame>
 
                 gameNumber++;
 
-                if ((gameNumber % 1000) == 0) _messenger.WriteLine($"Loaded {gameNumber:n0} games.");
+                if ((gameNumber % 1000) == 0) messenger.WriteLine($"Loaded {gameNumber:n0} games.");
 
             } while (pgnGame != null);
         }
@@ -94,7 +85,7 @@ public sealed class PgnGames : List<PgnGame>
                             _ => GameResult.Unknown
                         };
                     }
-                    else if (line.EndsWith("1-0") || line.EndsWith("1/2-1/2") || line.EndsWith("0-1") || line.EndsWith("*"))
+                    else if (line.EndsWith("1-0") || line.EndsWith("1/2-1/2") || line.EndsWith("0-1") || line.EndsWith('*'))
                     {
                         // Found end of game.
                         return new PgnGame(board, gameNumber, result, stringBuilder.ToString());

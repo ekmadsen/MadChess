@@ -89,6 +89,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 
     public static Parameters CreateParameters()
     {
+        // ReSharper disable once UseCollectionExpression
         return new Parameters
         {
             // Material

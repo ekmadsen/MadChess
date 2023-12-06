@@ -28,7 +28,7 @@ public sealed class ParticleSwarm
     public ParticleSwarm(PgnGames pgnGames, Parameters parameters, int particles, int winScale)
     {
         // Create particles at random locations.
-        Particles = new Particles();
+        Particles = [];
         _winScale = winScale;
 
         for (var particle = 0; particle < particles; particle++)

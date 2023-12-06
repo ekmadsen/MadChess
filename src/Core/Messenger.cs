@@ -16,17 +16,17 @@ using System.Threading.Tasks;
 
 namespace ErikTheCoder.MadChess.Core;
 
-public sealed class Messenger : IAsyncDisposable
+public sealed class Messenger(Stream inputStream, Stream outputStream) : IAsyncDisposable
 {
     public bool Debug;
-
-    private readonly StreamReader _inputStreamReader;
-    private readonly StreamWriter _outputStreamWriter;
-    private readonly Stopwatch _stopwatch;
-    private readonly object _inputStreamLock;
-    private readonly object _outputStreamLock;
-    private readonly object _logLock;
-
+    // Create stream readers.
+    private readonly StreamReader _inputStreamReader = new(inputStream, leaveOpen: true);
+    private readonly StreamWriter _outputStreamWriter = new(outputStream, leaveOpen: true) { AutoFlush = true };
+    // Create diagnostic and synchronization objects.
+    private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
+    private readonly object _inputStreamLock = new();
+    private readonly object _outputStreamLock = new();
+    private readonly object _logLock = new();
     private StreamWriter _logWriter;
 
 
@@ -59,19 +59,6 @@ public sealed class Messenger : IAsyncDisposable
                 }
             }
         }
-    }
-
-    public Messenger(Stream inputStream, Stream outputStream)
-    {
-        // Create diagnostic and synchronization objects.
-        _stopwatch = Stopwatch.StartNew();
-        _inputStreamLock = new object();
-        _outputStreamLock = new object();
-        _logLock = new object();
-
-        // Create stream readers.
-        _inputStreamReader = new StreamReader(inputStream, leaveOpen: true);
-        _outputStreamWriter = new StreamWriter(outputStream, leaveOpen: true) { AutoFlush = true };
     }
 
 

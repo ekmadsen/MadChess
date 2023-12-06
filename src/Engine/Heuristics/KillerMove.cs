@@ -16,17 +16,10 @@ using ErikTheCoder.MadChess.Core.Moves;
 namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 
-public readonly struct KillerMove
+public readonly struct KillerMove(Piece piece, Square toSquare)
 {
-    private readonly Piece _piece;
-    private readonly Square _toSquare;
-
-
-    public KillerMove(Piece piece, Square toSquare)
-    {
-        _piece = piece;
-        _toSquare = toSquare;
-    }
+    private readonly Piece _piece = piece;
+    private readonly Square _toSquare = toSquare;
 
 
     public static bool operator ==(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1._piece == killerMove2._piece) && (killerMove1._toSquare == killerMove2._toSquare);

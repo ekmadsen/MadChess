@@ -180,7 +180,7 @@ public sealed class Search : IDisposable
         }
 
         // Create candidate moves list and set default values.
-        CandidateMoves = new List<ulong>();
+        CandidateMoves = [];
         MultiPv = 1;
         AnalyzeMode = false;
         ConfigureFullStrength();
@@ -996,7 +996,7 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsNullMovePermitted(Position position, int beta)
+    private static bool IsNullMovePermitted(Position position, int beta)
     {
         if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
