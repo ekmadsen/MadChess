@@ -575,8 +575,10 @@ public sealed class Position
 
         // Set move properties.
         Move.SetPiece(ref move, attacker);
+        Move.SetIsPawnMove(ref move, attacker == pawn);
         Move.SetIsDoublePawnMove(ref move, (attacker == pawn) && (distance == 2));
         Move.SetIsCastling(ref move, castling);
+        Move.SetIsKingMove(ref move, attacker == king);
         if ((attacker == pawn) && (toSquare == EnPassantSquare))
         {
             // En Passant Capture

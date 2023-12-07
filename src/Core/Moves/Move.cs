@@ -95,17 +95,19 @@ public static class Move
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // B|CapV   |CapA   |Promo  |Kil|Quiet History                                        |P|O|E|2|To           |From         |Piece
+    // B|CapV   |CapA   |Promo  |Kil|Quiet History                                    |!|O|K|E|2|P|To           |From         |Piece
 
     // B =     Best Move
     // CapV =  Capture Victim
     // CapA =  Capture Attacker (inverted)
     // Promo = Promoted Piece
     // Kil =   Killer Move
-    // P =     Played
+    // ! =     Played
     // O =     Castling
+    // K =     King Move
     // E =     En Passant Capture
     // 2 =     Double Pawn Move
+    // P =     Pawn Move
     // To =    To (one extra bit for illegal square)
     // From =  From (one extra bit for illegal square)
 
