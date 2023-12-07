@@ -38,17 +38,8 @@ public sealed class Search : IDisposable
 
     public readonly AutoResetEvent Signal;
     public readonly List<ulong> CandidateMoves;
-    public readonly TimeSpan?[] TimeRemaining;
-    public readonly TimeSpan?[] TimeIncrement;
 
     public bool PvInfoUpdate;
-    public int? MovesToTimeControl;
-    public int? MateInMoves;
-    public int HorizonLimit;
-    public long NodeLimit;
-    public TimeSpan MoveTimeSoftLimit;
-    public TimeSpan MoveTimeHardLimit;
-    public bool CanAdjustMoveTime;
     public bool AnalyzeMode;
     public int MultiPv;
     public long NodesExamineTime;
@@ -56,13 +47,6 @@ public sealed class Search : IDisposable
     public int Count;
     public bool Continue;
 
-    private const int _movesRemainingDefault = 20;
-    private const int _movesRemainingTimePressure = 4;
-    private const int _moveTimeHardLimitPer128 = 536;
-    private const int _adjustMoveTimeMinHorizon = 9;
-    private const int _adjustMoveTimeMinScoreDecrease = 50;
-    private const int _adjustMoveTimePer128 = 64;
-    private const int _haveTimeSearchNextPlyPer128 = 70;
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 3;
@@ -73,13 +57,13 @@ public sealed class Search : IDisposable
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 40;
-    private const int _lmrConstPer128 = 16;
-    private const int _quietSearchMaxFromHorizon = 3;
+    private const int _lmrConstPer128 = -96;
+    private const int _recapturesOnlyMaxFromHorizon = 3;
 
-    private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
     private readonly int[] _limitStrengthElos;
     private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly TimeManagement _timeManagement;
     private readonly Stats _stats;
     private readonly Cache _cache;
     private readonly KillerMoves _killerMoves;
@@ -99,7 +83,7 @@ public sealed class Search : IDisposable
     private readonly ScoredMove[] _bestMovePlies;
     private readonly ScoredMove[] _multiPvMoves;
     private readonly ulong[][][] _principalVariations; // [rootMoveIndex][depth][pvMoveIndex]
-    
+
     private int _originalHorizon;
     private int _selectiveHorizon;
     private ulong _rootMove;
@@ -148,10 +132,11 @@ public sealed class Search : IDisposable
     }
 
 
-    public Search(LimitStrengthSearchConfig limitStrengthConfig, Messenger messenger, Stats stats, Cache cache, KillerMoves killerMoves, MoveHistory moveHistory, Evaluation evaluation)
+    public Search(LimitStrengthSearchConfig limitStrengthConfig, Messenger messenger, TimeManagement timeManagement, Stats stats, Cache cache, KillerMoves killerMoves, MoveHistory moveHistory, Evaluation evaluation)
     {
         _limitStrengthConfig = limitStrengthConfig;
         _messenger = messenger;
+        _timeManagement = timeManagement;
         _stats = stats;
         _cache = cache;
         _killerMoves = killerMoves;
@@ -170,11 +155,6 @@ public sealed class Search : IDisposable
         // Create synchronization and diagnostic objects.
         Signal = new AutoResetEvent(false);
         _stopwatch = new Stopwatch();
-
-        // Create search parameters.
-        CandidateMoves = new List<ulong>();
-        TimeRemaining = new TimeSpan?[2];
-        TimeIncrement = new TimeSpan?[2];
 
         // To Horizon =                   000  001  002  003  004  005  006  007
         _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50
@@ -199,13 +179,14 @@ public sealed class Search : IDisposable
             }
         }
 
-        // Set Multi PV, analyze mode, and search strength.
+        // Create candidate moves list and set default values.
+        CandidateMoves = [];
         MultiPv = 1;
         AnalyzeMode = false;
         ConfigureFullStrength();
     }
 
-    
+
     public void Dispose()
     {
         Signal?.Dispose();
@@ -312,7 +293,7 @@ public sealed class Search : IDisposable
             ? _blunderError // Blunder
             : 0;
         scoreError = FastMath.Max(scoreError, _moveError);
-        DetermineMoveTime(board.CurrentPosition);
+        _timeManagement.DetermineMoveTime(board.CurrentPosition, _stopwatch.Elapsed);
         NodesExamineTime = _nodesPerSecond.HasValue ? 1 : UciStream.NodesTimeInterval;
 
         // Iteratively deepen search.
@@ -341,11 +322,11 @@ public sealed class Search : IDisposable
 
             // Update principal variation status and determine whether to keep searching.
             if (PvInfoUpdate) UpdateStatus(board, true);
-            if (MateInMoves.HasValue && (bestMove.Score >= SpecialScore.Checkmate) && (Evaluation.GetMateMoveCount(bestMove.Score) <= MateInMoves.Value)) break; // Found checkmate in correct number of moves.
-            AdjustMoveTime();
-            if (!HaveTimeForNextHorizon()) break; // Do not have time to search next ply.
+            if (_timeManagement.MateInMoves.HasValue && (bestMove.Score >= SpecialScore.Checkmate) && (Evaluation.GetMateMoveCount(bestMove.Score) <= _timeManagement.MateInMoves.Value)) break; // Found checkmate in correct number of moves.
+            _timeManagement.AdjustMoveTime(_originalHorizon, _bestMovePlies);
+            if (!_timeManagement.HaveTimeForNextHorizon(_stopwatch.Elapsed)) break; // Do not have time to search next ply.
 
-        } while (Continue && (_originalHorizon < HorizonLimit));
+        } while (Continue && (_originalHorizon < _timeManagement.HorizonLimit));
 
         // Search is complete.  Return best move.
         _stopwatch.Stop();
@@ -358,10 +339,11 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DeterminePhasedSearchSpeed(Position position)
     {
+        if (!_nodesPerSecond.HasValue) throw new Exception("When engine strength is limited, NPS must be specified.");
+
         var phase = Evaluation.DetermineGamePhase(position);
-        var maxNps = _nodesPerSecond ?? int.MaxValue;
-        var minNps = (maxNps * _limitStrengthConfig.NpsEndgamePer128) / 128;
-        _phasedNodesPerSecond = Formula.GetLinearlyInterpolatedValue(minNps, maxNps, phase, 0, Evaluation.MiddlegamePhase);
+        var minNodePerSecond = (_nodesPerSecond.Value * _limitStrengthConfig.NpsEndgamePer128) / 128;
+        _phasedNodesPerSecond = Formula.GetLinearlyInterpolatedValue(minNodePerSecond, _nodesPerSecond.Value, phase, 0, Evaluation.MiddlegamePhase);
     }
 
 
@@ -376,62 +358,6 @@ public sealed class Search : IDisposable
             if (Move.Equals(candidateMove, move)) return true;
         }
         return false;
-    }
-
-    // TODO: Move DetermineMoveTime, AdjustMoveTime, and HaveTimeForNextHorizon methods to a TimeManagement class.
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void DetermineMoveTime(Position position)
-    {
-        // No need to calculate move time if go command specifies move time, horizon limit, or nodes.
-        if ((MoveTimeHardLimit != TimeSpan.MaxValue) || (HorizonLimit != MaxHorizon) || (NodeLimit != long.MaxValue)) return;
-
-        // Retrieve time remaining, time increment, and moves remaining until next time control.
-        var timeRemaining = TimeRemaining[(int)position.ColorToMove] ?? throw new Exception($"{nameof(TimeRemaining)} for {position.ColorToMove} is null.");
-        if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate move time if go command specifies infinite search.
-        timeRemaining -= _stopwatch.Elapsed + _moveTimeReserved; // Reserve time to prevent flagging.
-        var timeIncrement = TimeIncrement[(int)position.ColorToMove] ?? TimeSpan.Zero;
-        var movesRemaining = MovesToTimeControl ?? _movesRemainingDefault;
-
-        // Calculate move time.
-        var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
-        var milliseconds = millisecondsRemaining / movesRemaining;
-        MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
-        MoveTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _moveTimeHardLimitPer128) / 128);
-
-        if (MoveTimeHardLimit > timeRemaining)
-        {
-            // Prevent loss on time.
-            movesRemaining = MovesToTimeControl ?? _movesRemainingTimePressure;
-            millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
-            milliseconds = FastMath.Min(millisecondsRemaining / movesRemaining, timeRemaining.TotalMilliseconds);
-            MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
-            MoveTimeHardLimit = timeRemaining;
-            if (_messenger.Debug) _messenger.WriteLine("info string Preventing loss on time.");
-        }
-
-        if (_messenger.Debug) _messenger.WriteLine($"info string Moves Remaining = {movesRemaining} MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0}");
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AdjustMoveTime()
-    {
-        if (!CanAdjustMoveTime || (_originalHorizon < _adjustMoveTimeMinHorizon) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
-        if (_bestMovePlies[_originalHorizon].Score >= (_bestMovePlies[_originalHorizon - 1].Score - _adjustMoveTimeMinScoreDecrease)) return;
-
-        // Score has decreased significantly from last ply.
-        if (_messenger.Debug) _messenger.WriteLine("Adjusting move time because score has decreased significantly from previous ply.");
-        MoveTimeSoftLimit += TimeSpan.FromMilliseconds((MoveTimeSoftLimit.TotalMilliseconds * _adjustMoveTimePer128) / 128);
-        if (MoveTimeSoftLimit > MoveTimeHardLimit) MoveTimeSoftLimit = MoveTimeHardLimit;
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool HaveTimeForNextHorizon()
-    {
-        if (MoveTimeSoftLimit == TimeSpan.MaxValue) return true;
-        var moveTimePer128 = (int)(128 * _stopwatch.Elapsed.TotalMilliseconds / MoveTimeSoftLimit.TotalMilliseconds);
-        return moveTimePer128 <= _haveTimeSearchNextPlyPer128;
     }
 
 
@@ -587,16 +513,17 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |           Search Step 2: Cache Probe & Static Evaluation                  |
+        // |                     Search Step 2: Cache Probe                            |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
-        // Get cached position.
+        // Determine if cached dynamic score causes a beta cutoff or score cutoff.
+        var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
-        var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
         var previousMove = board.PreviousPosition?.PlayedMove ?? Move.Null;
         ulong bestMove;
+
         if ((cachedPosition.Key != _cache.NullPosition.Key) && (depth > 0) && !repeatPosition)
         {
             // Position is cached and is not a root or repeat position.
@@ -607,6 +534,7 @@ public sealed class Search : IDisposable
                 // Dynamic score is cached.
                 if (cachedDynamicScore >= beta)
                 {
+                    // Cached dynamic score causes a beta cutoff.
                     bestMove = _cache.GetBestMove(board.CurrentPosition, cachedPosition.Data);
                     if ((bestMove != Move.Null) && Move.IsQuiet(bestMove))
                     {
@@ -615,12 +543,20 @@ public sealed class Search : IDisposable
                         _moveHistory.UpdateValue(previousMove, bestMove, historyIncrement);
                     }
                 }
+
+                // Cached dynamic score causes a score cutoff.  No need to search position.
                 _stats.CacheScoreCutoff++;
                 return cachedDynamicScore;
             }
         }
 
-        if (toHorizon <= 0) return GetQuietScore(board, depth, depth, alpha, beta); // Search for a quiet position.
+        // +---------------------------------------------------------------------------+
+        // |                                                                           |
+        // |        Search Step 3: Static Evaluation & Futile Position Pruning         |
+        // |                                                                           |
+        // +---------------------------------------------------------------------------+
+
+        if ((toHorizon <= 0) || (_originalHorizon == MaxHorizon)) return GetQuietScore(board, depth, depth, alpha, beta); // Search for a quiet position.
 
         // Evaluate static score.
         bool drawnEndgame;
@@ -650,11 +586,11 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |          Search Step 3: Null Move & Internal Iterative Deepening          |
+        // |          Search Step 4: Null Move & Internal Iterative Deepening          |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
-        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, alpha, beta))
+        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -669,9 +605,9 @@ public sealed class Search : IDisposable
             }
         }
 
-        // Get best move.
+        var inPv = (beta - alpha) > 1;
         bestMove = _cache.GetBestMove(board.CurrentPosition, cachedPosition.Data);
-        if ((bestMove == Move.Null) && ((beta - alpha) > 1) && (toHorizon > _iidReduction))
+        if ((bestMove == Move.Null) && inPv && (toHorizon > _iidReduction))
         {
             // Cached position in a principal variation does not specify a best move.
             // Find best move via Internal Iterative Deepening.
@@ -682,7 +618,7 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |                     Search Step 4: Begin Move Loop                        |
+        // |                     Search Step 5: Begin Move Loop                        |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
@@ -721,7 +657,7 @@ public sealed class Search : IDisposable
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
-            // |          Search Step 5: Futility Pruning & Late Move Reductions           |
+            // |         Search Step 6: Futile Move Pruning & Late Move Reductions         |
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
@@ -739,15 +675,14 @@ public sealed class Search : IDisposable
                 board.UndoMove();
                 continue;
             }
-            
             legalMoveNumber++;
+
             if (futileMove && !checkingMove)
             {
                 // Skip futile move that doesn't check enemy king.
                 board.UndoMove();
                 continue;
             }
-
             if (checkingMove) searchHorizon = FastMath.Max(searchHorizon, horizon); // Do not reduce move that delivers check.
 
             // Search move.
@@ -779,7 +714,7 @@ public sealed class Search : IDisposable
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
-            // |         Search Step 6: Beta Cutoff or New Principal Variation             |
+            // |         Search Step 7: Beta Cutoff or New Principal Variation             |
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
@@ -792,8 +727,7 @@ public sealed class Search : IDisposable
                     _killerMoves.Update(depth, move);
                     _moveHistory.UpdateValue(previousMove, move, historyIncrement);
 
-                    // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
-                    moveIndex--;
+                    moveIndex--; // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
 
                     while (moveIndex >= 0)
                     {
@@ -844,7 +778,7 @@ public sealed class Search : IDisposable
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
-            // |             Search Step 7: Principal Variations for Multi-PV              |
+            // |             Search Step 8: Principal Variations for Multi-PV              |
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
@@ -871,20 +805,24 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |            Search Step 8: End Move Loop & Return Dynamic Score            |
+        // |            Search Step 9: End Move Loop & Return Dynamic Score            |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
-        
+
         if (legalMoveNumber == 0)
         {
             // Checkmate or Stalemate
             bestScore = board.CurrentPosition.KingInCheck ? Evaluation.GetMatedScore(depth) : 0;
         }
-        if (bestScore <= originalAlpha) UpdateCache(board.CurrentPosition, depth, horizon, Move.Null, bestScore, originalAlpha, beta); // Score failed low.
+        if (bestScore <= originalAlpha)
+        {
+            // Score failed low.
+            UpdateCache(board.CurrentPosition, depth, horizon, Move.Null, bestScore, originalAlpha, beta);
+        }
         return bestScore;
     }
 
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetQuietScore(Board board, int depth, int horizon, int alpha, int beta) => GetQuietScore(board, depth, horizon, Board.AllSquaresMask, 0, alpha, beta);
 
@@ -934,7 +872,7 @@ public sealed class Search : IDisposable
             checksInQuietSearch++;
             getNextMove = _getNextMove;
             moveGenerationToSquareMask = Board.AllSquaresMask;
-            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score because no moves are futile when king is in check.
+            board.CurrentPosition.StaticScore = -SpecialScore.Max; // Do not evaluate static score when king is in check.
             drawnEndgame = false;
             phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
         }
@@ -943,7 +881,7 @@ public sealed class Search : IDisposable
             // King is not in check.  Search only captures.
             getNextMove = _getNextCapture;
             var fromHorizonExcludingChecks = depth - horizon - checksInQuietSearch;
-            if ((fromHorizonExcludingChecks > _quietSearchMaxFromHorizon) && !Move.IsKingMove(board.PreviousPosition.PlayedMove))
+            if ((fromHorizonExcludingChecks > _recapturesOnlyMaxFromHorizon) && !Move.IsKingMove(board.PreviousPosition.PlayedMove))
             {
                 // Past max distance from horizon and last move was not by king.
                 var lastMoveToSquare = Move.To(board.PreviousPosition.PlayedMove);
@@ -979,8 +917,8 @@ public sealed class Search : IDisposable
                 board.UndoMove();
                 continue;
             }
-
             legalMoveNumber++;
+
             if (futileMove && !checkingMove)
             {
                 // Skip futile move that doesn't check enemy king.
@@ -989,6 +927,7 @@ public sealed class Search : IDisposable
             }
 
             Move.SetPlayed(ref move, true);
+            // ReSharper disable once PossibleNullReferenceException
             board.PreviousPosition.Moves[moveIndex] = move;
 
             var score = -GetQuietScore(board, depth + 1, horizon, toSquareMask, checksInQuietSearch, -beta, -alpha);
@@ -1011,7 +950,7 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void ExamineTimeAndNodes(long nodes)
     {
-        if (nodes >= NodeLimit)
+        if (nodes >= _timeManagement.NodeLimit)
         {
             // Have passed node limit.
             Continue = false;
@@ -1024,7 +963,7 @@ public sealed class Search : IDisposable
             do
             {
                 // Slow search until it's less than phased nodes per second (NPS at game phase of root search position) or until soft time limit is exceeded.
-                if (_stopwatch.Elapsed >= MoveTimeSoftLimit)
+                if (_stopwatch.Elapsed >= _timeManagement.MoveTimeSoftLimit)
                 {
                     // No time is available to continue searching.
                     Continue = false;
@@ -1035,7 +974,7 @@ public sealed class Search : IDisposable
         }
 
         // Search at full speed until hard time limit is exceeded.
-        Continue = _stopwatch.Elapsed < MoveTimeHardLimit;
+        Continue = _stopwatch.Elapsed < _timeManagement.MoveTimeHardLimit;
     }
 
 
@@ -1051,15 +990,14 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
 
-        // Determine if any move can lower score to beta.
-        return position.StaticScore - _futilityPruningMargins[toHorizon] > beta;
+        // Determine if any move can lower score under beta.
+        return position.StaticScore - _futilityPruningMargins[toHorizon] >= beta;
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsNullMovePermitted(Position position, int alpha, int beta)
+    private static bool IsNullMovePermitted(Position position, int beta)
     {
-        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Do not attempt null move when analyzing a principal variation so moves aren't truncated.
         if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
@@ -1205,15 +1143,10 @@ public sealed class Search : IDisposable
         // Determine if quiet move is too late to be worth searching.
         if (quietMoveNumber >= _lateMovePruningMargins[toHorizon]) return true;
 
-        // No material improvement is possible because captures are not futile.
-        // Determine if static score is within futility margin of alpha.
-        // Avoid costly calculation of location improvement unless necessary.
-        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[toHorizon];
-        if (improvedStaticScore >= alpha) return false;
-
+        // No material improvement is possible because captures and pawn promotions are not futile.
         // Determine if location improvement raises score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        return (improvedStaticScore + locationImprovement) < alpha;
+        return (position.StaticScore + locationImprovement + _futilityPruningMargins[toHorizon]) < alpha;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1221,16 +1154,11 @@ public sealed class Search : IDisposable
     {
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
 
-        // Determine if material improvement raises score to within futility margin of alpha.
-        // Avoid costly calculation of location improvement unless necessary.
+        // Determine if material and location improvements raise score to within futility margin of alpha.
         var captureVictim = Move.CaptureVictim(move);
         var materialImprovement = _evaluation.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
-        var improvedStaticScore = position.StaticScore + _futilityPruningMargins[0] + materialImprovement;
-        if (improvedStaticScore >= alpha) return false;
-
-        // Determine if material and location improvements raise score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        return (improvedStaticScore + locationImprovement) < alpha;
+        return (position.StaticScore + materialImprovement + locationImprovement + _futilityPruningMargins[0]) < alpha;
     }
 
 
@@ -1261,7 +1189,12 @@ public sealed class Search : IDisposable
         // Reduce search horizon of late move.
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
-        return horizon - _lateMoveReductions[quietMoveIndex][toHorizonIndex];
+        var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
+
+        var previousStaticScore = board.GetPreviousPosition(2)?.StaticScore ?? int.MinValue;
+        if (board.CurrentPosition.StaticScore < previousStaticScore) reduction++; // Reduce more when static evaluation score has worsened since previous move.
+
+        return horizon - reduction;
     }
 
 
@@ -1477,20 +1410,9 @@ public sealed class Search : IDisposable
 
     public void Reset()
     {
-        // Restart stopwatch and clear specified moves.
+        // Restart stopwatch and clear candidate moves.
         _stopwatch.Restart();
         CandidateMoves.Clear();
-
-        // Reset move times and limits.
-        TimeRemaining[(int)Color.White] = null;
-        TimeRemaining[(int)Color.Black] = null;
-        MovesToTimeControl = null;
-        MateInMoves = null;
-        HorizonLimit = MaxHorizon;
-        NodeLimit = long.MaxValue;
-        MoveTimeSoftLimit = TimeSpan.MaxValue;
-        MoveTimeHardLimit = TimeSpan.MaxValue;
-        CanAdjustMoveTime = true;
 
         // Reset best moves.
         for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++)
@@ -1498,7 +1420,7 @@ public sealed class Search : IDisposable
         for (var depth = 0; depth < _bestMovePlies.Length; depth++)
             _bestMovePlies[depth] = new ScoredMove(Move.Null, -SpecialScore.Max);
 
-        // Enable PV update, increment search counter, and continue search.
+        // Prepare for next search.
         PvInfoUpdate = true;
         Count++;
         Continue = true;

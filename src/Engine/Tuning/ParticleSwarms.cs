@@ -55,7 +55,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 
         var positionsPerSecond = (int)(positions / stopwatch.Elapsed.TotalSeconds);
         messenger.WriteLine($"Loaded {pgnGames.Count:n0} games with {positions:n0} positions in {stopwatch.Elapsed.TotalSeconds:0.000} seconds ({positionsPerSecond:n0} positions per second).");
-        
+
         stopwatch.Restart();
         messenger.WriteLine("Creating data structures.");
 
@@ -67,12 +67,13 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             Add(particleSwarm);
         }
 
+        var timeManagement = new TimeManagement(messenger);
         var stats = new Stats();
         var cache = new Cache(stats, 1);
         var killerMoves = new KillerMoves();
         var moveHistory = new MoveHistory();
         var evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, messenger, stats);
-        var search = new Search(_advancedConfig.LimitStrength.Search, messenger, stats, cache, killerMoves, moveHistory, evaluation);
+        var search = new Search(_advancedConfig.LimitStrength.Search, messenger, timeManagement, stats, cache, killerMoves, moveHistory, evaluation);
 
         // Set default parameters for one particle and determine original evaluation error.
         var firstParticleInFirstSwarm = this[0].Particles[0];
@@ -80,7 +81,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         firstParticleInFirstSwarm.ConfigureEvaluation(evaluation);
         firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
         _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
-        
+
         stopwatch.Stop();
         messenger.WriteLine($"Created data structures in {stopwatch.Elapsed.TotalSeconds:0.000} seconds.");
     }
@@ -88,6 +89,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 
     public static Parameters CreateParameters()
     {
+        // ReSharper disable once UseCollectionExpression
         return new Parameters
         {
             // Material
@@ -237,6 +239,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             var board = new Board(_messenger);
             boards[index] = board;
 
+            var timeManagement = new TimeManagement(_messenger);
             var stats = new Stats();
             var cache = new Cache(stats, 1);
             var killerMoves = new KillerMoves();
@@ -245,7 +248,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             var evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, _messenger, stats);
             evals[index] = evaluation;
 
-            searches[index] = new Search(_advancedConfig.LimitStrength.Search, _messenger, stats, cache, killerMoves, moveHistory, evaluation);
+            searches[index] = new Search(_advancedConfig.LimitStrength.Search, _messenger, timeManagement, stats, cache, killerMoves, moveHistory, evaluation);
         }
 
         var tasks = new Task[Count];

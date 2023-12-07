@@ -87,13 +87,15 @@ public static class Move
     private static readonly ulong _pieceMask;
     private static readonly ulong _pieceUnmask;
 
-    
+
+    // TODO: Add Capture History between Best Move and Capture Victim.
+
     // Move Bits
     // Higher priority moves have higher ulong value.
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // B|CapV   |CapA   |Promo  |Kil|History                                          |!|O|K|E|2|P|To           |From         |Piece
+    // B|CapV   |CapA   |Promo  |Kil|Quiet History                                    |!|O|K|E|2|P|To           |From         |Piece
 
     // B =     Best Move
     // CapV =  Capture Victim
@@ -106,8 +108,8 @@ public static class Move
     // E =     En Passant Capture
     // 2 =     Double Pawn Move
     // P =     Pawn Move
-    // From =  From (one extra bit for illegal square)
     // To =    To (one extra bit for illegal square)
+    // From =  From (one extra bit for illegal square)
 
 
     static Move()
@@ -703,21 +705,21 @@ public static class Move
     public static string ToString(ulong move)
     {
         return $"""
-            {ToLongAlgebraic(move)}
-            B     = {IsBest(move)}
-            CapV  = {PieceHelper.GetChar(CaptureVictim(move))}
-            CapA  = {PieceHelper.GetChar(CaptureAttacker(move))}
-            Promo = {PieceHelper.GetChar(PromotedPiece(move))}
-            Kil   = {Killer(move)}
-            !     = {Played(move)}
-            O     = {IsCastling(move)}
-            K     = {IsKingMove(move)}
-            E     = {IsEnPassantCapture(move)}
-            2     = {IsDoublePawnMove(move)}
-            P     = {IsPawnMove(move)}
-            Q     = {IsQuiet(move)}
-            From  = {From(move)}
-            To    = {To(move)}
-            """;
+                {ToLongAlgebraic(move)}
+                B     = {IsBest(move)}
+                CapV  = {PieceHelper.GetChar(CaptureVictim(move))}
+                CapA  = {PieceHelper.GetChar(CaptureAttacker(move))}
+                Promo = {PieceHelper.GetChar(PromotedPiece(move))}
+                Kil   = {Killer(move)}
+                !     = {Played(move)}
+                O     = {IsCastling(move)}
+                K     = {IsKingMove(move)}
+                E     = {IsEnPassantCapture(move)}
+                2     = {IsDoublePawnMove(move)}
+                P     = {IsPawnMove(move)}
+                Q     = {IsQuiet(move)}
+                From  = {From(move)}
+                To    = {To(move)}
+                """;
     }
 }

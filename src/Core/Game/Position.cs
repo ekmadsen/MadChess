@@ -364,8 +364,11 @@ public sealed class Position
                     Move.SetPiece(ref move, attacker);
                     Move.SetFrom(ref move, fromSquare);
                     Move.SetTo(ref move, toSquare);
-                    if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
-                    Move.SetCaptureVictim(ref move, victim);
+                    if (victim != Piece.None)
+                    {
+                        Move.SetCaptureAttacker(ref move, attacker);
+                        Move.SetCaptureVictim(ref move, victim);
+                    }
 
                     Moves[MoveIndex] = move;
                     MoveIndex++;
@@ -407,8 +410,11 @@ public sealed class Position
             Move.SetPiece(ref move, attacker);
             Move.SetFrom(ref move, fromSquare);
             Move.SetTo(ref move, toSquare);
-            if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
-            Move.SetCaptureVictim(ref move, victim);
+            if (victim != Piece.None)
+            {
+                Move.SetCaptureAttacker(ref move, attacker);
+                Move.SetCaptureVictim(ref move, victim);
+            }
             Move.SetIsKingMove(ref move, true);
 
             Moves[MoveIndex] = move;
@@ -571,18 +577,20 @@ public sealed class Position
         Move.SetPiece(ref move, attacker);
         Move.SetIsPawnMove(ref move, attacker == pawn);
         Move.SetIsDoublePawnMove(ref move, (attacker == pawn) && (distance == 2));
-        var enPassantCapture = (attacker == pawn) && (toSquare == EnPassantSquare);
-        Move.SetIsEnPassantCapture(ref move, enPassantCapture);
-        Move.SetIsKingMove(ref move, attacker == king);
         Move.SetIsCastling(ref move, castling);
-        if (victim != Piece.None) Move.SetCaptureAttacker(ref move, attacker);
-
-        if (enPassantCapture)
+        Move.SetIsKingMove(ref move, attacker == king);
+        if ((attacker == pawn) && (toSquare == EnPassantSquare))
         {
-            var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorLastMoved);
-            Move.SetCaptureVictim(ref move, enPassantVictim);
+            // En Passant Capture
+            Move.SetIsEnPassantCapture(ref move, true);
+            Move.SetCaptureAttacker(ref move, attacker);
+            Move.SetCaptureVictim(ref move, PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorLastMoved));
         }
-        else Move.SetCaptureVictim(ref move, victim);
+        else if (victim != Piece.None)
+        {
+            Move.SetCaptureAttacker(ref move, attacker);
+            Move.SetCaptureVictim(ref move, victim);
+        }
 
         return true;
     }

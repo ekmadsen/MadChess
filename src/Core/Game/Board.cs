@@ -1156,10 +1156,10 @@ public sealed class Board
 
         // Set side to move, castling rights, en passant square, ply, and full move number.
         CurrentPosition.ColorToMove = fenTokens[1].Equals("w") ? Color.White : Color.Black;
-        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.King, fenTokens[2].IndexOf("K") > -1);
-        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.Queen, fenTokens[2].IndexOf("Q") > -1);
-        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.King, fenTokens[2].IndexOf("k") > -1);
-        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.Queen, fenTokens[2].IndexOf("q") > -1);
+        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.King, fenTokens[2].IndexOf('K') > -1);
+        Castling.Set(ref CurrentPosition.Castling, Color.White, BoardSide.Queen, fenTokens[2].IndexOf('Q') > -1);
+        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.King, fenTokens[2].IndexOf('k') > -1);
+        Castling.Set(ref CurrentPosition.Castling, Color.Black, BoardSide.Queen, fenTokens[2].IndexOf('q') > -1);
         CurrentPosition.EnPassantSquare = fenTokens[3] == "-" ? Square.Illegal : GetSquare(fenTokens[3]);
         CurrentPosition.PlySinceCaptureOrPawnMove = fenTokens.Count == 6 ? int.Parse(fenTokens[4]) : 0;
         CurrentPosition.FullMoveNumber = fenTokens.Count == 6 ? int.Parse(fenTokens[5]) : 1;

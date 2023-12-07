@@ -11,15 +11,8 @@
 namespace ErikTheCoder.MadChess.Engine.Score;
 
 
-public struct ScoredMove
+public struct ScoredMove(ulong move, int score)
 {
-    public ulong Move;
-    public int Score;
-
-
-    public ScoredMove(ulong move, int score)
-    {
-        Move = move;
-        Score = score;
-    }
+    public ulong Move = move;
+    public int Score = score;
 }

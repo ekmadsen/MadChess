@@ -14,6 +14,4 @@ using System.Collections.Generic;
 namespace ErikTheCoder.MadChess.Engine.Tuning;
 
 
-public sealed class Particles : List<Particle>
-{
-}
+public sealed class Particles : List<Particle>;

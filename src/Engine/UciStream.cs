@@ -46,6 +46,7 @@ public sealed class UciStream : IDisposable
     private readonly AutoResetEvent _asyncSignal;
     private readonly object _queueLock;
     private readonly Board _board;
+    private readonly TimeManagement _timeManagement;
     private readonly Stats _stats;
     private readonly Cache _cache;
     private readonly KillerMoves _killerMoves;
@@ -70,16 +71,17 @@ public sealed class UciStream : IDisposable
 
         // Create game objects.
         _board = new Board(_messenger);
+        _board.SetPosition(Board.StartPositionFen);
+
+        _timeManagement = new TimeManagement(messenger);
         _stats = new Stats();
         _cache = new Cache(_stats, _cacheSizeMegabytes);
         _killerMoves = new KillerMoves();
         _moveHistory = new MoveHistory();
-        _evaluation = new Evaluation(advancedConfig.LimitStrength.Evaluation, _messenger, _stats);
-        _search = new Search(advancedConfig.LimitStrength.Search, _messenger, _stats, _cache, _killerMoves, _moveHistory, _evaluation);
-        
+        _evaluation = new Evaluation(advancedConfig.LimitStrength.Evaluation, messenger, _stats);
+        _search = new Search(advancedConfig.LimitStrength.Search, messenger, _timeManagement, _stats, _cache, _killerMoves, _moveHistory, _evaluation);
+
         _defaultPlyAndFullMove = new[] { "0", "1" };
-        
-        _board.SetPosition(Board.StartPositionFen);
     }
 
 
@@ -406,7 +408,7 @@ public sealed class UciStream : IDisposable
                     _search.AnalyzeMode = false;
                     _evaluation.DrawMoves = 2;
                 }
-                
+
                 _evaluation.DrawMoves = analyzeMode ? 3 : 2;
                 break;
 
@@ -508,7 +510,8 @@ public sealed class UciStream : IDisposable
 
     private void GoSync(List<string> tokens)
     {
-        // Reset stats and search, then shift killer moves.
+        // Reset game objects.
+        _timeManagement.Reset();
         _stats.Reset();
         _search.Reset();
         _killerMoves.Shift(2);
@@ -522,6 +525,7 @@ public sealed class UciStream : IDisposable
             {
                 case "searchmoves":
                     // Restrict search to candidate moves.
+                    // Some GUIs use this command when analyzing a game (searching all moves except the played move to determine if an alternative move was better).
                     // Assume all remaining tokens are candidate moves.
                     for (var moveIndex = tokenIndex + 1; moveIndex < tokens.Count; moveIndex++)
                     {
@@ -531,53 +535,53 @@ public sealed class UciStream : IDisposable
                     break;
 
                 case "wtime":
-                    _search.TimeRemaining[(int)Color.White] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                    _timeManagement.TimeRemaining[(int)Color.White] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
                     break;
 
                 case "btime":
-                    _search.TimeRemaining[(int)Color.Black] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                    _timeManagement.TimeRemaining[(int)Color.Black] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
                     break;
 
                 case "winc":
-                    _search.TimeIncrement[(int)Color.White] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                    _timeManagement.TimeIncrement[(int)Color.White] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
                     break;
 
                 case "binc":
-                    _search.TimeIncrement[(int)Color.Black] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                    _timeManagement.TimeIncrement[(int)Color.Black] = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
                     break;
 
                 case "movestogo":
-                    _search.MovesToTimeControl = int.Parse(tokens[tokenIndex + 1]);
+                    _timeManagement.MovesToTimeControl = int.Parse(tokens[tokenIndex + 1]);
                     break;
 
                 case "depth":
-                    _search.HorizonLimit = FastMath.Min(int.Parse(tokens[tokenIndex + 1]), Search.MaxHorizon);
-                    _search.CanAdjustMoveTime = false;
+                    _timeManagement.HorizonLimit = FastMath.Min(int.Parse(tokens[tokenIndex + 1]), Search.MaxHorizon);
+                    _timeManagement.CanAdjustMoveTime = false;
                     break;
 
                 case "nodes":
-                    _search.NodeLimit = long.Parse(tokens[tokenIndex + 1]);
-                    _search.CanAdjustMoveTime = false;
+                    _timeManagement.NodeLimit = long.Parse(tokens[tokenIndex + 1]);
+                    _timeManagement.CanAdjustMoveTime = false;
                     break;
 
                 case "mate":
-                    _search.MateInMoves = int.Parse(tokens[tokenIndex + 1]);
-                    _search.MoveTimeHardLimit = TimeSpan.MaxValue;
-                    _search.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
-                    _search.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
-                    _search.CanAdjustMoveTime = false;
+                    _timeManagement.MateInMoves = int.Parse(tokens[tokenIndex + 1]);
+                    _timeManagement.MoveTimeHardLimit = TimeSpan.MaxValue;
+                    _timeManagement.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
+                    _timeManagement.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
+                    _timeManagement.CanAdjustMoveTime = false;
                     break;
 
                 case "movetime":
-                    _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
-                    _search.CanAdjustMoveTime = false;
+                    _timeManagement.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
+                    _timeManagement.CanAdjustMoveTime = false;
                     break;
 
                 case "infinite":
-                    _search.MoveTimeHardLimit = TimeSpan.MaxValue;
-                    _search.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
-                    _search.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
-                    _search.CanAdjustMoveTime = false;
+                    _timeManagement.MoveTimeHardLimit = TimeSpan.MaxValue;
+                    _timeManagement.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
+                    _timeManagement.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
+                    _timeManagement.CanAdjustMoveTime = false;
                     break;
             }
         }
@@ -678,6 +682,7 @@ public sealed class UciStream : IDisposable
             }
 
             Move.SetPlayed(ref move, true);
+            // ReSharper disable once PossibleNullReferenceException
             _board.PreviousPosition.Moves[moveIndex] = move;
 
             if (toHorizon > 1) moves += CountMoves(depth + 1, horizon);
@@ -773,7 +778,7 @@ public sealed class UciStream : IDisposable
             if (!legalMove) continue; // Skip illegal move.
 
             legalMoveNumber++;
-            
+
             stringBuilder.Clear();
             stringBuilder.Append(legalMoveNumber.ToString("00").PadLeft(4));
 
@@ -861,12 +866,12 @@ public sealed class UciStream : IDisposable
 
         var file = tokens[1].Trim();
         var moveTimeMilliseconds = int.Parse(tokens[2].Trim());
-        
+
         var positions = 0;
         var correctPositions = 0;
         _board.Nodes = 0;
         _search.NodesInfoUpdate = NodesInfoInterval;
-        
+
         _stats.Reset();
 
         using (var reader = File.OpenText(file))
@@ -916,7 +921,7 @@ public sealed class UciStream : IDisposable
 
                 if (solutionIndex == illegalIndex) throw new Exception("Position does not specify a best moves or avoid moves solution.");
                 if (expectedMovesIndex == illegalIndex) throw new Exception("Position does not terminate the expected moves with a semicolon.");
-                
+
                 // Must convert tokens to array to prevent joining class name (System.Collections.Generic.List) instead of string value.
                 // This is because the IEnumerable<T> overload does not accept a StartIndex and Count so those parameters are interpreted as params object[].
                 var fen = string.Join(" ", parsedTokens.ToArray(), 0, solutionIndex).Trim();
@@ -924,6 +929,7 @@ public sealed class UciStream : IDisposable
                 // Setup position and reset search and move heuristics.
                 UciNewGame(true);
                 _board.SetPosition(fen, true);
+                _timeManagement.Reset();
                 _cache.Reset();
                 _killerMoves.Reset();
                 _moveHistory.Reset();
@@ -947,9 +953,9 @@ public sealed class UciStream : IDisposable
                 // Find best move.  Do not display node count or PV.
                 _search.NodesInfoUpdate = long.MaxValue;
                 _search.PvInfoUpdate = false;
-                _search.MoveTimeSoftLimit = TimeSpan.MaxValue;
-                _search.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
-                _search.CanAdjustMoveTime = false;
+                _timeManagement.MoveTimeSoftLimit = TimeSpan.MaxValue;
+                _timeManagement.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
+                _timeManagement.CanAdjustMoveTime = false;
 
                 var bestMove = _search.FindBestMove(_board);
 
@@ -1059,14 +1065,15 @@ public sealed class UciStream : IDisposable
         for (thread = 0; thread < threads; thread++)
         {
             var particle = new Particle(pgnGames, parameters);
-
             var board = new Board(_messenger);
+
+            var timeManagement = new TimeManagement(_messenger);
             var stats = new Stats();
             var cache = new Cache(stats, 1);
             var killerMoves = new KillerMoves();
             var moveHistory = new MoveHistory();
             var evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, _messenger, stats);
-            var search = new Search(_advancedConfig.LimitStrength.Search, _messenger, stats, cache, killerMoves, moveHistory, evaluation);
+            var search = new Search(_advancedConfig.LimitStrength.Search, _messenger, timeManagement, stats, cache, killerMoves, moveHistory, evaluation);
 
             gameObjects[thread] = (particle, board, search);
         }
