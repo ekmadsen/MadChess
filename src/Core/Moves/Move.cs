@@ -711,10 +711,12 @@ public static class Move
                 CapA  = {PieceHelper.GetChar(CaptureAttacker(move))}
                 Promo = {PieceHelper.GetChar(PromotedPiece(move))}
                 Kil   = {Killer(move)}
-                P     = {Played(move)}
+                !     = {Played(move)}
                 O     = {IsCastling(move)}
+                K     = {IsKingMove(move)}
                 E     = {IsEnPassantCapture(move)}
                 2     = {IsDoublePawnMove(move)}
+                P     = {IsPawnMove(move)}
                 Q     = {IsQuiet(move)}
                 From  = {From(move)}
                 To    = {To(move)}
