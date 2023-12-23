@@ -81,7 +81,7 @@ public sealed class UciStream : IDisposable
         _evaluation = new Evaluation(advancedConfig.LimitStrength.Evaluation, messenger, _stats);
         _search = new Search(advancedConfig.LimitStrength.Search, messenger, _timeManagement, _stats, _cache, _killerMoves, _moveHistory, _evaluation);
 
-        _defaultPlyAndFullMove = new[] { "0", "1" };
+        _defaultPlyAndFullMove = ["0", "1"];
     }
 
 
@@ -486,7 +486,7 @@ public sealed class UciStream : IDisposable
         // This is because the IEnumerable<T> overload does not accept a StartIndex and Count so those parameters are interpreted as params object[].
         var fen = tokens[1] == "startpos"
             ? Board.StartPositionFen
-            : string.Join(" ", tokens.ToArray(), 2, tokens.Count - 2);
+            : string.Join(" ", [.. tokens], 2, tokens.Count - 2);
 
         // Setup position and play specified moves.
         _board.SetPosition(fen);
@@ -924,7 +924,7 @@ public sealed class UciStream : IDisposable
 
                 // Must convert tokens to array to prevent joining class name (System.Collections.Generic.List) instead of string value.
                 // This is because the IEnumerable<T> overload does not accept a StartIndex and Count so those parameters are interpreted as params object[].
-                var fen = string.Join(" ", parsedTokens.ToArray(), 0, solutionIndex).Trim();
+                var fen = string.Join(" ", [.. parsedTokens], 0, solutionIndex).Trim();
 
                 // Setup position and reset search and move heuristics.
                 UciNewGame(true);
@@ -937,7 +937,7 @@ public sealed class UciStream : IDisposable
 
                 // Determine expected moves.
                 var correctMoves = expectedMovesIndex - solutionIndex;
-                var expectedMovesListStandardAlgebraic = string.Join(" ", parsedTokens.ToArray(), solutionIndex + 1, correctMoves).Trim().TrimEnd(";".ToCharArray());
+                var expectedMovesListStandardAlgebraic = string.Join(" ", [.. parsedTokens], solutionIndex + 1, correctMoves).Trim().TrimEnd(";".ToCharArray());
                 var expectedMovesStandardAlgebraic = expectedMovesListStandardAlgebraic.Split(" ".ToCharArray());
                 var expectedMoves = new ulong[expectedMovesStandardAlgebraic.Length];
                 var expectedMovesLongAlgebraic = new string[expectedMovesStandardAlgebraic.Length];

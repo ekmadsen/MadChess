@@ -143,7 +143,7 @@ public sealed class Search : IDisposable
         _moveHistory = moveHistory;
         _evaluation = evaluation;
 
-        _limitStrengthElos = new[] { 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400, 2600 };
+        _limitStrengthElos = [600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400, 2600];
 
         _movePriorityComparer = new MovePriorityComparer();
         _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
@@ -157,8 +157,8 @@ public sealed class Search : IDisposable
         _stopwatch = new Stopwatch();
 
         // To Horizon =                   000  001  002  003  004  005  006  007
-        _futilityPruningMargins = new[] { 050, 066, 114, 194, 306, 450, 626, 834 }; // (16 * (toHorizon Pow 2)) + 50
-        _lateMovePruningMargins = new[] { 999, 004, 007, 012, 019, 028, 039, 052 }; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
+        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
+        _lateMovePruningMargins = [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
         // Create scored move and principal variation arrays.
@@ -1176,7 +1176,11 @@ public sealed class Search : IDisposable
 
         if (legalMoveNumber == 1) return horizon; // Do not reduce first legal move.
         if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
-        if ((depth == 0) && (MultiPv > 1)) return horizon; // Do not reduce Multi-PV root move.
+        if (depth == 0)
+        {
+            if (MultiPv > 1) return horizon; // Do not reduce Multi-PV root move.
+            if (_limitedStrength) return horizon; // Do not reduce limited strength root move.
+        }
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
         if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return horizon; // Do not reduce killer move or castling.
 
@@ -1191,13 +1195,22 @@ public sealed class Search : IDisposable
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
 
-        var previousStaticScore = board.GetPreviousPosition(2)?.StaticScore ?? int.MinValue;
-        if (board.CurrentPosition.StaticScore < previousStaticScore) reduction++; // Reduce more when static evaluation score has worsened since previous move.
+        var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -SpecialScore.Max;
+        if (board.CurrentPosition.StaticScore < previous2StaticScore)
+        {
+            var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -SpecialScore.Max;
+            if (previous2StaticScore < previous4StaticScore)
+            {
+                // Reduce more when static evaluation score has worsened in each of two previous moves.
+                reduction++;
+            }
+        }
 
         return horizon - reduction;
     }
 
 
+    // TODO: Consider inlining IsBestMoveSingular method.
     // Singular move idea from Stockfish chess engine.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong bestMove, CachedPosition cachedPosition)
@@ -1257,16 +1270,22 @@ public sealed class Search : IDisposable
     }
 
 
+    // TODO: Consider inlining PrioritizeMoves method.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void PrioritizeMoves(ulong previousMove, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
         {
             // Prioritize by best move, killer moves, then move history.
+            // TODO: Refactor updates of primitive values in arrays to use ref local variables.
+            // ref var move = ref moves[moveIndex]; eliminates need for moves[moveIndex].Move = move;
             var move = moves[moveIndex].Move;
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
-            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
-            Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
+            if (Move.IsQuiet(move))
+            {
+                Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
+                Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
+            }
             moves[moveIndex].Move = move;
         }
     }
@@ -1276,6 +1295,7 @@ public sealed class Search : IDisposable
     public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, depth);
 
 
+    // TODO: Consider inlining PrioritizeMoves method.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
     {
@@ -1284,8 +1304,11 @@ public sealed class Search : IDisposable
             // Prioritize by best move, killer moves, then move history.
             var move = moves[moveIndex];
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
-            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
-            Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
+            if (Move.IsQuiet(move))
+            {
+                Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
+                Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
+            }
             moves[moveIndex] = move;
         }
     }
