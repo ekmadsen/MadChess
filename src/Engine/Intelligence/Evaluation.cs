@@ -82,7 +82,7 @@ public sealed class Evaluation
         // Do not set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
         Config = new EvaluationConfig();
         _defaultConfig = new EvaluationConfig();
-        _limitStrengthElos = new[] { 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400 };
+        _limitStrengthElos = [600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400];
 
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
 
@@ -98,15 +98,15 @@ public sealed class Evaluation
         _egConnectedPassedPawns = new int[8];
 
         // King Safety
-        _mgKingSafetyAttackWeights = new[]
-        {
-            Array.Empty<int>(), // None
-            Array.Empty<int>(), // Pawn
-            new int[2],         // Knight
-            new int[2],         // Bishop
-            new int[2],         // Rook
-            new int[2]          // Queen
-        };
+        _mgKingSafetyAttackWeights =
+        [
+            [],         // None
+            [],         // Pawn
+            new int[2], // Knight
+            new int[2], // Bishop
+            new int[2], // Rook
+            new int[2]  // Queen
+        ];
         _mgKingSafetyPieceProximityWeights = new int[(int)ColorlessPiece.King];
         _mgKingSafety = new int[64];
 
@@ -120,25 +120,25 @@ public sealed class Evaluation
         }
 
         // Piece Mobility
-        _mgPieceMobility = new[]
-        {
-            Array.Empty<int>(),  // None
-            Array.Empty<int>(),  // Pawn
-            new int[9],          // Knight
-            new int[14],         // Bishop
-            new int[15],         // Rook
-            new int[28]          // Queen
-        };
+        _mgPieceMobility =
+        [
+            [],          // None
+            [],          // Pawn
+            new int[9],  // Knight
+            new int[14], // Bishop
+            new int[15], // Rook
+            new int[28]  // Queen
+        ];
 
-        _egPieceMobility = new[]
-        {
-            Array.Empty<int>(),  // None
-            Array.Empty<int>(),  // Pawn
-            new int[9],          // Knight
-            new int[14],         // Bishop
-            new int[15],         // Rook
-            new int[28]          // Queen
-        };
+        _egPieceMobility =
+        [
+            [],          // None
+            [],          // Pawn
+            new int[9],  // Knight
+            new int[14], // Bishop
+            new int[15], // Rook
+            new int[28]  // Queen
+        ];
 
         // Set number of repetitions considered a draw, calculate positional factors, and set evaluation strength.
         DrawMoves = 2;

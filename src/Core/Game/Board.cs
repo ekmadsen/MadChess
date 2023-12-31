@@ -132,7 +132,7 @@ public sealed class Board
         SquareDistances = CreateSquareDistances();
         (DistanceToCentralSquares, DistanceToNearestCorner, DistanceToNearestCornerOfColor) = CreateDistanceToKeySquares();
         SquareLocations = CreateSquareLocations();
-        _squarePerspectiveFactors = new[] { -1, 1 }; // Used to determine square from white's perspective (black's g6 = white's b3).
+        _squarePerspectiveFactors = [-1, 1]; // Used to determine square from white's perspective (black's g6 = white's b3).
 
         // Create square, color, and castling masks.
         (SquareMasks, _squareUnmasks, FileMasks, RankMasks, SquareColors, AllSquaresMask, EdgeSquaresMask) = CreateSquareMasks();
@@ -199,7 +199,7 @@ public sealed class Board
         }
 
         // (2) Side to Move Keys
-        _sideToMoveKeys = new[] { SafeRandom.NextULong(), SafeRandom.NextULong() };
+        _sideToMoveKeys = [SafeRandom.NextULong(), SafeRandom.NextULong()];
         
         // (3) Castling Keys
         _castlingKeys = new ulong[16]; // 2 Pow 4 = 16 combinations of castling rights.
@@ -232,11 +232,10 @@ public sealed class Board
             0, 1, 2, 3, 4, 5, 6, 7
         };
 
-        var ranks = new[]
-        {
+        int[][] ranks =
+        [
             // White ranks are indexed South to North from 0 to 7.
-            new[]
-            {
+            [
                 7, 7, 7, 7, 7, 7, 7, 7,
                 6, 6, 6, 6, 6, 6, 6, 6,
                 5, 5, 5, 5, 5, 5, 5, 5,
@@ -245,11 +244,10 @@ public sealed class Board
                 2, 2, 2, 2, 2, 2, 2, 2,
                 1, 1, 1, 1, 1, 1, 1, 1,
                 0, 0, 0, 0, 0, 0, 0, 0
-            },
+            ],
 
             // Black ranks are indexed North to South from 0 to 7.
-            new[]
-            {
+            [
                 0, 0, 0, 0, 0, 0, 0, 0,
                 1, 1, 1, 1, 1, 1, 1, 1,
                 2, 2, 2, 2, 2, 2, 2, 2,
@@ -258,8 +256,8 @@ public sealed class Board
                 5, 5, 5, 5, 5, 5, 5, 5,
                 6, 6, 6, 6, 6, 6, 6, 6,
                 7, 7, 7, 7, 7, 7, 7, 7
-            }
-        };
+            ]
+        ];
 
         return (files, ranks);
     }
@@ -294,11 +292,11 @@ public sealed class Board
         // Calculate distance to central and corner squares.
         var centralSquares = new[] { Square.D5, Square.E5, Square.D4, Square.E4 };
         var cornerSquares = new[] { Square.A8, Square.H8, Square.A1, Square.H1 };
-        var cornerSquaresOfColor = new[]
-        {
-            new[] {Square.A8, Square.H1},
-            new[] {Square.H8, Square.A1}
-        };
+        Square[][] cornerSquaresOfColor =
+        [
+            [Square.A8, Square.H1],
+            [Square.H8, Square.A1]
+        ];
         var distanceToCentralSquares = new int[64];
         var distanceToNearestCorner = new int[64];
         for (var square = Square.A8; square < Square.Illegal; square++)
@@ -321,8 +319,8 @@ public sealed class Board
     }
 
 
-    private static string[] CreateSquareLocations() => new[]
-    {
+    private static string[] CreateSquareLocations() =>
+    [
         "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
         "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
         "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
@@ -331,7 +329,7 @@ public sealed class Board
         "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
         "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
         "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
-    };
+    ];
 
 
     private static (ulong[] SquareMasks, ulong[] SquareUnmasks, ulong[] FileMasks, ulong[][] RankMasks, ulong[] SquareColors, ulong AllSquaresMask, ulong EdgeSquaresMask) CreateSquareMasks()
@@ -402,50 +400,44 @@ public sealed class Board
     private static (ulong[][] CastleEmptySquaresMask, ulong[][] CastleAttackedSquareMasks, Square[] CastleFromSquares, Square[][] CastleToSquares) CreateCastlingMasks()
     {
         // Castle Empty Square Masks
-        var castleEmptySquaresMask = new[]
-        {
-            new[]
-            {
-                Bitwise.CreateULongMask(new[] { Square.B1, Square.C1, Square.D1 }),
-                Bitwise.CreateULongMask(new[] { Square.F1, Square.G1 })
-            },
-            new[]
-            {
-                Bitwise.CreateULongMask(new[] { Square.B8, Square.C8, Square.D8 }),
-                Bitwise.CreateULongMask(new[] { Square.F8, Square.G8 })
-            }
-        };
+        ulong[][] castleEmptySquaresMask =
+        [
+            [
+                Bitwise.CreateULongMask([Square.B1, Square.C1, Square.D1]),
+                Bitwise.CreateULongMask([Square.F1, Square.G1])
+            ],
+            [
+                Bitwise.CreateULongMask([Square.B8, Square.C8, Square.D8]),
+                Bitwise.CreateULongMask([Square.F8, Square.G8])
+            ]
+        ];
 
         // Castle Attacked Square Masks
-        var castleAttackedSquareMasks = new[]
-        {
-            new[]
-            {
+        ulong[][] castleAttackedSquareMasks =
+        [
+            [
                 Bitwise.CreateULongMask(Square.D1),
                 Bitwise.CreateULongMask(Square.F1)
-            },
-            new[]
-            {
+            ],
+            [
                 Bitwise.CreateULongMask(Square.D8),
                 Bitwise.CreateULongMask(Square.F8)
-            }
-        };
+            ]
+        ];
 
         // Castle From and To Squares
         var castleFromSquares = new[] { Square.E1, Square.E8 };
-        var castleToSquares = new[]
-        {
-            new[]
-            {
+        Square[][] castleToSquares =
+        [
+            [
                 Square.C1,
                 Square.G1
-            },
-            new[]
-            {
+            ],
+            [
                 Square.C8,
                 Square.G8
-            }
-        };
+            ]
+        ];
 
         return (castleEmptySquaresMask, castleAttackedSquareMasks, castleFromSquares, castleToSquares);
     }
@@ -676,11 +668,11 @@ public sealed class Board
     private static ulong[][] CreatePawnAttackMasks()
     {
         var masks = new ulong[2][];
-        var colorDirections = new[]
-        {
-            new[] { Direction.NorthWest, Direction.NorthEast },
-            new[] { Direction.SouthWest, Direction.SouthEast }
-        };
+        Direction[][] colorDirections =
+        [
+            [Direction.NorthWest, Direction.NorthEast],
+            [Direction.SouthWest, Direction.SouthEast]
+        ];
 
         for (var color = Color.White; color <= Color.Black; color++)
         {
@@ -759,11 +751,11 @@ public sealed class Board
             {
                 var mask = 0ul;
                 Square[] startingSquares =
-                {
+                [
                     (Square)_neighborSquares[(int)square][(int)Direction.West],
                     square,
                     (Square)_neighborSquares[(int)square][(int)Direction.East]
-                };
+                ];
 
                 for (var index = 0; index < startingSquares.Length; index++)
                 {
@@ -818,8 +810,8 @@ public sealed class Board
     {
         var innerRingMasks = new ulong[64];
         var outerRingMasks = new ulong[64];
-        Direction[] innerRingDirections = { Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest };
-        Direction[] outerRingDirections = { Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1 };
+        var innerRingDirections = new[] {Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest};
+        var outerRingDirections = new[] { Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1 };
 
         for (var square = Square.A8; square < Square.Illegal; square++)
         {
@@ -866,11 +858,11 @@ public sealed class Board
     private static ulong[][] CreatePawnShieldMasks()
     {
         var masks = new ulong[2][];
-        var colorDirections = new[]
-        {
-            new[] { Direction.NorthWest, Direction.North, Direction.NorthEast },
-            new[] { Direction.SouthWest, Direction.South, Direction.SouthEast}
-        };
+        Direction[][] colorDirections =
+        [
+            [Direction.NorthWest, Direction.North, Direction.NorthEast],
+            [Direction.SouthWest, Direction.South, Direction.SouthEast]
+        ];
 
         for (var color = Color.White; color <= Color.Black; color++)
         {
@@ -908,7 +900,7 @@ public sealed class Board
     private static ulong[] CreateKnightMoveMasks()
     {
         var masks = new ulong[64];
-        Direction[] directions = { Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1 };
+        var directions = new[] { Direction.North2East1, Direction.East2North1, Direction.East2South1, Direction.South2East1, Direction.South2West1, Direction.West2South1, Direction.West2North1, Direction.North2West1 };
 
         for (var square = Square.A8; square < Square.Illegal; square++)
         {
@@ -929,7 +921,7 @@ public sealed class Board
     private static ulong[] CreateBishopMoveMasks()
     {
         var masks = new ulong[64];
-        Direction[] directions = { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
+        var directions = new[] { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
 
         for (var square = Square.A8; square < Square.Illegal; square++)
         {
@@ -954,7 +946,7 @@ public sealed class Board
     private static ulong[] CreateRookMoveMasks()
     {
         var masks = new ulong[64];
-        Direction[] directions = { Direction.North, Direction.East, Direction.South, Direction.West };
+        var directions = new[] { Direction.North, Direction.East, Direction.South, Direction.West };
 
         for (var square = Square.A8; square < Square.Illegal; square++)
         {
@@ -981,7 +973,7 @@ public sealed class Board
     private static ulong[] CreateKingMoveMasks()
     {
         var masks = new ulong[64];
-        Direction[] directions = { Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest };
+        var directions = new[] { Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast, Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest };
 
         for (var square = Square.A8; square < Square.Illegal; square++)
         {

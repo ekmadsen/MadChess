@@ -28,11 +28,11 @@ public sealed class KillerMoves
 
         for (var depth = 0; depth <= _maxDepth; depth++)
         {
-            _killerMoves[depth] = new[]
-            {
+            _killerMoves[depth] =
+            [
                 new KillerMove(Piece.None, Square.Illegal),
                 new KillerMove(Piece.None, Square.Illegal)
-            };
+            ];
         }
     }
 
