@@ -567,6 +567,7 @@ public sealed class Search : IDisposable
             drawnEndgame = false;
             phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
         }
+        // TODO: Add !board.PreviousPosition.KingInCheck condition before negating static score.
         else if (board.PreviousPosition?.PlayedMove == Move.Null)
         {
             board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
