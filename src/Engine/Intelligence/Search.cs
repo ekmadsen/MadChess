@@ -276,9 +276,6 @@ public sealed class Search : IDisposable
             }
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
-
-        // If strength is limited, slow search speed as game progresses towards the endgame.
-        if (LimitedStrength) DeterminePhasedSearchSpeed(board.CurrentPosition);
         
         // Copy legal moves to root moves and principal variations.
         for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
@@ -296,14 +293,18 @@ public sealed class Search : IDisposable
         _timeManagement.DetermineMoveTime(board.CurrentPosition, _stopwatch.Elapsed);
         NodesExamineTime = _nodesPerSecond.HasValue ? 1 : UciStream.NodesTimeInterval;
 
+        // If strength is limited, slow search speed as game progresses towards the endgame.
+        if (LimitedStrength) DeterminePhasedSearchSpeed(board.CurrentPosition);
+
         // Iteratively deepen search.
         _originalHorizon = 0;
         var bestMove = new ScoredMove(Move.Null, -SpecialScore.Max);
         do
         {
-            // Increment horizon, reset root move number, and age move history.
+            // Increment horizon, reset root move, and age move history.
             _originalHorizon++;
             _selectiveHorizon = 0;
+            _rootMove = Move.Null;
             _rootMoveNumber = 1;
             _moveHistory.Age();
 
@@ -567,13 +568,6 @@ public sealed class Search : IDisposable
             drawnEndgame = false;
             phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
         }
-        // TODO: Add !board.PreviousPosition.KingInCheck condition before negating static score.
-        else if (board.PreviousPosition?.PlayedMove == Move.Null)
-        {
-            board.CurrentPosition.StaticScore = -board.PreviousPosition.StaticScore;
-            drawnEndgame = false;
-            phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
-        }
         else (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _evaluation.GetStaticScore(board.CurrentPosition);
 
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
@@ -610,7 +604,7 @@ public sealed class Search : IDisposable
         bestMove = _cache.GetBestMove(board.CurrentPosition, cachedPosition.Data);
         if ((bestMove == Move.Null) && inPv && (toHorizon > _iidReduction))
         {
-            // Cached position in a principal variation does not specify a best move.
+            // Cached position in a principal variation does not specify best move.
             // Find best move via Internal Iterative Deepening.
             GetDynamicScore(board, depth, horizon - _iidReduction, false, alpha, beta);
             cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
@@ -689,7 +683,7 @@ public sealed class Search : IDisposable
             // Search move.
             Move.SetPlayed(ref move, true);
             board.PreviousPosition.Moves[moveIndex] = move;
-            var moveBeta = (legalMoveNumber == 1) || ((depth == 0) && (MultiPv > 1))
+            var moveBeta = (legalMoveNumber == 1) || _limitedStrength || ((depth == 0) && (MultiPv > 1))
                 ? beta // Search with full alpha / beta window.
                 : bestScore + 1; // Search with zero alpha / beta window.
             var score = -GetDynamicScore(board, depth + 1, searchHorizon, true, -moveBeta, -alpha);
@@ -744,9 +738,12 @@ public sealed class Search : IDisposable
 
                 // Update cache and stats.
                 UpdateCache(board.CurrentPosition, depth, horizon, move, score, alpha, beta);
-                _stats.MovesCausingBetaCutoff++;
-                _stats.BetaCutoffMoveNumber += legalMoveNumber;
-                if (legalMoveNumber == 1) _stats.BetaCutoffFirstMove++;
+                if (excludedMove == Move.Null)
+                {
+                    _stats.MovesCausingBetaCutoff++;
+                    _stats.BetaCutoffMoveNumber += legalMoveNumber;
+                    if (legalMoveNumber == 1) _stats.BetaCutoffFirstMove++;
+                }
 
                 return beta;
             }
@@ -1054,8 +1051,13 @@ public sealed class Search : IDisposable
                 case MoveGenerationStage.Captures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
+                    // Prioritize and sort captures.
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Do not prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
+                    if (firstMoveIndex < lastMoveIndex)
+                    {
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
+                    }
                     position.MoveGenerationStage++;
                     continue;
 
@@ -1104,8 +1106,13 @@ public sealed class Search : IDisposable
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
+                    // Prioritize and sort captures.
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (firstMoveIndex < lastMoveIndex) SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex); // Do not prioritize moves before sorting.  MVV / LVA is good enough when ordering captures.
+                    if (firstMoveIndex < lastMoveIndex)
+                    {
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
+                    }
                     position.MoveGenerationStage = MoveGenerationStage.End; // Skip non-captures.
                     continue;
                 case MoveGenerationStage.End:
@@ -1195,23 +1202,13 @@ public sealed class Search : IDisposable
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
-
-        var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -SpecialScore.Max;
-        if (board.CurrentPosition.StaticScore < previous2StaticScore)
-        {
-            var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -SpecialScore.Max;
-            if (previous2StaticScore < previous4StaticScore)
-            {
-                // Reduce more when static evaluation score has worsened in each of two previous moves.
-                reduction++;
-            }
-        }
+        var previousStaticScore = board.GetPreviousPosition(2)?.StaticScore ?? int.MinValue;
+        if (board.CurrentPosition.StaticScore < previousStaticScore) reduction++; // Reduce more when static evaluation score has worsened since previous move.
 
         return horizon - reduction;
     }
 
-
-    // TODO: Consider inlining IsBestMoveSingular method.
+    
     // Singular move idea from Stockfish chess engine.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong bestMove, CachedPosition cachedPosition)
@@ -1270,24 +1267,17 @@ public sealed class Search : IDisposable
         return SpecialScore.NotCached;
     }
 
-
-    // TODO: Consider inlining PrioritizeMoves method.
+    
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void PrioritizeMoves(ulong previousMove, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
         {
             // Prioritize by best move, killer moves, then move history.
-            // TODO: Refactor updates of primitive values in arrays to use ref local variables.
-            // ref var move = ref moves[moveIndex]; eliminates need for moves[moveIndex].Move = move;
-            var move = moves[moveIndex].Move;
+            ref var move = ref moves[moveIndex].Move;
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
-            if (Move.IsQuiet(move))
-            {
-                Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
-                Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
-            }
-            moves[moveIndex].Move = move;
+            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
+            Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
         }
     }
 
@@ -1295,22 +1285,17 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, depth);
 
-
-    // TODO: Consider inlining PrioritizeMoves method.
+    
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
         {
             // Prioritize by best move, killer moves, then move history.
-            var move = moves[moveIndex];
+            ref var move = ref moves[moveIndex];
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
-            if (Move.IsQuiet(move))
-            {
-                Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
-                Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
-            }
-            moves[moveIndex] = move;
+            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
+            Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
         }
     }
 
