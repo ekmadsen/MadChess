@@ -683,7 +683,7 @@ public sealed class Search : IDisposable
             // Search move.
             Move.SetPlayed(ref move, true);
             board.PreviousPosition.Moves[moveIndex] = move;
-            var moveBeta = (legalMoveNumber == 1) || _limitedStrength || ((depth == 0) && (MultiPv > 1))
+            var moveBeta = (legalMoveNumber == 1) || ((depth == 0) && (_limitedStrength || (MultiPv > 1)))
                 ? beta // Search with full alpha / beta window.
                 : bestScore + 1; // Search with zero alpha / beta window.
             var score = -GetDynamicScore(board, depth + 1, searchHorizon, true, -moveBeta, -alpha);
