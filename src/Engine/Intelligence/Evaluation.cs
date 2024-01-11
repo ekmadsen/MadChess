@@ -46,7 +46,7 @@ public sealed class Evaluation
 
     // Draw by Repetition
     public int DrawMoves;
-
+    
     // Material
     private readonly int[] _mgMaterialScores; // [colorlessPiece]
     private readonly int[] _egMaterialScores; // [colorlessPiece]
@@ -637,7 +637,7 @@ public sealed class Evaluation
                 var enemyBishopSquareColor = (Board.SquareColors[(int)Color.White] & enemyBishops) > 0 ? Color.White : Color.Black;
                 var distanceToCorrectColorCorner = Board.DistanceToNearestCornerOfColor[(int)enemyBishopSquareColor][(int)kingSquare];
                 // Penalize K vrs KBN so engine, with a knight, prefers to promote pawn to Q for K vrs KQN instead of promoting pawn to B for K vrs KBN.
-                _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - distanceToCorrectColorCorner -
+                _staticScore.EgSimple[(int)enemyColor] = StaticScore.SimpleEndgame - distanceToCorrectColorCorner -
                                                          Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare] - _egKbnPenalty;
                 return true;
 
@@ -646,7 +646,7 @@ public sealed class Evaluation
                 // Push lone king to corner.  Push winning king close to lone king.
                 // Multiply king distances by a factor to overcome piece location values.
                 EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
-                _staticScore.EgSimple[(int)enemyColor] = SpecialScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
+                _staticScore.EgSimple[(int)enemyColor] = StaticScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
                 return true;
         }
 
@@ -702,7 +702,7 @@ public sealed class Evaluation
             if (winningKingOnKeySquare)
             {
                 // Pawn promotes.
-                _staticScore.EgSimple[(int)lonePawnColor] = SpecialScore.SimpleEndgame + pawnRank;
+                _staticScore.EgSimple[(int)lonePawnColor] = StaticScore.SimpleEndgame + pawnRank;
             }
         }
 
@@ -1143,17 +1143,17 @@ public sealed class Evaluation
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetMatedScore(int depth) => -SpecialScore.Max + depth;
+    public static int GetMatedScore(int depth) => -StaticScore.Max + depth;
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetMatingScore(int depth) => SpecialScore.Max - depth;
+    public static int GetMatingScore(int depth) => StaticScore.Max - depth;
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetMateMoveCount(int score)
     {
-        var plyCount = (score > 0) ? SpecialScore.Max - score : -SpecialScore.Max - score;
+        var plyCount = (score > 0) ? StaticScore.Max - score : -StaticScore.Max - score;
         // Convert plies to full moves.
         var (quotient, remainder) = Math.DivRem(plyCount, 2);
         return quotient + remainder;

@@ -157,14 +157,14 @@ public static class CachedPositionData
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int DynamicScore(ulong cachedPositionData) => (int)((cachedPositionData & _dynamicScoreMask) >> _dynamicScoreShift) - SpecialScore.Max; // Cached score is a positive number.
+    public static int DynamicScore(ulong cachedPositionData) => (int)((cachedPositionData & _dynamicScoreMask) >> _dynamicScoreShift) - StaticScore.Max; // Cached score is a positive number.
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void SetDynamicScore(ref ulong cachedPositionData, int dynamicScore)
     {
         // Ensure cached score is a positive number.
-        var positiveScore = dynamicScore + SpecialScore.Max;
+        var positiveScore = dynamicScore + StaticScore.Max;
         // Clear
         cachedPositionData &= _dynamicScoreUnmask;
         // Set
@@ -220,8 +220,8 @@ public static class CachedPositionData
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) != Piece.BlackPawn, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.BlackPawn = {Piece.BlackPawn}{Environment.NewLine}{ToString(cachedPositionData)}");
         Debug.Assert(BestMovePromotedPiece(cachedPositionData) < Piece.BlackKing, $"BestMovePromotedPiece(CachedPosition) = {BestMovePromotedPiece(cachedPositionData)}, Piece.BlackKing = {Piece.BlackKing}{Environment.NewLine}{ToString(cachedPositionData)}");
 
-        Debug.Assert(DynamicScore(cachedPositionData) >= -SpecialScore.Max, $"DynamicScore(CachedPosition) = {DynamicScore(cachedPositionData)}, -SpecialScore.Max = {-SpecialScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
-        Debug.Assert(DynamicScore(cachedPositionData) <= SpecialScore.Max, $"DynamicScore(CachedPosition) = {DynamicScore(cachedPositionData)}, SpecialScore.Max = {SpecialScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
+        Debug.Assert(DynamicScore(cachedPositionData) >= -StaticScore.Max, $"DynamicScore(CachedPosition) = {DynamicScore(cachedPositionData)}, -SpecialScore.Max = {-StaticScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
+        Debug.Assert(DynamicScore(cachedPositionData) <= StaticScore.Max, $"DynamicScore(CachedPosition) = {DynamicScore(cachedPositionData)}, SpecialScore.Max = {StaticScore.Max}{Environment.NewLine}{ToString(cachedPositionData)}");
 
         return true;
     }

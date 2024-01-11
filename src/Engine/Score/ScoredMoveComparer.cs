@@ -8,17 +8,20 @@
 // +---------------------------------------------------------------------------+
 
 
-using ErikTheCoder.MadChess.Engine.Intelligence;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 
 namespace ErikTheCoder.MadChess.Engine.Score;
 
-public static class SpecialScore
+
+public sealed class ScoredMoveComparer : IComparer<ScoredMove>
 {
-    public const int Max = 30_000;
-    public const int Checkmate = Max - Search.MaxHorizon;
-    public const int Interrupted = Max - Search.MaxHorizon - 1;
-    public const int NotCached = Max - Search.MaxHorizon - 2;
-    public const int LargestNonMate = Max - Search.MaxHorizon - 3;
-    public const int SimpleEndgame = 20_000;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Compare(ScoredMove move1, ScoredMove move2)
+    {
+        // Sort moves by score descending.
+        if (move2.Score > move1.Score) return 1;
+        return move2.Score < move1.Score ? -1 : 0;
+    }
 }
