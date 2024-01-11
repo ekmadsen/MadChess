@@ -235,7 +235,7 @@ public sealed class PrecalculatedMoves
         switch (colorlessPiece)
         {
             case ColorlessPiece.Bishop:
-                directions = new[] {Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest};
+                directions = [Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest];
                 unoccupiedMoveMasks = Board.BishopMoveMasks;
                 relevantOccupancyMasks = _bishopRelevantOccupancyMasks;
                 magicMultipliers = _bishopMagicMultipliers;
@@ -244,7 +244,7 @@ public sealed class PrecalculatedMoves
                 break;
 
             case ColorlessPiece.Rook:
-                directions = new[] {Direction.North, Direction.East, Direction.South, Direction.West};
+                directions = [Direction.North, Direction.East, Direction.South, Direction.West];
                 unoccupiedMoveMasks = Board.RookMoveMasks;
                 relevantOccupancyMasks = _rookRelevantOccupancyMasks;
                 magicMultipliers = _rookMagicMultipliers;

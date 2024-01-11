@@ -39,45 +39,39 @@ public static class Castling
     static Castling()
     {
         // Create bit shifts and masks.
-        _shifts = new[]
-        {
-            new[]
-            {
+        _shifts =
+        [
+            [
                 2, 3
-            },
-            new[]
-            {
+            ],
+            [
                 0, 1
-            }
-        };
+            ]
+        ];
 
-        _masks = new[]
-        {
-            new[]
-            {
+        _masks =
+        [
+            [
                 Bitwise.CreateUIntMask(2),
                 Bitwise.CreateUIntMask(3)
-            },
-            new[]
-            {
+            ],
+            [
                 Bitwise.CreateUIntMask(0),
                 Bitwise.CreateUIntMask(1)
-            }
-        };
+            ]
+        ];
 
-        _unmasks = new[]
-        {
-            new[]
-            {
+        _unmasks =
+        [
+            [
                 Bitwise.CreateUIntUnmask(2),
                 Bitwise.CreateUIntUnmask(3)
-            },
-            new[]
-            {
+            ],
+            [
                 Bitwise.CreateUIntUnmask(0),
                 Bitwise.CreateUIntUnmask(1)
-            }
-        };
+            ]
+        ];
     }
 
 

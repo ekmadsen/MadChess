@@ -340,7 +340,7 @@ public sealed class Particle
 
                 // Play move and get quiet score.
                 board.PlayMove(move);
-                var quietScore = search.GetQuietScore(board, 1, 1, -SpecialScore.Max, SpecialScore.Max);
+                var quietScore = search.GetQuietScore(board, 1, 1, -StaticScore.Max, StaticScore.Max);
 
                 // Convert quiet score to win fraction and compare to game result.
                 var winFraction = GetWinFraction(quietScore, winScale);

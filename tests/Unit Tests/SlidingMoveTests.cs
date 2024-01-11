@@ -61,7 +61,7 @@ public sealed class SlidingMoveTests : TestBase
 
         Assert.That(relevantMoveDestinations, Is.EqualTo(expectedRelevantMoveDestinations));
 
-        Direction[] bishopDirections = { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
+        var bishopDirections = new[] { Direction.NorthEast, Direction.SouthEast, Direction.SouthWest, Direction.NorthWest };
         var bishopDestinations = Board.CreateMoveDestinationsMask(Square.E7, board.CurrentPosition.Occupancy, bishopDirections);
 
         WriteMessageLine("Bishop destinations = ");

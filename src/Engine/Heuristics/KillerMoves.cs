@@ -28,11 +28,11 @@ public sealed class KillerMoves
 
         for (var depth = 0; depth <= _maxDepth; depth++)
         {
-            _killerMoves[depth] = new[]
-            {
+            _killerMoves[depth] =
+            [
                 new KillerMove(Piece.None, Square.Illegal),
                 new KillerMove(Piece.None, Square.Illegal)
-            };
+            ];
         }
     }
 
@@ -56,7 +56,7 @@ public sealed class KillerMoves
         var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return; // Move already is the best killer move.
 
-        // Shift killer move slots and update best killer move.
+        // Shift killer move slots and update the best killer move.
         _killerMoves[depth][1] = _killerMoves[depth][0];
         _killerMoves[depth][0] = killerMove;
     }

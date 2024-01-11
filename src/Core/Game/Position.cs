@@ -164,6 +164,7 @@ public sealed class Position
         PrepareMoveGeneration();
         FindPinnedPieces();
         GenerateMoves(MoveGeneration.AllMoves, Board.AllSquaresMask, Board.AllSquaresMask);
+        MoveGenerationStage = MoveGenerationStage.End;
     }
 
 

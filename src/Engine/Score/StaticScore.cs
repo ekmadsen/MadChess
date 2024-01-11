@@ -8,8 +8,6 @@
 // +---------------------------------------------------------------------------+
 
 
-using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
@@ -21,6 +19,12 @@ namespace ErikTheCoder.MadChess.Engine.Score;
 
 public sealed class StaticScore
 {
+    public const int Max = 30_000;
+    public const int Checkmate = Max - Search.MaxHorizon;
+    public const int Interrupted = Max - Search.MaxHorizon - 1;
+    public const int NotCached = Max - Search.MaxHorizon - 2;
+    public const int SimpleEndgame = 20_000;
+
     public readonly int[] EgSimple;
 
     public readonly int[] MgPawnMaterial;
@@ -132,12 +136,8 @@ public sealed class StaticScore
     public int GetTotalScore(Color color, int phase)
     {
         var taperedScore = GetTaperedScore(color, phase);
-
         // Scale score as position approaches draw by 50 moves (100 ply) without a capture or pawn move.
-        var scaledTaperedScore = (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
-
-        Debug.Assert(Math.Abs(scaledTaperedScore) <= SpecialScore.LargestNonMate); // Evaluation never scores checkmate positions.  Search identifies checkmates.
-        return scaledTaperedScore;
+        return (taperedScore * (Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove)) / Search.MaxPlyWithoutCaptureOrPawnMove;
     }
 
 
