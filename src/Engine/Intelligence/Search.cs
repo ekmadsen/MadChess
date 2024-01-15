@@ -56,8 +56,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 28;
-    private const int _lmrConstPer128 = 16;
+    private const int _lmrScalePer128 = 48;
+    private const int _lmrConstPer128 = -96;
     private const int _recapturesOnlyMaxFromHorizon = 3;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
@@ -255,7 +255,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public ulong FindBestMove(Board board)
     {
         // Ensure all root moves are legal.
@@ -337,7 +336,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void DeterminePhasedSearchSpeed(Position position)
     {
         if (!_nodesPerSecond.HasValue) throw new Exception("When engine strength is limited, NPS must be specified.");
@@ -348,7 +346,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool ShouldSearchMove(ulong move)
     {
         if (CandidateMoves.Count == 0) return true; // Search all moves.
@@ -471,7 +468,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int GetDynamicScore(Board board, int depth, int horizon, bool nullMovePermitted, int alpha, int beta, ulong excludedMove)
     {
         _principalVariations[_rootMoveNumber - 1][depth][0] = Move.Null;
@@ -825,7 +821,6 @@ public sealed class Search : IDisposable
     public int GetQuietScore(Board board, int depth, int horizon, int alpha, int beta) => GetQuietScore(board, depth, horizon, Board.AllSquaresMask, 0, alpha, beta);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int GetQuietScore(Board board, int depth, int horizon, ulong toSquareMask, int checksInQuietSearch, int alpha, int beta)
     {
         if ((board.Nodes > NodesExamineTime) || _nodesPerSecond.HasValue)
@@ -945,7 +940,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void ExamineTimeAndNodes(long nodes)
     {
         if (nodes >= _timeManagement.NodeLimit)
@@ -976,7 +970,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsPositionFutile(Position position, int depth, int horizon, bool isDrawnEndgame, int alpha, int beta)
     {
         var toHorizon = horizon - depth;
@@ -1003,7 +996,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
         var reduction = _nullMoveReduction + Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
@@ -1016,7 +1008,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
         while (true)
@@ -1084,7 +1075,6 @@ public sealed class Search : IDisposable
     }
     
     
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private (ulong Move, int MoveIndex) GetNextCapture(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
         while (true)
@@ -1125,7 +1115,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMoveInDynamicSearchFutile(Position position, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
         Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
@@ -1157,7 +1146,7 @@ public sealed class Search : IDisposable
         return (position.StaticScore + locationImprovement + _futilityPruningMargins[toHorizon]) < alpha;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
     private bool IsMoveInQuietSearchFutile(Position position, ulong move, bool drawnEndgame, int phase, int alpha)
     {
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
@@ -1170,7 +1159,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, CachedPosition cachedPosition, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
     {
         if (Move.IsBest(move) && IsBestMoveSingular(board, depth, horizon, move, cachedPosition))
@@ -1202,7 +1190,7 @@ public sealed class Search : IDisposable
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
-        var previousStaticScore = board.GetPreviousPosition(2)?.StaticScore ?? int.MinValue;
+        var previousStaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
         if (board.CurrentPosition.StaticScore < previousStaticScore) reduction++; // Reduce more when static evaluation score has worsened since previous move.
 
         return horizon - reduction;
@@ -1210,7 +1198,6 @@ public sealed class Search : IDisposable
 
     
     // Singular move idea from Stockfish chess engine.
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong bestMove, CachedPosition cachedPosition)
     {
         // Determine if best move that had failed high in recent searches is best by a significant margin.
@@ -1230,7 +1217,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int GetCachedDynamicScore(ulong cachedPositionData, int depth, int horizon, int alpha, int beta)
     {
         var dynamicScore = CachedPositionData.DynamicScore(cachedPositionData);
@@ -1268,7 +1254,6 @@ public sealed class Search : IDisposable
     }
 
     
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void PrioritizeMoves(ulong previousMove, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
@@ -1286,7 +1271,6 @@ public sealed class Search : IDisposable
     public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, depth);
 
     
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
@@ -1316,7 +1300,6 @@ public sealed class Search : IDisposable
     private void SortMovesByScore(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMoveComparer);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void UpdateCache(Position currentPosition, int depth, int horizon, ulong bestMove, int dynamicScore, int alpha, int beta)
     {
         if (FastMath.Abs(dynamicScore) == StaticScore.Interrupted) return;
@@ -1360,7 +1343,7 @@ public sealed class Search : IDisposable
         _cache.SetPosition(cachedPosition);
     }
 
-
+    
     private void UpdateStatus(Board board, bool includePrincipalVariations)
     {
         // Calculate search speed and hash population.

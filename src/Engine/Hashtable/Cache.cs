@@ -69,7 +69,6 @@ public sealed class Cache
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public CachedPosition GetPosition(ulong key, int searchCount)
     {
         _stats.CacheProbes++;
@@ -98,7 +97,6 @@ public sealed class Cache
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void SetPosition(CachedPosition cachedPosition)
     {
         Debug.Assert(CachedPositionData.IsValid(cachedPosition.Data));
@@ -137,7 +135,6 @@ public sealed class Cache
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public ulong GetBestMove(Position position, ulong cachedPosition)
     {
         Debug.Assert(CachedPositionData.IsValid(cachedPosition));

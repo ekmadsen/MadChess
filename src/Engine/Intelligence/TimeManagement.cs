@@ -9,7 +9,6 @@
 
 
 using System;
-using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
@@ -42,7 +41,6 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void DetermineMoveTime(Position position, TimeSpan searchTimeElapsed)
     {
         // No need to calculate move time if go command specifies move time, horizon limit, or nodes.
@@ -75,7 +73,6 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AdjustMoveTime(int originalHorizon, ScoredMove[] bestMovePlies)
     {
         if (!CanAdjustMoveTime || (originalHorizon < _adjustMoveTimeMinHorizon) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
@@ -88,7 +85,6 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool HaveTimeForNextHorizon(TimeSpan searchTimeElapsed)
     {
         if (MoveTimeSoftLimit == TimeSpan.MaxValue) return true;

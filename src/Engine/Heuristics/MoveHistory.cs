@@ -8,7 +8,6 @@
 // +---------------------------------------------------------------------------+
 
 
-using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
@@ -60,8 +59,7 @@ public sealed class MoveHistory
         }
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public int GetValue(ulong previousMove, ulong move)
     {
         // Get move history.
@@ -80,7 +78,6 @@ public sealed class MoveHistory
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateValue(ulong previousMove, ulong move, int increment)
     {
         // Update value with decay.  Idea from Ethereal chess engine.

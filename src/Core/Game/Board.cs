@@ -1063,19 +1063,15 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong GetKnightDestinations(Square fromSquare, ulong occupancy) => KnightMoveMasks[(int)fromSquare];
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong GetKnightXrayDestinations(Square fromSquare, Color color, Position position) => KnightMoveMasks[(int)fromSquare]; // Knights do not slide.  Nothing to xray.
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong GetBishopDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong GetBishopXrayDestinations(Square fromSquare, Color color, Position position)
     {
         // Attack through own bishops and queens.
@@ -1086,11 +1082,9 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong GetRookDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong GetRookXrayDestinations(Square fromSquare, Color color, Position position)
     {
         // Attack through own rooks and queens.
@@ -1101,11 +1095,9 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong GetQueenDestinations(Square fromSquare, ulong occupancy) => PrecalculatedMoves.GetBishopMovesMask(fromSquare, occupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, occupancy);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong GetQueenXrayDestinations(Square fromSquare, Color color, Position position)
     {
         // Attack through own bishops, rooks, and queens.
@@ -1116,8 +1108,7 @@ public sealed class Board
         return PrecalculatedMoves.GetBishopMovesMask(fromSquare, relevantOccupancy) | PrecalculatedMoves.GetRookMovesMask(fromSquare, relevantOccupancy);
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    
     public void SetPosition(string fen, bool preserveMoveCount = false)
     {
         var fenTokens = Tokens.Parse(fen, ' ', '"');
@@ -1167,7 +1158,6 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (bool legalMove, bool checkingMove) PlayMove(ulong move)
     {
         Debug.Assert(Move.IsValid(move));
@@ -1290,7 +1280,6 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsSquareAttacked(Square square)
     {
         // Determine if square is attacked by pawns.
@@ -1317,7 +1306,6 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool IsCastlePathAttacked(ulong move)
     {
         var toSquare = Move.To(move);
@@ -1382,7 +1370,6 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void Castle(Piece king, Square toSquare)
     {
         if (king == Piece.WhiteKing)
@@ -1436,7 +1423,6 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void EnPassantCapture(Piece attackingPawn, Piece victimPawn, Square fromSquare)
     {
         // Remove victim pawn and move attacking pawn.
@@ -1473,7 +1459,7 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsRepeatPosition(int repeats)
     {
         var currentPositionKey = CurrentPosition.Key;
@@ -1491,7 +1477,6 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public int GetPositionCount()
     {
         var currentPositionKey = CurrentPosition.Key;
@@ -1589,7 +1574,6 @@ public sealed class Board
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void Reset(bool preserveMoveCount)
     {
         // Reset position index, position, key, and stats.

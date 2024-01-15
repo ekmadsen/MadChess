@@ -416,7 +416,6 @@ public sealed class Evaluation
     public void ConfigureFullStrength() => Config.Set(_defaultConfig);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (bool TerminalDraw, bool RepeatPosition) IsTerminalDraw(Position position)
     {
         // Only return true if position is drawn and no sequence of moves can make game winnable.
@@ -445,7 +444,6 @@ public sealed class Evaluation
     public int GetPieceMaterialScore(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetPieceLocationImprovement(ulong move, int phase)
     {
         var piece = Move.Piece(move);
@@ -464,7 +462,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public (int StaticScore, bool DrawnEndgame, int Phase) GetStaticScore(Position position)
     {
         // TODO: Evaluate space.  See https://www.chess.com/forum/view/general/gm-larry-evans-method-of-static-analysis#comment-31672572.
@@ -526,7 +523,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static bool IsPawnlessDraw(Position position, Color color)
     {
         var enemyColor = 1 - color;
@@ -593,7 +589,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private bool EvaluateSimpleEndgame(Position position, Color color)
     {
         // TODO: Add detection of unwinnable KBPk endgame, where enemy king prevents pawn from promoting, and bishop is wrong color.
@@ -655,7 +650,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateKingVersusPawn(Position position, Color lonePawnColor)
     {
         var winningKingSquare = Bitwise.FirstSetSquare(position.GetKing(lonePawnColor));
@@ -711,7 +705,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateMaterial(Position position, Color color)
     {
         // Explicit piece evaluation is faster than looping through pieces due to avoiding CPU stalls and enabling out-of-order execution.
@@ -753,7 +746,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluatePieceLocation(Position position, Color color)
     {
         for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
@@ -772,7 +764,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluatePawns(Position position, Color color)
     {
         var pawns = position.GetPawns(color);
@@ -885,7 +876,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsUnstoppablePawn(Position position, Square pawnSquare, Square enemyKingSquare, Color color)
     {
         var enemyColor = 1 - color;
@@ -908,7 +898,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateMobilityKingSafetyThreats(Position position, Color color)
     {
         var enemyColor = 1 - color;
@@ -1021,7 +1010,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateMinorPieces(Position position, Color color)
     {
         var enemyColor = 1 - color;
@@ -1076,7 +1064,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void EvaluateMajorPieces(Position position, Color color)
     {
         var enemyColor = 1 - color;
@@ -1348,7 +1335,6 @@ public sealed class Evaluation
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Reset()
     {
         _staticScore.Reset();
