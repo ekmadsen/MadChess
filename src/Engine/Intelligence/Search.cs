@@ -56,8 +56,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 48;
-    private const int _lmrConstPer128 = -96;
+    private const int _lmrScalePer128 = 42;
+    private const int _lmrConstPer128 = -128;
     private const int _recapturesOnlyMaxFromHorizon = 3;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
