@@ -56,8 +56,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveReductionPer128 = 64;
     private const int _singularMoveMargin = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 42;
-    private const int _lmrConstPer128 = -128;
+    private const int _lmrScalePer128 = 44;
+    private const int _lmrConstPer128 = -96;
     private const int _recapturesOnlyMaxFromHorizon = 3;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
@@ -1190,8 +1190,17 @@ public sealed class Search : IDisposable
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
-        var previousStaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
-        if (board.CurrentPosition.StaticScore < previousStaticScore) reduction++; // Reduce more when static evaluation score has worsened since previous move.
+        
+        var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
+        if (board.CurrentPosition.StaticScore < previous2StaticScore)
+        {
+            var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -StaticScore.Max;
+            if (previous2StaticScore < previous4StaticScore)
+            {
+                // Reduce more when static evaluation score has worsened in each of previous two moves by same color.
+                reduction++;
+            }
+        }
 
         return horizon - reduction;
     }
