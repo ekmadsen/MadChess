@@ -57,7 +57,7 @@ public sealed class PgnGame
             {
                 var line = stringReader.ReadLine();
                 if (line == null) break;
-                if (line.StartsWith("[") && line.EndsWith("]")) continue; // Skip tag.
+                if (line.StartsWith('[') && line.EndsWith(']')) continue; // Skip tag.
                 break; // End of tag section.
 
             } while (true);
@@ -155,7 +155,7 @@ public sealed class PgnGame
     }
 
 
-    private void ReadToSectionEnd(TextReader stringReader, char openingChar, char closingChar)
+    private void ReadToSectionEnd(StringReader stringReader, char openingChar, char closingChar)
     {
         var sections = 1;
 

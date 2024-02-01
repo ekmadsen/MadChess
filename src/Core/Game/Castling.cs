@@ -82,8 +82,7 @@ public static class Castling
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool Permitted(uint castling, Color color, BoardSide boardSide) => (castling & _masks[(int)color][(int)boardSide]) > 0;
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static void Set(ref uint castling, Color color, BoardSide boardSide, bool permitted)
     {
         var value = permitted ? 1u : 0;

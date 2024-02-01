@@ -25,44 +25,44 @@ public sealed class StaticScore
     public const int NotCached = Max - Search.MaxHorizon - 2;
     public const int SimpleEndgame = 20_000;
 
-    public readonly int[] EgSimple;
+    public readonly int[] EgSimple; // [color]
 
-    public readonly int[] MgPawnMaterial;
-    public readonly int[] EgPawnMaterial;
+    public readonly int[] MgPawnMaterial; // [color]
+    public readonly int[] EgPawnMaterial; // [color]
 
-    public readonly int[] MgPieceMaterial;
-    public readonly int[] EgPieceMaterial;
+    public readonly int[] MgPieceMaterial; // [color]
+    public readonly int[] EgPieceMaterial; // [color]
 
-    public readonly int[] MgPassedPawns;
-    public readonly int[] EgPassedPawns;
-    public readonly int[] EgFreePassedPawns;
-    public readonly int[] EgConnectedPassedPawns;
-    public readonly int[] EgKingEscortedPassedPawns;
-    public readonly int[] UnstoppablePassedPawns;
+    public readonly int[] MgPassedPawns; // [color]
+    public readonly int[] EgPassedPawns; // [color]
+    public readonly int[] EgFreePassedPawns; // [color]
+    public readonly int[] EgConnectedPassedPawns; // [color]
+    public readonly int[] EgKingEscortedPassedPawns; // [color]
+    public readonly int[] UnstoppablePassedPawns; // [color]
 
-    public readonly int[] MgKingSafety;
+    public readonly int[] MgKingSafety; // [color]
 
-    public readonly int[] MgPieceLocation;
-    public readonly int[] EgPieceLocation;
+    public readonly int[] MgPieceLocation; // [color]
+    public readonly int[] EgPieceLocation; // [color]
 
-    public readonly int[] MgPieceMobility;
-    public readonly int[] EgPieceMobility;
+    public readonly int[] MgPieceMobility; // [color]
+    public readonly int[] EgPieceMobility; // [color]
 
-    public readonly int[] MgPawnStructure;
-    public readonly int[] EgPawnStructure;
+    public readonly int[] MgPawnStructure; // [color]
+    public readonly int[] EgPawnStructure; // [color]
 
-    public readonly int[] MgThreats;
-    public readonly int[] EgThreats;
+    public readonly int[] MgThreats; // [color]
+    public readonly int[] EgThreats; // [color]
 
-    public readonly int[] MgBishopPair;
-    public readonly int[] EgBishopPair;
+    public readonly int[] MgBishopPair; // [color]
+    public readonly int[] EgBishopPair; // [color]
 
-    public readonly int[] MgOutposts;
-    public readonly int[] EgOutposts;
+    public readonly int[] MgOutposts; // [color]
+    public readonly int[] EgOutposts; // [color]
 
     // ReSharper disable InconsistentNaming
-    public readonly int[] MgRookOn7thRank;
-    public readonly int[] EgRookOn7thRank;
+    public readonly int[] MgRookOn7thRank; // [color]
+    public readonly int[] EgRookOn7thRank; // [color]
     // ReSharper restore InconsistentNaming
 
     public int PlySinceCaptureOrPawnMove;
@@ -109,11 +109,9 @@ public sealed class StaticScore
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetMgMaterial(Color color) => MgPawnMaterial[(int)color] + MgPieceMaterial[(int)color];
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetMg(Color color) => GetMgMaterial(color) +
                                       MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
                                       MgKingSafety[(int)color] +
@@ -121,18 +119,15 @@ public sealed class StaticScore
                                       MgThreats[(int)color] + MgBishopPair[(int)color] + MgOutposts[(int)color] + MgRookOn7thRank[(int)color];
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetEgMaterial(Color color) => EgPawnMaterial[(int)color] + EgPieceMaterial[(int)color];
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) +
                                      EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgConnectedPassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
                                      EgPieceLocation[(int)color] + EgPieceMobility[(int)color] + EgPawnStructure[(int)color] +
                                      EgThreats[(int)color] + EgBishopPair[(int)color] + EgOutposts[(int)color] + EgRookOn7thRank[(int)color];
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetTotalScore(Color color, int phase)
     {
         var taperedScore = GetTaperedScore(color, phase);
@@ -141,7 +136,6 @@ public sealed class StaticScore
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetTaperedScore(Color color, int phase)
     {
         var enemyColor = 1 - color;
@@ -161,7 +155,6 @@ public sealed class StaticScore
     public static int GetTaperedScore(int middlegameScore, int endgameScore, int phase) => ((middlegameScore * phase) + (endgameScore * (Evaluation.MiddlegamePhase - phase))) / Evaluation.MiddlegamePhase;
 
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Reset()
     {
         // Explicit array lookups are faster than looping through colors.
