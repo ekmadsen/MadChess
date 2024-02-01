@@ -553,7 +553,7 @@ public sealed class Search : IDisposable
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
-        if ((toHorizon <= 0) || (_originalHorizon == MaxHorizon)) return GetQuietScore(board, depth, depth, alpha, beta); // Search for a quiet position.
+        if (toHorizon <= 0) return GetQuietScore(board, depth, depth, alpha, beta); // Search for a quiet position.
 
         // Evaluate static score.
         bool drawnEndgame;
