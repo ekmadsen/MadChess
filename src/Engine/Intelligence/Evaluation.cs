@@ -82,7 +82,7 @@ public sealed class Evaluation
         // Do not set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
         Config = new EvaluationConfig();
         _defaultConfig = new EvaluationConfig();
-        _limitStrengthElos = [600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400];
+        _limitStrengthElos = [100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400];
 
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
 

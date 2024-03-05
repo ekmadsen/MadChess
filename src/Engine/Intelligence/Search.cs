@@ -143,7 +143,7 @@ public sealed class Search : IDisposable
         _moveHistory = moveHistory;
         _evaluation = evaluation;
 
-        _limitStrengthElos = [600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400, 2600];
+        _limitStrengthElos = [100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400, 2600];
 
         _movePriorityComparer = new MovePriorityComparer();
         _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
