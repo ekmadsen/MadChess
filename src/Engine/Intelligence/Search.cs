@@ -962,6 +962,16 @@ public sealed class Search : IDisposable
                     return;
                 }
                 nps = nodes / _stopwatch.Elapsed.TotalSeconds;
+                if (nps > _phasedNodesPerSecond)
+                {
+                    var msecsToWait = (int)(((1000 * nodes) / _nodesPerSecond.Value) - _stopwatch.Elapsed.TotalMilliseconds);
+                    if (msecsToWait < 5)
+                        msecsToWait = 5;
+                    else if (msecsToWait > 200)
+                        msecsToWait = 200;
+                    Thread.Sleep(msecsToWait);
+                }
+
             } while (nps > _phasedNodesPerSecond);
         }
 
