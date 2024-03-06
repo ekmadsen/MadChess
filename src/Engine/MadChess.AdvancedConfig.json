@@ -65,7 +65,7 @@
       "blunderErrorPower": 2.0,
       "blunderErrorConstant": 50,
       "blunderPer1024Scale": 0.2,
-      "blunderPer1024Power": 3.4,
+      "blunderPer1024Power": 3.35,
       "blunderPer1024Constant": 32
     }
   }
