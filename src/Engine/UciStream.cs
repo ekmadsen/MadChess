@@ -248,10 +248,12 @@ public sealed class UciStream : IDisposable
                 _stats.Reset();
                 break;
 
+            case "sep":
             case "showevalparams":
                 _messenger.WriteLine(_evaluation.ShowParameters());
                 break;
 
+            case "sls":
             case "showlimitstrengthparams":
                 _messenger.WriteLine(_evaluation.ShowLimitStrengthParameters());
                 _messenger.WriteLine();

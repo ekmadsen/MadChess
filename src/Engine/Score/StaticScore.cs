@@ -146,13 +146,17 @@ public sealed class StaticScore
         var egScore = GetEg(color);
         var egEnemyScore = GetEg(enemyColor);
 
-        return GetTaperedScore(mgScore - mgEnemyScore, egScore - egEnemyScore, phase);
+        return GetTaperedScore(mgScore - mgEnemyScore, (egScore - egEnemyScore) / egScoreReductionDivisor, phase);
     }
 
+    // Factor introduced by AW, to make scores more resemble real centipawns in endgame.  
+    // Also this prevents degradation of UCI_Elo-degradation in endgame. 
+    const int egScoreReductionDivisor = 2;
 
     // Linearly interpolate between middlegame and endgame scores.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetTaperedScore(int middlegameScore, int endgameScore, int phase) => ((middlegameScore * phase) + (endgameScore * (Evaluation.MiddlegamePhase - phase))) / Evaluation.MiddlegamePhase;
+    public static int GetTaperedScore(int middlegameScore, int endgameScore, int phase) 
+        => ((middlegameScore * phase) + (endgameScore * (Evaluation.MiddlegamePhase - phase))) / Evaluation.MiddlegamePhase;
 
 
     public void Reset()
