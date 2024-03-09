@@ -65,6 +65,9 @@ public sealed class StaticScore
     public readonly int[] EgRookOn7thRank; // [color]
     // ReSharper restore InconsistentNaming
 
+    public readonly int[] Closedness; // [color]
+
+
     public int PlySinceCaptureOrPawnMove;
 
     public StaticScore()
@@ -106,6 +109,8 @@ public sealed class StaticScore
 
         MgRookOn7thRank = new int[2];
         EgRookOn7thRank = new int[2];
+
+        Closedness = new int[2];
     }
 
 
@@ -146,7 +151,9 @@ public sealed class StaticScore
         var egScore = GetEg(color);
         var egEnemyScore = GetEg(enemyColor);
 
-        return GetTaperedScore(mgScore - mgEnemyScore, (egScore - egEnemyScore) / egScoreReductionDivisor, phase);
+        var closedness = Closedness[(int)color] + Closedness[(int)enemyColor];
+
+        return GetTaperedScore(closedness + mgScore - mgEnemyScore, (closedness + egScore - egEnemyScore) / egScoreReductionDivisor, phase);
     }
 
     // Factor introduced by AW, to make scores more resemble real centipawns in endgame.  
@@ -225,6 +232,9 @@ public sealed class StaticScore
         MgRookOn7thRank[(int)Color.Black] = 0;
         EgRookOn7thRank[(int)Color.White] = 0;
         EgRookOn7thRank[(int)Color.Black] = 0;
+
+        Closedness[(int)Color.White] = 0;
+        Closedness[(int)Color.Black] = 0;
 
         PlySinceCaptureOrPawnMove = 0;
     }

@@ -29,5 +29,8 @@ public sealed class LimitStrengthEvalConfig
     public int UnderestimateThreatsMaxElo { get; set; }
     public int PoorManeuveringMinorPiecesMaxElo { get; set; }
     public int PoorManeuveringMajorPiecesMaxElo { get; set; }
+    public int LikesClosedPositionsPer128 { get; set; }
+    public int LikesEndgamesPer128 { get; set; }
+    public int NumberOfPieceSquareTable { get; set; }
     // ReSharper restore UnusedAutoPropertyAccessor.Global
 }

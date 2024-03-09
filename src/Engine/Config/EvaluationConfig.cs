@@ -109,7 +109,7 @@ public sealed class EvaluationConfig
     public int EgKnightMobilityScale = 39;
     public int MgBishopMobilityScale = 62;
     public int EgBishopMobilityScale = 185;
-    public int MgRookMobilityScale = 85;
+    public int MgRookMobilityScale = 25;  // Orig: 85, AW 8.3.: 25
     public int EgRookMobilityScale = 154;
     public int MgQueenMobilityScale = 87;
     public int EgQueenMobilityScale = 78;
@@ -152,6 +152,10 @@ public sealed class EvaluationConfig
     public int LsThreatsPer128 = 128;
     public int LsMinorPiecesPer128 = 128;
     public int LsMajorPiecesPer128 = 128;
+    public int LikesClosedPositionsPer128 = 0;
+    public int LikesEndgamesPer128 = 0;
+    public int NumberOfPieceSquareTable = 0;
+
     // ReSharper restore FieldCanBeMadeReadOnly.Global
     // ReSharper restore ConvertToConstant.Global
 
@@ -285,5 +289,8 @@ public sealed class EvaluationConfig
         LsThreatsPer128 = copyFromConfig.LsThreatsPer128;
         LsMinorPiecesPer128 = copyFromConfig.LsMinorPiecesPer128;
         LsMajorPiecesPer128 = copyFromConfig.LsMajorPiecesPer128;
+        LikesClosedPositionsPer128 = copyFromConfig.LikesClosedPositionsPer128;
+        LikesEndgamesPer128 = copyFromConfig.LikesEndgamesPer128;
+        NumberOfPieceSquareTable = copyFromConfig.NumberOfPieceSquareTable;
     }
 }
