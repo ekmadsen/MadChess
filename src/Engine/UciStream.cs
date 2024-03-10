@@ -12,7 +12,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using ErikTheCoder.MadChess.Core;
@@ -39,7 +41,7 @@ public sealed class UciStream : IDisposable
     private const int _maxWinScale = 800;
 
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(100);
-    private readonly AdvancedConfig _advancedConfig;
+    private AdvancedConfig _advancedConfig;
     private readonly Messenger _messenger; // Lifetime managed by caller.
     private readonly Stopwatch _commandStopwatch;
     private readonly Queue<List<string>> _asyncQueue;
@@ -51,9 +53,13 @@ public sealed class UciStream : IDisposable
     private readonly Cache _cache;
     private readonly KillerMoves _killerMoves;
     private readonly MoveHistory _moveHistory;
-    private readonly Evaluation _evaluation;
-    private readonly Search _search;
+    // AW: It might be a performance problem that I made these two _evaluation and _earch non-readonly
+    // to allow different config files. I am not sure though. But I think I saw an increase in used CPU
+    // after this change. And I cannot well explain it differently. 
+    private Evaluation _evaluation;
+    private Search _search;
     private readonly string[] _defaultPlyAndFullMove;
+    private string _advCfgDirectory;
 
     private Thread _asyncThread;
 
@@ -84,6 +90,28 @@ public sealed class UciStream : IDisposable
         _defaultPlyAndFullMove = ["0", "1"];
     }
 
+    private void LoadAdvancedConfig(string fileName)
+    {
+        _messenger.WriteLine($"Looking for config file: dir={_advCfgDirectory} file={fileName}");
+        var pathToFile = Path.Combine(_advCfgDirectory ?? "", fileName);
+        if (File.Exists(pathToFile))
+        {
+            _messenger.WriteLine($"Loading config file: pathToFile={pathToFile}");
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                ReadCommentHandling = JsonCommentHandling.Skip
+            };
+            var jsonContext = new JsonContext(jsonOptions);
+            // Load advanced config (potentially containing user-modified values) from file.
+            var stream = File.OpenRead(pathToFile);
+            _advancedConfig = JsonSerializer.Deserialize(stream, jsonContext.AdvancedConfig); 
+            _evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, _messenger, _stats);
+            _search = new Search(_advancedConfig.LimitStrength.Search, _messenger, _timeManagement, _stats, _cache, _killerMoves, _moveHistory, _evaluation);
+        }
+        else
+            _messenger.WriteLine($"Config file not found: dir={_advCfgDirectory} file={fileName}");
+    }
 
     public void Dispose()
     {
@@ -363,6 +391,8 @@ public sealed class UciStream : IDisposable
         // Display engine options.
         _messenger.WriteLine("option name UCI_EngineAbout type string default MadChess by Erik Madsen.  See https://www.madchess.net.");
         _messenger.WriteLine("option name Log type check default false");
+        _messenger.WriteLine("option name AdvCfgDir type string default <empty>"); // Must be set before advcfgfile
+        _messenger.WriteLine("option name AdvCfgFile type string default <empty>");
         _messenger.WriteLine("option name Hash type spin default 128 min 0 max 2048");
         _messenger.WriteLine("option name ClearHash type button");
         _messenger.WriteLine("option name UCI_AnalyseMode type check default false");
@@ -381,6 +411,16 @@ public sealed class UciStream : IDisposable
 
         switch (optionName.ToLower())
         {
+            case "advcfgdir":
+                var dir = string.Join(' ', tokens.Skip(4));
+                _advCfgDirectory = dir;
+                break;
+
+            case "advcfgfile":
+                var fileName = string.Join(' ', tokens.Skip(4));
+                LoadAdvancedConfig(fileName);
+                break;
+
             case "log":
                 _messenger.Log = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                 break;

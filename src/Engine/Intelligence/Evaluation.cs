@@ -1471,13 +1471,13 @@ public sealed class Evaluation
         ShowPositionalKnowledgeGain("Major Pieces", _limitStrengthConfig.PoorManeuveringMajorPiecesMaxElo, stringBuilder);
 
         // Likes Closed Positions
-        stringBuilder.AppendLine($"Likes Closed      {_limitStrengthConfig.LikesClosedPositionsPer128}");
+        stringBuilder.AppendLine($"\nLikes Closed      {_limitStrengthConfig.LikesClosedPositionsPer128}");
 
         // Likes Endgames
         stringBuilder.AppendLine($"Likes Endgames    {_limitStrengthConfig.LikesEndgamesPer128}");
 
         // Number of Pawn Pst
-        stringBuilder.AppendLine($"Number Pawn Pst   {_limitStrengthConfig.NumberOfPieceSquareTable}");
+        stringBuilder.AppendLine($"Number PST        {_limitStrengthConfig.NumberOfPieceSquareTable}");
 
         return stringBuilder.ToString();
     }
