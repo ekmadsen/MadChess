@@ -24,6 +24,7 @@ public sealed class StaticScore
     public const int Interrupted = Max - Search.MaxHorizon - 1;
     public const int NotCached = Max - Search.MaxHorizon - 2;
     public const int SimpleEndgame = 20_000;
+    public const int SimpleMajorPieceEndgame = 25_000;
 
     public readonly int[] EgSimple; // [color]
 
@@ -64,6 +65,9 @@ public sealed class StaticScore
     public readonly int[] MgRookOn7thRank; // [color]
     public readonly int[] EgRookOn7thRank; // [color]
     // ReSharper restore InconsistentNaming
+
+    public readonly int[] Closedness; // [color]
+
 
     public int PlySinceCaptureOrPawnMove;
 
@@ -106,6 +110,8 @@ public sealed class StaticScore
 
         MgRookOn7thRank = new int[2];
         EgRookOn7thRank = new int[2];
+
+        Closedness = new int[2];
     }
 
 
@@ -146,13 +152,19 @@ public sealed class StaticScore
         var egScore = GetEg(color);
         var egEnemyScore = GetEg(enemyColor);
 
-        return GetTaperedScore(mgScore - mgEnemyScore, egScore - egEnemyScore, phase);
+        var closedness = Closedness[(int)color] + Closedness[(int)enemyColor];
+
+        return GetTaperedScore(closedness + mgScore - mgEnemyScore, (closedness + egScore - egEnemyScore) / egScoreReductionDivisor, phase);
     }
 
+    // Factor introduced by AW, to make scores more resemble real centipawns in endgame.  
+    // Also this prevents degradation of UCI_Elo-degradation in endgame. 
+    const int egScoreReductionDivisor = 2;
 
     // Linearly interpolate between middlegame and endgame scores.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetTaperedScore(int middlegameScore, int endgameScore, int phase) => ((middlegameScore * phase) + (endgameScore * (Evaluation.MiddlegamePhase - phase))) / Evaluation.MiddlegamePhase;
+    public static int GetTaperedScore(int middlegameScore, int endgameScore, int phase) 
+        => ((middlegameScore * phase) + (endgameScore * (Evaluation.MiddlegamePhase - phase))) / Evaluation.MiddlegamePhase;
 
 
     public void Reset()
@@ -221,6 +233,9 @@ public sealed class StaticScore
         MgRookOn7thRank[(int)Color.Black] = 0;
         EgRookOn7thRank[(int)Color.White] = 0;
         EgRookOn7thRank[(int)Color.Black] = 0;
+
+        Closedness[(int)Color.White] = 0;
+        Closedness[(int)Color.Black] = 0;
 
         PlySinceCaptureOrPawnMove = 0;
     }
