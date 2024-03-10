@@ -789,7 +789,7 @@ public sealed class Evaluation
                 // Push lone king to corner.  Push winning king close to lone king.
                 // Multiply king distances by a factor to overcome piece location values.
                 EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
-                _staticScore.EgSimple[(int)enemyColor] = StaticScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
+                _staticScore.EgSimple[(int)enemyColor] = StaticScore.SimpleMajorPieceEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
                 return true;
         }
 

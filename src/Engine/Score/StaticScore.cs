@@ -24,6 +24,7 @@ public sealed class StaticScore
     public const int Interrupted = Max - Search.MaxHorizon - 1;
     public const int NotCached = Max - Search.MaxHorizon - 2;
     public const int SimpleEndgame = 20_000;
+    public const int SimpleMajorPieceEndgame = 25_000;
 
     public readonly int[] EgSimple; // [color]
 
