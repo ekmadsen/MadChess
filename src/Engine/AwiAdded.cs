@@ -50,7 +50,7 @@ public sealed partial class UciStream
                 // Setup position.  Preserve move count.
                 _board.SetPosition(fen, true);
                 _messenger.WriteLine(_evaluation.ToString(_board.CurrentPosition, 
-                    ToStringFlags.Mobility | ToStringFlags.Location ));
+                    ToStringFlags.Mobility | ToStringFlags.Location | ToStringFlags.KingSafety ));
 
                 // Count nodes.  Do not display node count.
                 //_search.NodesInfoUpdate = long.MaxValue;
@@ -61,6 +61,9 @@ public sealed partial class UciStream
                 //var correctFraction = (100d * correctPositions) / positions;
 
                 // _messenger.WriteLine($"{positions,6}  {fen,75}  {horizon,5:0}  {expectedMoves,11:n0}  {moves,11:n0}  {correct,7}  {correctFraction,5:0.0}");
+
+                //GoSync("go movetime 2000".Split().ToList());
+
             }
         }
 
