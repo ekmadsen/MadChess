@@ -241,34 +241,47 @@ public sealed class StaticScore
     }
 
 
-    public string ToString(int phase)
+    public string ToString(int phase, ToStringFlags flags = 0)
     {
         var stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("                             |         Middlegame        |          Endgame          |           Total           |");
         stringBuilder.AppendLine("Evaluation Param             |  White    Black     Diff  |  White    Black     Diff  |  White    Black     Diff  |");
         stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
 
-        AppendStaticScoreLine(stringBuilder, "Simple Endgame", EgSimple[(int)Color.White], EgSimple[(int)Color.Black], EgSimple[(int)Color.White], EgSimple[(int)Color.Black], phase);
+        if (Ext.HasFlag(flags, ToStringFlags.SimpleEndgame))
+            AppendStaticScoreLine(stringBuilder, "Simple Endgame", EgSimple[(int)Color.White], EgSimple[(int)Color.Black], EgSimple[(int)Color.White], EgSimple[(int)Color.Black], phase);
 
-        AppendStaticScoreLine(stringBuilder, "Material", GetMgMaterial(Color.White), GetMgMaterial(Color.Black), GetEgMaterial(Color.White), GetEgMaterial(Color.Black), phase);
+        if (Ext.HasFlag(flags, ToStringFlags.Material))
+            AppendStaticScoreLine(stringBuilder, "Material", GetMgMaterial(Color.White), GetMgMaterial(Color.Black), GetEgMaterial(Color.White), GetEgMaterial(Color.Black), phase);
+        if (Ext.HasFlag(flags, ToStringFlags.PassedPawns))
+        {
+            AppendStaticScoreLine(stringBuilder, "Passed Pawns", MgPassedPawns[(int)Color.White], MgPassedPawns[(int)Color.Black], EgPassedPawns[(int)Color.White], EgPassedPawns[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, EgFreePassedPawns[(int)Color.White], EgFreePassedPawns[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Connected Passed Pawns", 0, 0, EgConnectedPassedPawns[(int)Color.White], EgConnectedPassedPawns[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, EgKingEscortedPassedPawns[(int)Color.White], EgKingEscortedPassedPawns[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], phase);
+        }
+        if (Ext.HasFlag(flags, ToStringFlags.KingSafety))
+            AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
 
-        AppendStaticScoreLine(stringBuilder, "Passed Pawns", MgPassedPawns[(int)Color.White], MgPassedPawns[(int)Color.Black], EgPassedPawns[(int)Color.White], EgPassedPawns[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, EgFreePassedPawns[(int)Color.White], EgFreePassedPawns[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "Connected Passed Pawns", 0, 0, EgConnectedPassedPawns[(int)Color.White], EgConnectedPassedPawns[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, EgKingEscortedPassedPawns[(int)Color.White], EgKingEscortedPassedPawns[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
+        if (Ext.HasFlag(flags, ToStringFlags.Location))
+            AppendStaticScoreLine(stringBuilder, "Piece Location", MgPieceLocation[(int)Color.White], MgPieceLocation[(int)Color.Black], EgPieceLocation[(int)Color.White], EgPieceLocation[(int)Color.Black], phase);
+        if (Ext.HasFlag(flags, ToStringFlags.Mobility))
+            AppendStaticScoreLine(stringBuilder, "Piece Mobility", MgPieceMobility[(int)Color.White], MgPieceMobility[(int)Color.Black], EgPieceMobility[(int)Color.White], EgPieceMobility[(int)Color.Black], phase);
 
-        AppendStaticScoreLine(stringBuilder, "Piece Location", MgPieceLocation[(int)Color.White], MgPieceLocation[(int)Color.Black], EgPieceLocation[(int)Color.White], EgPieceLocation[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "Piece Mobility", MgPieceMobility[(int)Color.White], MgPieceMobility[(int)Color.Black], EgPieceMobility[(int)Color.White], EgPieceMobility[(int)Color.Black], phase);
+        if (Ext.HasFlag(flags, ToStringFlags.PawnStructure))
+            AppendStaticScoreLine(stringBuilder, "Pawn Structure", MgPawnStructure[(int)Color.White], MgPawnStructure[(int)Color.Black], EgPawnStructure[(int)Color.White], EgPawnStructure[(int)Color.Black], phase);
+        if (Ext.HasFlag(flags, ToStringFlags.Threats))
+            AppendStaticScoreLine(stringBuilder, "Threats", MgThreats[(int)Color.White], MgThreats[(int)Color.Black], EgThreats[(int)Color.White], EgThreats[(int)Color.Black], phase);
 
-        AppendStaticScoreLine(stringBuilder, "Pawn Structure", MgPawnStructure[(int)Color.White], MgPawnStructure[(int)Color.Black], EgPawnStructure[(int)Color.White], EgPawnStructure[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "Threats", MgThreats[(int)Color.White], MgThreats[(int)Color.Black], EgThreats[(int)Color.White], EgThreats[(int)Color.Black], phase);
+        if (Ext.HasFlag(flags, ToStringFlags.Minors))
+        {
+            AppendStaticScoreLine(stringBuilder, "Bishop Pair", MgBishopPair[(int)Color.White], MgBishopPair[(int)Color.Black], EgBishopPair[(int)Color.White], EgBishopPair[(int)Color.Black], phase);
+            AppendStaticScoreLine(stringBuilder, "Outposts", MgOutposts[(int)Color.White], MgOutposts[(int)Color.Black], EgOutposts[(int)Color.White], EgOutposts[(int)Color.Black], phase);
+        }
 
-        AppendStaticScoreLine(stringBuilder, "Bishop Pair", MgBishopPair[(int)Color.White], MgBishopPair[(int)Color.Black], EgBishopPair[(int)Color.White], EgBishopPair[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "Outposts", MgOutposts[(int)Color.White], MgOutposts[(int)Color.Black], EgOutposts[(int)Color.White], EgOutposts[(int)Color.Black], phase);
-
-        AppendStaticScoreLine(stringBuilder, "Rook on 7th Rank", MgRookOn7thRank[(int)Color.White], MgRookOn7thRank[(int)Color.Black], EgRookOn7thRank[(int)Color.White], EgRookOn7thRank[(int)Color.Black], phase);
+        if (Ext.HasFlag(flags, ToStringFlags.Majors))
+            AppendStaticScoreLine(stringBuilder, "Rook on 7th Rank", MgRookOn7thRank[(int)Color.White], MgRookOn7thRank[(int)Color.Black], EgRookOn7thRank[(int)Color.White], EgRookOn7thRank[(int)Color.Black], phase);
         stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
 
         var mgWhite = GetMg(Color.White);
@@ -281,7 +294,8 @@ public sealed class StaticScore
         var totalScore = GetTotalScore(Color.White, phase) / 100d;
 
         stringBuilder.AppendLine($"Middlegame   = {phase} of {Evaluation.MiddlegamePhase} ({phaseFraction}%)");
-        stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
+        if (Ext.HasFlag(flags, ToStringFlags.FiftyMove))
+            stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
         stringBuilder.Append($"Total Score  = {totalScore:0.00}");
 
         return stringBuilder.ToString();

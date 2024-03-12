@@ -356,7 +356,7 @@ public sealed class Evaluation
         new int[] { },
     new int[64]
     //A1                                H1
-    {-15,  -1,   0,   3,   3,   0,  -1, -15,
+    {-15,  -10,   -5,   3,   3,   -5,  -10, -15,
         -33, -11, -14, -11, -11, -14, -11, -33,
         -26, -13, -15,  -2,  -2, -15, -13, -26,
         -33,  -1, -26,  -9,  -9, -26,  -1, -33,
@@ -527,6 +527,17 @@ public sealed class Evaluation
         Config.LikesEndgamesPer128 = _limitStrengthConfig.LikesEndgamesPer128;
         // Pawn Pst number
         Config.NumberOfPieceSquareTable = _limitStrengthConfig.NumberOfPieceSquareTable;
+        // Mobilities
+        Config.MgQueenMobilityPer128 = _limitStrengthConfig.MgQueenMobilityPer128;
+        Config.MgRookMobilityPer128 = _limitStrengthConfig.MgRookMobilityPer128;
+        Config.MgQueenMobilityScale = Config.MgQueenMobilityScale * Config.MgQueenMobilityPer128 / 128;
+        Config.MgRookMobilityScale = Config.MgRookMobilityScale * Config.MgRookMobilityPer128 / 128;
+
+        CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Rook], _egPieceMobility[(int)ColorlessPiece.Rook], Config.MgRookMobilityScale, Config.EgRookMobilityScale);
+        CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Queen], _egPieceMobility[(int)ColorlessPiece.Queen], Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
+
+
+
 
 
         if (_messenger.Debug)
@@ -557,6 +568,8 @@ public sealed class Evaluation
             _messenger.WriteLine($"info string {nameof(Config.LikesClosedPositionsPer128)} = {Config.LikesClosedPositionsPer128}");
             _messenger.WriteLine($"info string {nameof(Config.LikesEndgamesPer128)} = {Config.LikesEndgamesPer128}");
             _messenger.WriteLine($"info string {nameof(Config.NumberOfPieceSquareTable)} = {Config.NumberOfPieceSquareTable}");
+            _messenger.WriteLine($"info string {nameof(Config.MgQueenMobilityPer128)} = {Config.MgQueenMobilityPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.MgRookMobilityPer128)} = {Config.MgRookMobilityPer128}");
         }
     }
 
@@ -1470,15 +1483,14 @@ public sealed class Evaluation
         // Major Pieces
         ShowPositionalKnowledgeGain("Major Pieces", _limitStrengthConfig.PoorManeuveringMajorPiecesMaxElo, stringBuilder);
 
-        // Likes Closed Positions
-        stringBuilder.AppendLine($"\nLikes Closed      {_limitStrengthConfig.LikesClosedPositionsPer128}");
-
-        // Likes Endgames
-        stringBuilder.AppendLine($"Likes Endgames    {_limitStrengthConfig.LikesEndgamesPer128}");
+        // Likes Closed Positions, Endgames
+        stringBuilder.AppendLine($"\nLikes  Closed={_limitStrengthConfig.LikesClosedPositionsPer128}  Endgames={_limitStrengthConfig.LikesEndgamesPer128}");
 
         // Number of Pawn Pst
         stringBuilder.AppendLine($"Number PST        {_limitStrengthConfig.NumberOfPieceSquareTable}");
 
+        // Mobilities
+        stringBuilder.AppendLine($"Mg*Mobility Queen={_limitStrengthConfig.MgQueenMobilityPer128}  Rook={_limitStrengthConfig.MgRookMobilityPer128}");
         return stringBuilder.ToString();
     }
 
@@ -1504,9 +1516,10 @@ public sealed class Evaluation
     }
 
 
-    public string ToString(Position position)
+    public string ToString(Position position, ToStringFlags flags = 0)
     {
         var (_, _, phase) = GetStaticScore(position);
-        return _staticScore.ToString(phase);
+        LimitStrength();
+        return _staticScore.ToString(phase, flags);
     }
 }

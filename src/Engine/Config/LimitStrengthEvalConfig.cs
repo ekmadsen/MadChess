@@ -32,5 +32,7 @@ public sealed class LimitStrengthEvalConfig
     public int LikesClosedPositionsPer128 { get; set; }
     public int LikesEndgamesPer128 { get; set; }
     public int NumberOfPieceSquareTable { get; set; }
+    public int MgQueenMobilityPer128 { get; set; } = 128;
+    public int MgRookMobilityPer128 { get; set; } = 128;
     // ReSharper restore UnusedAutoPropertyAccessor.Global
 }

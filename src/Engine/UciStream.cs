@@ -31,7 +31,7 @@ using ErikTheCoder.MadChess.Engine.Tuning;
 namespace ErikTheCoder.MadChess.Engine;
 
 
-public sealed class UciStream : IDisposable
+public sealed partial class UciStream : IDisposable
 {
     public const long NodesInfoInterval = 1_000_000;
     public const long NodesTimeInterval = 1_000;
@@ -59,7 +59,7 @@ public sealed class UciStream : IDisposable
     private Evaluation _evaluation;
     private Search _search;
     private readonly string[] _defaultPlyAndFullMove;
-    private string _advCfgDirectory;
+    private string _advCfgDirectory = "C:\\Daten\\Schach\\mmss\\Resources\\Raw\\Players";
 
     private Thread _asyncThread;
 
@@ -104,10 +104,12 @@ public sealed class UciStream : IDisposable
             };
             var jsonContext = new JsonContext(jsonOptions);
             // Load advanced config (potentially containing user-modified values) from file.
-            var stream = File.OpenRead(pathToFile);
-            _advancedConfig = JsonSerializer.Deserialize(stream, jsonContext.AdvancedConfig); 
-            _evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, _messenger, _stats);
-            _search = new Search(_advancedConfig.LimitStrength.Search, _messenger, _timeManagement, _stats, _cache, _killerMoves, _moveHistory, _evaluation);
+            using (var stream = File.OpenRead(pathToFile))
+            {
+                _advancedConfig = JsonSerializer.Deserialize(stream, jsonContext.AdvancedConfig);
+                _evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, _messenger, _stats);
+                _search = new Search(_advancedConfig.LimitStrength.Search, _messenger, _timeManagement, _stats, _cache, _killerMoves, _moveHistory, _evaluation);
+            }
         }
         else
             _messenger.WriteLine($"Config file not found: dir={_advCfgDirectory} file={fileName}");
@@ -286,6 +288,13 @@ public sealed class UciStream : IDisposable
                 _messenger.WriteLine(_evaluation.ShowLimitStrengthParameters());
                 _messenger.WriteLine();
                 _messenger.WriteLine(_search.ShowLimitStrengthParameters());
+                break;
+
+            case "ttt":  // test static score
+                SetOption("setoption name advcfgfile value mc.0312lethileblu3.json".Split().ToList());
+                SetOption("setoption name UCI_LimitStrength value true".Split().ToList());
+                SetOption("setoption name UCI_Elo value 1600".Split().ToList());
+                TestStaticScore(tokens);
                 break;
 
             case "staticscore":
