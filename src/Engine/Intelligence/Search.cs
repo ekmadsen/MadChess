@@ -22,6 +22,7 @@ using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
+using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
@@ -233,6 +234,9 @@ public sealed class Search : IDisposable
     {
         var ratingClass = elo / 200d;
         var nodesPerSecond = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.NpsScale, _limitStrengthConfig.NpsPower, _limitStrengthConfig.NpsConstant);
+        // AW: Lower bound for NPS, because really getting such low NPS is not easy.
+        // Especially in conditions where the engine is very low on time I cannot go lower in NPS.  
+        nodesPerSecond = Math.Max(nodesPerSecond, 20);
 
         ratingClass = (Intelligence.Elo.Max - elo) / 200d;
         var moveError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.MoveErrorScale, _limitStrengthConfig.MoveErrorPower, _limitStrengthConfig.MoveErrorConstant);
@@ -343,6 +347,8 @@ public sealed class Search : IDisposable
         var phase = Evaluation.DetermineGamePhase(position);
         var minNodePerSecond = (_nodesPerSecond.Value * _limitStrengthConfig.NpsEndgamePer128) / 128;
         _phasedNodesPerSecond = Formula.GetLinearlyInterpolatedValue(minNodePerSecond, _nodesPerSecond.Value, phase, 0, Evaluation.MiddlegamePhase);
+        if (_phasedNodesPerSecond == 0)
+            _phasedNodesPerSecond = 1;
     }
 
 
@@ -949,7 +955,8 @@ public sealed class Search : IDisposable
             return;
         }
 
-        if (_nodesPerSecond.HasValue && (_originalHorizon > 1)) // Guarantee to search at least one ply.
+        // AW: changed (_originalHorizon > 1) to (_originalHorizon >= 1), otherwise  NPS gets sometimes to high.
+        if (_nodesPerSecond.HasValue && (_originalHorizon >= 1)) // Guarantee to search at least one ply.
         {
             double nps;
             do
