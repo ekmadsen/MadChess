@@ -8,13 +8,13 @@
 // +---------------------------------------------------------------------------+
 
 
-using JetBrains.Annotations;
+//using JetBrains.Annotations;
 
 
 namespace ErikTheCoder.MadChess.Engine.Config;
 
 
-[UsedImplicitly]
+//[UsedImplicitly]
 public sealed class LimitStrengthConfig
 {
     // ReSharper disable UnusedAutoPropertyAccessor.Global

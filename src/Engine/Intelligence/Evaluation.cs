@@ -19,6 +19,7 @@ using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
+using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
@@ -310,10 +311,15 @@ public sealed class Evaluation
         _mgPieceLocations[(int)colorlessPiece][(int)square] = val;
     }
 
+    // PieceSquareTables, based on
+    // 1 Haakapelitaa, 2 Fruit, 3 Ippolit. All maunually adapted to make play
+    // look more human-like. 
+
+
     static readonly System.Collections.Generic.List<int[]> pstPawnMg = 
         new System.Collections.Generic.List<int[]> {
         new int[] { }, 
-        //A1                                H1
+    //A1                                H1
     new int[64] 
     { 0,   0,   0,   0,   0,   0,   0,   0,
     -32, -16, -17, -27, -27, -17, -16, -32,
@@ -329,8 +335,8 @@ public sealed class Evaluation
     new int[64] 
     { 0,   0,   0,   0,   0,   0,   0,   0,
     -15,  -5,   5,   5,   5,   5,  -5, -15,
-    -15,  -5,   5,  15,  15,   5,  -5, -15,
-    -15,  -5,  10,  25,  25,  10,  -5, -15,
+    -20, -15,   5,  15,  15,   5, -15, -20,
+    -20, -15,  10,  25,  25,  10, -35, -40,
     -15,  -5,   5,  15,  15,   5,  -5, -15,
     -15,  -5,   5,  15,  15,   5,  -5, -15,
     -15,  -5,   5,  15,  15,   5,  -5, -15,
@@ -368,9 +374,9 @@ public sealed class Evaluation
 
     new int[64]
         //A1                                H1
-    {   -3,  -1,   1,   3,   3,   1,  -1,  -3,
-        -3,  -1,   1,   3,   3,   1,  -1,  -3,
-        -3,  -1,   1,   3,   3,   1,  -1,  -3,
+    {   -3,  -1,   3,   8,   8,   3,  -1,  -3,
+       -30,  -1,   1,   3,   3,   1,  -1, -30,
+       -30,  -1,   1,   3,   3,   1,  -1, -30,
         -3,  -1,   1,   3,   3,   1,  -1,  -3,
         -3,  -1,   1,   3,   3,   1,  -1,  -3,
         -3,  -1,   1,   3,   3,   1,  -1,  -3,
@@ -407,7 +413,7 @@ public sealed class Evaluation
 
     new int[64]
     //A1                                H1
-    {    40,  50,  30,   0,   0,  30,  50,  40,
+    {    40,  50,  30,   0,   0,  30,  55,  40,
          30,  40,  20,   0,   0,  20,  40,  30,
          10,  20,   0, -20, -20,   0,  20,  10,
           0,  10, -10, -30, -30, -10,  10,   0,

@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Engine.Intelligence;
-
+using Color = ErikTheCoder.MadChess.Core.Game.Color;    
 
 namespace ErikTheCoder.MadChess.Engine.Score;
 

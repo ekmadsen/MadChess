@@ -8,7 +8,7 @@
 // +---------------------------------------------------------------------------+
 
 
-using JetBrains.Annotations;
+// using JetBrains.Annotations;
 
 
 namespace ErikTheCoder.MadChess.Core;
@@ -16,7 +16,7 @@ namespace ErikTheCoder.MadChess.Core;
 
 public enum CommandDirection
 {
-    [UsedImplicitly] Unknown,
+    Unknown,
     In,
     Out
 }

@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
+using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Core.Moves;

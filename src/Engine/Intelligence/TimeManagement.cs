@@ -13,6 +13,7 @@ using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Score;
+using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;

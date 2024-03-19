@@ -8,7 +8,7 @@
 // +---------------------------------------------------------------------------+
 
 
-using JetBrains.Annotations;
+// using JetBrains.Annotations;
 
 
 namespace ErikTheCoder.MadChess.Core.Game;
@@ -16,7 +16,7 @@ namespace ErikTheCoder.MadChess.Core.Game;
 
 public enum Direction
 {
-    [UsedImplicitly] Unknown,
+    Unknown,
 
     // Sliding Piece Moves
     North,
