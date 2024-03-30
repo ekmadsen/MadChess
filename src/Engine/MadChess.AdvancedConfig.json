@@ -47,7 +47,7 @@
         // Sogar wenn sie umsonst wären.
         "likesClosedPositionsPer128": 30,
         // Not Implemented. 
-        "likesEndgamesPer128": 128,
+        "likesEndgamesPer128": 0,
         // Select a piece square table set for middle game. 
         // 0 = MadChess' original. For pawns it's got the same values on every file, which leads MC to advancing 
         // a,b,g,h pawns way too often for my tastee. 

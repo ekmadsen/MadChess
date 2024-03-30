@@ -40,6 +40,8 @@ public sealed class Evaluation
 
     // Game Phase (constants selected such that starting material = 128)
     public const int MiddlegamePhase = 4 * (_knightPhaseWeight + _bishopPhaseWeight + _rookPhaseWeight) + (2 * _queenPhaseWeight);
+    private const int _awiEndgamePhase = (2 * _queenPhaseWeight - _knightPhaseWeight); // by AW. Endgame fully reached when phase < AwiEndgamePhase ;
+    private const int _awiEndgamePhaseConst = (MiddlegamePhase + _awiEndgamePhase) / 2; 
     private const int _knightPhaseWeight = 5; //   4 *  5 =  20
     private const int _bishopPhaseWeight = 5; // + 4 *  5 =  40
     private const int _rookPhaseWeight =  11; // + 4 * 11 =  84
@@ -319,7 +321,7 @@ public sealed class Evaluation
     static readonly System.Collections.Generic.List<int[]> pstPawnMg = 
         new System.Collections.Generic.List<int[]> {
         new int[] { }, 
-    //A1                                H1
+    //A1            Pawn 1              H1
     new int[64] 
     { 0,   0,   0,   0,   0,   0,   0,   0,
     -32, -16, -17, -27, -27, -17, -16, -32,
@@ -331,7 +333,7 @@ public sealed class Evaluation
      15,  16,  76,  93,  93,  76,  16,  15},
     //A8                                H8
 
-    //A1                                H1
+    //A1            Pawn 2              H1
     new int[64] 
     { 0,   0,   0,   0,   0,   0,   0,   0,
     -15,  -5,   5,   5,   5,   5,  -5, -15,
@@ -344,15 +346,15 @@ public sealed class Evaluation
     //A8                                H8
 
     
-    //A1                                H1
+    //A1         Pawn 3                 H1
     new int[64] 
     { 0,   0,   0,   0,   0,   0,   0,   0,
     -23, -11,  -5,   2,   2,  -5, -11, -23,
-    -22, -10,  -4,   3,   3,  -4, -10, -22,
-    -21,  -9,  -3,   4,   4,  -3,  -9, -21,
-    -19,  -7,  -1,   6,   6,  -1,  -7, -19,
-    -18,  -6,   0,   7,   7,   0,  -6, -18,
-    -17,  -5,   1,   8,   8,   1,  -5, -17,
+    -22, -10,  -4,   8,   8,  -4, -10, -22,
+    -23, -10,  -3,  10,  10,  -3, -28, -35,
+    -19,  -7,  -1,  12,  12,  -1,  -7, -19,
+    -18,  -6,   0,  14,  14,   0,  -6, -18,
+    -17,  -5,   1,  16,  16,   1,  -5, -17,
       0,   0,   0,   0,   0,   0,   0,   0}
     //A8                                H8
     };
@@ -361,7 +363,7 @@ public sealed class Evaluation
         new System.Collections.Generic.List<int[]> {
         new int[] { },
     new int[64]
-    //A1                                H1
+    //A1              Rook 1                H1
     {   -15, -10,  -5,   3,   3,  -5, -10, -15,
         -33, -11, -14, -11, -11, -14, -11, -33,
         -26, -13, -15,  -2,  -2, -15, -13, -26,
@@ -373,7 +375,7 @@ public sealed class Evaluation
         //A8                                H8
 
     new int[64]
-        //A1                                H1
+        //A1          Rook 2               H1
     {   -3,  -1,   3,   8,   8,   3,  -1,  -3,
        -30,  -1,   1,   3,   3,   1,  -1, -30,
        -30,  -1,   1,   3,   3,   1,  -1, -30,
@@ -384,10 +386,11 @@ public sealed class Evaluation
         -3,  -1,   1,   3,   3,   1,  -1,  -3},
        //A8                                H8
 
-    new int[64]
-    {   -4,   0,   4,   8,   8,   4,   0,  -4,
-        -4,   0,   4,   8,   8,   4,   0,  -4,
-        -4,   0,   4,   8,   8,   4,   0,  -4,
+    new int[64]        
+    //A1             Rook 3                H1
+    {   -4,   0,   4,  12,  12,   4,   0,  -4,
+       -30,   0,   4,   8,   8,   4,   0, -30,
+        -4,   0,   4,   8,   8,   4,   0, -10,
         -4,   0,   4,   8,   8,   4,   0,  -4,
         -4,   0,   4,   8,   8,   4,   0,  -4,
         -4,   0,   4,   8,   8,   4,   0,  -4,
@@ -400,7 +403,7 @@ public sealed class Evaluation
         new System.Collections.Generic.List<int[]> {
         new int[] { },
     new int[64]
-    //A1                                H1
+    //A1             King 1                 H1
     {    13,  31, -18, -33, -33, -18,  31,  13,
          28,  19, -19, -21, -21, -19,  19,  28,
         -31, -19, -21, -30, -30, -21, -19, -31,
@@ -412,7 +415,7 @@ public sealed class Evaluation
     //A8                                H8
 
     new int[64]
-    //A1                                H1
+    //A1             King 2                 H1
     {    40,  50,  30,   0,   0,  30,  55,  40,
          30,  40,  20,   0,   0,  20,  40,  30,
          10,  20,   0, -20, -20,   0,  20,  10,
@@ -424,16 +427,16 @@ public sealed class Evaluation
     //A8                                 H8
 
     new int[64]
-    //A1                                 H1
-    {   44,  49,  19,  -1,  -1,  19,  49,  44,
-        44,  49,  19,  -1,  -1,  19,  49,  44,
-        38,  43,  13,  -7,  -7,  13,  43,  38,
-        35,  40,  10, -10, -10,  10,  40,  35,
-        30,  35,   5, -15, -15,   5,  35,  30,
-        25,  30,   0, -20, -20,   0,  30,  25,
-        15,  20, -10, -30, -30, -10,  20,  15,
-        5,   10, -20, -40, -40, -20,  10,   5 }
-    //A8                                 H8
+    //A1              King 3                H1
+    {    44,  49,  19,  -1,  -1,  19,  55,  44,
+         44,  47,  19,  -1,  -1,  19,  47,  44,
+         10,  20,   0, -20, -20,   0,  20,  10,
+          0,  10, -10, -30, -30, -10,  10,   0,
+        -10,   0, -20, -40, -40, -20,   0, -10,
+        -20, -10, -30, -40, -40, -30, -10, -20,
+        -30, -20, -40, -40, -40, -40, -20, -30,
+        -40, -40, -40, -40, -40, -40, -40, -40},
+    //A8                                    H8
     };
 
     private void CalculatePieceMobility(int[] mgPieceMobility, int[] egPieceMobility, int mgMobilityScale, int egMobilityScale)
@@ -653,8 +656,8 @@ public sealed class Evaluation
 
         // Position is not a pawnless draw or simple endgame.
         // Explicit array lookups are faster than looping through colors.
-        EvaluateMaterial(position, Color.White);
-        EvaluateMaterial(position, Color.Black);
+        EvaluateMaterial(position, Color.White, phase);
+        EvaluateMaterial(position, Color.Black, phase);
 
         EvaluatePieceLocation(position, Color.White);
         EvaluatePieceLocation(position, Color.Black);
@@ -872,7 +875,7 @@ public sealed class Evaluation
     }
 
 
-    private void EvaluateMaterial(Position position, Color color)
+    private void EvaluateMaterial(Position position, Color color, int phase)
     {
         // Explicit piece evaluation is faster than looping through pieces due to avoiding CPU stalls and enabling out-of-order execution.
         // See https://stackoverflow.com/a/2349265/8992299.
@@ -886,6 +889,18 @@ public sealed class Evaluation
         var pawnsMinus3 = pawnCount - 3;
         _staticScore.Closedness[(int)color] = pawnsMinus3 > 0 ? 
                 (pawnsMinus3 * _limitStrengthConfig.LikesClosedPositionsPer128) : 0;
+
+        if (_limitStrengthConfig.LikesEndgamesPer128 != 0 && color == Color.Black)
+        {
+            // Phase = 128 is full material, I count it as full negative endgameness. 
+            // Phase = 39 is a bit less than two queens or less material left. I count this as 
+            // full endgameness. Less material is not more endgameness. Division by four to make
+            // the factor better fitting to scale 0..128,
+            // score[pawns] +=  likesEndgamesPer128 * Endgameness / 128
+            _staticScore.Endgameness = _limitStrengthConfig.LikesEndgamesPer128 * (Evaluation._awiEndgamePhaseConst -
+                        (phase <= Evaluation._awiEndgamePhase ? Evaluation._awiEndgamePhase : phase)) / 4;
+            _messenger.WriteLine($"info string Endgameness = {_staticScore.Endgameness} ");
+        }
 
         // Knights
         var knight = PieceHelper.GetPieceOfColor(ColorlessPiece.Knight, color);

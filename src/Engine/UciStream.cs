@@ -294,7 +294,7 @@ public sealed partial class UciStream : IDisposable
                 break;
 
             case "ttt":  // test static score
-                SetOption("setoption name advcfgfile value mc.cfg240309.json".Split().ToList());
+                SetOption("setoption name advcfgfile value mc.0328kaiser.json".Split().ToList());
                 SetOption("setoption name UCI_LimitStrength value true".Split().ToList());
                 SetOption("setoption name UCI_Elo value 1600".Split().ToList());
                 TestStaticScore(tokens);

@@ -67,6 +67,7 @@ public sealed class StaticScore
     // ReSharper restore InconsistentNaming
 
     public readonly int[] Closedness; // [color]
+    public int Endgameness;
 
 
     public int PlySinceCaptureOrPawnMove;
@@ -150,11 +151,12 @@ public sealed class StaticScore
         var mgEnemyScore = GetMg(enemyColor);
 
         var egScore = GetEg(color);
+
         var egEnemyScore = GetEg(enemyColor);
 
-        var closedness = Closedness[(int)color] + Closedness[(int)enemyColor];
+        var closednessPlusEndgameness = Closedness[(int)color] + Closedness[(int)enemyColor] + Endgameness;
 
-        return GetTaperedScore(closedness + mgScore - mgEnemyScore, (closedness + egScore - egEnemyScore) / egScoreReductionDivisor, phase);
+        return GetTaperedScore(closednessPlusEndgameness + mgScore - mgEnemyScore, (closednessPlusEndgameness + egScore - egEnemyScore) / egScoreReductionDivisor, phase);
     }
 
     // Factor introduced by AW, to make scores more resemble real centipawns in endgame.  
