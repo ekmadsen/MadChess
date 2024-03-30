@@ -56,8 +56,8 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
 
         // Calculate move time.
         var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
-        if (position.FullMoveNumber < 9) // AW: To speed up play at start. 
-            movesRemaining = (movesRemaining * (13 - position.FullMoveNumber)) / 4;
+        if (position.FullMoveNumber < 12) // AW: To speed up play at start. 
+            movesRemaining = (movesRemaining * (16 - position.FullMoveNumber)) / 4;
         var milliseconds = millisecondsRemaining / movesRemaining;
         MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
         MoveTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _moveTimeHardLimitPer128) / 128);

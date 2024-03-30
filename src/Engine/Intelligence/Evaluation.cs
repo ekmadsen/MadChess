@@ -899,7 +899,6 @@ public sealed class Evaluation
             // score[pawns] +=  likesEndgamesPer128 * Endgameness / 128
             _staticScore.Endgameness = _limitStrengthConfig.LikesEndgamesPer128 * (Evaluation._awiEndgamePhaseConst -
                         (phase <= Evaluation._awiEndgamePhase ? Evaluation._awiEndgamePhase : phase)) / 4;
-            _messenger.WriteLine($"info string Endgameness = {_staticScore.Endgameness} ");
         }
 
         // Knights

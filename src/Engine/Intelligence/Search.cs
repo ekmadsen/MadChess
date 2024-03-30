@@ -801,7 +801,7 @@ public sealed class Search : IDisposable
             // Update status.
             if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= NodesInfoUpdate)) UpdateStatus(board, false);
 
-        } while (true);
+            } while (true);
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
