@@ -160,8 +160,9 @@ public sealed class StaticScore
     }
 
     // Factor introduced by AW, to make scores more resemble real centipawns in endgame.  
-    // Also this prevents degradation of UCI_Elo-degradation in endgame. 
-    const int egScoreReductionDivisor = 2;
+    // Also this prevents degradation of UCI_Elo-degradation in endgame.
+    // NO, THAT IS NOT GOOD.  KEEP IT ON 1. 
+    const int egScoreReductionDivisor = 1;
 
     // Linearly interpolate between middlegame and endgame scores.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -294,11 +295,12 @@ public sealed class StaticScore
 
         var phaseFraction = (100 * phase) / Evaluation.MiddlegamePhase;
         var totalScore = GetTotalScore(Color.White, phase) / 100d;
+        var totalScoreB = GetTotalScore(Color.Black, phase) / 100d;
 
         stringBuilder.AppendLine($"Middlegame   = {phase} of {Evaluation.MiddlegamePhase} ({phaseFraction}%)");
         if (Ext.HasFlag(flags, ToStringFlags.FiftyMove))
             stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
-        stringBuilder.Append($"Total Score  = {totalScore:0.00}");
+        stringBuilder.Append($"Total Score W = {totalScore:0.00}    Total Score B = {totalScoreB:0.00} ");
 
         return stringBuilder.ToString();
     }

@@ -20,7 +20,6 @@ public sealed partial class UciStream
         _commandStopwatch.Restart();
 
         var file = tokens.Count > 1 ? tokens[1].Trim() : "testpos.txt";
-
         _messenger.WriteLine("Number                                                                     Position  Depth     Expected        Moves  Correct    Pct");
         _messenger.WriteLine("======  ===========================================================================  =====  ===========  ===========  =======  =====");
 
@@ -46,6 +45,7 @@ public sealed partial class UciStream
                 //var horizon = int.Parse(parsedTokens[1]);
                 //var expectedMoves = long.Parse(parsedTokens[2]);
 
+                _messenger.WriteLine("xxxxx xxxxx xxxxx xxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxx xxxxx ");
                 _messenger.WriteLine($"================ Position: {parsedTokens[1]}");
                 // Setup position.  Preserve move count.
                 _board.SetPosition(fen, true);

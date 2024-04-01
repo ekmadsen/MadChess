@@ -56,8 +56,8 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
 
         // Calculate move time.
         var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
-        if (position.FullMoveNumber < 12) // AW: To speed up play at start. 
-            movesRemaining = (movesRemaining * (16 - position.FullMoveNumber)) / 4;
+        if (position.FullMoveNumber < 10) // AW: To speed up play at start. 
+            movesRemaining = (movesRemaining * (16 - position.FullMoveNumber)) / 6;
         var milliseconds = millisecondsRemaining / movesRemaining;
         MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
         MoveTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _moveTimeHardLimitPer128) / 128);
@@ -72,7 +72,7 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
             MoveTimeHardLimit = timeRemaining;
             if (messenger.Debug) messenger.WriteLine("info string Preventing loss on time.");
         }
-        if (messenger.Debug) messenger.WriteLine($"info string Moves Remaining = {movesRemaining} MoveTimeSoftLimit/s = {MoveTimeSoftLimit.TotalMilliseconds/1000:0} MoveTimeHardLimit/s = {MoveTimeHardLimit.TotalMilliseconds/1000:0}");
+        if (messenger.Debug) messenger.WriteLine($"info string Moves Remaining = {movesRemaining} MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0}");
     }
 
 
