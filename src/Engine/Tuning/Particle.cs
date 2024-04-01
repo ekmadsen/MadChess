@@ -15,6 +15,7 @@ using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Score;
+using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Engine.Tuning;

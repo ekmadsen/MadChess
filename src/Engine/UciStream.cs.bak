@@ -26,7 +26,6 @@ using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Tuning;
-using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Engine;
@@ -172,11 +171,9 @@ public sealed partial class UciStream : IDisposable
             {
                 // Read and dispatch command.
                 command = _messenger.ReadLine();
-                if(!string.IsNullOrEmpty(command))
-                    DispatchCommand(command);
-                else
-                    Thread.Sleep(50);
-            } while (command != "quit");
+                DispatchCommand(command);
+
+            } while (command != null);
         }
         catch (Exception exception)
         {
@@ -294,7 +291,7 @@ public sealed partial class UciStream : IDisposable
                 break;
 
             case "ttt":  // test static score
-                SetOption("setoption name advcfgfile value mc.0316fruit.json".Split().ToList());
+                SetOption("setoption name advcfgfile value mc.cfg240309.json".Split().ToList());
                 SetOption("setoption name UCI_LimitStrength value true".Split().ToList());
                 SetOption("setoption name UCI_Elo value 1600".Split().ToList());
                 TestStaticScore(tokens);

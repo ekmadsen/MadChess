@@ -19,6 +19,7 @@ using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
+using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
@@ -39,6 +40,8 @@ public sealed class Evaluation
 
     // Game Phase (constants selected such that starting material = 128)
     public const int MiddlegamePhase = 4 * (_knightPhaseWeight + _bishopPhaseWeight + _rookPhaseWeight) + (2 * _queenPhaseWeight);
+    private const int _awiEndgamePhase = (2 * _queenPhaseWeight - _knightPhaseWeight); // by AW. Endgame fully reached when phase < AwiEndgamePhase ;
+    private const int _awiEndgamePhaseConst = (MiddlegamePhase + _awiEndgamePhase) / 2; 
     private const int _knightPhaseWeight = 5; //   4 *  5 =  20
     private const int _bishopPhaseWeight = 5; // + 4 *  5 =  40
     private const int _rookPhaseWeight =  11; // + 4 * 11 =  84
@@ -82,7 +85,7 @@ public sealed class Evaluation
         // Do not set Config and _defaultConfig to same object in memory (reference equality) to avoid ConfigureLimitedStrength method overwriting defaults.
         Config = new EvaluationConfig();
         _defaultConfig = new EvaluationConfig();
-        _limitStrengthElos = [600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400];
+        _limitStrengthElos = [100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400];
 
         // Create arrays for quick lookup of positional factors, then calculate positional factors.
 
@@ -142,6 +145,8 @@ public sealed class Evaluation
 
         // Set number of repetitions considered a draw, calculate positional factors, and set evaluation strength.
         DrawMoves = 2;
+        // This must be done before CalculatePositionalFactors, as those may depend on limitStrength. 
+        Config.NumberOfPieceSquareTable = _limitStrengthConfig.NumberOfPieceSquareTable;
         CalculatePositionalFactors();
         ConfigureFullStrength();
     }
@@ -280,7 +285,12 @@ public sealed class Evaluation
                         throw new Exception($"{colorlessPiece} colorless piece not supported.");
                 }
 
-                _mgPieceLocations[(int)colorlessPiece][(int)square] = (rank * mgAdvancement) + (mgCentralityMetric * mgCentrality) + (nearestCorner * mgCorner);
+                if ((colorlessPiece == ColorlessPiece.Pawn || colorlessPiece == ColorlessPiece.Rook 
+                    || colorlessPiece == ColorlessPiece.King) 
+                        && Config.NumberOfPieceSquareTable != 0)
+                    SetMgPieceSquareTableValue(Config.NumberOfPieceSquareTable, colorlessPiece, square);
+                else
+                    _mgPieceLocations[(int)colorlessPiece][(int)square] = (rank * mgAdvancement) + (mgCentralityMetric * mgCentrality) + (nearestCorner * mgCorner);
                 _egPieceLocations[(int)colorlessPiece][(int)square] = (rank * egAdvancement) + (squareCentrality * egCentrality) + (nearestCorner * egCorner);
             }
         }
@@ -292,6 +302,142 @@ public sealed class Evaluation
         CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Queen], _egPieceMobility[(int)ColorlessPiece.Queen], Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
     }
 
+    void SetMgPieceSquareTableValue(int num, ColorlessPiece colorlessPiece, Square square)
+    {
+        var reihe = 7 - (int)square / 8;
+        var linie = (int)square % 8;
+        var index = reihe * 8 + linie;
+        var val = colorlessPiece == ColorlessPiece.Pawn ? pstPawnMg[num][index] :
+                    colorlessPiece == ColorlessPiece.Rook ? pstRookMg[num][index] :
+                    pstKingMg[num][index];
+        _mgPieceLocations[(int)colorlessPiece][(int)square] = val;
+    }
+
+    // PieceSquareTables, based on
+    // 1 Haakapelitaa, 2 Fruit, 3 Ippolit. All maunually adapted to make play
+    // look more human-like. 
+
+
+    static readonly System.Collections.Generic.List<int[]> pstPawnMg = 
+        new System.Collections.Generic.List<int[]> {
+        new int[] { }, 
+    //A1            Pawn 1              H1
+    new int[64] 
+    { 0,   0,   0,   0,   0,   0,   0,   0,
+    -32, -16, -17, -27, -27, -17, -16, -32,
+    -25, -16, -16, -18, -18, -16, -16, -25,
+    -30, -24,  -7,  -2,  -2,  -7, -24, -30,
+    -12, -12,   2,  16,  16,   2, -12, -12,
+      9,  22,  43,  39,  39,  43,  22,   9,
+     15,  16,  76,  93,  93,  76,  16,  15,
+     15,  16,  76,  93,  93,  76,  16,  15},
+    //A8                                H8
+
+    //A1            Pawn 2              H1
+    new int[64] 
+    { 0,   0,   0,   0,   0,   0,   0,   0,
+    -15,  -5,   5,   5,   5,   5,  -5, -15,
+    -20, -15,   5,  15,  15,   5, -15, -20,
+    -20, -15,  10,  25,  25,  10, -35, -40,
+    -15,  -5,   5,  15,  15,   5,  -5, -15,
+    -15,  -5,   5,  15,  15,   5,  -5, -15,
+    -15,  -5,   5,  15,  15,   5,  -5, -15,
+      0,   0,   0,   0,   0,   0,   0,   0},
+    //A8                                H8
+
+    
+    //A1         Pawn 3                 H1
+    new int[64] 
+    { 0,   0,   0,   0,   0,   0,   0,   0,
+    -23, -11,  -5,   2,   2,  -5, -11, -23,
+    -22, -10,  -4,   8,   8,  -4, -10, -22,
+    -23, -10,  -3,  10,  10,  -3, -28, -35,
+    -19,  -7,  -1,  12,  12,  -1,  -7, -19,
+    -18,  -6,   0,  14,  14,   0,  -6, -18,
+    -17,  -5,   1,  16,  16,   1,  -5, -17,
+      0,   0,   0,   0,   0,   0,   0,   0}
+    //A8                                H8
+    };
+
+    static readonly System.Collections.Generic.List<int[]> pstRookMg =
+        new System.Collections.Generic.List<int[]> {
+        new int[] { },
+    new int[64]
+    //A1              Rook 1                H1
+    {   -15, -10,  -5,   3,   3,  -5, -10, -15,
+        -33, -11, -14, -11, -11, -14, -11, -33,
+        -26, -13, -15,  -2,  -2, -15, -13, -26,
+        -33,  -1, -26,  -9,  -9, -26,  -1, -33,
+          1,  15,  -3,   9,   9,  -3,  15,   1,
+         10,  41,  30,  37,  37,  30,  41,  10,
+         27,  17,  51,  48,  48,  51,  17,  27,
+         44,  39,  34,  16,  16,  34,  39,  44},
+        //A8                                H8
+
+    new int[64]
+        //A1          Rook 2               H1
+    {   -3,  -1,   3,   8,   8,   3,  -1,  -3,
+       -30,  -1,   1,   3,   3,   1,  -1, -30,
+       -30,  -1,   1,   3,   3,   1,  -1, -30,
+        -3,  -1,   1,   3,   3,   1,  -1,  -3,
+        -3,  -1,   1,   3,   3,   1,  -1,  -3,
+        -3,  -1,   1,   3,   3,   1,  -1,  -3,
+        -3,  -1,   1,   3,   3,   1,  -1,  -3,
+        -3,  -1,   1,   3,   3,   1,  -1,  -3},
+       //A8                                H8
+
+    new int[64]        
+    //A1             Rook 3                H1
+    {   -4,   0,   4,  12,  12,   4,   0,  -4,
+       -30,   0,   4,   8,   8,   4,   0, -30,
+        -4,   0,   4,   8,   8,   4,   0, -10,
+        -4,   0,   4,   8,   8,   4,   0,  -4,
+        -4,   0,   4,   8,   8,   4,   0,  -4,
+        -4,   0,   4,   8,   8,   4,   0,  -4,
+        -4,   0,   4,   8,   8,   4,   0,  -4,
+        -4,   0,   4,   8,   8,   4,   0,  -4 }
+     };
+
+
+    static readonly System.Collections.Generic.List<int[]> pstKingMg =
+        new System.Collections.Generic.List<int[]> {
+        new int[] { },
+    new int[64]
+    //A1             King 1                 H1
+    {    13,  31, -18, -33, -33, -18,  31,  13,
+         28,  19, -19, -21, -21, -19,  19,  28,
+        -31, -19, -21, -30, -30, -21, -19, -31,
+        -56, -19, -21, -30, -30, -21, -19, -56,
+        -36, -19, -23, -32, -32, -23, -19, -36,
+        -32, -28, -13, -39, -39, -13, -28, -32, 
+        -11, -17,  -4, -18, -18,  -4, -17, -11,
+        -29,  -1,  -5, -22, -22,  -5,  -1, -29},
+    //A8                                H8
+
+    new int[64]
+    //A1             King 2                 H1
+    {    40,  50,  30,   0,   0,  30,  55,  40,
+         30,  40,  20,   0,   0,  20,  40,  30,
+         10,  20,   0, -20, -20,   0,  20,  10,
+          0,  10, -10, -30, -30, -10,  10,   0,
+        -10,   0, -20, -40, -40, -20,   0, -10,
+        -20, -10, -30, -50, -50, -30, -10, -20,
+        -30, -20, -40, -60, -60, -40, -20, -30,
+        -40, -30, -50, -70, -70, -50, -30, -40},
+    //A8                                 H8
+
+    new int[64]
+    //A1              King 3                H1
+    {    44,  49,  19,  -1,  -1,  19,  55,  44,
+         44,  47,  19,  -1,  -1,  19,  47,  44,
+         10,  20,   0, -20, -20,   0,  20,  10,
+          0,  10, -10, -30, -30, -10,  10,   0,
+        -10,   0, -20, -40, -40, -20,   0, -10,
+        -20, -10, -30, -40, -40, -30, -10, -20,
+        -30, -20, -40, -40, -40, -40, -20, -30,
+        -40, -40, -40, -40, -40, -40, -40, -40},
+    //A8                                    H8
+    };
 
     private void CalculatePieceMobility(int[] mgPieceMobility, int[] egPieceMobility, int mgMobilityScale, int egMobilityScale)
     {
@@ -384,6 +530,25 @@ public sealed class Evaluation
         // Poor maneuvering of major pieces.
         Config.LsMajorPiecesPer128 = Formula.GetLinearlyInterpolatedValue(0, 128, elo, Elo.Min, _limitStrengthConfig.PoorManeuveringMajorPiecesMaxElo);
 
+        // Likes closed
+        Config.LikesClosedPositionsPer128 = _limitStrengthConfig.LikesClosedPositionsPer128;
+        // Likes endgame
+        Config.LikesEndgamesPer128 = _limitStrengthConfig.LikesEndgamesPer128;
+        // Pawn Pst number
+        Config.NumberOfPieceSquareTable = _limitStrengthConfig.NumberOfPieceSquareTable;
+        // Mobilities
+        Config.MgQueenMobilityPer128 = _limitStrengthConfig.MgQueenMobilityPer128;
+        Config.MgRookMobilityPer128 = _limitStrengthConfig.MgRookMobilityPer128;
+        Config.MgQueenMobilityScale = Config.MgQueenMobilityScale * Config.MgQueenMobilityPer128 / 128;
+        Config.MgRookMobilityScale = Config.MgRookMobilityScale * Config.MgRookMobilityPer128 / 128;
+
+        CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Rook], _egPieceMobility[(int)ColorlessPiece.Rook], Config.MgRookMobilityScale, Config.EgRookMobilityScale);
+        CalculatePieceMobility(_mgPieceMobility[(int)ColorlessPiece.Queen], _egPieceMobility[(int)ColorlessPiece.Queen], Config.MgQueenMobilityScale, Config.EgQueenMobilityScale);
+
+
+
+
+
         if (_messenger.Debug)
         {
             _messenger.WriteLine($"info string {nameof(Config.MgPawnMaterial)} = {Config.MgPawnMaterial}");
@@ -409,6 +574,11 @@ public sealed class Evaluation
             _messenger.WriteLine($"info string {nameof(Config.LsThreatsPer128)} = {Config.LsThreatsPer128}");
             _messenger.WriteLine($"info string {nameof(Config.LsMinorPiecesPer128)} = {Config.LsMinorPiecesPer128}");
             _messenger.WriteLine($"info string {nameof(Config.LsMajorPiecesPer128)} = {Config.LsMajorPiecesPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LikesClosedPositionsPer128)} = {Config.LikesClosedPositionsPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.LikesEndgamesPer128)} = {Config.LikesEndgamesPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.NumberOfPieceSquareTable)} = {Config.NumberOfPieceSquareTable}");
+            _messenger.WriteLine($"info string {nameof(Config.MgQueenMobilityPer128)} = {Config.MgQueenMobilityPer128}");
+            _messenger.WriteLine($"info string {nameof(Config.MgRookMobilityPer128)} = {Config.MgRookMobilityPer128}");
         }
     }
 
@@ -486,8 +656,8 @@ public sealed class Evaluation
 
         // Position is not a pawnless draw or simple endgame.
         // Explicit array lookups are faster than looping through colors.
-        EvaluateMaterial(position, Color.White);
-        EvaluateMaterial(position, Color.Black);
+        EvaluateMaterial(position, Color.White, phase);
+        EvaluateMaterial(position, Color.Black, phase);
 
         EvaluatePieceLocation(position, Color.White);
         EvaluatePieceLocation(position, Color.Black);
@@ -641,7 +811,7 @@ public sealed class Evaluation
                 // Push lone king to corner.  Push winning king close to lone king.
                 // Multiply king distances by a factor to overcome piece location values.
                 EvaluatePawns(position, enemyColor); // Incentivize engine to promote its passed pawns.
-                _staticScore.EgSimple[(int)enemyColor] = StaticScore.SimpleEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
+                _staticScore.EgSimple[(int)enemyColor] = StaticScore.SimpleMajorPieceEndgame - (_egKingCornerFactor * (Board.DistanceToNearestCorner[(int)kingSquare] + Board.SquareDistances[(int)kingSquare][(int)enemyKingSquare]));
                 return true;
         }
 
@@ -705,7 +875,7 @@ public sealed class Evaluation
     }
 
 
-    private void EvaluateMaterial(Position position, Color color)
+    private void EvaluateMaterial(Position position, Color color, int phase)
     {
         // Explicit piece evaluation is faster than looping through pieces due to avoiding CPU stalls and enabling out-of-order execution.
         // See https://stackoverflow.com/a/2349265/8992299.
@@ -715,6 +885,21 @@ public sealed class Evaluation
         var pawnCount = Bitwise.CountSetBits(position.PieceBitboards[(int)pawn]);
         _staticScore.MgPawnMaterial[(int)color] = pawnCount * _mgMaterialScores[(int)ColorlessPiece.Pawn];
         _staticScore.EgPawnMaterial[(int)color] = pawnCount * _egMaterialScores[(int)ColorlessPiece.Pawn];
+
+        var pawnsMinus3 = pawnCount - 3;
+        _staticScore.Closedness[(int)color] = pawnsMinus3 > 0 ? 
+                (pawnsMinus3 * _limitStrengthConfig.LikesClosedPositionsPer128) : 0;
+
+        if (_limitStrengthConfig.LikesEndgamesPer128 != 0 && color == Color.Black)
+        {
+            // Phase = 128 is full material, I count it as full negative endgameness. 
+            // Phase = 39 is a bit less than two queens or less material left. I count this as 
+            // full endgameness. Less material is not more endgameness. Division by four to make
+            // the factor better fitting to scale 0..128,
+            // score[pawns] +=  likesEndgamesPer128 * Endgameness / 128
+            _staticScore.Endgameness = _limitStrengthConfig.LikesEndgamesPer128 * (Evaluation._awiEndgamePhaseConst -
+                        (phase <= Evaluation._awiEndgamePhase ? Evaluation._awiEndgamePhase : phase)) / 4;
+        }
 
         // Knights
         var knight = PieceHelper.GetPieceOfColor(ColorlessPiece.Knight, color);
@@ -1318,6 +1503,14 @@ public sealed class Evaluation
         // Major Pieces
         ShowPositionalKnowledgeGain("Major Pieces", _limitStrengthConfig.PoorManeuveringMajorPiecesMaxElo, stringBuilder);
 
+        // Likes Closed Positions, Endgames
+        stringBuilder.AppendLine($"\nLikes  Closed={_limitStrengthConfig.LikesClosedPositionsPer128}  Endgames={_limitStrengthConfig.LikesEndgamesPer128}");
+
+        // Number of Pawn Pst
+        stringBuilder.AppendLine($"Number PST        {_limitStrengthConfig.NumberOfPieceSquareTable}");
+
+        // Mobilities
+        stringBuilder.AppendLine($"Mg*Mobility Queen={_limitStrengthConfig.MgQueenMobilityPer128}  Rook={_limitStrengthConfig.MgRookMobilityPer128}");
         return stringBuilder.ToString();
     }
 
@@ -1343,9 +1536,10 @@ public sealed class Evaluation
     }
 
 
-    public string ToString(Position position)
+    public string ToString(Position position, ToStringFlags flags = 0)
     {
         var (_, _, phase) = GetStaticScore(position);
-        return _staticScore.ToString(phase);
+        LimitStrength();
+        return _staticScore.ToString(phase, flags);
     }
 }

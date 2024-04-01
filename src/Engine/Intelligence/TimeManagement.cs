@@ -13,6 +13,7 @@ using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Score;
+using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
@@ -55,6 +56,8 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
 
         // Calculate move time.
         var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
+        if (position.FullMoveNumber < 10) // AW: To speed up play at start. 
+            movesRemaining = (movesRemaining * (16 - position.FullMoveNumber)) / 6;
         var milliseconds = millisecondsRemaining / movesRemaining;
         MoveTimeSoftLimit = TimeSpan.FromMilliseconds(milliseconds);
         MoveTimeHardLimit = TimeSpan.FromMilliseconds((milliseconds * _moveTimeHardLimitPer128) / 128);

@@ -9,7 +9,7 @@
 
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
+//using JetBrains.Annotations;
 
 
 namespace ErikTheCoder.MadChess.Core.Utilities;
@@ -17,10 +17,10 @@ namespace ErikTheCoder.MadChess.Core.Utilities;
 
 public static class Extensions
 {
-    [ContractAnnotation("text: null => true")]
+    //[ContractAnnotation("text: null => true")]
     public static bool IsNullOrEmpty(this string text) => string.IsNullOrEmpty(text);
 
 
-    [ContractAnnotation("list: null => true")]
+    //[ContractAnnotation("list: null => true")]
     public static bool IsNullOrEmpty<T>(this List<T> list) => (list == null) || (list.Count == 0);
 }

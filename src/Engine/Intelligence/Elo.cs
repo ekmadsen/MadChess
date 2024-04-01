@@ -13,9 +13,10 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence;
 
 public static class Elo
 {
-    public const int Min = 600;
+    public const int Min = 100;
 
     // ReSharper disable UnusedMember.Global
+    public const int RandomMover = 100;
     public const int Beginner = 600;
     public const int Patzer = 800;
     public const int Novice = 1000;

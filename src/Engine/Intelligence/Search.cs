@@ -22,6 +22,7 @@ using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
+using Color = ErikTheCoder.MadChess.Core.Game.Color;
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
@@ -143,7 +144,7 @@ public sealed class Search : IDisposable
         _moveHistory = moveHistory;
         _evaluation = evaluation;
 
-        _limitStrengthElos = [600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400, 2600];
+        _limitStrengthElos = [100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2300, 2400, 2600];
 
         _movePriorityComparer = new MovePriorityComparer();
         _scoredMovePriorityComparer = new ScoredMovePriorityComparer();
@@ -233,6 +234,9 @@ public sealed class Search : IDisposable
     {
         var ratingClass = elo / 200d;
         var nodesPerSecond = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.NpsScale, _limitStrengthConfig.NpsPower, _limitStrengthConfig.NpsConstant);
+        // AW: Lower bound for NPS, because really getting such low NPS is not easy.
+        // Especially in conditions where the engine is very low on time I cannot go lower in NPS.  
+        nodesPerSecond = Math.Max(nodesPerSecond, 20);
 
         ratingClass = (Intelligence.Elo.Max - elo) / 200d;
         var moveError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.MoveErrorScale, _limitStrengthConfig.MoveErrorPower, _limitStrengthConfig.MoveErrorConstant);
@@ -343,6 +347,8 @@ public sealed class Search : IDisposable
         var phase = Evaluation.DetermineGamePhase(position);
         var minNodePerSecond = (_nodesPerSecond.Value * _limitStrengthConfig.NpsEndgamePer128) / 128;
         _phasedNodesPerSecond = Formula.GetLinearlyInterpolatedValue(minNodePerSecond, _nodesPerSecond.Value, phase, 0, Evaluation.MiddlegamePhase);
+        if (_phasedNodesPerSecond == 0)
+            _phasedNodesPerSecond = 1;
     }
 
 
@@ -385,6 +391,7 @@ public sealed class Search : IDisposable
         }
 
         if (anyUnreasonableInferiorMoves) SortMovesByScore(_bestMoves, board.CurrentPosition.MoveIndex - 1);  // Sort moves again so an unreasonable inferior move is not selected.
+        Ext.LogScoredMoves(board, _messenger, _bestMoves, scoreError);
 
         // Randomly select a move within score error.
         return _bestMoves[SafeRandom.NextInt(0, inferiorMoves + 1)].Move;
@@ -795,7 +802,7 @@ public sealed class Search : IDisposable
             // Update status.
             if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= NodesInfoUpdate)) UpdateStatus(board, false);
 
-        } while (true);
+            } while (true);
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
@@ -949,7 +956,8 @@ public sealed class Search : IDisposable
             return;
         }
 
-        if (_nodesPerSecond.HasValue && (_originalHorizon > 1)) // Guarantee to search at least one ply.
+        // AW: changed (_originalHorizon > 1) to (_originalHorizon >= 1), otherwise  NPS gets sometimes to high.
+        if (_nodesPerSecond.HasValue && (_originalHorizon >= 1)) // Guarantee to search at least one ply.
         {
             double nps;
             do
@@ -962,6 +970,16 @@ public sealed class Search : IDisposable
                     return;
                 }
                 nps = nodes / _stopwatch.Elapsed.TotalSeconds;
+                if (nps > _phasedNodesPerSecond)
+                {
+                    var msecsToWait = (int)(((1000 * nodes) / _nodesPerSecond.Value) - _stopwatch.Elapsed.TotalMilliseconds);
+                    if (msecsToWait < 5)
+                        msecsToWait = 5;
+                    else if (msecsToWait > 200)
+                        msecsToWait = 200;
+                    Thread.Sleep(msecsToWait);
+                }
+
             } while (nps > _phasedNodesPerSecond);
         }
 
