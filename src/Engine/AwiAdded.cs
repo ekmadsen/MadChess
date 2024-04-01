@@ -4,7 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ErikTheCoder.MadChess.Core;
+using ErikTheCoder.MadChess.Core.Game;
+using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
+using ErikTheCoder.MadChess.Engine.Score;
 
 namespace ErikTheCoder.MadChess.Engine;
 
@@ -87,6 +91,23 @@ static class Ext
         int iflag = (int)flag;
         return (iflags & iflag) == iflag;
     }
+
+    public static void LogScoredMoves(Board board, Messenger messenger, ScoredMove[] bestMoves, int scoreError)
+    {
+        for (int i = 0; i < FastMath.Min(board.CurrentPosition.MoveIndex, 5); ++i)
+            LogScoredMove(messenger, bestMoves, scoreError, i);
+    }
+
+    private static void LogScoredMove(Messenger messenger, ScoredMove[] bestMoves, int scoreError, int num)
+    {
+        ScoredMove m = bestMoves[num];
+        var delta = bestMoves[0].Score - m.Score;
+        var inOut = num == 0 ? "best" : delta < scoreError ? "in" : "out";
+        messenger.WriteLine($"info num={num} {inOut} {Move.ToLongAlgebraic(m.Move)} " +
+            $"scoreCp={m.Score} delta={delta} scError={scoreError}");
+    }
+
+
 }
 
 

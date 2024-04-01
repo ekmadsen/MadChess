@@ -391,6 +391,7 @@ public sealed class Search : IDisposable
         }
 
         if (anyUnreasonableInferiorMoves) SortMovesByScore(_bestMoves, board.CurrentPosition.MoveIndex - 1);  // Sort moves again so an unreasonable inferior move is not selected.
+        Ext.LogScoredMoves(board, _messenger, _bestMoves, scoreError);
 
         // Randomly select a move within score error.
         return _bestMoves[SafeRandom.NextInt(0, inferiorMoves + 1)].Move;
