@@ -279,7 +279,7 @@ public sealed class Search : IDisposable
             }
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
-        
+
         // Copy legal moves to root moves and principal variations.
         for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
         {
@@ -376,11 +376,30 @@ public sealed class Search : IDisposable
         var anyUnreasonableInferiorMoves = false;
         var inferiorMoves = 0;
 
+        ulong wasBestMove = 0;
+        // begin Added by AW to discourage castle-destroying moves 
+        var phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
+        if (phase > 40 && board.CurrentPosition.MoveIndex > 1)
+        {
+            // Do this only for the best move. All other inferior moves are handled below anyway. 
+            if (IsInferiorMoveUnreasonable(board, _bestMoves[0].Move, true))
+            {
+                var oldScore = _bestMoves[0].Score;
+                _bestMoves[0].Score -= phase * 5 / 4; // phase is about a pawn at start of game, less later.
+                _messenger.WriteLine($"BestMove unreasonable {Move.ToLongAlgebraic(_bestMoves[0].Move)} score {oldScore} -> {_bestMoves[0].Score}");
+                anyUnreasonableInferiorMoves = true;
+                wasBestMove = _bestMoves[0].Move;
+                SortMovesByScore(_bestMoves, board.CurrentPosition.MoveIndex - 1);
+                worstScore = _bestMoves[0].Score - scoreError;
+            }
+        }
+        // end Added by AW
+
         for (var moveIndex = 1; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
         {
             var inferiorMove = _bestMoves[moveIndex];
             if (inferiorMove.Score < worstScore) break;
-            if (IsInferiorMoveUnreasonable(board, inferiorMove.Move))
+            if (IsInferiorMoveUnreasonable(board, inferiorMove.Move, false) && inferiorMove.Move != wasBestMove)
             {
                 // Inferior move is unreasonable.
                 _bestMoves[moveIndex].Score = -StaticScore.Max;
@@ -398,7 +417,7 @@ public sealed class Search : IDisposable
     }
 
 
-    private bool IsInferiorMoveUnreasonable(Board board, ulong move)
+    private bool IsInferiorMoveUnreasonable(Board board, ulong move, bool isForTopMoves)
     {
         var fromSquare = Move.From(move);
         var kingMove = Move.IsKingMove(move);
@@ -434,7 +453,10 @@ public sealed class Search : IDisposable
                 return true;
             }
         }
-        
+
+        if (isForTopMoves)
+            return false;
+
         var lastMoveColorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(board.PreviousPosition?.PlayedMove ?? Move.Null));
         if ((lastMoveColorlessCaptureVictim != ColorlessPiece.None) && (lastMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
         {
@@ -802,7 +824,7 @@ public sealed class Search : IDisposable
             // Update status.
             if ((_bestMoves[0].Move != Move.Null) && (board.Nodes >= NodesInfoUpdate)) UpdateStatus(board, false);
 
-            } while (true);
+        } while (true);
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
@@ -823,7 +845,7 @@ public sealed class Search : IDisposable
         return bestScore;
     }
 
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetQuietScore(Board board, int depth, int horizon, int alpha, int beta) => GetQuietScore(board, depth, horizon, Board.AllSquaresMask, 0, alpha, beta);
 
@@ -1091,8 +1113,8 @@ public sealed class Search : IDisposable
 
         return (Move.Null, position.CurrentMoveIndex);
     }
-    
-    
+
+
     private (ulong Move, int MoveIndex) GetNextCapture(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove)
     {
         while (true)
@@ -1208,7 +1230,7 @@ public sealed class Search : IDisposable
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
-        
+
         var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
         if (board.CurrentPosition.StaticScore < previous2StaticScore)
         {
@@ -1223,7 +1245,7 @@ public sealed class Search : IDisposable
         return horizon - reduction;
     }
 
-    
+
     // Singular move idea from Stockfish chess engine.
     private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong bestMove, CachedPosition cachedPosition)
     {
@@ -1280,7 +1302,7 @@ public sealed class Search : IDisposable
         return StaticScore.NotCached;
     }
 
-    
+
     private void PrioritizeMoves(ulong previousMove, ScoredMove[] moves, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = 0; moveIndex <= lastMoveIndex; moveIndex++)
@@ -1297,7 +1319,7 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, depth);
 
-    
+
     private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
@@ -1370,7 +1392,7 @@ public sealed class Search : IDisposable
         _cache.SetPosition(cachedPosition);
     }
 
-    
+
     private void UpdateStatus(Board board, bool includePrincipalVariations)
     {
         // Calculate search speed and hash population.
@@ -1401,7 +1423,7 @@ public sealed class Search : IDisposable
                     }
                 }
 
-                writePv:
+            writePv:
                 // Write message with principal variation(s).
                 var pvLongAlgebraic = stringBuilder.ToString();
                 var score = bestMove.Score;

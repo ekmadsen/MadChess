@@ -94,7 +94,7 @@ static class Ext
 
     public static void LogScoredMoves(Board board, Messenger messenger, ScoredMove[] bestMoves, int scoreError)
     {
-        for (int i = 0; i < FastMath.Min(board.CurrentPosition.MoveIndex, 5); ++i)
+        for (int i = 0; i < FastMath.Min(board.CurrentPosition.MoveIndex, 8); ++i)
             LogScoredMove(messenger, bestMoves, scoreError, i);
     }
 
