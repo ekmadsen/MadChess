@@ -275,13 +275,12 @@ public sealed class Search : IDisposable
             }
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
-        
-        // Copy legal moves to root moves and principal variations.
+
+        // Copy legal moves to root moves.
         for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
         {
             var move = board.CurrentPosition.Moves[moveIndex];
             _rootMoves[moveIndex] = new ScoredMove(move, -StaticScore.Max);
-            _principalVariations[moveIndex][0][0] = move;
         }
 
         // Determine score error and move time.
@@ -307,6 +306,15 @@ public sealed class Search : IDisposable
             _rootMoveNumber = 1;
             _moveHistory.Age();
 
+            // Reset principal variations.
+            for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
+            {
+                for (var depth = 0; depth <= MaxHorizon; depth++)
+                {
+                    _principalVariations[moveIndex][depth][0] = Move.Null;
+                }
+            }
+
             // Reset move scores, then search moves.
             for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
                 _rootMoves[moveIndex].Score = -StaticScore.Max;
@@ -314,9 +322,9 @@ public sealed class Search : IDisposable
             if (FastMath.Abs(score) == StaticScore.Interrupted) break; // Stop searching.
 
             // Find best move.
-            SortMovesByScore(_rootMoves, legalMoveIndex - 1);
             for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
                 _bestMoves[moveIndex] = _rootMoves[moveIndex];
+            SortMovesByScore(_bestMoves, legalMoveIndex - 1);
             bestMove = _bestMoves[0];
             _bestMovePlies[_originalHorizon] = bestMove;
 
@@ -1370,13 +1378,13 @@ public sealed class Search : IDisposable
                 var stringBuilder = new StringBuilder("pv");
                 var bestMove = _bestMoves[pv];
                 var move = bestMove.Move;
-                for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
+                for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
                 {
-                    if (Move.Equals(_principalVariations[rootMoveIndex][0][0], move))
+                    if (Move.Equals(_principalVariations[moveIndex][0][0], move))
                     {
                         for (var pvMoveIndex = 0; pvMoveIndex < MaxHorizon; pvMoveIndex++)
                         {
-                            var pvMove = _principalVariations[rootMoveIndex][0][pvMoveIndex];
+                            var pvMove = _principalVariations[moveIndex][0][pvMoveIndex];
                             if (pvMove == Move.Null) goto writePv;
                             stringBuilder.Append($" {Move.ToLongAlgebraic(pvMove)}");
                         }
@@ -1389,8 +1397,7 @@ public sealed class Search : IDisposable
                 var score = bestMove.Score;
                 var multiPvPhrase = MultiPv > 1 ? $"multipv {pv + 1} " : null;
                 var scorePhrase = FastMath.Abs(score) >= StaticScore.Checkmate ? $"mate {Evaluation.GetMateMoveCount(score)}" : $"cp {score}";
-                _messenger.WriteLine(
-                    $"info {multiPvPhrase}depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
+                _messenger.WriteLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
             }
         }
         else
