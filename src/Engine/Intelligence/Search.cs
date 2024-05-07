@@ -796,7 +796,7 @@ public sealed class Search : IDisposable
                     SortMovesByScore(_multiPvMoves, multiPvIndex);
                     var worstPvScore = _multiPvMoves[MultiPv - 1].Score;
                     // Raise alpha because MultiPV best moves have been found.
-                    alpha = worstPvScore;
+                    alpha = worstPvScore - 1;
                 }
             }
 
