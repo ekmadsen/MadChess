@@ -41,7 +41,7 @@ public sealed class Cache
             _positions = null;
             GC.Collect();
 
-            var capacity = Math.Max(value, CapacityPerMegabyte);
+            var capacity = Math.Max(value, CapacityPerMegabyte); // Ensure at least one MB of cache.
             _positions = new CachedPosition[capacity];
             _indices = capacity / _buckets;
 
