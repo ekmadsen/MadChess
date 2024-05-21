@@ -589,7 +589,7 @@ public sealed class Search : IDisposable
 
         if (bestMove == Move.Null)
         {
-            if ((depth == 0) && (_originalHorizon > 0)) bestMove = _bestMovePlies[_originalHorizon - 1].Move;
+            if ((depth == 0) && (_originalHorizon > 0)) bestMove = _bestMoves[0].Move;
             else if ((depth > 0) && inPv && (toHorizon > _iidReduction))
             {
                 // Cached position in a principal variation does not specify best move.
@@ -626,7 +626,7 @@ public sealed class Search : IDisposable
                 if (moveIndex == 0)
                 {
                     PrioritizeMoves(previousMove, _rootMoves, lastMoveIndex, bestMove, depth);
-                    SortMovesByPriority(_rootMoves, lastMoveIndex);
+                    SortRootMovesByPriority(_rootMoves, lastMoveIndex);
                     
                     // Reset principal variations.
                     for (var rootMoveIndex = 0; rootMoveIndex <= lastMoveIndex; rootMoveIndex++)
@@ -659,7 +659,7 @@ public sealed class Search : IDisposable
             // Must call IsMoveInDynamicSearchFutile and GetSearchHorizon before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
             if (Move.IsQuiet(move)) quietMoveNumber++;
             var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame, phase, alpha, beta);
-            var searchHorizon = GetSearchHorizon(board, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame, alpha, beta);
+            var searchHorizon = GetSearchHorizon(board, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame);
 
             // Play move.
             var (legalMove, checkingMove) = board.PlayMove(move);
@@ -906,7 +906,7 @@ public sealed class Search : IDisposable
             if (move == Move.Null) break; // All moves have been searched.
 
             // Must call IsMoveInQuietSearchFutile before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
-            var futileMove = IsMoveInQuietSearchFutile(board.CurrentPosition, move, drawnEndgame, phase, alpha, beta);
+            var futileMove = IsMoveInQuietSearchFutile(board.CurrentPosition, move, drawnEndgame, phase, alpha);
 
             // Play and search move.
             var (legalMove, checkingMove) = board.PlayMove(move);
@@ -1130,7 +1130,6 @@ public sealed class Search : IDisposable
 
         if (legalMoveNumber == 1) return false; // First legal move is not futile.
         if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
-        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Move when analyzing principal variations is not futile.
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
         if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return false; // Killer move or castling is not futile.
@@ -1156,9 +1155,8 @@ public sealed class Search : IDisposable
     }
 
 
-    private bool IsMoveInQuietSearchFutile(Position position, ulong move, bool drawnEndgame, int phase, int alpha, int beta)
+    private bool IsMoveInQuietSearchFutile(Position position, ulong move, bool drawnEndgame, int phase, int alpha)
     {
-        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Move when analyzing principal variations is not futile.
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
 
         // Determine if material and location improvements raise score to within futility margin of alpha.
@@ -1169,18 +1167,17 @@ public sealed class Search : IDisposable
     }
 
 
-    private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int alpha, int beta)
+    private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
     {
         if (legalMoveNumber == 1) return horizon; // Do not reduce first legal move.
         if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
-        if (AnalyzeMode && ((beta - alpha) > 1)) return horizon; // Do not reduce move when analyzing principal variations.
 
         if (depth == 0)
         {
-            if (MultiPv > 1) return horizon; // Do not reduce Multi-PV root move.
+            if (legalMoveNumber <= MultiPv) return horizon; // Do not reduce first move of principal variations.
             if (_limitedStrength) return horizon; // Do not reduce limited strength root move.
         }
-        
+
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
         if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return horizon; // Do not reduce killer move or castling.
 
@@ -1257,7 +1254,7 @@ public sealed class Search : IDisposable
 
             if (!isBest && (MultiPv > 1) && (depth == 0) && (_originalHorizon > 0))
             {
-                // Mark first move of all principal variations as best so it's searched before non-PV moves.
+                // Mark first move of all principal variations as best so they're searched before non-PV moves.
                 var legalPv = FastMath.Min(MultiPv, lastMoveIndex + 1); // Less legal moves may exist than principal variations requested.
                 for (var pv = 0; pv < legalPv; pv++)
                 {
@@ -1295,7 +1292,32 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SortMovesByPriority(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMovePriorityComparer);
+    private void SortRootMovesByPriority(ScoredMove[] moves, int lastMoveIndex)
+    {
+        Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMovePriorityComparer);
+
+        if ((MultiPv > 1) && (_originalHorizon > 0))
+        {
+            // Ensure first move of principal variations are sorted in correct order.
+            //   All PV moves have IsBest = true, ensuring they're sorted at top of move array.
+            //   However, PV moves may be sorted in incorrect order (3rd best above best, 4th best above 2nd best, etc).
+
+            var legalPv = FastMath.Min(MultiPv, lastMoveIndex + 1); // Less legal moves may exist than principal variations requested.
+            for (var pv = 0; pv < legalPv; pv++)
+            {
+                var bestMove = _bestMoves[pv].Move;
+                for (var moveIndex = pv + 1; moveIndex < MultiPv; moveIndex++)
+                {
+                    var move = moves[moveIndex].Move;
+                    if (Move.Equals(move, bestMove))
+                    {
+                        // Swap moves.
+                        (moves[pv], moves[moveIndex]) = (moves[moveIndex], moves[pv]);
+                    }
+                }
+            }
+        }
+    }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
