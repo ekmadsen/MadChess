@@ -972,7 +972,7 @@ public sealed class Search : IDisposable
         }
 
         // Search at full speed until hard time limit is exceeded.
-        Continue = _stopwatch.Elapsed < _timeManagement.MoveTimeHardLimit;
+        Continue &= _stopwatch.Elapsed < _timeManagement.MoveTimeHardLimit;
     }
 
 

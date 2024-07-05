@@ -347,7 +347,7 @@ public sealed class UciStream : IDisposable
     {
         // Display engine name.
         // ReSharper disable once ConvertToConstant.Local
-        var version = "3.2.2";
+        var version = "3.3";
 #if CPU64
         version = $"{version} x64";
 #else
