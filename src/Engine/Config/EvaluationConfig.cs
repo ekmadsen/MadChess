@@ -20,27 +20,27 @@ public sealed class EvaluationConfig
     // Material
     public int MgPawnMaterial = 100;
     public int EgPawnMaterial = 179;
-    public int MgKnightMaterial = 493;
-    public int EgKnightMaterial = 550;
+    public int MgKnightMaterial = 490;
+    public int EgKnightMaterial = 542;
     public int MgBishopMaterial = 517;
-    public int EgBishopMaterial = 591;
-    public int MgRookMaterial = 593;
-    public int EgRookMaterial = 1088;
-    public int MgQueenMaterial = 1537;
-    public int EgQueenMaterial = 1844;
+    public int EgBishopMaterial = 589;
+    public int MgRookMaterial = 596;
+    public int EgRookMaterial = 1084;
+    public int MgQueenMaterial = 1533;
+    public int EgQueenMaterial = 1830;
 
     // Passed Pawns
     public int PassedPawnPowerPer128 = 322;
-    public int MgPassedPawnScalePer128 = 78;
+    public int MgPassedPawnScalePer128 = 76;
     public int EgPassedPawnScalePer128 = 378;
-    public int EgFreePassedPawnScalePer128 = 685;
+    public int EgFreePassedPawnScalePer128 = 694;
     public int EgConnectedPassedPawnScalePer128 = 66;
     public int EgKingEscortedPassedPawn = 13;
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial); // Incentivize engine to promote pawns.
 
     // King Safety
-    public int MgKingSafetyPowerPer128 = 253;
-    public int MgKingSafetyScalePer128 = 43;
+    public int MgKingSafetyPowerPer128 = 255;
+    public int MgKingSafetyScalePer128 = 44;
     public int MgKingSafetyKnightAttackOuterRingPer8 = 31;
     public int MgKingSafetyKnightAttackInnerRingPer8 = 23;
     public int MgKingSafetyKnightProximityPer8 = 0;
@@ -52,79 +52,93 @@ public sealed class EvaluationConfig
     public int MgKingSafetyRookProximityPer8 = 0;
     public int MgKingSafetyQueenAttackOuterRingPer8 = 16;
     public int MgKingSafetyQueenAttackInnerRingPer8 = 19;
-    public int MgKingSafetyQueenProximityPer8 = 7;
-    public int MgKingSafetySemiOpenFilePer8 = 8;
+    public int MgKingSafetyQueenProximityPer8 = 9;
+    public int MgKingSafetySemiOpenFilePer8 = 9;
     public int MgKingSafetyPawnShieldPer8 = 17;
     public int MgKingSafetyDefendingPiecesPer8 = 10;
 
     // Pawn Location
-    public int MgPawnAdvancement = 1;
+    public int MgPawnAdvancement = 3;
     public int EgPawnAdvancement = 11;
-    public int MgPawnCentrality = 0;
-    public int EgPawnCentrality = -9;
+    public int MgPawnSquareCentrality = -5;
+    public int EgPawnSquareCentrality = -13;
+    public int MgPawnFileCentrality = 4;
+    public int EgPawnFileCentrality = 4;
+    public int MgPawnCorner = -7;
+    public int EgPawnCorner = 2;
 
     // Knight Location 
     public int MgKnightAdvancement = 4;
-    public int EgKnightAdvancement = 8;
-    public int MgKnightCentrality = 5;
-    public int EgKnightCentrality = 20;
+    public int EgKnightAdvancement = 7;
+    public int MgKnightSquareCentrality = 3;
+    public int EgKnightSquareCentrality = 21;
+    public int MgKnightFileCentrality = 3;
+    public int EgKnightFileCentrality = -5;
     public int MgKnightCorner = -2;
     public int EgKnightCorner = -31;
 
     // Bishop Location
-    public int MgBishopAdvancement = -2;
-    public int EgBishopAdvancement = 4;
-    public int MgBishopCentrality = 10;
-    public int EgBishopCentrality = 6;
-    public int MgBishopCorner = 0;
-    public int EgBishopCorner = -7;
+    public int MgBishopAdvancement = -1;
+    public int EgBishopAdvancement = 7;
+    public int MgBishopSquareCentrality = 10;
+    public int EgBishopSquareCentrality = 3;
+    public int MgBishopFileCentrality = -2;
+    public int EgBishopFileCentrality = -1;
+    public int MgBishopCorner = 5;
+    public int EgBishopCorner = -11;
 
     // Rook Location
-    public int MgRookAdvancement = 6;
-    public int EgRookAdvancement = 13;
-    public int MgRookCentrality = 14;
-    public int EgRookCentrality = -2;
-    public int MgRookCorner = -1;
-    public int EgRookCorner = -2;
+    public int MgRookAdvancement = 14;
+    public int EgRookAdvancement = 15;
+    public int MgRookSquareCentrality = -7;
+    public int EgRookSquareCentrality = 0;
+    public int MgRookFileCentrality = 15;
+    public int EgRookFileCentrality = -5;
+    public int MgRookCorner = 1;
+    public int EgRookCorner = -5;
 
     // Queen Location
-    public int MgQueenAdvancement = -7;
+    public int MgQueenAdvancement = -9;
     public int EgQueenAdvancement = 32;
-    public int MgQueenCentrality = 3;
-    public int EgQueenCentrality = 24;
+    public int MgQueenSquareCentrality = -3;
+    public int EgQueenSquareCentrality = 27;
+    public int MgQueenFileCentrality = 0;
+    public int EgQueenFileCentrality = -9;
     public int MgQueenCorner = -4;
-    public int EgQueenCorner = -11;
+    public int EgQueenCorner = -6;
 
     // King Location
     public int MgKingAdvancement = -3;
-    public int EgKingAdvancement = 15;
-    public int MgKingCentrality = 0;
-    public int EgKingCentrality = 23;
-    public int MgKingCorner = 1;
+    public int EgKingAdvancement = 14;
+    public int MgKingSquareCentrality = 10;
+    public int EgKingSquareCentrality = 24;
+    public int MgKingFileCentrality = 0;
+    public int EgKingFileCentrality = 0;
+    public int MgKingCorner = 10;
     public int EgKingCorner = -4;
 
     // Piece Mobility
-    public int PieceMobilityPowerPer128 = 100;
+    public int PieceMobilityPowerPer128 = 98;
     public int MgKnightMobilityScale = 77;
     public int EgKnightMobilityScale = 39;
     public int MgBishopMobilityScale = 62;
-    public int EgBishopMobilityScale = 185;
-    public int MgRookMobilityScale = 85;
+    public int EgBishopMobilityScale = 192;
+    public int MgRookMobilityScale = 86;
     public int EgRookMobilityScale = 154;
-    public int MgQueenMobilityScale = 87;
-    public int EgQueenMobilityScale = 78;
+    public int MgQueenMobilityScale = 88;
+    public int EgQueenMobilityScale = 81;
 
     // Pawn Structure
     public int MgIsolatedPawn = 12;
     public int EgIsolatedPawn = 36;
     public int MgDoubledPawn = 10;
-    public int EgDoubledPawn = 27;
+    public int EgDoubledPawn = 28;
 
     // Threats
     public int MgPawnThreatenMinor = 50;
     public int EgPawnThreatenMinor = 44;
     public int MgPawnThreatenMajor = 59;
-    public int EgPawnThreatenMajor = 62;
+    public int EgPawnThreatenMajor = 64;
     public int MgMinorThreatenMajor = 31;
     public int EgMinorThreatenMajor = 35;
 
@@ -132,13 +146,13 @@ public sealed class EvaluationConfig
     public int MgBishopPair = 35;
     public int EgBishopPair = 86;
     public int MgKnightOutpost = 59;
-    public int EgKnightOutpost = 36;
+    public int EgKnightOutpost = 38;
     public int MgBishopOutpost = 26;
     public int EgBishopOutpost = 22;
 
     // Major Pieces
     // ReSharper disable InconsistentNaming
-    public int MgRook7thRank = 20;
+    public int MgRook7thRank = 19;
     public int EgRook7thRank = 53;
     // ReSharper restore InconsistentNaming
 
@@ -200,41 +214,55 @@ public sealed class EvaluationConfig
         // Copy piece location values.
         MgPawnAdvancement = copyFromConfig.MgPawnAdvancement;
         EgPawnAdvancement = copyFromConfig.EgPawnAdvancement;
-        MgPawnCentrality = copyFromConfig.MgPawnCentrality;
-        EgPawnCentrality = copyFromConfig.EgPawnCentrality;
+        MgPawnSquareCentrality = copyFromConfig.MgPawnSquareCentrality;
+        EgPawnSquareCentrality = copyFromConfig.EgPawnSquareCentrality;
+        MgPawnFileCentrality = copyFromConfig.MgPawnFileCentrality;
+        EgPawnFileCentrality = copyFromConfig.EgPawnFileCentrality;
+        MgPawnCorner = copyFromConfig.MgPawnCorner;
+        EgPawnCorner = copyFromConfig.EgPawnCorner;
 
         MgKnightAdvancement = copyFromConfig.MgKnightAdvancement;
         EgKnightAdvancement = copyFromConfig.EgKnightAdvancement;
-        MgKnightCentrality = copyFromConfig.MgKnightCentrality;
-        EgKnightCentrality = copyFromConfig.EgKnightCentrality;
+        MgKnightSquareCentrality = copyFromConfig.MgKnightSquareCentrality;
+        EgKnightSquareCentrality = copyFromConfig.EgKnightSquareCentrality;
+        MgKnightFileCentrality = copyFromConfig.MgKnightFileCentrality;
+        EgKnightFileCentrality = copyFromConfig.EgKnightFileCentrality;
         MgKnightCorner = copyFromConfig.MgKnightCorner;
         EgKnightCorner = copyFromConfig.EgKnightCorner;
 
         MgBishopAdvancement = copyFromConfig.MgBishopAdvancement;
         EgBishopAdvancement = copyFromConfig.EgBishopAdvancement;
-        MgBishopCentrality = copyFromConfig.MgBishopCentrality;
-        EgBishopCentrality = copyFromConfig.EgBishopCentrality;
+        MgBishopSquareCentrality = copyFromConfig.MgBishopSquareCentrality;
+        EgBishopSquareCentrality = copyFromConfig.EgBishopSquareCentrality;
+        MgBishopFileCentrality = copyFromConfig.MgBishopFileCentrality;
+        EgBishopFileCentrality = copyFromConfig.EgBishopFileCentrality;
         MgBishopCorner = copyFromConfig.MgBishopCorner;
         EgBishopCorner = copyFromConfig.EgBishopCorner;
 
         MgRookAdvancement = copyFromConfig.MgRookAdvancement;
         EgRookAdvancement = copyFromConfig.EgRookAdvancement;
-        MgRookCentrality = copyFromConfig.MgRookCentrality;
-        EgRookCentrality = copyFromConfig.EgRookCentrality;
+        MgRookSquareCentrality = copyFromConfig.MgRookSquareCentrality;
+        EgRookSquareCentrality = copyFromConfig.EgRookSquareCentrality;
+        MgRookFileCentrality = copyFromConfig.MgRookFileCentrality;
+        EgRookFileCentrality = copyFromConfig.EgRookFileCentrality;
         MgRookCorner = copyFromConfig.MgRookCorner;
         EgRookCorner = copyFromConfig.EgRookCorner;
 
         MgQueenAdvancement = copyFromConfig.MgQueenAdvancement;
         EgQueenAdvancement = copyFromConfig.EgQueenAdvancement;
-        MgQueenCentrality = copyFromConfig.MgQueenCentrality;
-        EgQueenCentrality = copyFromConfig.EgQueenCentrality;
+        MgQueenSquareCentrality = copyFromConfig.MgQueenSquareCentrality;
+        EgQueenSquareCentrality = copyFromConfig.EgQueenSquareCentrality;
+        MgQueenFileCentrality = copyFromConfig.MgQueenFileCentrality;
+        EgQueenFileCentrality = copyFromConfig.EgQueenFileCentrality;
         MgQueenCorner = copyFromConfig.MgQueenCorner;
         EgQueenCorner = copyFromConfig.EgQueenCorner;
 
         MgKingAdvancement = copyFromConfig.MgKingAdvancement;
         EgKingAdvancement = copyFromConfig.EgKingAdvancement;
-        MgKingCentrality = copyFromConfig.MgKingCentrality;
-        EgKingCentrality = copyFromConfig.EgKingCentrality;
+        MgKingSquareCentrality = copyFromConfig.MgKingSquareCentrality;
+        EgKingSquareCentrality = copyFromConfig.EgKingSquareCentrality;
+        MgKingFileCentrality = copyFromConfig.MgKingFileCentrality;
+        EgKingFileCentrality = copyFromConfig.EgKingFileCentrality;
         MgKingCorner = copyFromConfig.MgKingCorner;
         EgKingCorner = copyFromConfig.EgKingCorner;
 

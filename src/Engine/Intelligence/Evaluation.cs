@@ -205,74 +205,85 @@ public sealed class Evaluation
             {
                 var rank = Board.Ranks[(int)Color.White][(int)square];
                 var file = Board.Files[(int)square];
-
                 var squareCentrality = 3 - Board.DistanceToCentralSquares[(int)square];
                 var fileCentrality = 3 - FastMath.Min(FastMath.Abs(3 - file), FastMath.Abs(4 - file));
-                var mgCentralityMetric = squareCentrality;
-
                 var nearestCorner = 3 - Board.DistanceToNearestCorner[(int)square];
 
                 int mgAdvancement;
-                int mgCentrality;
-                int mgCorner;
                 int egAdvancement;
-                int egCentrality;
+                int mgSquareCentrality;
+                int egSquareCentrality;
+                int mgFileCentrality;
+                int egFileCentrality;
+                int mgCorner;
                 int egCorner;
+
                 // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                 switch (colorlessPiece)
                 {
                     case ColorlessPiece.Pawn:
                         mgAdvancement = Config.MgPawnAdvancement;
-                        mgCentrality = Config.MgPawnCentrality;
-                        mgCorner = 0;
                         egAdvancement = Config.EgPawnAdvancement;
-                        egCentrality = Config.EgPawnCentrality;
-                        egCorner = 0;
+                        mgSquareCentrality = Config.MgPawnSquareCentrality;
+                        egSquareCentrality = Config.EgPawnSquareCentrality;
+                        mgFileCentrality = Config.MgPawnFileCentrality;
+                        egFileCentrality = Config.EgPawnFileCentrality;
+                        mgCorner = Config.MgPawnCorner;
+                        egCorner = Config.EgPawnCorner;
                         break;
 
                     case ColorlessPiece.Knight:
                         mgAdvancement = Config.MgKnightAdvancement;
-                        mgCentrality = Config.MgKnightCentrality;
-                        mgCorner = Config.MgKnightCorner;
                         egAdvancement = Config.EgKnightAdvancement;
-                        egCentrality = Config.EgKnightCentrality;
+                        mgSquareCentrality = Config.MgKnightSquareCentrality;
+                        egSquareCentrality = Config.EgKnightSquareCentrality;
+                        mgFileCentrality = Config.MgKnightFileCentrality;
+                        egFileCentrality = Config.EgKnightFileCentrality;
+                        mgCorner = Config.MgKnightCorner;
                         egCorner = Config.EgKnightCorner;
                         break;
 
                     case ColorlessPiece.Bishop:
                         mgAdvancement = Config.MgBishopAdvancement;
-                        mgCentrality = Config.MgBishopCentrality;
-                        mgCorner = Config.MgBishopCorner;
                         egAdvancement = Config.EgBishopAdvancement;
-                        egCentrality = Config.EgBishopCentrality;
+                        mgSquareCentrality = Config.MgBishopSquareCentrality;
+                        egSquareCentrality = Config.EgBishopSquareCentrality;
+                        mgFileCentrality = Config.MgBishopFileCentrality;
+                        egFileCentrality = Config.EgBishopFileCentrality;
+                        mgCorner = Config.MgBishopCorner;
                         egCorner = Config.EgBishopCorner;
                         break;
 
                     case ColorlessPiece.Rook:
                         mgAdvancement = Config.MgRookAdvancement;
-                        mgCentralityMetric = fileCentrality;
-                        mgCentrality = Config.MgRookCentrality;
-                        mgCorner = Config.MgRookCorner;
                         egAdvancement = Config.EgRookAdvancement;
-                        egCentrality = Config.EgRookCentrality;
+                        mgSquareCentrality = Config.MgRookSquareCentrality;
+                        egSquareCentrality = Config.EgRookSquareCentrality;
+                        mgFileCentrality = Config.MgRookFileCentrality;
+                        egFileCentrality = Config.EgRookFileCentrality;
+                        mgCorner = Config.MgRookCorner;
                         egCorner = Config.EgRookCorner;
                         break;
 
                     case ColorlessPiece.Queen:
                         mgAdvancement = Config.MgQueenAdvancement;
-                        mgCentrality = Config.MgQueenCentrality;
-                        mgCorner = Config.MgQueenCorner;
                         egAdvancement = Config.EgQueenAdvancement;
-                        egCentrality = Config.EgQueenCentrality;
+                        mgSquareCentrality = Config.MgQueenSquareCentrality;
+                        egSquareCentrality = Config.EgQueenSquareCentrality;
+                        mgFileCentrality = Config.MgQueenFileCentrality;
+                        egFileCentrality = Config.EgQueenFileCentrality;
+                        mgCorner = Config.MgQueenCorner;
                         egCorner = Config.EgQueenCorner;
                         break;
 
                     case ColorlessPiece.King:
                         mgAdvancement = Config.MgKingAdvancement;
-                        mgCentrality = Config.MgKingCentrality;
-                        mgCorner = Config.MgKingCorner;
                         egAdvancement = Config.EgKingAdvancement;
-                        egCentrality = Config.EgKingCentrality;
+                        mgSquareCentrality = Config.MgKingSquareCentrality;
+                        egSquareCentrality = Config.EgKingSquareCentrality;
+                        mgFileCentrality = Config.MgKingFileCentrality;
+                        egFileCentrality = Config.EgKingFileCentrality;
+                        mgCorner = Config.MgKingCorner;
                         egCorner = Config.EgKingCorner;
                         break;
 
@@ -280,8 +291,8 @@ public sealed class Evaluation
                         throw new Exception($"{colorlessPiece} colorless piece not supported.");
                 }
 
-                _mgPieceLocations[(int)colorlessPiece][(int)square] = (rank * mgAdvancement) + (mgCentralityMetric * mgCentrality) + (nearestCorner * mgCorner);
-                _egPieceLocations[(int)colorlessPiece][(int)square] = (rank * egAdvancement) + (squareCentrality * egCentrality) + (nearestCorner * egCorner);
+                _mgPieceLocations[(int)colorlessPiece][(int)square] = (rank * mgAdvancement) + (squareCentrality * mgSquareCentrality) + (fileCentrality * mgFileCentrality) + (nearestCorner * mgCorner);
+                _egPieceLocations[(int)colorlessPiece][(int)square] = (rank * egAdvancement) + (squareCentrality * egSquareCentrality) + (fileCentrality * egFileCentrality) + (nearestCorner * egCorner);
             }
         }
 

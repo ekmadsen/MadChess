@@ -107,46 +107,61 @@ public sealed class Particle
         // Pawn Location
         Parameters[nameof(evalConfig.MgPawnAdvancement)].Value = evalConfig.MgPawnAdvancement;
         Parameters[nameof(evalConfig.EgPawnAdvancement)].Value = evalConfig.EgPawnAdvancement;
-        Parameters[nameof(evalConfig.MgPawnCentrality)].Value = evalConfig.MgPawnCentrality;
-        Parameters[nameof(evalConfig.EgPawnCentrality)].Value = evalConfig.EgPawnCentrality;
+        Parameters[nameof(evalConfig.MgPawnSquareCentrality)].Value = evalConfig.MgPawnSquareCentrality;
+        Parameters[nameof(evalConfig.EgPawnSquareCentrality)].Value = evalConfig.EgPawnSquareCentrality;
+        Parameters[nameof(evalConfig.MgPawnFileCentrality)].Value = evalConfig.MgPawnFileCentrality;
+        Parameters[nameof(evalConfig.EgPawnFileCentrality)].Value = evalConfig.EgPawnFileCentrality;
+        Parameters[nameof(evalConfig.MgPawnCorner)].Value = evalConfig.MgPawnCorner;
+        Parameters[nameof(evalConfig.EgPawnCorner)].Value = evalConfig.EgPawnCorner;
+
 
         // Knight Location
         Parameters[nameof(evalConfig.MgKnightAdvancement)].Value = evalConfig.MgKnightAdvancement;
         Parameters[nameof(evalConfig.EgKnightAdvancement)].Value = evalConfig.EgKnightAdvancement;
-        Parameters[nameof(evalConfig.MgKnightCentrality)].Value = evalConfig.MgKnightCentrality;
-        Parameters[nameof(evalConfig.EgKnightCentrality)].Value = evalConfig.EgKnightCentrality;
+        Parameters[nameof(evalConfig.MgKnightSquareCentrality)].Value = evalConfig.MgKnightSquareCentrality;
+        Parameters[nameof(evalConfig.EgKnightSquareCentrality)].Value = evalConfig.EgKnightSquareCentrality;
+        Parameters[nameof(evalConfig.MgKnightFileCentrality)].Value = evalConfig.MgKnightFileCentrality;
+        Parameters[nameof(evalConfig.EgKnightFileCentrality)].Value = evalConfig.EgKnightFileCentrality;
         Parameters[nameof(evalConfig.MgKnightCorner)].Value = evalConfig.MgKnightCorner;
         Parameters[nameof(evalConfig.EgKnightCorner)].Value = evalConfig.EgKnightCorner;
 
         // Bishop Location
         Parameters[nameof(evalConfig.MgBishopAdvancement)].Value = evalConfig.MgBishopAdvancement;
         Parameters[nameof(evalConfig.EgBishopAdvancement)].Value = evalConfig.EgBishopAdvancement;
-        Parameters[nameof(evalConfig.MgBishopCentrality)].Value = evalConfig.MgBishopCentrality;
-        Parameters[nameof(evalConfig.EgBishopCentrality)].Value = evalConfig.EgBishopCentrality;
+        Parameters[nameof(evalConfig.MgBishopSquareCentrality)].Value = evalConfig.MgBishopSquareCentrality;
+        Parameters[nameof(evalConfig.EgBishopSquareCentrality)].Value = evalConfig.EgBishopSquareCentrality;
+        Parameters[nameof(evalConfig.MgBishopFileCentrality)].Value = evalConfig.MgBishopFileCentrality;
+        Parameters[nameof(evalConfig.EgBishopFileCentrality)].Value = evalConfig.EgBishopFileCentrality;
         Parameters[nameof(evalConfig.MgBishopCorner)].Value = evalConfig.MgBishopCorner;
         Parameters[nameof(evalConfig.EgBishopCorner)].Value = evalConfig.EgBishopCorner;
 
         // Rook Location
         Parameters[nameof(evalConfig.MgRookAdvancement)].Value = evalConfig.MgRookAdvancement;
         Parameters[nameof(evalConfig.EgRookAdvancement)].Value = evalConfig.EgRookAdvancement;
-        Parameters[nameof(evalConfig.MgRookCentrality)].Value = evalConfig.MgRookCentrality;
-        Parameters[nameof(evalConfig.EgRookCentrality)].Value = evalConfig.EgRookCentrality;
+        Parameters[nameof(evalConfig.MgRookSquareCentrality)].Value = evalConfig.MgRookSquareCentrality;
+        Parameters[nameof(evalConfig.EgRookSquareCentrality)].Value = evalConfig.EgRookSquareCentrality;
+        Parameters[nameof(evalConfig.MgRookFileCentrality)].Value = evalConfig.MgRookFileCentrality;
+        Parameters[nameof(evalConfig.EgRookFileCentrality)].Value = evalConfig.EgRookFileCentrality;
         Parameters[nameof(evalConfig.MgRookCorner)].Value = evalConfig.MgRookCorner;
         Parameters[nameof(evalConfig.EgRookCorner)].Value = evalConfig.EgRookCorner;
 
         // Queen Location
         Parameters[nameof(evalConfig.MgQueenAdvancement)].Value = evalConfig.MgQueenAdvancement;
         Parameters[nameof(evalConfig.EgQueenAdvancement)].Value = evalConfig.EgQueenAdvancement;
-        Parameters[nameof(evalConfig.MgQueenCentrality)].Value = evalConfig.MgQueenCentrality;
-        Parameters[nameof(evalConfig.EgQueenCentrality)].Value = evalConfig.EgQueenCentrality;
+        Parameters[nameof(evalConfig.MgQueenSquareCentrality)].Value = evalConfig.MgQueenSquareCentrality;
+        Parameters[nameof(evalConfig.EgQueenSquareCentrality)].Value = evalConfig.EgQueenSquareCentrality;
+        Parameters[nameof(evalConfig.MgQueenFileCentrality)].Value = evalConfig.MgQueenFileCentrality;
+        Parameters[nameof(evalConfig.EgQueenFileCentrality)].Value = evalConfig.EgQueenFileCentrality;
         Parameters[nameof(evalConfig.MgQueenCorner)].Value = evalConfig.MgQueenCorner;
         Parameters[nameof(evalConfig.EgQueenCorner)].Value = evalConfig.EgQueenCorner;
 
         // King Location
         Parameters[nameof(evalConfig.MgKingAdvancement)].Value = evalConfig.MgKingAdvancement;
         Parameters[nameof(evalConfig.EgKingAdvancement)].Value = evalConfig.EgKingAdvancement;
-        Parameters[nameof(evalConfig.MgKingCentrality)].Value = evalConfig.MgKingCentrality;
-        Parameters[nameof(evalConfig.EgKingCentrality)].Value = evalConfig.EgKingCentrality;
+        Parameters[nameof(evalConfig.MgKingSquareCentrality)].Value = evalConfig.MgKingSquareCentrality;
+        Parameters[nameof(evalConfig.EgKingSquareCentrality)].Value = evalConfig.EgKingSquareCentrality;
+        Parameters[nameof(evalConfig.MgKingFileCentrality)].Value = evalConfig.MgKingFileCentrality;
+        Parameters[nameof(evalConfig.EgKingFileCentrality)].Value = evalConfig.EgKingFileCentrality;
         Parameters[nameof(evalConfig.MgKingCorner)].Value = evalConfig.MgKingCorner;
         Parameters[nameof(evalConfig.EgKingCorner)].Value = evalConfig.EgKingCorner;
 
@@ -232,46 +247,60 @@ public sealed class Particle
         // Pawn Location
         evaluation.Config.MgPawnAdvancement = Parameters[nameof(EvaluationConfig.MgPawnAdvancement)].Value;
         evaluation.Config.EgPawnAdvancement = Parameters[nameof(EvaluationConfig.EgPawnAdvancement)].Value;
-        evaluation.Config.MgPawnCentrality = Parameters[nameof(EvaluationConfig.MgPawnCentrality)].Value;
-        evaluation.Config.EgPawnCentrality = Parameters[nameof(EvaluationConfig.EgPawnCentrality)].Value;
+        evaluation.Config.MgPawnSquareCentrality = Parameters[nameof(EvaluationConfig.MgPawnSquareCentrality)].Value;
+        evaluation.Config.EgPawnSquareCentrality = Parameters[nameof(EvaluationConfig.EgPawnSquareCentrality)].Value;
+        evaluation.Config.MgPawnFileCentrality = Parameters[nameof(EvaluationConfig.MgPawnFileCentrality)].Value;
+        evaluation.Config.EgPawnFileCentrality = Parameters[nameof(EvaluationConfig.EgPawnFileCentrality)].Value;
+        evaluation.Config.MgPawnCorner = Parameters[nameof(EvaluationConfig.MgPawnCorner)].Value;
+        evaluation.Config.EgPawnCorner = Parameters[nameof(EvaluationConfig.EgPawnCorner)].Value;
 
         // Knight Location
         evaluation.Config.MgKnightAdvancement = Parameters[nameof(EvaluationConfig.MgKnightAdvancement)].Value;
         evaluation.Config.EgKnightAdvancement = Parameters[nameof(EvaluationConfig.EgKnightAdvancement)].Value;
-        evaluation.Config.MgKnightCentrality = Parameters[nameof(EvaluationConfig.MgKnightCentrality)].Value;
-        evaluation.Config.EgKnightCentrality = Parameters[nameof(EvaluationConfig.EgKnightCentrality)].Value;
+        evaluation.Config.MgKnightSquareCentrality = Parameters[nameof(EvaluationConfig.MgKnightSquareCentrality)].Value;
+        evaluation.Config.EgKnightSquareCentrality = Parameters[nameof(EvaluationConfig.EgKnightSquareCentrality)].Value;
+        evaluation.Config.MgKnightFileCentrality = Parameters[nameof(EvaluationConfig.MgKnightFileCentrality)].Value;
+        evaluation.Config.EgKnightFileCentrality = Parameters[nameof(EvaluationConfig.EgKnightFileCentrality)].Value;
         evaluation.Config.MgKnightCorner = Parameters[nameof(EvaluationConfig.MgKnightCorner)].Value;
         evaluation.Config.EgKnightCorner = Parameters[nameof(EvaluationConfig.EgKnightCorner)].Value;
 
         // Bishop Location
         evaluation.Config.MgBishopAdvancement = Parameters[nameof(EvaluationConfig.MgBishopAdvancement)].Value;
         evaluation.Config.EgBishopAdvancement = Parameters[nameof(EvaluationConfig.EgBishopAdvancement)].Value;
-        evaluation.Config.MgBishopCentrality = Parameters[nameof(EvaluationConfig.MgBishopCentrality)].Value;
-        evaluation.Config.EgBishopCentrality = Parameters[nameof(EvaluationConfig.EgBishopCentrality)].Value;
+        evaluation.Config.MgBishopSquareCentrality = Parameters[nameof(EvaluationConfig.MgBishopSquareCentrality)].Value;
+        evaluation.Config.EgBishopSquareCentrality = Parameters[nameof(EvaluationConfig.EgBishopSquareCentrality)].Value;
+        evaluation.Config.MgBishopFileCentrality = Parameters[nameof(EvaluationConfig.MgBishopFileCentrality)].Value;
+        evaluation.Config.EgBishopFileCentrality = Parameters[nameof(EvaluationConfig.EgBishopFileCentrality)].Value;
         evaluation.Config.MgBishopCorner = Parameters[nameof(EvaluationConfig.MgBishopCorner)].Value;
         evaluation.Config.EgBishopCorner = Parameters[nameof(EvaluationConfig.EgBishopCorner)].Value;
 
         // Rook Location
         evaluation.Config.MgRookAdvancement = Parameters[nameof(EvaluationConfig.MgRookAdvancement)].Value;
         evaluation.Config.EgRookAdvancement = Parameters[nameof(EvaluationConfig.EgRookAdvancement)].Value;
-        evaluation.Config.MgRookCentrality = Parameters[nameof(EvaluationConfig.MgRookCentrality)].Value;
-        evaluation.Config.EgRookCentrality = Parameters[nameof(EvaluationConfig.EgRookCentrality)].Value;
+        evaluation.Config.MgRookSquareCentrality = Parameters[nameof(EvaluationConfig.MgRookSquareCentrality)].Value;
+        evaluation.Config.EgRookSquareCentrality = Parameters[nameof(EvaluationConfig.EgRookSquareCentrality)].Value;
+        evaluation.Config.MgRookFileCentrality = Parameters[nameof(EvaluationConfig.MgRookFileCentrality)].Value;
+        evaluation.Config.EgRookFileCentrality = Parameters[nameof(EvaluationConfig.EgRookFileCentrality)].Value;
         evaluation.Config.MgRookCorner = Parameters[nameof(EvaluationConfig.MgRookCorner)].Value;
         evaluation.Config.EgRookCorner = Parameters[nameof(EvaluationConfig.EgRookCorner)].Value;
 
         // Queen Location
         evaluation.Config.MgQueenAdvancement = Parameters[nameof(EvaluationConfig.MgQueenAdvancement)].Value;
         evaluation.Config.EgQueenAdvancement = Parameters[nameof(EvaluationConfig.EgQueenAdvancement)].Value;
-        evaluation.Config.MgQueenCentrality = Parameters[nameof(EvaluationConfig.MgQueenCentrality)].Value;
-        evaluation.Config.EgQueenCentrality = Parameters[nameof(EvaluationConfig.EgQueenCentrality)].Value;
+        evaluation.Config.MgQueenSquareCentrality = Parameters[nameof(EvaluationConfig.MgQueenSquareCentrality)].Value;
+        evaluation.Config.EgQueenSquareCentrality = Parameters[nameof(EvaluationConfig.EgQueenSquareCentrality)].Value;
+        evaluation.Config.MgQueenFileCentrality = Parameters[nameof(EvaluationConfig.MgQueenFileCentrality)].Value;
+        evaluation.Config.EgQueenFileCentrality = Parameters[nameof(EvaluationConfig.EgQueenFileCentrality)].Value;
         evaluation.Config.MgQueenCorner = Parameters[nameof(EvaluationConfig.MgQueenCorner)].Value;
         evaluation.Config.EgQueenCorner = Parameters[nameof(EvaluationConfig.EgQueenCorner)].Value;
 
         // King Location
         evaluation.Config.MgKingAdvancement = Parameters[nameof(EvaluationConfig.MgKingAdvancement)].Value;
         evaluation.Config.EgKingAdvancement = Parameters[nameof(EvaluationConfig.EgKingAdvancement)].Value;
-        evaluation.Config.MgKingCentrality = Parameters[nameof(EvaluationConfig.MgKingCentrality)].Value;
-        evaluation.Config.EgKingCentrality = Parameters[nameof(EvaluationConfig.EgKingCentrality)].Value;
+        evaluation.Config.MgKingSquareCentrality = Parameters[nameof(EvaluationConfig.MgKingSquareCentrality)].Value;
+        evaluation.Config.EgKingSquareCentrality = Parameters[nameof(EvaluationConfig.EgKingSquareCentrality)].Value;
+        evaluation.Config.MgKingFileCentrality = Parameters[nameof(EvaluationConfig.MgKingFileCentrality)].Value;
+        evaluation.Config.EgKingFileCentrality = Parameters[nameof(EvaluationConfig.EgKingFileCentrality)].Value;
         evaluation.Config.MgKingCorner = Parameters[nameof(EvaluationConfig.MgKingCorner)].Value;
         evaluation.Config.EgKingCorner = Parameters[nameof(EvaluationConfig.EgKingCorner)].Value;
 
