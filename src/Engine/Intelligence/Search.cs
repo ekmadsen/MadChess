@@ -702,6 +702,8 @@ public sealed class Search : IDisposable
 
             if ((score > bestScore) || ((depth == 0) && (MultiPv > 1) && (score > alpha)))
             {
+                // TODO: Re-search to original depth, then re-search to original depth and original beta.
+
                 // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
                 if ((moveBeta < beta) || (searchHorizon < horizon))
                 {

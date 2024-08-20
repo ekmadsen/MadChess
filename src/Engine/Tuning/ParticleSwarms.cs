@@ -75,22 +75,22 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         var evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, messenger, stats);
         var search = new Search(_advancedConfig.LimitStrength.Search, messenger, timeManagement, stats, cache, killerMoves, moveHistory, evaluation);
 
-        // Set default parameters for all particles.
-        for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
-        {
-            var particleSwarm = this[particleSwarmIndex];
-            for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
-            {
-                var particle = particleSwarm.Particles[particleIndex];
-                particle.SetDefaultParameters();
-                particle.ConfigureEvaluation(evaluation);
-            }
-        }
+        //// Set default parameters for all particles.
+        //for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
+        //{
+        //    var particleSwarm = this[particleSwarmIndex];
+        //    for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
+        //    {
+        //        var particle = particleSwarm.Particles[particleIndex];
+        //        particle.SetDefaultParameters();
+        //        particle.ConfigureEvaluation(evaluation);
+        //    }
+        //}
 
         // Set default parameters for one particle and determine original evaluation error.
         var firstParticleInFirstSwarm = this[0].Particles[0];
-        //firstParticleInFirstSwarm.SetDefaultParameters();
-        //firstParticleInFirstSwarm.ConfigureEvaluation(evaluation);
+        firstParticleInFirstSwarm.SetDefaultParameters();
+        firstParticleInFirstSwarm.ConfigureEvaluation(evaluation);
         firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
         _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
 
