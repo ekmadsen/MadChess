@@ -700,16 +700,18 @@ public sealed class Search : IDisposable
                 return score;
             }
 
-            if ((score > bestScore) || ((depth == 0) && (MultiPv > 1) && (score > alpha)))
+            var scoreToBeat = (depth == 0) && (MultiPv > 1) ? alpha : bestScore;
+            if ((score > scoreToBeat) && (searchHorizon < horizon))
             {
-                // TODO: Re-search to original depth, then re-search to original depth and original beta.
-
                 // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
-                if ((moveBeta < beta) || (searchHorizon < horizon))
-                {
-                    // Search move at unreduced horizon with full alpha / beta window.
-                    score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
-                }
+                // Search move at unreduced horizon.
+                score = -GetDynamicScore(board, depth + 1, horizon, true, -moveBeta, -alpha);
+            }
+            if ((score > scoreToBeat) && (moveBeta < beta))
+            {
+                // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
+                // Search move at unreduced horizon with full alpha / beta window.
+                score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
             }
 
             board.UndoMove();

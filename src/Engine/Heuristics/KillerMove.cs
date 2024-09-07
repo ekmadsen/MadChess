@@ -16,7 +16,7 @@ using ErikTheCoder.MadChess.Core.Moves;
 namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 
-public readonly struct KillerMove(Piece piece, Square toSquare)
+public readonly struct KillerMove(Piece piece, Square toSquare) : IEquatable<KillerMove>
 {
     private readonly Piece _piece = piece;
     private readonly Square _toSquare = toSquare;
