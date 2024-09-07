@@ -20,8 +20,8 @@ public sealed class MoveHistory
 {
     private const int _multiplier = 256;
     private const int _divisor = Move.HistoryMaxValue / _multiplier;
-    private const int _moveHistoryWeight = 1; // _moveHistoryWeight + _counterMoveHistoryWeight = 16.  Divide by 16 == shift bits right 4 places.
-    private const int _counterMoveHistoryWeight = 15; // Counter move history is more specific than move history, and consequently, is updated less often.  Therefore, weight it more heavily than move history.
+    private const int _moveHistoryWeight = 1; // _moveHistoryWeight + _counterMoveHistoryWeight = 64.  Divide by 64 == shift bits right 6 places.
+    private const int _counterMoveHistoryWeight = 63; // Counter move history is more specific than move history, and consequently, is updated less often.  Therefore, weight it more heavily than move history.
     private const int _agePer256 = 245; // Reduces to half (49.52%) of root value after 16 ply.
     private readonly int[][] _moveHistory; // [piece][toSquare]
     private readonly int[][][][] _counterMoveHistory; // [previousPiece][previousToSquare][piece][toSquare]

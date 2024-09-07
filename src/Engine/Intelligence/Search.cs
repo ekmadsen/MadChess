@@ -48,13 +48,13 @@ public sealed class Search : IDisposable
     public bool Continue;
 
     private const int _nullMoveReduction = 3;
-    private const int _nullStaticScoreReduction = 180;
+    private const int _nullStaticScoreReduction = 150;
     private const int _nullStaticScoreMaxReduction = 3;
     private const int _iidReduction = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 44;
-    private const int _lmrConstPer128 = -96;
-    private const int _recapturesOnlyMaxFromHorizon = 3;
+    private const int _lmrScalePer128 = 32;
+    private const int _lmrConstPer128 = 32;
+    private const int _recapturesOnlyMaxFromHorizon = 7;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
     private readonly int[] _limitStrengthElos;
@@ -152,7 +152,7 @@ public sealed class Search : IDisposable
         Signal = new AutoResetEvent(false);
         _stopwatch = new Stopwatch();
 
-        // To Horizon =                   000  001  002  003  004  005  006  007
+        // To Horizon =            000  001  002  003  004  005  006  007
         _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
         _lateMovePruningMargins = [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
@@ -701,17 +701,14 @@ public sealed class Search : IDisposable
             }
 
             var scoreToBeat = (depth == 0) && (MultiPv > 1) ? alpha : bestScore;
-            if ((score > scoreToBeat) && (searchHorizon < horizon))
+            if (score > scoreToBeat)
             {
                 // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
-                // Search move at unreduced horizon.
-                score = -GetDynamicScore(board, depth + 1, horizon, true, -moveBeta, -alpha);
-            }
-            if ((score > scoreToBeat) && (moveBeta < beta))
-            {
-                // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
-                // Search move at unreduced horizon with full alpha / beta window.
-                score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
+                if ((moveBeta < beta) || (searchHorizon < horizon))
+                {
+                    // Search move at unreduced horizon with full alpha / beta window.
+                    score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
+                }
             }
 
             board.UndoMove();
@@ -1136,7 +1133,7 @@ public sealed class Search : IDisposable
         if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
-        if ((Move.Killer(move) > 0) || (Move.PromotedPiece(move) != Piece.None) || Move.IsCastling(move)) return false; // Killer move or castling is not futile.
+        if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return false; // Killer move or castling is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
 
         if (Move.IsPawnMove(move))
@@ -1152,7 +1149,7 @@ public sealed class Search : IDisposable
         // Determine if quiet move is too late to be worth searching.
         if (quietMoveNumber >= _lateMovePruningMargins[toHorizon]) return true;
 
-        // No material improvement is possible because captures and pawn promotions are not futile.
+        // No material improvement is possible because captures and pawn promotions (!Move.IsQuiet) are not futile.
         // Determine if location improvement raises score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
         return (position.StaticScore + locationImprovement + _futilityPruningMargins[toHorizon]) < alpha;

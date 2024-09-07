@@ -554,7 +554,7 @@ public sealed class Position
         var king = PieceHelper.GetPieceOfColor(ColorlessPiece.King, ColorToMove);
         var toRank = Board.Ranks[(int)ColorToMove][(int)toSquare];
 
-        if ((attacker == pawn) && (toRank == 7) && (promotedPiece == Piece.None)) return false; // Pawn cannot move to back rank without promoting.
+        if ((attacker == pawn) && (toRank == 7) && (promotedPiece == Piece.None)) return false; // Pawn cannot move to eighth rank without promoting.
         if ((promotedPiece != Piece.None) && (attacker != pawn)) return false; // Only pawns can promote.
         if ((promotedPiece == pawn) || (promotedPiece == king)) return false; // Cannot promote pawn to pawn or king.
 
