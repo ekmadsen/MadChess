@@ -49,12 +49,12 @@ public sealed class Search : IDisposable
 
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 150;
-    private const int _nullStaticScoreMaxReduction = 3;
+    private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 32;
-    private const int _lmrConstPer128 = 32;
-    private const int _recapturesOnlyMaxFromHorizon = 7;
+    private const int _lmrScalePer128 = 44;
+    private const int _lmrConstPer128 = -96;
+    private const int _recapturesOnlyMaxFromHorizon = 3;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
     private readonly int[] _limitStrengthElos;
