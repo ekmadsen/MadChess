@@ -54,7 +54,7 @@ public sealed class Search : IDisposable
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 56;
     private const int _lmrConstPer128 = -144;
-    private const int _recapturesOnlyMaxFromHorizon = 7;
+    private const int _recapturesOnlyMaxFromHorizon = 3;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
     private readonly int[] _limitStrengthElos;
@@ -701,14 +701,17 @@ public sealed class Search : IDisposable
             }
 
             var scoreToBeat = (depth == 0) && (MultiPv > 1) ? alpha : bestScore;
-            if (score > scoreToBeat)
+            if ((score > scoreToBeat) && (searchHorizon < horizon))
             {
                 // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
-                if ((moveBeta < beta) || (searchHorizon < horizon))
-                {
-                    // Search move at unreduced horizon with full alpha / beta window.
-                    score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
-                }
+                // Search move at unreduced horizon.
+                score = -GetDynamicScore(board, depth + 1, horizon, true, -moveBeta, -alpha);
+            }
+            if ((score > scoreToBeat) && (moveBeta < beta))
+            {
+                // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
+                // Search move at unreduced horizon with full alpha / beta window.
+                score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
             }
 
             board.UndoMove();
