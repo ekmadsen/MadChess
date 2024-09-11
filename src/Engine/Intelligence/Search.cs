@@ -54,7 +54,7 @@ public sealed class Search : IDisposable
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 56;
     private const int _lmrConstPer128 = -144;
-    private const int _recapturesOnlyMaxFromHorizon = 3;
+    private const int _recapturesOnlyMaxFromHorizon = 7;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
     private readonly int[] _limitStrengthElos;
