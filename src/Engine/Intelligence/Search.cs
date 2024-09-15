@@ -52,8 +52,8 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 56;
-    private const int _lmrConstPer128 = -144;
+    private const int _lmrScalePer128 = 48;
+    private const int _lmrConstPer128 = -128;
     private const int _recapturesOnlyMaxFromHorizon = 3;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
@@ -589,7 +589,11 @@ public sealed class Search : IDisposable
 
         if (bestMove == Move.Null)
         {
-            if ((depth == 0) && (_originalHorizon > 0)) bestMove = _bestMoves[0].Move;
+            if ((depth == 0) && (_originalHorizon > 0))
+            {
+                // Use best move from previous search.
+                bestMove = _bestMoves[0].Move;
+            }
             else if ((depth > 0) && inPv && (toHorizon > _iidReduction))
             {
                 // Cached position in a principal variation does not specify best move.
@@ -701,17 +705,14 @@ public sealed class Search : IDisposable
             }
 
             var scoreToBeat = (depth == 0) && (MultiPv > 1) ? alpha : bestScore;
-            if ((score > scoreToBeat) && (searchHorizon < horizon))
+            if (score > scoreToBeat)
             {
                 // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
-                // Search move at unreduced horizon.
-                score = -GetDynamicScore(board, depth + 1, horizon, true, -moveBeta, -alpha);
-            }
-            if ((score > scoreToBeat) && (moveBeta < beta))
-            {
-                // Move may be stronger than principal variation (or stronger than worst score among multiple principal variations).
-                // Search move at unreduced horizon with full alpha / beta window.
-                score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
+                if ((moveBeta < beta) || (searchHorizon < horizon))
+                {
+                    // Search move at unreduced horizon with full alpha / beta window.
+                    score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
+                }
             }
 
             board.UndoMove();
