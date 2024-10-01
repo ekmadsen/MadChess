@@ -22,18 +22,18 @@ public sealed class EvaluationConfig
     public int EgPawnMaterial = 192;
     public int MgKnightMaterial = 460;
     public int EgKnightMaterial = 582;
-    public int MgBishopMaterial = 489;
+    public int MgBishopMaterial = 488;
     public int EgBishopMaterial = 600;
-    public int MgRookMaterial = 595;
-    public int EgRookMaterial = 1110;
-    public int MgQueenMaterial = 1407;
-    public int EgQueenMaterial = 1930;
+    public int MgRookMaterial = 585;
+    public int EgRookMaterial = 1113;
+    public int MgQueenMaterial = 1405;
+    public int EgQueenMaterial = 1939;
 
     // Passed Pawns
     public int PassedPawnPowerPer128 = 327;
-    public int MgPassedPawnScalePer128 = 124;
-    public int EgPassedPawnScalePer128 = 355;
-    public int EgFreePassedPawnScalePer128 = 699;
+    public int MgPassedPawnScalePer128 = 131;
+    public int EgPassedPawnScalePer128 = 354;
+    public int EgFreePassedPawnScalePer128 = 711;
     public int EgConnectedPassedPawnScalePer128 = 85;
     public int EgKingEscortedPassedPawn = 18;
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial); // Incentivize engine to promote pawns.
@@ -62,8 +62,8 @@ public sealed class EvaluationConfig
     public int EgPawnAdvancement = 12;
     public int MgPawnSquareCentrality = 2;
     public int EgPawnSquareCentrality = -18;
-    public int MgPawnFileCentrality = -3;
-    public int EgPawnFileCentrality = 8;
+    public int MgPawnFileCentrality = -4;
+    public int EgPawnFileCentrality = 9;
     public int MgPawnCorner = -4;
     public int EgPawnCorner = 9;
 
@@ -72,7 +72,7 @@ public sealed class EvaluationConfig
     public int EgKnightAdvancement = 11;
     public int MgKnightSquareCentrality = 2;
     public int EgKnightSquareCentrality = 20;
-    public int MgKnightFileCentrality = 1;
+    public int MgKnightFileCentrality = 0;
     public int EgKnightFileCentrality = -4;
     public int MgKnightCorner = -2;
     public int EgKnightCorner = -31;
@@ -80,7 +80,7 @@ public sealed class EvaluationConfig
     // Bishop Location
     public int MgBishopAdvancement = -1;
     public int EgBishopAdvancement = 7;
-    public int MgBishopSquareCentrality = 9;
+    public int MgBishopSquareCentrality = 10;
     public int EgBishopSquareCentrality = 3;
     public int MgBishopFileCentrality = -7;
     public int EgBishopFileCentrality = 6;
@@ -108,7 +108,7 @@ public sealed class EvaluationConfig
     public int EgQueenCorner = -6;
 
     // King Location
-    public int MgKingAdvancement = 5;
+    public int MgKingAdvancement = 4;
     public int EgKingAdvancement = 20;
     public int MgKingSquareCentrality = 12;
     public int EgKingSquareCentrality = 18;
@@ -119,12 +119,12 @@ public sealed class EvaluationConfig
 
     // Piece Mobility
     public int PieceMobilityPowerPer128 = 96;
-    public int MgKnightMobilityScale = 67;
-    public int EgKnightMobilityScale = 86;
+    public int MgKnightMobilityScale = 66;
+    public int EgKnightMobilityScale = 96;
     public int MgBishopMobilityScale = 67;
     public int EgBishopMobilityScale = 183;
     public int MgRookMobilityScale = 87;
-    public int EgRookMobilityScale = 124;
+    public int EgRookMobilityScale = 126;
     public int MgQueenMobilityScale = 89;
     public int EgQueenMobilityScale = 92;
 
@@ -132,13 +132,13 @@ public sealed class EvaluationConfig
     public int MgIsolatedPawn = 24;
     public int EgIsolatedPawn = 49;
     public int MgDoubledPawn = 18;
-    public int EgDoubledPawn = 27;
+    public int EgDoubledPawn = 32;
 
     // Threats
     public int MgPawnThreatenMinor = 43;
     public int EgPawnThreatenMinor = 45;
     public int MgPawnThreatenMajor = 65;
-    public int EgPawnThreatenMajor = 56;
+    public int EgPawnThreatenMajor = 57;
     public int MgMinorThreatenMajor = 34;
     public int EgMinorThreatenMajor = 39;
 
@@ -152,7 +152,7 @@ public sealed class EvaluationConfig
 
     // Major Pieces
     // ReSharper disable InconsistentNaming
-    public int MgRook7thRank = 6;
+    public int MgRook7thRank = 7;
     public int EgRook7thRank = 46;
     // ReSharper restore InconsistentNaming
 

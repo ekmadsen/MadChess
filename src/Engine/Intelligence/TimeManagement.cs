@@ -32,11 +32,11 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
 
     private const int _movesRemainingDefault = 20;
     private const int _movesRemainingTimePressure = 4;
-    private const int _moveTimeHardLimitPer128 = 536;
-    private const int _adjustMoveTimeMinHorizon = 9;
-    private const int _adjustMoveTimeMinScoreDecrease = 50;
+    private const int _moveTimeHardLimitPer128 = 475; // 3 adjustments of 1.5x + 10%.
+    private const int _adjustMoveTimeMinHorizon = 11;
+    private const int _adjustMoveTimeMinScoreDecrease = 40;
     private const int _adjustMoveTimePer128 = 64;
-    private const int _haveTimeSearchNextPlyPer128 = 70;
+    private const int _haveTimeSearchNextPlyPer128 = 70; // Half of soft time limit + 10%.
 
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
 

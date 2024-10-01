@@ -54,19 +54,19 @@
       // For nodePerSecond:                                var ratingClass = elo / 200d;
       // For moveError, blunderError, and blunderPer1024:  var ratingClass = (2600 - elo) / 200d;
 
-      "npsScale": 0.128,
-      "npsPower": 6.4,
-      "npsConstant": 256,
+      "npsScale": 0.125,
+      "npsPower": 6.5,
+      "npsConstant": 50,
       "npsEndgamePer128": 32,
-      "moveErrorScale": 0.9,
+      "moveErrorScale": 1.4,
       "moveErrorPower": 2,
       "moveErrorConstant": 10,
-      "blunderErrorScale": 2.5,
-      "blunderErrorPower": 2,
+      "blunderErrorScale": 0.35,
+      "blunderErrorPower": 3,
       "blunderErrorConstant": 50,
-      "blunderPer1024Scale": 0.8,
+      "blunderPer1024Scale": 1,
       "blunderPer1024Power": 2,
-      "blunderPer1024Constant": 32
+      "blunderPer1024Constant": 40
     }
   }
 }

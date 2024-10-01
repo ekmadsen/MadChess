@@ -55,6 +55,7 @@ public sealed class Search : IDisposable
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
     private const int _recapturesOnlyMaxFromHorizon = 3;
+    private const int _forfeitCastlingRightsPenalty = 150;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
     private readonly int[] _limitStrengthElos;
@@ -360,12 +361,22 @@ public sealed class Search : IDisposable
         var bestScore = bestMove.Score;
         if (bestScore >= StaticScore.SimpleEndgame) return bestMove.Move; // Ensure engine progresses towards checkmate.
 
-        // Determine how many moves are within score error.
-        var worstScore = bestScore - scoreError;
-        var anyUnreasonableInferiorMoves = false;
-        var inferiorMoves = 0;
+        if (_originalHorizon < _futilityPruningMargins.Length)
+        {
+            // Penalize king or rook move that forfeits castling rights to decrease likelihood it's considered the best move (which may occur at low search depths).
+            // For example, playing Kd8 in this position: r1b1kbnr/p2ppppp/8/qppP4/4P3/2P2N2/PP3PPP/R1BQKB1R b KQkq - 0 7.
+            for (var moveIndex = 0; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
+            {
+                var move = _bestMoves[moveIndex].Move;
+                if (IsKingOrRookMoveThatForfeitsCastlingRights(board, move)) _bestMoves[moveIndex].Score -= _forfeitCastlingRightsPenalty;
+            }
+        }
 
-        for (var moveIndex = 1; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++)
+        // Determine how many moves are within score error.
+        SortMovesByScore(_bestMoves, board.CurrentPosition.MoveIndex - 1);
+        var worstScore = bestScore - scoreError;
+        var inferiorMoves = 0;
+        for (var moveIndex = 1; moveIndex < board.CurrentPosition.MoveIndex; moveIndex++) // Start at index 1 because index 0 has the best move.
         {
             var inferiorMove = _bestMoves[moveIndex];
             if (inferiorMove.Score < worstScore) break;
@@ -373,20 +384,72 @@ public sealed class Search : IDisposable
             {
                 // Inferior move is unreasonable.
                 _bestMoves[moveIndex].Score = -StaticScore.Max;
-                anyUnreasonableInferiorMoves = true;
                 continue;
             }
             inferiorMoves++;
         }
 
-        if (anyUnreasonableInferiorMoves) SortMovesByScore(_bestMoves, board.CurrentPosition.MoveIndex - 1);  // Sort moves again so an unreasonable inferior move is not selected.
-
         // Randomly select a move within score error.
+        SortMovesByScore(_bestMoves, board.CurrentPosition.MoveIndex - 1);
         return _bestMoves[SafeRandom.NextInt(0, inferiorMoves + 1)].Move;
     }
 
 
     private bool IsInferiorMoveUnreasonable(Board board, ulong move)
+    {
+        if (IsKingOrRookMoveThatForfeitsCastlingRights(board, move)) return true;
+
+        var fromSquare = Move.From(move);
+        var toSquare = Move.To(move);
+        var colorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(move));
+        var pieceMove = (Board.SquareMasks[(int)fromSquare] & board.CurrentPosition.GetMajorAndMinorPieces(board.CurrentPosition.ColorToMove)) > 0;
+
+        if ((colorlessCaptureVictim == ColorlessPiece.None) && pieceMove)
+        {
+            // Non-Capture Piece Move
+            if ((Board.PawnAttackMasks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] & board.CurrentPosition.GetPawns(board.CurrentPosition.ColorLastMoved)) > 0)
+            {
+                // Moving piece to square attacked by enemy pawn(s) is unreasonable.
+                return true;
+            }
+        }
+        
+        var lastMoveColorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(board.PreviousPosition?.PlayedMove ?? Move.Null));
+        if ((lastMoveColorlessCaptureVictim != ColorlessPiece.None) && (lastMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
+        {
+            // Last move captured a minor or major piece.
+            if (_evaluation.GetPieceMaterialScore(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialScore(lastMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
+            {
+                // Move that fails to recapture equal or greater value piece is unreasonable.
+                return true;
+            }
+        }
+
+        var piece = board.CurrentPosition.GetPiece(fromSquare);
+        for (var previousMoves = 2; previousMoves <= 6; previousMoves += 2)
+        {
+            var previousPosition = board.GetPreviousPosition(previousMoves);
+            if (previousPosition == null) break;
+
+            var previousMove = previousPosition.PlayedMove;
+            var previousFromSquare = Move.From(previousMove);
+            var previousToSquare = Move.To(previousMove);
+            var previouslyMovedPiece = previousPosition.GetPiece(previousFromSquare);
+
+            if ((previouslyMovedPiece == piece) && (previousToSquare == fromSquare) && (previousFromSquare == toSquare))
+            {
+                return true; // Shuffling piece between same two squares is unreasonable.
+            }
+        }
+
+        var kingMove = Move.IsKingMove(move);
+        var fromOwnBackRank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)fromSquare] == 0;
+        var toOwnBackRank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] == 0;
+        return !kingMove && !fromOwnBackRank && toOwnBackRank; // Retreating minor or major piece to own back rank is unreasonable.
+    }
+
+
+    private static bool IsKingOrRookMoveThatForfeitsCastlingRights(Board board, ulong move)
     {
         var fromSquare = Move.From(move);
         var kingMove = Move.IsKingMove(move);
@@ -410,49 +473,7 @@ public sealed class Search : IDisposable
             }
         }
 
-        var toSquare = Move.To(move);
-        var colorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(move));
-        var pieceMove = (Board.SquareMasks[(int)fromSquare] & board.CurrentPosition.GetMajorAndMinorPieces(board.CurrentPosition.ColorToMove)) > 0;
-        if ((colorlessCaptureVictim == ColorlessPiece.None) && pieceMove)
-        {
-            // Non-Capture Piece Move
-            if ((Board.PawnAttackMasks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] & board.CurrentPosition.GetPawns(board.CurrentPosition.ColorLastMoved)) > 0)
-            {
-                // Moving piece to square attacked by enemy pawn(s) is unreasonable.
-                return true;
-            }
-        }
-        
-        var lastMoveColorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(board.PreviousPosition?.PlayedMove ?? Move.Null));
-        if ((lastMoveColorlessCaptureVictim != ColorlessPiece.None) && (lastMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
-        {
-            // Last move captured a minor or major piece.
-            if (_evaluation.GetPieceMaterialScore(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialScore(lastMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
-            {
-                // Move that fails to recapture equal or greater value piece is unreasonable.
-                return true;
-            }
-        }
-
-        for (var previousMoves = 2; previousMoves <= 6; previousMoves += 2)
-        {
-            var previousPosition = board.GetPreviousPosition(previousMoves);
-            if (previousPosition == null) break;
-
-            var previousMove = previousPosition.PlayedMove;
-            var previousFromSquare = Move.From(previousMove);
-            var previousToSquare = Move.To(previousMove);
-            var previouslyMovedPiece = previousPosition.GetPiece(previousFromSquare);
-
-            if ((previouslyMovedPiece == piece) && (previousToSquare == fromSquare) && (previousFromSquare == toSquare))
-            {
-                return true; // Shuffling piece between same two squares is unreasonable.
-            }
-        }
-
-        var fromOwnBackRank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)fromSquare] == 0;
-        var toOwnBackRank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] == 0;
-        return !kingMove && !fromOwnBackRank && toOwnBackRank; // Retreating minor or major piece to own back rank is unreasonable.
+        return false;
     }
 
 
@@ -1011,7 +1032,7 @@ public sealed class Search : IDisposable
 
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
-        var reduction = _nullMoveReduction + Math.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
+        var reduction = _nullMoveReduction + FastMath.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
 
         board.PlayNullMove();
         var score = -GetDynamicScore(board, depth + 1, horizon - reduction, false, -beta, -beta + 1);  // Do not play two null moves consecutively.
@@ -1196,7 +1217,7 @@ public sealed class Search : IDisposable
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
-        
+
         var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
         if (board.CurrentPosition.StaticScore < previous2StaticScore)
         {
