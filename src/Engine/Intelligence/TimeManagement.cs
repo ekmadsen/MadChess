@@ -30,11 +30,11 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
     public TimeSpan MoveTimeHardLimit;
     public bool CanAdjustMoveTime;
 
-    private const int _movesRemainingDefault = 20;
+    private const int _movesRemainingDefault = 24;
     private const int _movesRemainingTimePressure = 4;
     private const int _moveTimeHardLimitPer128 = 475; // 3 adjustments of 1.5x + 10%.
     private const int _adjustMoveTimeMinHorizon = 11;
-    private const int _adjustMoveTimeMinScoreDecrease = 40;
+    private const int _adjustMoveTimeMinScoreDecrease = 33;
     private const int _adjustMoveTimePer128 = 64;
     private const int _haveTimeSearchNextPlyPer128 = 70; // Half of soft time limit + 10%.
 
@@ -78,7 +78,7 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
         if (!CanAdjustMoveTime || (originalHorizon < _adjustMoveTimeMinHorizon) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
         if (bestMovePlies[originalHorizon].Score >= (bestMovePlies[originalHorizon - 1].Score - _adjustMoveTimeMinScoreDecrease)) return;
 
-        // Score has decreased significantly from last ply.
+        // Score has decreased significantly from previous ply.
         if (messenger.Debug) messenger.WriteLine("Adjusting move time because score has decreased significantly from previous ply.");
         MoveTimeSoftLimit += TimeSpan.FromMilliseconds((MoveTimeSoftLimit.TotalMilliseconds * _adjustMoveTimePer128) / 128);
         if (MoveTimeSoftLimit > MoveTimeHardLimit) MoveTimeSoftLimit = MoveTimeHardLimit;
