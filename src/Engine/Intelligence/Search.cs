@@ -228,10 +228,11 @@ public sealed class Search : IDisposable
 
     private (int nodesPerSecond, int moveError, int blunderError, int blunderPer1024) CalculateLimitStrengthParams(int elo)
     {
-        var ratingClass = elo / 200d;
+        const double interval = 200d;
+        var ratingClass = elo / interval;
         var nodesPerSecond = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.NpsScale, _limitStrengthConfig.NpsPower, _limitStrengthConfig.NpsConstant);
 
-        ratingClass = (Intelligence.Elo.Max - elo) / 200d;
+        ratingClass = (Intelligence.Elo.Max + interval - elo) / interval;
         var moveError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.MoveErrorScale, _limitStrengthConfig.MoveErrorPower, _limitStrengthConfig.MoveErrorConstant);
         var blunderError = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderErrorScale, _limitStrengthConfig.BlunderErrorPower, _limitStrengthConfig.BlunderErrorConstant);
         var blunderPer1024 = Formula.GetNonLinearBonus(ratingClass, _limitStrengthConfig.BlunderPer1024Scale, _limitStrengthConfig.BlunderPer1024Power, _limitStrengthConfig.BlunderPer1024Constant);
@@ -397,6 +398,8 @@ public sealed class Search : IDisposable
 
     private bool IsInferiorMoveUnreasonable(Board board, ulong move)
     {
+        // TODO: Moving pawn in front of castled king is unreasonable.
+
         if (IsKingOrRookMoveThatForfeitsCastlingRights(board, move)) return true;
 
         var fromSquare = Move.From(move);

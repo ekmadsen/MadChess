@@ -52,21 +52,21 @@
       // The bonus parameter in the above formula is ratingClass.
 
       // For nodePerSecond:                                var ratingClass = elo / 200d;
-      // For moveError, blunderError, and blunderPer1024:  var ratingClass = (2600 - elo) / 200d;
+      // For moveError, blunderError, and blunderPer1024:  var ratingClass = (2800 - elo) / 200d;
 
       "npsScale": 0.125,
       "npsPower": 6.5,
       "npsConstant": 50,
       "npsEndgamePer128": 32,
-      "moveErrorScale": 1.4,
-      "moveErrorPower": 2,
-      "moveErrorConstant": 10,
-      "blunderErrorScale": 0.35,
+      "moveErrorScale": 0.07,
+      "moveErrorPower": 3,
+      "moveErrorConstant": 7,
+      "blunderErrorScale": 0.15,
       "blunderErrorPower": 3,
-      "blunderErrorConstant": 50,
-      "blunderPer1024Scale": 1,
-      "blunderPer1024Power": 2,
-      "blunderPer1024Constant": 40
+      "blunderErrorConstant": 51,
+      "blunderPer1024Scale": 0.25,
+      "blunderPer1024Power": 2.5,
+      "blunderPer1024Constant": 35
     }
   }
 }
