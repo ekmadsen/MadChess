@@ -44,7 +44,7 @@ public sealed class UciStream : IDisposable
     private readonly Stopwatch _commandStopwatch;
     private readonly Queue<List<string>> _asyncQueue;
     private readonly AutoResetEvent _asyncSignal;
-    private readonly object _queueLock;
+    private readonly Lock _queueLock;
     private readonly Board _board;
     private readonly TimeManagement _timeManagement;
     private readonly Stats _stats;
@@ -67,7 +67,7 @@ public sealed class UciStream : IDisposable
         _commandStopwatch = new Stopwatch();
         _asyncQueue = new Queue<List<string>>();
         _asyncSignal = new AutoResetEvent(false);
-        _queueLock = new object();
+        _queueLock = new Lock();
 
         // Create game objects.
         _board = new Board(_messenger);

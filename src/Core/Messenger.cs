@@ -11,6 +11,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 
@@ -24,9 +25,9 @@ public sealed class Messenger(Stream inputStream, Stream outputStream) : IAsyncD
     private readonly StreamWriter _outputStreamWriter = new(outputStream, leaveOpen: true) { AutoFlush = true };
     // Create diagnostic and synchronization objects.
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-    private readonly object _inputStreamLock = new();
-    private readonly object _outputStreamLock = new();
-    private readonly object _logLock = new();
+    private readonly Lock _inputStreamLock = new();
+    private readonly Lock _outputStreamLock = new();
+    private readonly Lock _logLock = new();
     private StreamWriter _logWriter;
 
 
