@@ -130,8 +130,6 @@ public sealed class Position
     {
         // Defining a position via colored piece bitboards + color occupancy + occupancy is redundant.
         // But the engine plays slightly stronger than with colorless piece bitboards + color occupancy.
-        // Perhaps the cost of copying redundant bitboards (here in the Position.Set method) is less than
-        //   the cost of bitwise operations applied num
 
         // Copy bitboards.  Explicit array lookups are faster than looping through pieces.
         PieceBitboards[(int)Piece.WhitePawn] = copyFromPosition.PieceBitboards[(int)Piece.WhitePawn];
