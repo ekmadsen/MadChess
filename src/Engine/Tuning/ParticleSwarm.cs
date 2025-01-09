@@ -38,13 +38,13 @@ public sealed class ParticleSwarm
 
     public void Iterate(Board board, Search search, Evaluation evaluation)
     {
-        var bestParticle = GetBestParticle();
-
         for (var index = 0; index < Particles.Count; index++)
         {
             var particle = Particles[index];
             particle.ConfigureEvaluation(evaluation);
             particle.CalculateEvaluationError(board, search, _winScale);
+
+            var bestParticle = GetBestParticle();
 
             if ((particle != bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
             {

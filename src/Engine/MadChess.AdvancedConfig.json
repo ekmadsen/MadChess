@@ -56,14 +56,14 @@
 
       "npsScale": 0.125,
       "npsPower": 6.5,
-      "npsConstant": 50,
+      "npsConstant": 43,
       "npsEndgamePer128": 32,
       "moveErrorScale": 0.07,
       "moveErrorPower": 3,
       "moveErrorConstant": 7,
-      "blunderErrorScale": 0.15,
+      "blunderErrorScale": 0.20,
       "blunderErrorPower": 3,
-      "blunderErrorConstant": 51,
+      "blunderErrorConstant": 34,
       "blunderPer1024Scale": 0.25,
       "blunderPer1024Power": 2.5,
       "blunderPer1024Constant": 35

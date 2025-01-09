@@ -860,7 +860,7 @@ public sealed class UciStream : IDisposable
     }
 
 
-    private void AnalyzePositions(IList<string> tokens)
+    private void AnalyzePositions(List<string> tokens)
     {
         _commandStopwatch.Restart();
 
@@ -1016,14 +1016,15 @@ public sealed class UciStream : IDisposable
     }
 
 
-    private void Tune(IList<string> tokens)
+    private void Tune(List<string> tokens)
     {
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 717 for GM2600EloGamesClean.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 722 for GM2600EloGamesClean.pgn.
         var iterations = int.Parse(tokens[5].Trim());
 
+        // TODO: Fix bug re: inaccurate globally best parameters when particlesPerSwarm > 1.
         var particleSwarms = new ParticleSwarms(_advancedConfig, _messenger, pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale);
         particleSwarms.Optimize(iterations);
 
@@ -1032,7 +1033,7 @@ public sealed class UciStream : IDisposable
     }
 
 
-    private void TuneWinScale(IList<string> tokens)
+    private void TuneWinScale(List<string> tokens)
     {
         var pgnFilename = tokens[1].Trim();
         var threads = int.Parse(tokens[2]);
