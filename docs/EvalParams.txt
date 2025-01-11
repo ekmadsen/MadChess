@@ -150,27 +150,27 @@ Endgame Connected Passed Pawns:     +000 +000 +003 +010 +022 +040 +064 +000
 Endgame King Escorted Passed Pawn:  18
 Unstoppable Passed Pawn:            1555
 
-Middlegame Knight Mobility:  -039 -026 -016 -008 +000 +007 +014 +020 +027
+Middlegame Knight Mobility:  -038 -025 -016 -008 +000 +006 +013 +019 +026
    Endgame Knight Mobility:  -057 -037 -024 -011 +000 +010 +020 +029 +039
 
-Middlegame Bishop Mobility:  -037 -028 -021 -015 -010 -005 +000 +005 +009 +013 +018 +022 +026 +030
-   Endgame Bishop Mobility:  -102 -076 -058 -042 -027 -013 +000 +013 +025 +036 +048 +059 +070 +081
+Middlegame Bishop Mobility:  -038 -029 -022 -016 -010 -005 +000 +004 +009 +013 +017 +021 +026 +030
+   Endgame Bishop Mobility:  -097 -072 -055 -039 -025 -012 +000 +013 +024 +035 +046 +057 +067 +078
 
-  Middlegame Rook Mobility:  -051 -039 -031 -024 -018 -011 -005 +000 +006 +011 +016 +021 +026 +031 +036
-     Endgame Rook Mobility:  -074 -057 -045 -035 -025 -016 -008 +000 +008 +016 +023 +031 +038 +045 +052
+  Middlegame Rook Mobility:  -057 -044 -035 -027 -020 -013 -007 +000 +006 +011 +017 +023 +028 +033 +039
+     Endgame Rook Mobility:  -074 -057 -045 -035 -026 -017 -008 +000 +008 +015 +023 +030 +037 +044 +051
 
- Middlegame Queen Mobility:  -051 -044 -039 -034 -030 -026 -023 -019 -016 -012 -009 -006 -003 +000 +003 +006 +009 +011 +014 +017 +020 +022 +025 +027 +030 +033 +035 +038
-    Endgame Queen Mobility:  -053 -046 -040 -036 -032 -028 -024 -020 -017 -013 -010 -007 -003 +000 +003 +006 +009 +012 +014 +017 +020 +023 +025 +028 +031 +033 +036 +039
+ Middlegame Queen Mobility:  -054 -046 -041 -036 -032 -028 -024 -020 -016 -013 -009 -006 -003 +000 +004 +007 +010 +013 +016 +018 +021 +024 +027 +030 +032 +035 +038 +041
+    Endgame Queen Mobility:  -072 -062 -055 -048 -042 -037 -032 -027 -022 -017 -013 -008 -004 +000 +004 +009 +013 +017 +020 +024 +028 +032 +036 +039 +043 +046 +050 +054
 
-King Safety KnightAttackOuterRingPer8:  029
-King Safety KnightAttackInnerRingPer8:  024
-King Safety BishopAttackOuterRingPer8:  010
-King Safety BishopAttackInnerRingPer8:  027
+King Safety KnightAttackOuterRingPer8:  028
+King Safety KnightAttackInnerRingPer8:  022
+King Safety BishopAttackOuterRingPer8:  012
+King Safety BishopAttackInnerRingPer8:  026
 King Safety RookAttackOuterRingPer8:    014
-King Safety RookAttackInnerRingPer8:    019
-King Safety QueenAttackOuterRingPer8:   017
-King Safety QueenAttackInnerRingPer8:   018
-King Safety SemiOpenFilePer8:           018
-King Safety PawnShieldPer8:             016
+King Safety RookAttackInnerRingPer8:    018
+King Safety QueenAttackOuterRingPer8:   019
+King Safety QueenAttackInnerRingPer8:   016
+King Safety SemiOpenFilePer8:           021
+King Safety PawnShieldPer8:             015
 
-Middlegame King Safety:  +000 +000 +001 +002 +005 +008 +011 +016 +021 +027 +033 +040 +048 +057 +066 +076 +087 +098 +110 +123 +137 +151 +166 +182 +198 +215 +233 +252 +271 +291 +312 +334 +356 +379 +403 +427 +452 +478 +505 +532 +561 +589 +619 +649 +680 +712 +745 +778 +812 +847 +882 +919 +956 +993 +1032+1071+1111+1152+1193+1235+1278+1322+1366+1411
+Middlegame King Safety:  +000 +000 +001 +002 +004 +007 +011 +015 +019 +025 +031 +037 +044 +052 +061 +070 +080 +091 +102 +114 +126 +140 +154 +168 +183 +199 +216 +233 +251 +270 +289 +309 +329 +351 +373 +395 +419 +442 +467 +492 +519 +545 +573 +601 +629 +659 +689 +720 +751 +783 +816 +850 +884 +919 +954 +991 +1028+1065+1103+1142+1182+1223+1264+1305
