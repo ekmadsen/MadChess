@@ -55,7 +55,9 @@ public sealed class Evaluation
     private readonly ulong[] _passedPawns; // [color]
     private readonly int[] _mgPassedPawns; // [rank]
     private readonly int[] _egPassedPawns; // [rank]
+    private readonly int[] _mgFreePassedPawns; // [rank]
     private readonly int[] _egFreePassedPawns; // [rank]
+    private readonly int[] _mgConnectedPassedPawns; // [rank]
     private readonly int[] _egConnectedPassedPawns; // [rank]
 
     // King Safety
@@ -94,7 +96,9 @@ public sealed class Evaluation
         _passedPawns = new ulong[2];
         _mgPassedPawns = new int[8];
         _egPassedPawns = new int[8];
+        _mgFreePassedPawns = new int[8];
         _egFreePassedPawns = new int[8];
+        _mgConnectedPassedPawns = new int[8];
         _egConnectedPassedPawns = new int[8];
 
         // King Safety
@@ -168,14 +172,18 @@ public sealed class Evaluation
         var passedPawnPower = Config.PassedPawnPowerPer128 / 128d;
         var mgScale = Config.MgPassedPawnScalePer128 / 128d;
         var egScale = Config.EgPassedPawnScalePer128 / 128d;
+        var mgFreeScale = Config.MgFreePassedPawnScalePer128 / 128d;
         var egFreeScale = Config.EgFreePassedPawnScalePer128 / 128d;
+        var mgConnectedScale = Config.MgConnectedPassedPawnScalePer128 / 128d;
         var egConnectedScale = Config.EgConnectedPassedPawnScalePer128 / 128d;
 
         for (var rank = 1; rank < 7; rank++)
         {
             _mgPassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
             _egPassedPawns[rank] = Formula.GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
+            _mgFreePassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgFreeScale, passedPawnPower, 0);
             _egFreePassedPawns[rank] = Formula.GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
+            _mgConnectedPassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgConnectedScale, passedPawnPower, 0);
             _egConnectedPassedPawns[rank] = Formula.GetNonLinearBonus(rank, egConnectedScale, passedPawnPower, 0);
         }
 
@@ -816,7 +824,12 @@ public sealed class Evaluation
                 {
                     // Pawn is free to advance.
                     if (IsUnstoppablePawn(position, square, enemyKingSquare, color)) _staticScore.UnstoppablePassedPawns[(int)color] += Config.UnstoppablePassedPawn; // Pawn is unstoppable.
-                    else _staticScore.EgFreePassedPawns[(int)color] += _egFreePassedPawns[rank]; // Pawn is passed and free.
+                    else
+                    {
+                        // Pawn is passed and free.
+                        _staticScore.MgFreePassedPawns[(int)color] += _mgFreePassedPawns[rank];
+                        _staticScore.EgFreePassedPawns[(int)color] += _egFreePassedPawns[rank];
+                    }
                 }
                 else
                 {
@@ -857,8 +870,18 @@ public sealed class Evaluation
         {
             var rank = Board.Ranks[(int)color][(int)square];
             var file = Board.Files[(int)square];
-            if ((file > 0) && ((Board.FileMasks[file - 1] & allPassedPawns) > 0)) _staticScore.EgConnectedPassedPawns[(int)color] += _egConnectedPassedPawns[rank]; // File Left of Passed Pawn
-            if ((file < 7) && ((Board.FileMasks[file + 1] & allPassedPawns) > 0)) _staticScore.EgConnectedPassedPawns[(int)color] += _egConnectedPassedPawns[rank]; // File Right of Passed Pawn
+            if ((file > 0) && ((Board.FileMasks[file - 1] & allPassedPawns) > 0))
+            {
+                // Another passed pawn is in file left of passed pawn square.
+                _staticScore.MgConnectedPassedPawns[(int)color] += _mgConnectedPassedPawns[rank];
+                _staticScore.EgConnectedPassedPawns[(int)color] += _egConnectedPassedPawns[rank];
+            }
+            if ((file < 7) && ((Board.FileMasks[file + 1] & allPassedPawns) > 0))
+            {
+                // Another passed pawn is in file right of passed pawn square.
+                _staticScore.MgConnectedPassedPawns[(int)color] += _mgConnectedPassedPawns[rank];
+                _staticScore.EgConnectedPassedPawns[(int)color] += _egConnectedPassedPawns[rank];
+            }
         }
     }
 
@@ -1203,8 +1226,16 @@ public sealed class Evaluation
         ShowParameterArray(_egPassedPawns, stringBuilder);
         stringBuilder.AppendLine();
 
+        stringBuilder.Append("Middlegame Free Passed Pawns:       ");
+        ShowParameterArray(_mgFreePassedPawns, stringBuilder);
+        stringBuilder.AppendLine();
+
         stringBuilder.Append("Endgame Free Passed Pawns:          ");
         ShowParameterArray(_egFreePassedPawns, stringBuilder);
+        stringBuilder.AppendLine();
+
+        stringBuilder.Append("Middlegame Connected Passed Pawns:  ");
+        ShowParameterArray(_mgConnectedPassedPawns, stringBuilder);
         stringBuilder.AppendLine();
 
         stringBuilder.Append("Endgame Connected Passed Pawns:     ");

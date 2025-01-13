@@ -21,7 +21,7 @@ public sealed class ParticleSwarm
 {
     public const double Influence = 1.50d;
     public readonly Particles Particles;
-    private const double _particleDeathFraction = 0.05d;
+    private const double _particleDeathFraction = 0.01d;
     private readonly int _winScale;
         
 

@@ -31,12 +31,13 @@ public sealed class EvaluationConfig
 
     // Passed Pawns
     public int PassedPawnPowerPer128 = 327;
-    public int MgPassedPawnScalePer128 = 131;
-    public int EgPassedPawnScalePer128 = 354;
-    // TODO: Add MgFreePassedPawnScalePer128.
-    public int EgFreePassedPawnScalePer128 = 711;
-    public int EgConnectedPassedPawnScalePer128 = 85;
-    public int EgKingEscortedPassedPawn = 18;
+    public int MgPassedPawnScalePer128 = 162;
+    public int EgPassedPawnScalePer128 = 301;
+    public int MgFreePassedPawnScalePer128 = 207;
+    public int EgFreePassedPawnScalePer128 = 610;
+    public int MgConnectedPassedPawnScalePer128 = 4;
+    public int EgConnectedPassedPawnScalePer128 = 119;
+    public int EgKingEscortedPassedPawn = 19;
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial); // Incentivize engine to promote pawns.
 
     // King Safety
@@ -189,7 +190,9 @@ public sealed class EvaluationConfig
         PassedPawnPowerPer128 = copyFromConfig.PassedPawnPowerPer128;
         MgPassedPawnScalePer128 = copyFromConfig.MgPassedPawnScalePer128;
         EgPassedPawnScalePer128 = copyFromConfig.EgPassedPawnScalePer128;
+        MgFreePassedPawnScalePer128 = copyFromConfig.MgFreePassedPawnScalePer128;
         EgFreePassedPawnScalePer128 = copyFromConfig.EgFreePassedPawnScalePer128;
+        MgConnectedPassedPawnScalePer128 = copyFromConfig.MgConnectedPassedPawnScalePer128;
         EgConnectedPassedPawnScalePer128 = copyFromConfig.EgConnectedPassedPawnScalePer128;
         EgKingEscortedPassedPawn = copyFromConfig.EgKingEscortedPassedPawn;
 

@@ -35,7 +35,9 @@ public sealed class StaticScore
 
     public readonly int[] MgPassedPawns; // [color]
     public readonly int[] EgPassedPawns; // [color]
+    public readonly int[] MgFreePassedPawns; // [color]
     public readonly int[] EgFreePassedPawns; // [color]
+    public readonly int[] MgConnectedPassedPawns; // [color]
     public readonly int[] EgConnectedPassedPawns; // [color]
     public readonly int[] EgKingEscortedPassedPawns; // [color]
     public readonly int[] UnstoppablePassedPawns; // [color]
@@ -79,7 +81,9 @@ public sealed class StaticScore
 
         MgPassedPawns = new int[2];
         EgPassedPawns = new int[2];
+        MgFreePassedPawns = new int[2];
         EgFreePassedPawns = new int[2];
+        MgConnectedPassedPawns = new int[2];
         EgConnectedPassedPawns = new int[2];
         EgKingEscortedPassedPawns = new int[2];
         UnstoppablePassedPawns = new int[2];
@@ -113,7 +117,7 @@ public sealed class StaticScore
 
 
     private int GetMg(Color color) => GetMgMaterial(color) +
-                                      MgPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
+                                      MgPassedPawns[(int)color] + MgFreePassedPawns[(int)color] + MgConnectedPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
                                       MgKingSafety[(int)color] +
                                       MgPieceLocation[(int)color] + MgPieceMobility[(int)color] + MgPawnStructure[(int)color] +
                                       MgThreats[(int)color] + MgBishopPair[(int)color] + MgOutposts[(int)color] + MgRookOn7thRank[(int)color];
@@ -175,8 +179,12 @@ public sealed class StaticScore
         MgPassedPawns[(int)Color.Black] = 0;
         EgPassedPawns[(int)Color.White] = 0;
         EgPassedPawns[(int)Color.Black] = 0;
+        MgFreePassedPawns[(int)Color.White] = 0;
+        MgFreePassedPawns[(int)Color.Black] = 0;
         EgFreePassedPawns[(int)Color.White] = 0;
         EgFreePassedPawns[(int)Color.Black] = 0;
+        MgConnectedPassedPawns[(int)Color.White] = 0;
+        MgConnectedPassedPawns[(int)Color.Black] = 0;
         EgConnectedPassedPawns[(int)Color.White] = 0;
         EgConnectedPassedPawns[(int)Color.Black] = 0;
         EgKingEscortedPassedPawns[(int)Color.White] = 0;
@@ -238,8 +246,8 @@ public sealed class StaticScore
         AppendStaticScoreLine(stringBuilder, "Material", GetMgMaterial(Color.White), GetMgMaterial(Color.Black), GetEgMaterial(Color.White), GetEgMaterial(Color.Black), phase);
 
         AppendStaticScoreLine(stringBuilder, "Passed Pawns", MgPassedPawns[(int)Color.White], MgPassedPawns[(int)Color.Black], EgPassedPawns[(int)Color.White], EgPassedPawns[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", 0, 0, EgFreePassedPawns[(int)Color.White], EgFreePassedPawns[(int)Color.Black], phase);
-        AppendStaticScoreLine(stringBuilder, "Connected Passed Pawns", 0, 0, EgConnectedPassedPawns[(int)Color.White], EgConnectedPassedPawns[(int)Color.Black], phase);
+        AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", MgFreePassedPawns[(int)Color.White], MgFreePassedPawns[(int)Color.Black] , EgFreePassedPawns[(int)Color.White], EgFreePassedPawns[(int)Color.Black], phase);
+        AppendStaticScoreLine(stringBuilder, "Connected Passed Pawns", MgConnectedPassedPawns[(int)Color.White], MgConnectedPassedPawns[(int)Color.Black] , EgConnectedPassedPawns[(int)Color.White], EgConnectedPassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, EgKingEscortedPassedPawns[(int)Color.White], EgKingEscortedPassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
