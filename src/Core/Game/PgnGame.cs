@@ -79,18 +79,13 @@ public sealed class PgnGame
                         ReadToSectionEnd(stringReader, '(', ')');
                         break;
 
-                    case '\r':
-                        // Do not include carriage return in clean notation.
-                        stringBuilder.Append(' ');
-                        break;
-
-                    case '\n':
-                        // Do not include newline in clean notation.
-                        stringBuilder.Append(' ');
+                    case '$':
+                        // Found a numeric annotation glyph.  See https://en.wikipedia.org/wiki/Numeric_Annotation_Glyphs.
+                        ReadUntilNonDigit(stringReader);
                         break;
 
                     default:
-                        stringBuilder.Append(_buffer[0]);
+                        stringBuilder.Append(char.IsWhiteSpace(_buffer[0]) ? ' ' : _buffer[0]);
                         break;
                 }
 
@@ -170,6 +165,18 @@ public sealed class PgnGame
                 sections--;
                 if (sections == 0) break;
             }
+
+        } while (true);
+    }
+
+
+    private void ReadUntilNonDigit(StringReader stringReader)
+    {
+        do
+        {
+            var charsRead = stringReader.Read(_buffer, 0, 1);
+            if (charsRead == 0) break;
+            if (!char.IsDigit(_buffer[0])) return;
 
         } while (true);
     }

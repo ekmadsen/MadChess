@@ -9,6 +9,7 @@
 
 
 using System;
+using System.Threading;
 
 
 namespace ErikTheCoder.MadChess.Core.Utilities;
@@ -18,14 +19,14 @@ public static class SafeRandom
 {
     private static readonly byte[] _buffer;
     private static readonly Random _random;
-    private static readonly object _lock;
+    private static readonly Lock _lock;
 
 
     static SafeRandom()
     {
         _buffer = new byte[sizeof(ulong)];
         _random = new Random();
-        _lock = new object();
+        _lock = new Lock();
     }
 
 

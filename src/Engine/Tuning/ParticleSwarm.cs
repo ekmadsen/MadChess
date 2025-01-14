@@ -21,7 +21,7 @@ public sealed class ParticleSwarm
 {
     public const double Influence = 1.50d;
     public readonly Particles Particles;
-    private const double _particleDeathFraction = 0.05d;
+    private const double _particleDeathFraction = 0.01d;
     private readonly int _winScale;
         
 
@@ -38,13 +38,13 @@ public sealed class ParticleSwarm
 
     public void Iterate(Board board, Search search, Evaluation evaluation)
     {
-        var bestParticle = GetBestParticle();
-
         for (var index = 0; index < Particles.Count; index++)
         {
             var particle = Particles[index];
             particle.ConfigureEvaluation(evaluation);
             particle.CalculateEvaluationError(board, search, _winScale);
+
+            var bestParticle = GetBestParticle();
 
             if ((particle != bestParticle) && (SafeRandom.NextDouble() <= _particleDeathFraction))
             {

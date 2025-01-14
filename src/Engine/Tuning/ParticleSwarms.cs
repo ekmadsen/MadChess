@@ -28,7 +28,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
     private readonly AdvancedConfig _advancedConfig;
     private readonly Messenger _messenger;
     private readonly double _originalEvaluationError;
-    private int _iterations;
 
 
     public ParticleSwarms(AdvancedConfig advancedConfig, Messenger messenger, string pgnFilename, int particleSwarms, int particlesPerSwarm, int winScale)
@@ -75,22 +74,22 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         var evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, messenger, stats);
         var search = new Search(_advancedConfig.LimitStrength.Search, messenger, timeManagement, stats, cache, killerMoves, moveHistory, evaluation);
 
-        // Set default parameters for all particles.
-        for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
-        {
-            var particleSwarm = this[particleSwarmIndex];
-            for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
-            {
-                var particle = particleSwarm.Particles[particleIndex];
-                particle.SetDefaultParameters();
-                particle.ConfigureEvaluation(evaluation);
-            }
-        }
+        //// Set default parameters for all particles.
+        //for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
+        //{
+        //    var particleSwarm = this[particleSwarmIndex];
+        //    for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
+        //    {
+        //        var particle = particleSwarm.Particles[particleIndex];
+        //        particle.SetDefaultParameters();
+        //        particle.ConfigureEvaluation(evaluation);
+        //    }
+        //}
 
         // Set default parameters for one particle and determine original evaluation error.
         var firstParticleInFirstSwarm = this[0].Particles[0];
-        //firstParticleInFirstSwarm.SetDefaultParameters();
-        //firstParticleInFirstSwarm.ConfigureEvaluation(evaluation);
+        firstParticleInFirstSwarm.SetDefaultParameters();
+        firstParticleInFirstSwarm.ConfigureEvaluation(evaluation);
         firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
         _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
 
@@ -101,125 +100,142 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
 
     public static Parameters CreateParameters() =>
     [
-        new Parameter(nameof(EvaluationConfig.EgPawnMaterial), 50, 200),
-        new Parameter(nameof(EvaluationConfig.MgKnightMaterial), 200, 900),
-        new Parameter(nameof(EvaluationConfig.EgKnightMaterial), 200, 900),
-        new Parameter(nameof(EvaluationConfig.MgBishopMaterial), 200, 900),
-        new Parameter(nameof(EvaluationConfig.EgBishopMaterial), 200, 900),
-        new Parameter(nameof(EvaluationConfig.MgRookMaterial), 400, 2000),
-        new Parameter(nameof(EvaluationConfig.EgRookMaterial), 400, 2000),
-        new Parameter(nameof(EvaluationConfig.MgQueenMaterial), 800, 4000),
-        new Parameter(nameof(EvaluationConfig.EgQueenMaterial), 800, 4000),
+        //// Material
+        //new Parameter(nameof(EvaluationConfig.EgPawnMaterial), 50, 200),
+        //new Parameter(nameof(EvaluationConfig.MgKnightMaterial), 200, 900),
+        //new Parameter(nameof(EvaluationConfig.EgKnightMaterial), 200, 900),
+        //new Parameter(nameof(EvaluationConfig.MgBishopMaterial), 200, 900),
+        //new Parameter(nameof(EvaluationConfig.EgBishopMaterial), 200, 900),
+        //new Parameter(nameof(EvaluationConfig.MgRookMaterial), 400, 2000),
+        //new Parameter(nameof(EvaluationConfig.EgRookMaterial), 400, 2000),
+        //new Parameter(nameof(EvaluationConfig.MgQueenMaterial), 800, 4000),
+        //new Parameter(nameof(EvaluationConfig.EgQueenMaterial), 800, 4000),
 
         // Passed Pawns
-        new Parameter(nameof(EvaluationConfig.PassedPawnPowerPer128), 128, 512),
+        //new Parameter(nameof(EvaluationConfig.PassedPawnPowerPer128), 128, 512),
         new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePer128), 0, 256),
         new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePer128), 64, 512),
+        new Parameter(nameof(EvaluationConfig.MgFreePassedPawnScalePer128), 0, 1024),
         new Parameter(nameof(EvaluationConfig.EgFreePassedPawnScalePer128), 128, 1024),
+        new Parameter(nameof(EvaluationConfig.MgConnectedPassedPawnScalePer128), 0, 512),
         new Parameter(nameof(EvaluationConfig.EgConnectedPassedPawnScalePer128), 64, 512),
         new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 32),
 
-        // King Safety
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyPowerPer128), 128, 512),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyScalePer128), 0, 128),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightAttackOuterRingPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightAttackInnerRingPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightProximityPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyBishopAttackOuterRingPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyBishopAttackInnerRingPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyBishopProximityPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyRookProximityPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyQueenProximityPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyPawnShieldPer8), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyDefendingPiecesPer8), 0, 32),
+        //// King Safety
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyPowerPer128), 128, 512),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyScalePer128), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightAttackOuterRingPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightAttackInnerRingPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightProximityPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyBishopAttackOuterRingPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyBishopAttackInnerRingPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyBishopProximityPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyRookAttackOuterRingPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyRookAttackInnerRingPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyRookProximityPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyQueenAttackOuterRingPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyQueenAttackInnerRingPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyQueenProximityPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetySemiOpenFilePer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyPawnShieldPer8), 0, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSafetyDefendingPiecesPer8), 0, 32),
 
-        // Pawn Location
-        new Parameter(nameof(EvaluationConfig.MgPawnAdvancement), 0, 32),
-        new Parameter(nameof(EvaluationConfig.EgPawnAdvancement), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgPawnCentrality), 0, 64),
-        new Parameter(nameof(EvaluationConfig.EgPawnCentrality), -32, 32),
+        //// Pawn Location
+        //new Parameter(nameof(EvaluationConfig.MgPawnAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgPawnAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgPawnSquareCentrality), -64, 64),
+        //new Parameter(nameof(EvaluationConfig.EgPawnSquareCentrality), -64, 64),
+        //new Parameter(nameof(EvaluationConfig.MgPawnFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgPawnFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgPawnCorner), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgPawnCorner), -32, 32),
 
-        // Knight Location
-        new Parameter(nameof(EvaluationConfig.MgKnightAdvancement), -32, 32),
-        new Parameter(nameof(EvaluationConfig.EgKnightAdvancement), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKnightCentrality), 0, 32),
-        new Parameter(nameof(EvaluationConfig.EgKnightCentrality), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKnightCorner), -32, 0),
-        new Parameter(nameof(EvaluationConfig.EgKnightCorner), -32, 0),
+        //// Knight Location
+        //new Parameter(nameof(EvaluationConfig.MgKnightAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgKnightAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKnightSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgKnightSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKnightFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgKnightFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKnightCorner), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgKnightCorner), -32, 32),
 
-        // Bishop Location
-        new Parameter(nameof(EvaluationConfig.MgBishopAdvancement), -32, 32),
-        new Parameter(nameof(EvaluationConfig.EgBishopAdvancement), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgBishopCentrality), 0, 32),
-        new Parameter(nameof(EvaluationConfig.EgBishopCentrality), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgBishopCorner), -32, 0),
-        new Parameter(nameof(EvaluationConfig.EgBishopCorner), -32, 0),
+        //// Bishop Location
+        //new Parameter(nameof(EvaluationConfig.MgBishopAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgBishopAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgBishopSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgBishopSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgBishopFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgBishopFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgBishopCorner), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgBishopCorner), -32, 32),
 
-        // Rook Location
-        new Parameter(nameof(EvaluationConfig.MgRookAdvancement), -32, 32),
-        new Parameter(nameof(EvaluationConfig.EgRookAdvancement), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgRookCentrality), 0, 32),
-        new Parameter(nameof(EvaluationConfig.EgRookCentrality), -32, 32),
-        new Parameter(nameof(EvaluationConfig.MgRookCorner), -32, 0),
-        new Parameter(nameof(EvaluationConfig.EgRookCorner), -32, 0),
+        //// Rook Location
+        //new Parameter(nameof(EvaluationConfig.MgRookAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgRookAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgRookSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgRookSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgRookFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgRookFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgRookCorner), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgRookCorner), -32, 32),
 
-        // Queen Location
-        new Parameter(nameof(EvaluationConfig.MgQueenAdvancement), -32, 0),
-        new Parameter(nameof(EvaluationConfig.EgQueenAdvancement), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgQueenCentrality), 0, 32),
-        new Parameter(nameof(EvaluationConfig.EgQueenCentrality), -32, 32),
-        new Parameter(nameof(EvaluationConfig.MgQueenCorner), -32, 0),
-        new Parameter(nameof(EvaluationConfig.EgQueenCorner), -32, 0),
+        //// Queen Location
+        //new Parameter(nameof(EvaluationConfig.MgQueenAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgQueenAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgQueenSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgQueenSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgQueenFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgQueenFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgQueenCorner), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgQueenCorner), -32, 32),
 
-        // King Location
-        new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -64, 0),
-        new Parameter(nameof(EvaluationConfig.EgKingAdvancement), 0, 64),
-        new Parameter(nameof(EvaluationConfig.MgKingCentrality), -32, 0),
-        new Parameter(nameof(EvaluationConfig.EgKingCentrality), 0, 32),
-        new Parameter(nameof(EvaluationConfig.MgKingCorner), 0, 32),
-        new Parameter(nameof(EvaluationConfig.EgKingCorner), -32, 0),
+        //// King Location
+        //new Parameter(nameof(EvaluationConfig.MgKingAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgKingAdvancement), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgKingSquareCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgKingFileCentrality), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.MgKingCorner), -32, 32),
+        //new Parameter(nameof(EvaluationConfig.EgKingCorner), -32, 32),
 
-        // Piece Mobility
-        new Parameter(nameof(EvaluationConfig.PieceMobilityPowerPer128), 0, 256),
-        new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 256),
-        new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 256),
-        new Parameter(nameof(EvaluationConfig.MgRookMobilityScale), 0, 256),
-        new Parameter(nameof(EvaluationConfig.EgRookMobilityScale), 0, 256),
-        new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 128),
+        //// Piece Mobility
+        //new Parameter(nameof(EvaluationConfig.PieceMobilityPowerPer128), 0, 256),
+        //new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 256),
+        //new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 256),
+        //new Parameter(nameof(EvaluationConfig.MgRookMobilityScale), 0, 256),
+        //new Parameter(nameof(EvaluationConfig.EgRookMobilityScale), 0, 256),
+        //new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 128),
 
-        // Pawn Structure
-        new Parameter(nameof(EvaluationConfig.MgIsolatedPawn), 0, 64),
-        new Parameter(nameof(EvaluationConfig.EgIsolatedPawn), 0, 64),
-        new Parameter(nameof(EvaluationConfig.MgDoubledPawn), 0, 64),
-        new Parameter(nameof(EvaluationConfig.EgDoubledPawn), 0, 64),
+        //// Pawn Structure
+        //new Parameter(nameof(EvaluationConfig.MgIsolatedPawn), 0, 64),
+        //new Parameter(nameof(EvaluationConfig.EgIsolatedPawn), 0, 64),
+        //new Parameter(nameof(EvaluationConfig.MgDoubledPawn), 0, 64),
+        //new Parameter(nameof(EvaluationConfig.EgDoubledPawn), 0, 64),
 
-        // Threats
-        new Parameter(nameof(EvaluationConfig.MgPawnThreatenMinor), 0, 64),
-        new Parameter(nameof(EvaluationConfig.EgPawnThreatenMinor), 0, 64),
-        new Parameter(nameof(EvaluationConfig.MgPawnThreatenMajor), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgPawnThreatenMajor), 0, 128),
-        new Parameter(nameof(EvaluationConfig.MgMinorThreatenMajor), 0, 64),
-        new Parameter(nameof(EvaluationConfig.EgMinorThreatenMajor), 0, 64),
+        //// Threats
+        //new Parameter(nameof(EvaluationConfig.MgPawnThreatenMinor), 0, 64),
+        //new Parameter(nameof(EvaluationConfig.EgPawnThreatenMinor), 0, 64),
+        //new Parameter(nameof(EvaluationConfig.MgPawnThreatenMajor), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.EgPawnThreatenMajor), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.MgMinorThreatenMajor), 0, 64),
+        //new Parameter(nameof(EvaluationConfig.EgMinorThreatenMajor), 0, 64),
 
-        // Minor Pieces
-        new Parameter(nameof(EvaluationConfig.MgBishopPair), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgBishopPair), 0, 256),
-        new Parameter(nameof(EvaluationConfig.MgKnightOutpost), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgKnightOutpost), 0, 128),
-        new Parameter(nameof(EvaluationConfig.MgBishopOutpost), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgBishopOutpost), 0, 64),
+        //// Minor Pieces
+        //new Parameter(nameof(EvaluationConfig.MgBishopPair), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.EgBishopPair), 0, 256),
+        //new Parameter(nameof(EvaluationConfig.MgKnightOutpost), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.EgKnightOutpost), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.MgBishopOutpost), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.EgBishopOutpost), 0, 64),
 
-        // Major Pieces
-        new Parameter(nameof(EvaluationConfig.MgRook7thRank), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgRook7thRank), 0, 64)
+        //// Major Pieces
+        //new Parameter(nameof(EvaluationConfig.MgRook7thRank), 0, 128),
+        //new Parameter(nameof(EvaluationConfig.EgRook7thRank), 0, 64)
     ];
 
 
@@ -259,13 +275,10 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         }
 
         var tasks = new Task[Count];
-        var bestEvaluationError = double.MaxValue;
 
         for (var iteration = 1; iteration <= iterations; iteration++)
         {
             // Run iteration tasks on threadpool.
-            _iterations = iteration;
-
             for (var index = 0; index < Count; index++)
             {
                 var particleSwarm = this[index];
@@ -280,12 +293,8 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             // Wait for all particle swarms to complete an iteration.
             Task.WaitAll(tasks);
 
-            // Determine if particle swarms found a new best particle.
-            var bestParticle = GetBestParticle();
-            if (bestParticle.EvaluationError < bestEvaluationError) bestEvaluationError = bestParticle.BestEvaluationError;
-
             UpdateVelocity();
-            UpdateStatus();
+            UpdateStatus(iteration);
         }
     }
 
@@ -316,13 +325,13 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
     }
 
 
-    private void UpdateStatus()
+    private void UpdateStatus(int iteration)
     {
         const int padding = 39;
 
         // Display iterations and original evaluation error.
         _messenger.WriteLine(null);
-        _messenger.WriteLine($"{"Iterations",-padding} = {_iterations,6:000}    ");
+        _messenger.WriteLine($"{"Iterations",-padding} = {iteration,6:000}    ");
         _messenger.WriteLine($"{"Original Evaluation Error",-padding} = {_originalEvaluationError,10:0.000}");
 
         // Display globally best evaluation error.

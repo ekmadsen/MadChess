@@ -128,6 +128,9 @@ public sealed class Position
 
     public void Set(Position copyFromPosition)
     {
+        // Defining a position via colored piece bitboards + color occupancy + occupancy is redundant.
+        // But the engine plays slightly stronger than with colorless piece bitboards + color occupancy.
+
         // Copy bitboards.  Explicit array lookups are faster than looping through pieces.
         PieceBitboards[(int)Piece.WhitePawn] = copyFromPosition.PieceBitboards[(int)Piece.WhitePawn];
         PieceBitboards[(int)Piece.WhiteKnight] = copyFromPosition.PieceBitboards[(int)Piece.WhiteKnight];
@@ -554,7 +557,7 @@ public sealed class Position
         var king = PieceHelper.GetPieceOfColor(ColorlessPiece.King, ColorToMove);
         var toRank = Board.Ranks[(int)ColorToMove][(int)toSquare];
 
-        if ((attacker == pawn) && (toRank == 7) && (promotedPiece == Piece.None)) return false; // Pawn cannot move to back rank without promoting.
+        if ((attacker == pawn) && (toRank == 7) && (promotedPiece == Piece.None)) return false; // Pawn cannot move to eighth rank without promoting.
         if ((promotedPiece != Piece.None) && (attacker != pawn)) return false; // Only pawns can promote.
         if ((promotedPiece == pawn) || (promotedPiece == king)) return false; // Cannot promote pawn to pawn or king.
 

@@ -11,7 +11,7 @@
 namespace ErikTheCoder.MadChess.Core.Game;
 
 
-public enum KingRing
+public enum Ring
 {
     Outer,
     Inner

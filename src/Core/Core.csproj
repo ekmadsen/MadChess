@@ -13,8 +13,9 @@
 	  <RootNamespace>ErikTheCoder.MadChess.Core</RootNamespace>
 	  <LangVersion>latest</LangVersion>
 	  <Nullable>disable</Nullable>
-	  <TargetFramework>net8.0</TargetFramework>
+	  <TargetFramework>net9.0</TargetFramework>
 	  <TieredCompilation>true</TieredCompilation>
+	  <TieredPGO>true</TieredPGO>
 	  <OutputType>Library</OutputType>
 	  <PackageId>MadChess.Core</PackageId>
 	  <Configurations>Debug;Release</Configurations>
@@ -22,7 +23,7 @@
   </PropertyGroup>
 
 	<ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2023.3.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
   </ItemGroup>
 
 </Project>

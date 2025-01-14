@@ -11,7 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{416EFB70-F
 		docs\ComputerGamesBullet.txt = docs\ComputerGamesBullet.txt
 		docs\ComputerGamesBulletMatchups.txt = docs\ComputerGamesBulletMatchups.txt
 		docs\Design.md = docs\Design.md
-		docs\EvalError.log = docs\EvalError.log
 		docs\EvalParams.txt = docs\EvalParams.txt
 		docs\LICENSE.md = docs\LICENSE.md
 		docs\README.md = docs\README.md
