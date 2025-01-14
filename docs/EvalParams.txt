@@ -143,11 +143,13 @@ Endgame King Location
 +016  +037  +042  +047  +047  +042  +037  +016
 -006  -001  +004  +009  +009  +004  -001  -006
 
-Middlegame Passed Pawns:            +000 +001 +006 +016 +035 +062 +099 +000
-Endgame Passed Pawns:               +000 +002 +016 +045 +095 +168 +268 +000
-Endgame Free Passed Pawns:          +000 +005 +032 +091 +191 +339 +540 +000
-Endgame Connected Passed Pawns:     +000 +000 +003 +010 +022 +040 +064 +000
-Endgame King Escorted Passed Pawn:  18
+Middlegame Passed Pawns:            +000 +001 +007 +020 +043 +077 +123 +000
+Endgame Passed Pawns:               +000 +002 +013 +038 +081 +143 +228 +000
+Middlegame Free Passed Pawns:       +000 +001 +009 +026 +055 +098 +157 +000
+Endgame Free Passed Pawns:          +000 +004 +027 +078 +164 +290 +463 +000
+Middlegame Connected Passed Pawns:  +000 +000 +000 +000 +001 +001 +003 +000
+Endgame Connected Passed Pawns:     +000 +000 +005 +015 +032 +056 +090 +000
+Endgame King Escorted Passed Pawn:  19
 Unstoppable Passed Pawn:            1555
 
 Middlegame Knight Mobility:  -038 -025 -016 -008 +000 +006 +013 +019 +026
