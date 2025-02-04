@@ -435,19 +435,19 @@ public sealed class Evaluation
     public void ConfigureFullStrength() => Config.Set(_defaultConfig);
 
 
-    public (bool TerminalDraw, bool RepeatPosition) IsTerminalDraw(Position position)
+    public (bool TerminalDraw, bool RepeatPosition) IsTerminalDraw(Board board)
     {
         // Only return true if position is drawn and no sequence of moves can make game winnable.
-        if (position.PlySinceCaptureOrPawnMove >= Search.MaxPlyWithoutCaptureOrPawnMove) return (true, false); // Draw by 50 moves (100 ply) without a capture or pawn move.
+        if (board.CurrentPosition.PlySinceCaptureOrPawnMove >= Search.MaxPlyWithoutCaptureOrPawnMove) return (true, false); // Draw by 50 moves (100 ply) without a capture or pawn move.
 
         // Determine if insufficient material remains for checkmate.
-        if (Bitwise.CountSetBits(position.GetPawns(Color.White) | position.GetPawns(Color.Black)) == 0)
+        if (Bitwise.CountSetBits(board.CurrentPosition.GetPawns(Color.White) | board.CurrentPosition.GetPawns(Color.Black)) == 0)
         {
             // Neither side has any pawns.
-            if (Bitwise.CountSetBits(position.GetMajorPieces(Color.White) | position.GetMajorPieces(Color.Black)) == 0)
+            if (Bitwise.CountSetBits(board.CurrentPosition.GetMajorPieces(Color.White) | board.CurrentPosition.GetMajorPieces(Color.Black)) == 0)
             {
                 // Neither side has any major pieces.
-                if ((Bitwise.CountSetBits(position.GetMinorPieces(Color.White)) <= 1) && (Bitwise.CountSetBits(position.GetMinorPieces(Color.Black)) <= 1))
+                if ((Bitwise.CountSetBits(board.CurrentPosition.GetMinorPieces(Color.White)) <= 1) && (Bitwise.CountSetBits(board.CurrentPosition.GetMinorPieces(Color.Black)) <= 1))
                 {
                     // Each side has one or zero minor pieces.  Draw by insufficient checkmating material.
                     return (true, false);
@@ -455,7 +455,7 @@ public sealed class Evaluation
             }
         }
 
-        return position.IsRepeatPosition(DrawMoves) ? (true, true) : (false, false);
+        return board.IsRepeatPosition(DrawMoves) ? (true, true) : (false, false);
     }
 
 

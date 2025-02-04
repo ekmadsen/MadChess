@@ -120,6 +120,10 @@ public static class Bitwise
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ClearBit(ref ulong value, Square square) => value &= ~(1ul << (int)square);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int PopFirstSetBit(ref uint value)
     {
         if (value == 0) return -1;

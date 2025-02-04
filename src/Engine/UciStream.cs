@@ -262,6 +262,14 @@ public sealed class UciStream : IDisposable
                 _messenger.WriteLine(_evaluation.ToString(_board.CurrentPosition));
                 break;
 
+            case "staticexchange":
+                StaticExchange(tokens);
+                break;
+
+            case "teststaticexchange":
+                TestStaticExchange(tokens);
+                break;
+
             case "testpositions":
                 TestPositions(tokens);
                 break;
@@ -670,7 +678,7 @@ public sealed class UciStream : IDisposable
 
         while (true)
         {
-            var (move, moveIndex) = _search.GetNextMove(previousMove, _board.CurrentPosition, Board.AllSquaresMask, depth, Move.Null);
+            var (move, moveIndex) = _search.GetNextMove(previousMove, _board.CurrentPosition, Evaluation.MiddlegamePhase, Board.AllSquaresMask, depth, Move.Null);
             if (move == Move.Null) break; // All moves have been searched.
 
             var (legalMove, _) = _board.PlayMove(move);
@@ -801,6 +809,59 @@ public sealed class UciStream : IDisposable
 
         _messenger.WriteLine();
         _messenger.WriteLine($"{legalMoveNumber} legal moves.");
+    }
+
+
+    private void StaticExchange(List<string> tokens)
+    {
+        var move = Move.ParseStandardAlgebraic(_board, tokens[1]);
+        var threshold = int.Parse(tokens[2]);
+
+        var phase = Evaluation.DetermineGamePhase(_board.CurrentPosition);
+        var staticExchangeMeetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, phase, move, false, threshold);
+        _messenger.WriteLine(staticExchangeMeetsThreshold.ToString());
+    }
+
+
+    private void TestStaticExchange(List<string> tokens)
+    {
+        var file = tokens[1].Trim();
+
+        _messenger.WriteLine("Number                                                                     Position     Move  Threshold  Meets Threshold  Correct    Pct");
+        _messenger.WriteLine("======  ===========================================================================  =======  =========  ===============  =======  =====");
+
+        var positions = 0;
+        var correctPositions = 0;
+        _search.NodesInfoUpdate = long.MaxValue; // Do not display node count.
+
+        // Verify move counts of test positions.
+        using (var reader = File.OpenText(file))
+        {
+            while (!reader.EndOfStream)
+            {
+                // Load position, move, and threshold.
+                var line = reader.ReadLine();
+                if (line == null) continue;
+
+                positions++;
+
+                var parsedTokens = Tokens.Parse(line, '|', '"');
+                var fen = parsedTokens[0];
+                _board.SetPosition(fen);
+                var move = Move.ParseStandardAlgebraic(_board, parsedTokens[1]);
+                var threshold = int.Parse(parsedTokens[2]);
+                var expectedMeetsThreshold = bool.Parse(parsedTokens[3]);
+
+                // Determine if static exchange evaluation meets threshold score value.
+                var meetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, Evaluation.MiddlegamePhase, move, false, threshold);
+
+                var correct = meetsThreshold == expectedMeetsThreshold;
+                if (correct) correctPositions++;
+                var correctFraction = (100d * correctPositions) / positions;
+
+                _messenger.WriteLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),7}  {threshold,9}  {expectedMeetsThreshold,15}  {correct,7}  {correctFraction,5:0.0}");
+            }
+        }
     }
 
 
@@ -1178,7 +1239,16 @@ public sealed class UciStream : IDisposable
         _messenger.WriteLine("staticscore                           Display evaluation details of current position.");
         _messenger.WriteLine();
 
-        _messenger.WriteLine("testpositions [filename]              Calculate legal moves for positions in file and compare to expected results.");
+        _messenger.WriteLine("staticexchange [move] [threshold]     Determine whether static exchange evaluation of captures on (SAN) move destination");
+        _messenger.WriteLine("                                      square meets threshold score value.  Standard piece material values (100, 300, 300, 500, 900).");
+        _messenger.WriteLine();
+
+        _messenger.WriteLine("teststaticexchange [filename]         Determine whether static exchange evaluation of captures on (SAN) move destination");
+        _messenger.WriteLine("                                      square meets threshold score value for position in file.  File must be formatted as");
+        _messenger.WriteLine("                                      [FEN]|[SAN Move]|[Threshold Score][true or false]");
+        _messenger.WriteLine();
+
+        _messenger.WriteLine("testpositions [filename]              Generate legal moves for positions in file and compare to expected results.");
         _messenger.WriteLine("                                      Each line of file must be formatted as [FEN]|[Depth]|[Legal Move Count].");
         _messenger.WriteLine();
 

@@ -64,6 +64,7 @@ public sealed class Board
     public static readonly GetPieceXrayMovesMask[] PieceXrayMoveMaskDelegates; // [colorlessPiece]
 
     public static readonly ulong[] EnPassantAttackerMasks; // [square]
+    public static readonly Square[] EnPassantVictimSquares; // [square]
 
     public static readonly ulong[][] PassedPawnMasks; // [color][square]
     public static readonly ulong[][] FreePawnMasks; // [color][square]
@@ -83,15 +84,10 @@ public sealed class Board
     private const int _maxPositions = 1024;
 
     private static readonly int[] _squarePerspectiveFactors; // [color]
-
     private static readonly ulong[] _squareUnmasks; // [square]
-
     private static readonly ulong[][] _castleAttackedSquareMasks; // [color][boardSide]
-
     private static readonly int[][] _neighborSquares; // [square][direction]
-
     private static readonly Square[] _enPassantTargetSquares; // [square]
-    private static readonly Square[] _enPassantVictimSquares; // [square]
 
     private readonly Messenger _messenger;
     private readonly Position[] _positions; // [distanceFromRoot]
@@ -165,7 +161,7 @@ public sealed class Board
         PieceXrayMoveMaskDelegates[(int)ColorlessPiece.Queen] = GetQueenXrayDestinations;
 
         // Create en passant, passed pawn, and free pawn masks.
-        (_enPassantTargetSquares, _enPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
+        (_enPassantTargetSquares, EnPassantVictimSquares, EnPassantAttackerMasks) = CreateEnPassantAttackerMasks();
         PassedPawnMasks = CreatePassedPawnMasks();
         FreePawnMasks = CreateFreePawnMasks();
 
@@ -183,7 +179,7 @@ public sealed class Board
         // Create positions.
         _positions = new Position[_maxPositions];
         for (var positionIndex = 0; positionIndex < _maxPositions; positionIndex++)
-            _positions[positionIndex] = new Position(this);
+            _positions[positionIndex] = new Position();
 
         // Create four Zobrist keys used to (almost) uniquely identify positions.
         // The four keys are combined by the UpdateFullZobristKey method.
@@ -1150,7 +1146,7 @@ public sealed class Board
         // Determine if king is in check and set position key.
         PlayNullMove();
         var kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
-        var kingInCheck = IsSquareAttacked(kingSquare);
+        var kingInCheck = CurrentPosition.IsSquareAttacked(kingSquare, CurrentPosition.ColorToMove);
         UndoMove();
 
         CurrentPosition.KingInCheck = kingInCheck;
@@ -1200,7 +1196,7 @@ public sealed class Board
 
         // Determine if moving piece exposed king to check.
         var kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
-        if (IsSquareAttacked(kingSquare)) return (false, false);
+        if (CurrentPosition.IsSquareAttacked(kingSquare, CurrentPosition.ColorToMove)) return (false, false);
         if (Move.IsCastling(move) && IsCastlePathAttacked(move)) return (false, false);
 
         ChecksEnemyKing:
@@ -1208,7 +1204,7 @@ public sealed class Board
         // Determine if move checks enemy king.
         CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
         kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
-        var check = IsSquareAttacked(kingSquare);
+        var check = CurrentPosition.IsSquareAttacked(kingSquare, CurrentPosition.ColorToMove);
         CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
 
         if (Castling.Permitted(CurrentPosition.Castling))
@@ -1280,32 +1276,6 @@ public sealed class Board
     }
 
 
-    private bool IsSquareAttacked(Square square)
-    {
-        // Determine if square is attacked by pawns.
-        // Attacked by white pawn masks = black pawn attack masks and vice-versa.
-        var pawns = CurrentPosition.GetPawns(CurrentPosition.ColorToMove);
-        if ((pawns & PawnAttackMasks[(int)CurrentPosition.ColorLastMoved][(int)square]) > 0) return true;
-
-        // Determine if square is attacked by knights.
-        var knights = CurrentPosition.GetKnights(CurrentPosition.ColorToMove);
-        if ((knights & KnightMoveMasks[(int)square]) > 0) return true;
-
-        // Determine if square is attacked by diagonal sliding piece.
-        var bishops = CurrentPosition.GetBishops(CurrentPosition.ColorToMove);
-        var queens = CurrentPosition.GetQueens(CurrentPosition.ColorToMove);
-        if (((bishops | queens) & PrecalculatedMoves.GetBishopMovesMask(square, CurrentPosition.Occupancy)) > 0) return true;
-
-        // Determine if square is attacked by file / rank sliding pieces.
-        var rooks = CurrentPosition.GetRooks(CurrentPosition.ColorToMove);
-        if (((rooks | queens) & PrecalculatedMoves.GetRookMovesMask(square, CurrentPosition.Occupancy)) > 0) return true;
-
-        // Determine if square is attacked by king.
-        var king = CurrentPosition.GetKing(CurrentPosition.ColorToMove);
-        return (king & KingMoveMasks[(int)square]) > 0;
-    }
-
-
     private bool IsCastlePathAttacked(ulong move)
     {
         var toSquare = Move.To(move);
@@ -1318,7 +1288,7 @@ public sealed class Board
         else throw new Exception($"{CurrentPosition.ColorToMove} king cannot castle to {SquareLocations[(int)toSquare]}.");
 
         while ((toSquare = Bitwise.PopFirstSetSquare(ref attackedSquaresMask)) != Square.Illegal)
-            if (IsSquareAttacked(toSquare)) return true;
+            if (CurrentPosition.IsSquareAttacked(toSquare, CurrentPosition.ColorToMove)) return true;
 
         return false;
     }
@@ -1426,7 +1396,7 @@ public sealed class Board
     private void EnPassantCapture(Piece attackingPawn, Piece victimPawn, Square fromSquare)
     {
         // Remove victim pawn and move attacking pawn.
-        RemovePiece(victimPawn, _enPassantVictimSquares[(int)CurrentPosition.EnPassantSquare]);
+        RemovePiece(victimPawn, EnPassantVictimSquares[(int)CurrentPosition.EnPassantSquare]);
         RemovePiece(attackingPawn, fromSquare);
         AddPiece(attackingPawn, CurrentPosition.EnPassantSquare);
     }
@@ -1477,7 +1447,7 @@ public sealed class Board
     }
 
 
-    public int GetPositionCount()
+    private int GetPositionCount()
     {
         var currentPositionKey = CurrentPosition.Key;
         var positionCount = 0;
@@ -1585,16 +1555,27 @@ public sealed class Board
     }
 
 
-    public override string ToString() => CurrentPosition.ToString();
+    public override string ToString() => ToString(false);
 
 
     private string ToString(bool allPositions)
     {
-        if (!allPositions) return ToString();
+        int positionCount;
+
+        if (!allPositions)
+        {
+            positionCount = GetPositionCount();
+            return CurrentPosition.ToString(positionCount);
+        }
 
         var stringBuilder = new StringBuilder();
-        for (var positionIndex = 0; positionIndex <= _positionIndex; positionIndex++)
-            stringBuilder.AppendLine(_positions[positionIndex].ToString());
+        var originalPositionIndex = _positionIndex;
+        for (_positionIndex = 0; _positionIndex <= originalPositionIndex; _positionIndex++)
+        {
+            positionCount = GetPositionCount();
+            stringBuilder.AppendLine(CurrentPosition.ToString(positionCount));
+        }
+        _positionIndex = originalPositionIndex;
 
         return stringBuilder.ToString();
     }

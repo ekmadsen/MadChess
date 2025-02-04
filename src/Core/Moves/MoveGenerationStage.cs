@@ -14,7 +14,8 @@ namespace ErikTheCoder.MadChess.Core.Moves;
 public enum MoveGenerationStage
 {
     BestMove,
-    Captures,
+    GoodCaptures,
+    LosingCaptures,
     NonCaptures,
     End
 }

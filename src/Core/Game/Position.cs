@@ -39,16 +39,13 @@ public sealed class Position
     public ulong Key;
     public int StaticScore;
     public ulong PlayedMove;
-    private readonly Board _board;
 
 
     public Color ColorLastMoved => 1 - ColorToMove;
 
 
-    public Position(Board board)
+    public Position()
     {
-        _board = board;
-
         PieceBitboards = new ulong[(int) Piece.BlackKing + 1];
         ColorOccupancy = new ulong[2];
         Moves = new ulong[MaxMoves];
@@ -122,8 +119,62 @@ public sealed class Position
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsRepeatPosition(int repeats) => _board.IsRepeatPosition(repeats);
+    public bool IsSquareAttacked(Square square, Color color)
+    {
+        var enemyColor = 1 - color;
+
+        // Determine if square is attacked by pawns.
+        // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+        var pawns = GetPawns(color);
+        if ((pawns & Board.PawnAttackMasks[(int)enemyColor][(int)square]) > 0) return true;
+
+        // Determine if square is attacked by knights.
+        var knights = GetKnights(color);
+        if ((knights & Board.KnightMoveMasks[(int)square]) > 0) return true;
+
+        // Determine if square is attacked by diagonal sliding piece.
+        var bishops = GetBishops(color);
+        var queens = GetQueens(color);
+        if (((bishops | queens) & Board.PrecalculatedMoves.GetBishopMovesMask(square, Occupancy)) > 0) return true;
+
+        // Determine if square is attacked by rank / file sliding pieces.
+        var rooks = GetRooks(color);
+        if (((rooks | queens) & Board.PrecalculatedMoves.GetRookMovesMask(square, Occupancy)) > 0) return true;
+
+        // Determine if square is attacked by king.
+        var king = GetKing(color);
+        return (king & Board.KingMoveMasks[(int)square]) > 0;
+    }
+
+
+    public ulong GetSquareAttackers(Square square, ulong modifiedOccupancy)
+    {
+        // This position's occupancy has been slightly modified (a move has been simulated but not actually played).
+        // Use given occupancy to determine attacks by sliding pieces.
+        var attackers = 0ul;
+
+        // Add pawn attackers.
+        // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+        attackers |= GetPawns(Color.White) & Board.PawnAttackMasks[(int)Color.Black][(int)square];
+        attackers |= GetPawns(Color.Black) & Board.PawnAttackMasks[(int)Color.White][(int)square];
+
+        // Add knight attackers.
+        attackers |= GetPieces(ColorlessPiece.Knight) & Board.KnightMoveMasks[(int)square];
+
+        // Add diagonal sliding piece attackers.
+        var bishops = GetPieces(ColorlessPiece.Bishop);
+        var queens = GetPieces(ColorlessPiece.Queen);
+        attackers |= (bishops | queens) & Board.PrecalculatedMoves.GetBishopMovesMask(square, modifiedOccupancy);
+
+        // Add rank / file sliding piece attackers.
+        var rooks = GetPieces(ColorlessPiece.Rook);
+        attackers |= (rooks | queens) & Board.PrecalculatedMoves.GetRookMovesMask(square, modifiedOccupancy);
+
+        // Add king attacker.
+        attackers |= GetPieces(ColorlessPiece.King) & Board.KingMoveMasks[(int)square];
+
+        return attackers & modifiedOccupancy;
+    }
 
 
     public void Set(Position copyFromPosition)
@@ -707,7 +758,7 @@ public sealed class Position
     }
 
 
-    public override string ToString()
+    public string ToString(int positionCount)
     {
         // Iterate over the piece array to construct an 8 x 8 text display of the chessboard.
         var stringBuilder = new StringBuilder();
@@ -751,7 +802,7 @@ public sealed class Position
         // Display position properties.
         stringBuilder.AppendLine($"FEN:             {ToFen()}");
         stringBuilder.AppendLine($"Key:             {Key:X16}");
-        stringBuilder.AppendLine($"Position Count:  {_board.GetPositionCount()}");
+        stringBuilder.AppendLine($"Position Count:  {positionCount}");
         stringBuilder.AppendLine($"King in Check:   {(KingInCheck ? "Yes" : "No")}");
         stringBuilder.AppendLine($"Static Score:    {StaticScore}");
         stringBuilder.AppendLine("Played Move:");
