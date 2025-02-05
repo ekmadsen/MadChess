@@ -54,7 +54,7 @@ public sealed class Search : IDisposable
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
-    private const int _recapturesOnlyMaxFromHorizon = 3;
+    private const int _recapturesOnlyMaxFromHorizon = 7;
     private const int _forfeitCastlingRightsPenalty = 150;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
@@ -1318,10 +1318,10 @@ public sealed class Search : IDisposable
 
         // Determine if quiet move is too late to be worth searching.
         if (quietMoveNumber >= _lateMovePruning[toHorizon]) return true;
-        
+
         // Determine if location improvement and static exchange raises score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[toHorizon];
+        var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[0];
 
         return !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, threshold);
     }
