@@ -1321,7 +1321,7 @@ public sealed class Search : IDisposable
 
         // Determine if location improvement and static exchange raises score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[0];
+        var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[toHorizon];
 
         return !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, threshold);
     }
