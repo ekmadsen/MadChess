@@ -54,7 +54,7 @@ public sealed class Search : IDisposable
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
-    private const int _recapturesOnlyMaxFromHorizon = 7;
+    private const int _recapturesOnlyMaxFromHorizon = 3;
     private const int _forfeitCastlingRightsPenalty = 150;
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
@@ -157,7 +157,7 @@ public sealed class Search : IDisposable
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
 
         // To Horizon =            000  001  002  003  004  005  006  007  008
-        _futilityPruningMargins = [050, 125, 200, 275, 350, 425, 500, 575, 650]; // (75.00 * (toHorizon Pow 1)) + 50
+        _futilityPruningMargins = [025, 100, 175, 250, 325, 400, 475, 550, 625]; // (75.00 * (toHorizon Pow 1)) + 25
         _lateMovePruning =        [999, 004, 007, 011, 016, 024, 032, 043, 055]; // (00.80 * (toHorizon Pow 2)) + 04... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
