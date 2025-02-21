@@ -156,9 +156,9 @@ public sealed class Search : IDisposable
 
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
 
-        // To Horizon =            000  001  002  003  004  005  006  007  008
-        _futilityPruningMargins = [025, 100, 175, 250, 325, 400, 475, 550, 625]; // (75.00 * (toHorizon Pow 1)) + 25
-        _lateMovePruning =        [999, 004, 007, 011, 016, 024, 032, 043, 055]; // (00.80 * (toHorizon Pow 2)) + 04... quiet search excluded
+        // To Horizon =            000  001  002  003  004  005  006  007
+        _futilityPruningMargins = [040, 120, 200, 280, 360, 440, 520, 600]; // (80 * (toHorizon Pow 1)) + 40
+        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
         // Create scored move and principal variation arrays.
