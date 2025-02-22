@@ -156,9 +156,9 @@ public sealed class Search : IDisposable
 
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
 
-        // To Horizon =            000  001  002  003  004  005  006  007
-        _futilityPruningMargins = [040, 120, 200, 280, 360, 440, 520, 600]; // (80 * (toHorizon Pow 1)) + 40
-        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
+        // To Horizon =            000  001  002  003  004  005  006  007  008  009
+        _futilityPruningMargins = [030, 110, 190, 270, 350, 430, 510, 590, 670, 750]; // (80 * (toHorizon Pow 1)) + 30
+        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052];           // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
         // Create scored move and principal variation arrays.
@@ -1296,13 +1296,12 @@ public sealed class Search : IDisposable
 
     private bool IsMoveInDynamicSearchFutile(Position position, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
-        Debug.Assert(_futilityPruningMargins.Length == _lateMovePruning.Length);
         var toHorizon = horizon - depth;
+        if (toHorizon >= FastMath.Max(_lateMovePruning.Length, _futilityPruningMargins.Length)) return false; // Move far from search horizon is not futile.
 
         if (legalMoveNumber == 1) return false; // First legal move is not futile.
         if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
-        if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
-        if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
+        if ((depth == 0) || drawnEndgame || position.KingInCheck) return false; // Root move, move in drawn endgame, or move when king is in check is not futile.
         if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return false; // Killer move or castling is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
 
@@ -1317,13 +1316,17 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
 
         // Determine if quiet move is too late to be worth searching.
-        if (quietMoveNumber >= _lateMovePruning[toHorizon]) return true;
+        if ((toHorizon < _lateMovePruning.Length) && (quietMoveNumber >= _lateMovePruning[toHorizon])) return true;
 
-        // Determine if location improvement and static exchange raises score to within futility margin of alpha.
-        var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[toHorizon];
+        if (toHorizon < _futilityPruningMargins.Length)
+        {
+            // Determine if location improvement and static exchange raises score to within futility margin of alpha.
+            var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
+            var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[toHorizon];
+            return !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, threshold);
+        }
 
-        return !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, threshold);
+        return false;
     }
 
 
