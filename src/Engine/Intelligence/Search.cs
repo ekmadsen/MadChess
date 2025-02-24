@@ -1191,9 +1191,11 @@ public sealed class Search : IDisposable
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
                 if (Move.Played(move) || ((moveIndex > 0) && Move.Equals(move, bestMove))) continue; // Do not play move twice.
-                if ((position.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
+                if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
                 return (move, moveIndex);
             }
+
+            position.MoveGenerationStage++;
 
             // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
@@ -1208,7 +1210,6 @@ public sealed class Search : IDisposable
                         position.Moves[position.MoveIndex] = bestMove;
                         position.MoveIndex++;
                     }
-                    position.MoveGenerationStage++;
                     continue;
 
                 case MoveGenerationStage.GoodCaptures:
@@ -1221,13 +1222,11 @@ public sealed class Search : IDisposable
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
-                    position.MoveGenerationStage++;
                     continue;
 
                 case MoveGenerationStage.LosingCaptures:
                     // Reset current move index to play losing captures that were skipped during GoodCaptures stage.
                     position.CurrentMoveIndex = 0;
-                    position.MoveGenerationStage++;
                     continue;
 
                 case MoveGenerationStage.NonCaptures:
@@ -1240,10 +1239,9 @@ public sealed class Search : IDisposable
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
-                    position.MoveGenerationStage++;
                     continue;
 
-                case MoveGenerationStage.End:
+                case MoveGenerationStage.Completed:
                     return (Move.Null, position.CurrentMoveIndex);
             }
             break;
@@ -1266,6 +1264,8 @@ public sealed class Search : IDisposable
                 return (move, moveIndex);
             }
 
+            position.MoveGenerationStage++;
+
             // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
             switch (position.MoveGenerationStage)
             {
@@ -1275,16 +1275,16 @@ public sealed class Search : IDisposable
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort captures.
+                    // Sort captures.
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        // Do not prioritize moves.  Rely on Most Valuable Victim / Least Valuable Attacker (MVV / LVA) move order.
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
-                    position.MoveGenerationStage = MoveGenerationStage.End; // Skip non-captures.
+                    position.MoveGenerationStage = MoveGenerationStage.Completed; // Skip non-captures.
                     continue;
-                case MoveGenerationStage.End:
+                case MoveGenerationStage.Completed:
                     return (Move.Null, position.CurrentMoveIndex);
             }
             break;

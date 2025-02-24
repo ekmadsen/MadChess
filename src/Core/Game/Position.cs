@@ -216,7 +216,7 @@ public sealed class Position
         PrepareMoveGeneration();
         FindPinnedPieces();
         GenerateMoves(MoveGeneration.AllMoves, Board.AllSquaresMask, Board.AllSquaresMask);
-        MoveGenerationStage = MoveGenerationStage.End;
+        MoveGenerationStage = MoveGenerationStage.Completed;
     }
 
 
@@ -234,7 +234,7 @@ public sealed class Position
     {
         CurrentMoveIndex = 0;
         MoveIndex = 0;
-        MoveGenerationStage = MoveGenerationStage.BestMove;
+        MoveGenerationStage = MoveGenerationStage.Prepared;
     }
 
 
@@ -665,7 +665,7 @@ public sealed class Position
 
         CurrentMoveIndex = 0;
         MoveIndex = 0;
-        MoveGenerationStage = MoveGenerationStage.BestMove;
+        MoveGenerationStage = MoveGenerationStage.Reset;
 
         PiecesSquaresKey = 0;
         Key = 0;
