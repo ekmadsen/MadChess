@@ -51,6 +51,7 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 2;
+    private const int _losingCaptureMargin = 150;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
@@ -1191,7 +1192,7 @@ public sealed class Search : IDisposable
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
                 if (Move.Played(move) || ((moveIndex > 0) && Move.Equals(move, bestMove))) continue; // Do not play move twice.
-                if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
+                if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, -_losingCaptureMargin)) continue; // Skip losing capture.
                 return (move, moveIndex);
             }
 
@@ -1224,11 +1225,6 @@ public sealed class Search : IDisposable
                     }
                     continue;
 
-                case MoveGenerationStage.LosingCaptures:
-                    // Reset current move index to play losing captures that were skipped during GoodCaptures stage.
-                    position.CurrentMoveIndex = 0;
-                    continue;
-
                 case MoveGenerationStage.NonCaptures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
@@ -1239,6 +1235,11 @@ public sealed class Search : IDisposable
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
+                    continue;
+
+                case MoveGenerationStage.LosingCaptures:
+                    // Reset current move index to play losing captures that were skipped during GoodCaptures stage.
+                    position.CurrentMoveIndex = 0;
                     continue;
 
                 case MoveGenerationStage.Completed:
@@ -1271,18 +1272,19 @@ public sealed class Search : IDisposable
             {
                 case MoveGenerationStage.BestMove:
                 case MoveGenerationStage.GoodCaptures:
+                case MoveGenerationStage.NonCaptures:
                 case MoveGenerationStage.LosingCaptures:
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Sort captures.
+                    // Prioritize and sort captures.
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
-                        // Do not prioritize moves.  Rely on Most Valuable Victim / Least Valuable Attacker (MVV / LVA) move order.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
-                    position.MoveGenerationStage = MoveGenerationStage.Completed; // Skip non-captures.
+                    position.MoveGenerationStage = MoveGenerationStage.Completed;
                     continue;
                 case MoveGenerationStage.Completed:
                     return (Move.Null, position.CurrentMoveIndex);
