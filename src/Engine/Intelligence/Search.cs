@@ -51,7 +51,6 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 2;
-    private const int _losingCaptureMargin = 400;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
@@ -1013,6 +1012,7 @@ public sealed class Search : IDisposable
     {
         var toHorizon = horizon - depth;
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root position or position far from search horizon is not futile.
+        // TODO: Consider removing AnalyzeMode condition.
         if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Position when analyzing principal variations is not futile.
         if (isDrawnEndgame || position.KingInCheck) return false; // Position in drawn endgame or when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
@@ -1030,6 +1030,7 @@ public sealed class Search : IDisposable
     private bool IsNullMovePermitted(Position position, int alpha, int beta)
     {
         if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
+        // TODO: Consider removing AnalyzeMode condition.
         if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Do not attempt null move when analyzing principal variations.
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
@@ -1192,7 +1193,7 @@ public sealed class Search : IDisposable
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
                 if (Move.Played(move) || ((moveIndex > 0) && Move.Equals(move, bestMove))) continue; // Do not play move twice.
-                if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, -_losingCaptureMargin)) continue; // Skip losing capture.
+                if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
                 return (move, moveIndex);
             }
 
@@ -1225,6 +1226,11 @@ public sealed class Search : IDisposable
                     }
                     continue;
 
+                case MoveGenerationStage.LosingCaptures:
+                    // Reset current move index to play losing captures that were skipped during GoodCaptures stage.
+                    position.CurrentMoveIndex = 0;
+                    continue;
+
                 case MoveGenerationStage.NonCaptures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
@@ -1235,11 +1241,6 @@ public sealed class Search : IDisposable
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
-                    continue;
-
-                case MoveGenerationStage.LosingCaptures:
-                    // Reset current move index to play losing captures that were skipped during GoodCaptures stage.
-                    position.CurrentMoveIndex = 0;
                     continue;
 
                 case MoveGenerationStage.Completed:
@@ -1272,8 +1273,8 @@ public sealed class Search : IDisposable
             {
                 case MoveGenerationStage.BestMove:
                 case MoveGenerationStage.GoodCaptures:
-                case MoveGenerationStage.NonCaptures:
                 case MoveGenerationStage.LosingCaptures:
+                case MoveGenerationStage.NonCaptures:
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);

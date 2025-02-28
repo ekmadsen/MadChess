@@ -23,6 +23,7 @@ public sealed class MoveHistory
     private const int _moveHistoryWeight = 1; // _moveHistoryWeight + _counterMoveHistoryWeight = 128.  Divide by 128 == shift bits right 7 places.
     private const int _counterMoveHistoryWeight = 127; // Counter move history is more specific than move history, and consequently, is updated less often.  Therefore, weight it more heavily than move history.
     private const int _agePer256 = 248;
+    // TODO: Add capture history [piece][toSquare][capturedPiece].
     private readonly int[][] _moveHistory; // [piece][toSquare]
     private readonly int[][][][] _counterMoveHistory; // [previousPiece][previousToSquare][piece][toSquare]
 
