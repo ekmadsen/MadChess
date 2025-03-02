@@ -18,6 +18,7 @@ public enum MoveGenerationStage
     BestMove,
     GoodCaptures,
     LosingCaptures,
+    KillerMoves,
     NonCaptures,
     Completed
 }

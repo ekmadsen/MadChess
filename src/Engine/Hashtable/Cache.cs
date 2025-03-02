@@ -150,7 +150,7 @@ public sealed class Cache
         Move.SetPromotedPiece(ref bestMove, CachedPositionData.BestMovePromotedPiece(cachedPosition));
         Move.SetIsBest(ref bestMove, true);
 
-        // Validate move is possible in current position on board.
+        // Validate move is possible in position.
         var validMove = position.ValidateMove(ref bestMove);
         if (validMove) _stats.CacheValidBestMove++;
         else _stats.CacheInvalidBestMove++;

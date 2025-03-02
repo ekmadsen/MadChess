@@ -1193,6 +1193,7 @@ public sealed class Search : IDisposable
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
                 if (Move.Played(move) || ((moveIndex > 0) && Move.Equals(move, bestMove))) continue; // Do not play move twice.
+                if ((position.MoveGenerationStage > MoveGenerationStage.KillerMoves) && (Move.Killer(move) > 0)) continue; // Do not play killer move twice.
                 if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
                 return (move, moveIndex);
             }
@@ -1217,10 +1218,10 @@ public sealed class Search : IDisposable
                 case MoveGenerationStage.GoodCaptures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort captures.
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
+                        // Prioritize and sort captures.
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
@@ -1231,13 +1232,27 @@ public sealed class Search : IDisposable
                     position.CurrentMoveIndex = 0;
                     continue;
 
-                case MoveGenerationStage.NonCaptures:
+                case MoveGenerationStage.KillerMoves:
                     firstMoveIndex = position.MoveIndex;
-                    position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort non-captures.
+                    var (killerMove1, killerMove2) = _killerMoves.Get(depth);
+                    if (killerMove1 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove1.Piece], Board.SquareMasks[(int)killerMove1.ToSquare]);
+                    if (killerMove2 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove2.Piece], Board.SquareMasks[(int)killerMove2.ToSquare]);
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
+                        // Prioritize and sort killer moves.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
+                    }
+                    continue;
+
+                case MoveGenerationStage.NonCaptures:
+                    firstMoveIndex = position.MoveIndex;
+                    position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
+                    if (firstMoveIndex < lastMoveIndex)
+                    {
+                        // Prioritize and sort non-captures.
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
@@ -1274,6 +1289,7 @@ public sealed class Search : IDisposable
                 case MoveGenerationStage.BestMove:
                 case MoveGenerationStage.GoodCaptures:
                 case MoveGenerationStage.LosingCaptures:
+                case MoveGenerationStage.KillerMoves:
                 case MoveGenerationStage.NonCaptures:
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
@@ -1443,7 +1459,7 @@ public sealed class Search : IDisposable
                     }
                 }
             }
-            
+
             // Prioritize by best move, killer moves, then move history.
             Move.SetIsBest(ref move, isBest);
             Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));

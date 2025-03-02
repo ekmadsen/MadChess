@@ -9,7 +9,6 @@
 
 
 using System.Runtime.CompilerServices;
-using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 
 
@@ -27,14 +26,12 @@ public sealed class KillerMoves
         _killerMoves = new KillerMove[_maxDepth + 1][];
 
         for (var depth = 0; depth <= _maxDepth; depth++)
-        {
-            _killerMoves[depth] =
-            [
-                new KillerMove(Piece.None, Square.Illegal),
-                new KillerMove(Piece.None, Square.Illegal)
-            ];
-        }
+            _killerMoves[depth] = [KillerMove.Null, KillerMove.Null];
     }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public (KillerMove KillerMove1, KillerMove KillerMove2) Get(int depth) => (_killerMoves[depth][0], _killerMoves[depth][1]);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -76,8 +73,8 @@ public sealed class KillerMoves
         // Reset killer moves far from root position.
         for (var depthIndex = lastDepth + 1; depthIndex <= _maxDepth; depthIndex++)
         {
-            _killerMoves[depthIndex][0] = new KillerMove(Piece.None, Square.Illegal);
-            _killerMoves[depthIndex][1] = new KillerMove(Piece.None, Square.Illegal);
+            _killerMoves[depthIndex][0] = KillerMove.Null;
+            _killerMoves[depthIndex][1] = KillerMove.Null;
         }
     }
 
@@ -86,9 +83,8 @@ public sealed class KillerMoves
     {
         for (var depth = 0; depth <= _maxDepth; depth++)
         {
-            var killerMoves = _killerMoves[depth];
-            killerMoves[0] = new KillerMove(Piece.None, Square.Illegal);
-            killerMoves[1] = new KillerMove(Piece.None, Square.Illegal);
+            _killerMoves[depth][0] = KillerMove.Null;
+            _killerMoves[depth][1] = KillerMove.Null;
         }
     }
 }

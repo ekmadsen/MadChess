@@ -1085,7 +1085,6 @@ public sealed class UciStream : IDisposable
         var winScale = int.Parse(tokens[4].Trim()); // Use 721 for GM2600EloGamesClean.pgn.
         var iterations = int.Parse(tokens[5].Trim());
 
-        // TODO: Fix bug re: inaccurate globally best parameters when particlesPerSwarm > 1.
         var particleSwarms = new ParticleSwarms(_advancedConfig, _messenger, pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale);
         particleSwarms.Optimize(iterations);
 

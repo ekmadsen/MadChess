@@ -89,6 +89,7 @@ public sealed class Position
     }
 
 
+    // TODO: Review all references to Position.GetPiece(Square square) and determine if Move.Piece(move) can be used instead.
     public Piece GetPiece(Square square)
     {
         var squareMask = Board.SquareMasks[(int) square];
@@ -625,8 +626,8 @@ public sealed class Position
         Move.SetPiece(ref move, attacker);
         Move.SetIsPawnMove(ref move, attacker == pawn);
         Move.SetIsDoublePawnMove(ref move, (attacker == pawn) && (distance == 2));
-        Move.SetIsCastling(ref move, castling);
         Move.SetIsKingMove(ref move, attacker == king);
+        Move.SetIsCastling(ref move, castling);
         if ((attacker == pawn) && (toSquare == EnPassantSquare))
         {
             // En Passant Capture
