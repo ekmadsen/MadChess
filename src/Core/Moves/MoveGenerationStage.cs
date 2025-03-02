@@ -17,6 +17,7 @@ public enum MoveGenerationStage
     Prepared,
     BestMove,
     GoodCaptures,
+    PawnPromotions,
     LosingCaptures,
     KillerMoves,
     NonCaptures,

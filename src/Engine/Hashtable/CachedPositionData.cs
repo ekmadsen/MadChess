@@ -27,17 +27,17 @@ public static class CachedPositionData
     private static readonly ulong _toHorizonMask;
     private static readonly ulong _toHorizonUnmask;
 
-    private static readonly int _bestMoveFromShift;
-    private static readonly ulong _bestMoveFromMask;
-    private static readonly ulong _bestMoveFromUnmask;
+    private static readonly int _bestMovePromotedPieceShift;
+    private static readonly ulong _bestMovePromotedPieceMask;
+    private static readonly ulong _bestMovePromotedPieceUnmask;
 
     private static readonly int _bestMoveToShift;
     private static readonly ulong _bestMoveToMask;
     private static readonly ulong _bestMoveToUnmask;
 
-    private static readonly int _bestMovePromotedPieceShift;
-    private static readonly ulong _bestMovePromotedPieceMask;
-    private static readonly ulong _bestMovePromotedPieceUnmask;
+    private static readonly int _bestMoveFromShift;
+    private static readonly ulong _bestMoveFromMask;
+    private static readonly ulong _bestMoveFromUnmask;
 
     private static readonly int _dynamicScoreShift;
     private static readonly ulong _dynamicScoreMask;
@@ -50,15 +50,12 @@ public static class CachedPositionData
     private static readonly ulong _lastAccessedMask;
     private static readonly ulong _lastAccessedUnmask;
 
-
-    // TODO: Reorder Best From and Best To (match Move class).
-    
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // To Horizon   |Best From    |Best To    |BMP    |Dynamic Score                                          |DSP|Last Accessed
-    
-    // Best From =  Best Move From (one extra bit for Square.Illegal)
+    // To Horizon   |BMP    |Best To    |Best From    |Dynamic Score                                          |DSP|Last Accessed
+
     // BMP =        Best Move Promoted Piece
+    // Best From =  Best Move From (one extra bit for Square.Illegal)
     // DSP =        Dynamic Score Precision
 
 
@@ -69,17 +66,17 @@ public static class CachedPositionData
         _toHorizonMask = Bitwise.CreateULongMask(57, 63);
         _toHorizonUnmask = Bitwise.CreateULongUnmask(57, 63);
 
-        _bestMoveFromShift = 50;
-        _bestMoveFromMask = Bitwise.CreateULongMask(50, 56);
-        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(50, 56);
+        _bestMovePromotedPieceShift = 53;
+        _bestMovePromotedPieceMask = Bitwise.CreateULongMask(53, 56);
+        _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(53, 56);
 
-        _bestMoveToShift = 44;
-        _bestMoveToMask = Bitwise.CreateULongMask(44, 49);
-        _bestMoveToUnmask = Bitwise.CreateULongUnmask(44, 49);
+        _bestMoveToShift = 47;
+        _bestMoveToMask = Bitwise.CreateULongMask(47, 52);
+        _bestMoveToUnmask = Bitwise.CreateULongUnmask(47, 52);
 
-        _bestMovePromotedPieceShift = 40;
-        _bestMovePromotedPieceMask = Bitwise.CreateULongMask(40, 43);
-        _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(40, 43);
+        _bestMoveFromShift = 40;
+        _bestMoveFromMask = Bitwise.CreateULongMask(40, 46);
+        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(40, 46);
 
         _dynamicScoreShift = 12;
         _dynamicScoreMask = Bitwise.CreateULongMask(12, 39);

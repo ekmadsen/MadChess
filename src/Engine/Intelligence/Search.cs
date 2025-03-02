@@ -596,7 +596,7 @@ public sealed class Search : IDisposable
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
-        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, alpha, beta))
+        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -1012,8 +1012,6 @@ public sealed class Search : IDisposable
     {
         var toHorizon = horizon - depth;
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root position or position far from search horizon is not futile.
-        // TODO: Consider removing AnalyzeMode condition.
-        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Position when analyzing principal variations is not futile.
         if (isDrawnEndgame || position.KingInCheck) return false; // Position in drawn endgame or when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
 
@@ -1027,11 +1025,9 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsNullMovePermitted(Position position, int alpha, int beta)
+    private static bool IsNullMovePermitted(Position position, int beta)
     {
         if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
-        // TODO: Consider removing AnalyzeMode condition.
-        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Do not attempt null move when analyzing principal variations.
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
@@ -1193,8 +1189,9 @@ public sealed class Search : IDisposable
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
                 if (Move.Played(move) || ((moveIndex > 0) && Move.Equals(move, bestMove))) continue; // Do not play move twice.
-                if ((position.MoveGenerationStage > MoveGenerationStage.KillerMoves) && (Move.Killer(move) > 0)) continue; // Do not play killer move twice.
                 if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
+                if ((position.MoveGenerationStage > MoveGenerationStage.PawnPromotions) && (Move.PromotedPiece(move) != Piece.None)) continue; // Do not play pawn promotion move twice.
+                if ((position.MoveGenerationStage > MoveGenerationStage.KillerMoves) && (Move.Killer(move) > 0)) continue; // Do not play killer move twice.
                 return (move, moveIndex);
             }
 
@@ -1222,6 +1219,18 @@ public sealed class Search : IDisposable
                     if (firstMoveIndex < lastMoveIndex)
                     {
                         // Prioritize and sort captures.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
+                    }
+                    continue;
+
+                case MoveGenerationStage.PawnPromotions:
+                    firstMoveIndex = position.MoveIndex;
+                    position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.RankMasks[(int)position.ColorToMove][6] & position.GetPawns(position.ColorToMove) , Board.RankMasks[(int)position.ColorToMove][7]);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
+                    if (firstMoveIndex < lastMoveIndex)
+                    {
+                        // Prioritize and sort pawn promotions.
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
@@ -1288,6 +1297,7 @@ public sealed class Search : IDisposable
             {
                 case MoveGenerationStage.BestMove:
                 case MoveGenerationStage.GoodCaptures:
+                case MoveGenerationStage.PawnPromotions:
                 case MoveGenerationStage.LosingCaptures:
                 case MoveGenerationStage.KillerMoves:
                 case MoveGenerationStage.NonCaptures:
