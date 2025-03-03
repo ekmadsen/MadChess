@@ -431,7 +431,7 @@ public sealed class Search : IDisposable
             }
         }
 
-        var piece = board.CurrentPosition.GetPiece(fromSquare);
+        var piece = Move.Piece(move);
         for (var previousMoves = 2; previousMoves <= 6; previousMoves += 2)
         {
             var previousPosition = board.GetPreviousPosition(previousMoves);
@@ -440,7 +440,7 @@ public sealed class Search : IDisposable
             var previousMove = previousPosition.PlayedMove;
             var previousFromSquare = Move.From(previousMove);
             var previousToSquare = Move.To(previousMove);
-            var previouslyMovedPiece = previousPosition.GetPiece(previousFromSquare);
+            var previouslyMovedPiece = Move.Piece(previousPosition.PlayedMove);
 
             if ((previouslyMovedPiece == piece) && (previousToSquare == fromSquare) && (previousFromSquare == toSquare))
             {
@@ -458,9 +458,9 @@ public sealed class Search : IDisposable
     private static bool IsKingOrRookMoveThatForfeitsCastlingRights(Board board, ulong move)
     {
         var fromSquare = Move.From(move);
+        var piece = Move.Piece(move);
         var kingMove = Move.IsKingMove(move);
-        var rookMove = (Board.SquareMasks[(int)fromSquare] & board.CurrentPosition.GetRooks(board.CurrentPosition.ColorToMove)) > 0;
-        var piece = board.CurrentPosition.GetPiece(fromSquare);
+        var rookMove = piece == PieceHelper.GetPieceOfColor(ColorlessPiece.Rook, board.CurrentPosition.ColorToMove);
 
         if (Castling.Permitted(board.CurrentPosition.Castling) && (kingMove || rookMove))
         {
@@ -1088,15 +1088,15 @@ public sealed class Search : IDisposable
             else
             {
                 // Move is not an en passant capture.
-                colorlessVictim = PieceHelper.GetColorlessPiece(position.GetPiece(fromSquare));
-                score += _seePieceValues[(int)PieceHelper.GetColorlessPiece(position.GetPiece(toSquare))];
+                colorlessVictim = PieceHelper.GetColorlessPiece(Move.Piece(move));
+                score += _seePieceValues[(int)PieceHelper.GetColorlessPiece(Move.CaptureVictim(move))];
             }
         }
         else
         {
             // Move is a pawn promotion.
             colorlessVictim = colorlessPromotedPiece;
-            score += _seePieceValues[(int)PieceHelper.GetColorlessPiece(position.GetPiece(toSquare))] + _seePieceValues[(int)colorlessPromotedPiece] - _seePieceValues[(int)ColorlessPiece.Pawn];
+            score += _seePieceValues[(int)PieceHelper.GetColorlessPiece(Move.CaptureVictim(move))] + _seePieceValues[(int)colorlessPromotedPiece] - _seePieceValues[(int)ColorlessPiece.Pawn];
         }
 
         if (score < 0) return false; // Move fails to meet threshold.

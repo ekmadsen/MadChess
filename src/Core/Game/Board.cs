@@ -1303,6 +1303,8 @@ public sealed class Board
         var king = PieceHelper.GetPieceOfColor(ColorlessPiece.King, CurrentPosition.ColorToMove);
         var toRank = Ranks[(int)CurrentPosition.ColorToMove][(int)toSquare];
 
+        Debug.Assert(Move.Piece(move) == piece, $"{CurrentPosition.ToFen()}{Environment.NewLine}Move = {Move.ToString(move)}{Environment.NewLine}{CurrentPosition}");
+
         // EnPassantVictim variable only used in Debug builds.
         // ReSharper disable RedundantAssignment
         var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, CurrentPosition.ColorLastMoved);

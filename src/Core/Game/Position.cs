@@ -89,7 +89,6 @@ public sealed class Position
     }
 
 
-    // TODO: Review all references to Position.GetPiece(Square square) and determine if Move.Piece(move) can be used instead.
     public Piece GetPiece(Square square)
     {
         var squareMask = Board.SquareMasks[(int) square];
