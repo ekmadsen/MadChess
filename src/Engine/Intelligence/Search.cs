@@ -1226,7 +1226,7 @@ public sealed class Search : IDisposable
 
                 case MoveGenerationStage.PawnPromotions:
                     firstMoveIndex = position.MoveIndex;
-                    position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.RankMasks[(int)position.ColorToMove][6] & position.GetPawns(position.ColorToMove) , Board.RankMasks[(int)position.ColorToMove][7]);
+                    position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.RankMasks[(int)position.ColorToMove][6] & position.GetPawns(position.ColorToMove), Board.RankMasks[(int)position.ColorToMove][7] & toSquareMask);
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
@@ -1244,8 +1244,8 @@ public sealed class Search : IDisposable
                 case MoveGenerationStage.KillerMoves:
                     firstMoveIndex = position.MoveIndex;
                     var (killerMove1, killerMove2) = _killerMoves.Get(depth);
-                    if (killerMove1 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove1.Piece], Board.SquareMasks[(int)killerMove1.ToSquare]);
-                    if (killerMove2 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove2.Piece], Board.SquareMasks[(int)killerMove2.ToSquare]);
+                    if (killerMove1 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove1.Piece], Board.SquareMasks[(int)killerMove1.ToSquare] & toSquareMask);
+                    if (killerMove2 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove2.Piece], Board.SquareMasks[(int)killerMove2.ToSquare] & toSquareMask);
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
