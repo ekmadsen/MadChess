@@ -678,7 +678,7 @@ public sealed class UciStream : IDisposable
 
         while (true)
         {
-            var (move, moveIndex) = _search.GetNextMove(previousMove, _board.CurrentPosition, Evaluation.MiddlegamePhase, Board.AllSquaresMask, depth, Move.Null);
+            var (move, moveIndex) = _search.GetNextMove(previousMove, _board.CurrentPosition, Evaluation.MiddlegamePhase, Board.AllSquaresMask, depth, Move.Null, KillerMove.Null, KillerMove.Null);
             if (move == Move.Null) break; // All moves have been searched.
 
             var (legalMove, _) = _board.PlayMove(move);

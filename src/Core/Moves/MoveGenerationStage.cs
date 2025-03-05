@@ -18,8 +18,8 @@ public enum MoveGenerationStage
     BestMove,
     GoodCaptures,
     PawnPromotions,
-    LosingCaptures,
     KillerMoves,
+    LosingCaptures,
     NonCaptures,
     Completed
 }

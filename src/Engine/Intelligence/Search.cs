@@ -27,7 +27,7 @@ using ErikTheCoder.MadChess.Engine.Score;
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
 
 
-public delegate (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove);
+public delegate (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2);
 
 
 public sealed class Search : IDisposable
@@ -156,9 +156,9 @@ public sealed class Search : IDisposable
 
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
 
-        // To Horizon =            000  001  002  003  004  005  006  007  008  009
-        _futilityPruningMargins = [030, 110, 190, 270, 350, 430, 510, 590, 670, 750]; // (80 * (toHorizon Pow 1)) + 30
-        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052];           // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
+        // To Horizon =            000  001  002  003  004  005  006  007
+        _futilityPruningMargins = [040, 120, 200, 280, 360, 440, 520, 600]; // (80 * (toHorizon Pow 1)) + 40
+        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
         // Create scored move and principal variation arrays.
@@ -644,6 +644,7 @@ public sealed class Search : IDisposable
         var quietMoveNumber = 0;
         var moveIndex = -1;
         var lastMoveIndex = board.CurrentPosition.MoveIndex - 1;
+        var (killerMove1, killerMove2) = _killerMoves.Get(depth);
         if (depth > 0) board.CurrentPosition.PrepareMoveGeneration();
 
         do
@@ -677,7 +678,7 @@ public sealed class Search : IDisposable
             else
             {
                 // Search moves at current position.
-                (move, moveIndex) = GetNextMove(previousMove, board.CurrentPosition, phase, Board.AllSquaresMask, depth, bestMove);
+                (move, moveIndex) = GetNextMove(previousMove, board.CurrentPosition, phase, Board.AllSquaresMask, depth, bestMove, killerMove1, killerMove2);
                 if (move == Move.Null) break; // All moves have been searched.
             }
 
@@ -929,12 +930,13 @@ public sealed class Search : IDisposable
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         var legalMoveNumber = 0;
         var previousMove = board.PreviousPosition?.PlayedMove ?? Move.Null;
+        var (killerMove1, killerMove2) = _killerMoves.Get(depth);
         board.CurrentPosition.PrepareMoveGeneration();
 
         do
         {
             // Do not retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
-            var (move, moveIndex) = getNextMove(previousMove, board.CurrentPosition, phase, moveGenerationToSquareMask, depth, Move.Null);
+            var (move, moveIndex) = getNextMove(previousMove, board.CurrentPosition, phase, moveGenerationToSquareMask, depth, Move.Null, killerMove1, killerMove2);
             if (move == Move.Null) break; // All moves have been searched.
 
             // Must call IsMoveInQuietSearchFutile before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
@@ -1177,7 +1179,7 @@ public sealed class Search : IDisposable
     }
 
 
-    public (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove)
+    public (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2)
     {
         while (true)
         {
@@ -1219,7 +1221,7 @@ public sealed class Search : IDisposable
                     if (firstMoveIndex < lastMoveIndex)
                     {
                         // Prioritize and sort captures.
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, KillerMove.Null, KillerMove.Null);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
                     continue;
@@ -1231,7 +1233,20 @@ public sealed class Search : IDisposable
                     if (firstMoveIndex < lastMoveIndex)
                     {
                         // Prioritize and sort pawn promotions.
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, KillerMove.Null, KillerMove.Null);
+                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
+                    }
+                    continue;
+
+                case MoveGenerationStage.KillerMoves:
+                    firstMoveIndex = position.MoveIndex;
+                    if (killerMove1 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove1.Piece], Board.SquareMasks[(int)killerMove1.ToSquare] & toSquareMask);
+                    if (killerMove2 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove2.Piece], Board.SquareMasks[(int)killerMove2.ToSquare] & toSquareMask);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
+                    if (firstMoveIndex < lastMoveIndex)
+                    {
+                        // Prioritize and sort killer moves.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, killerMove1, killerMove2);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
                     continue;
@@ -1241,20 +1256,6 @@ public sealed class Search : IDisposable
                     position.CurrentMoveIndex = 0;
                     continue;
 
-                case MoveGenerationStage.KillerMoves:
-                    firstMoveIndex = position.MoveIndex;
-                    var (killerMove1, killerMove2) = _killerMoves.Get(depth);
-                    if (killerMove1 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove1.Piece], Board.SquareMasks[(int)killerMove1.ToSquare] & toSquareMask);
-                    if (killerMove2 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove2.Piece], Board.SquareMasks[(int)killerMove2.ToSquare] & toSquareMask);
-                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
-                    if (firstMoveIndex < lastMoveIndex)
-                    {
-                        // Prioritize and sort killer moves.
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
-                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
-                    }
-                    continue;
-
                 case MoveGenerationStage.NonCaptures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
@@ -1262,7 +1263,7 @@ public sealed class Search : IDisposable
                     if (firstMoveIndex < lastMoveIndex)
                     {
                         // Prioritize and sort non-captures.
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, killerMove1, killerMove2);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
                     continue;
@@ -1277,7 +1278,7 @@ public sealed class Search : IDisposable
     }
 
 
-    private (ulong Move, int MoveIndex) GetNextCapture(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove)
+    private (ulong Move, int MoveIndex) GetNextCapture(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2)
     {
         while (true)
         {
@@ -1298,8 +1299,8 @@ public sealed class Search : IDisposable
                 case MoveGenerationStage.BestMove:
                 case MoveGenerationStage.GoodCaptures:
                 case MoveGenerationStage.PawnPromotions:
-                case MoveGenerationStage.LosingCaptures:
                 case MoveGenerationStage.KillerMoves:
+                case MoveGenerationStage.LosingCaptures:
                 case MoveGenerationStage.NonCaptures:
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
@@ -1308,7 +1309,7 @@ public sealed class Search : IDisposable
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, KillerMove.Null, KillerMove.Null);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
                     position.MoveGenerationStage = MoveGenerationStage.Completed;
@@ -1325,12 +1326,13 @@ public sealed class Search : IDisposable
 
     private bool IsMoveInDynamicSearchFutile(Position position, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
+        Debug.Assert(_futilityPruningMargins.Length == _lateMovePruning.Length);
         var toHorizon = horizon - depth;
-        if (toHorizon >= FastMath.Max(_lateMovePruning.Length, _futilityPruningMargins.Length)) return false; // Move far from search horizon is not futile.
 
         if (legalMoveNumber == 1) return false; // First legal move is not futile.
         if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
-        if ((depth == 0) || drawnEndgame || position.KingInCheck) return false; // Root move, move in drawn endgame, or move when king is in check is not futile.
+        if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
+        if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
         if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return false; // Killer move or castling is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Move under threat of checkmate is not futile.
 
@@ -1345,17 +1347,13 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
 
         // Determine if quiet move is too late to be worth searching.
-        if ((toHorizon < _lateMovePruning.Length) && (quietMoveNumber >= _lateMovePruning[toHorizon])) return true;
+        if (quietMoveNumber >= _lateMovePruning[toHorizon]) return true;
 
-        if (toHorizon < _futilityPruningMargins.Length)
-        {
-            // Determine if location improvement and static exchange raises score to within futility margin of alpha.
-            var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-            var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[toHorizon];
-            return !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, threshold);
-        }
+        // Determine if location improvement and static exchange raises score to within futility margin of alpha.
+        var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
+        var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[toHorizon];
 
-        return false;
+        return !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, threshold);
     }
 
 
@@ -1479,17 +1477,22 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, depth);
+    public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth)
+    {
+        var (killerMove1, killerMove2) = _killerMoves.Get(depth);
+        PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, killerMove1, killerMove2);
+    }
 
-    
-    private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
+
+    private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
         {
             // Prioritize by best move, killer moves, then move history.
             ref var move = ref moves[moveIndex];
+            var killerMove = KillerMove.Parse(move);
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
-            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
+            Move.SetKiller(ref move, killerMove == killerMove1 ? 2 : killerMove == killerMove2 ? 1 : 0);
             Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
         }
     }

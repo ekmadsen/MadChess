@@ -32,18 +32,17 @@ public readonly struct KillerMove(Piece piece, Square toSquare) : IEquatable<Kil
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator ==(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1.Piece == killerMove2.Piece) && (killerMove1.ToSquare == killerMove2.ToSquare);
 
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator !=(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1.Piece != killerMove2.Piece) || (killerMove1.ToSquare != killerMove2.ToSquare);
 
 
-    // ReSharper disable once MemberCanBePrivate.Global
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Equals(KillerMove otherKillerMove) => (Piece == otherKillerMove.Piece) && (ToSquare == otherKillerMove.ToSquare);
+    public bool Equals(KillerMove otherKillerMove) => otherKillerMove == this;
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override bool Equals(object other) => (other is KillerMove otherKillerMove) && Equals(otherKillerMove);
+    public override bool Equals(object other) => (other is KillerMove otherKillerMove) && otherKillerMove == this;
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
