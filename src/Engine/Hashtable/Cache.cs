@@ -24,7 +24,7 @@ namespace ErikTheCoder.MadChess.Engine.Hashtable;
 
 public sealed class Cache
 {
-    public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf(typeof(CachedPosition));
+    public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf<CachedPosition>();
     public readonly CachedPosition NullPosition;
     public int Positions;
     private const int _buckets = 4;

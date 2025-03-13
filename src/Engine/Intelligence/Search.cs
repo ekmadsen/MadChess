@@ -157,7 +157,7 @@ public sealed class Search : IDisposable
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
 
         // To Horizon =            000  001  002  003  004  005  006  007
-        _futilityPruningMargins = [040, 120, 200, 280, 360, 440, 520, 600]; // (80 * (toHorizon Pow 1)) + 40
+        _futilityPruningMargins = [050, 065, 110, 185, 290, 425, 590, 785]; // (15 * (toHorizon Pow 2)) + 50
         _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
@@ -1190,10 +1190,13 @@ public sealed class Search : IDisposable
                 var moveIndex = position.CurrentMoveIndex;
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
-                if (Move.Played(move) || ((moveIndex > 0) && Move.Equals(move, bestMove))) continue; // Do not play move twice.
+                
+                if (Move.Played(move)) continue; // Do not play move twice.
+                if ((position.MoveGenerationStage > MoveGenerationStage.BestMove) && Move.Equals(move, bestMove)) continue; // Do not play best move twice.
                 if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
-                if ((position.MoveGenerationStage > MoveGenerationStage.PawnPromotions) && (Move.PromotedPiece(move) != Piece.None)) continue; // Do not play pawn promotion move twice.
+                if ((position.MoveGenerationStage > MoveGenerationStage.PawnPromotions) && (Move.PromotedPiece(move) != Piece.None)) continue; // Do not play pawn promotion twice.
                 if ((position.MoveGenerationStage > MoveGenerationStage.KillerMoves) && (Move.Killer(move) > 0)) continue; // Do not play killer move twice.
+                
                 return (move, moveIndex);
             }
 
@@ -1267,7 +1270,7 @@ public sealed class Search : IDisposable
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
                     continue;
-
+                
                 case MoveGenerationStage.Completed:
                     return (Move.Null, position.CurrentMoveIndex);
             }
@@ -1475,15 +1478,14 @@ public sealed class Search : IDisposable
         }
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth)
     {
         var (killerMove1, killerMove2) = _killerMoves.Get(depth);
         PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, killerMove1, killerMove2);
     }
 
-
+    
     private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
@@ -1497,8 +1499,7 @@ public sealed class Search : IDisposable
         }
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     private void SortRootMovesByPriority(ScoredMove[] moves, int lastMoveIndex)
     {
         Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMovePriorityComparer);
