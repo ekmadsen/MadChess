@@ -157,7 +157,7 @@ public sealed class Search : IDisposable
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
 
         // To Horizon =            000  001  002  003  004  005  006  007
-        _futilityPruningMargins = [050, 065, 110, 185, 290, 425, 590, 785]; // (15 * (toHorizon Pow 2)) + 50
+        _futilityPruningMargins = [040, 120, 200, 280, 360, 440, 520, 600]; // (80 * (toHorizon Pow 1)) + 40
         _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
@@ -1190,7 +1190,7 @@ public sealed class Search : IDisposable
                 var moveIndex = position.CurrentMoveIndex;
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
-                
+
                 if (Move.Played(move)) continue; // Do not play move twice.
                 if ((position.MoveGenerationStage > MoveGenerationStage.BestMove) && Move.Equals(move, bestMove)) continue; // Do not play best move twice.
                 if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
