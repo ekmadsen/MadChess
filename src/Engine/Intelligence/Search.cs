@@ -27,7 +27,7 @@ using ErikTheCoder.MadChess.Engine.Score;
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
 
 
-public delegate (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove);
+public delegate (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2);
 
 
 public sealed class Search : IDisposable
@@ -72,8 +72,9 @@ public sealed class Search : IDisposable
     private readonly GetNextMove _getNextMove;
     private readonly GetNextMove _getNextCapture;
     private readonly Stopwatch _stopwatch;
+    private readonly int[] _seePieceValues;
     private readonly int[] _futilityPruningMargins;
-    private readonly int[] _lateMovePruningMargins;
+    private readonly int[] _lateMovePruning;
     private readonly int[][] _lateMoveReductions; // [quietMoveNumber][toHorizon]
     private readonly ScoredMove[] _rootMoves;
     private readonly ScoredMove[] _bestMoves;
@@ -153,9 +154,11 @@ public sealed class Search : IDisposable
         Signal = new AutoResetEvent(false);
         _stopwatch = new Stopwatch();
 
+        _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
+
         // To Horizon =            000  001  002  003  004  005  006  007
-        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
-        _lateMovePruningMargins = [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
+        _futilityPruningMargins = [040, 120, 200, 280, 360, 440, 520, 600]; // (80 * (toHorizon Pow 1)) + 40
+        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
         // Create scored move and principal variation arrays.
@@ -410,25 +413,25 @@ public sealed class Search : IDisposable
         if ((colorlessCaptureVictim == ColorlessPiece.None) && pieceMove)
         {
             // Non-Capture Piece Move
-            if ((Board.PawnAttackMasks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] & board.CurrentPosition.GetPawns(board.CurrentPosition.ColorLastMoved)) > 0)
+            if ((Board.PawnAttackMasks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] & board.CurrentPosition.GetPawns(board.CurrentPosition.ColorPreviouslyMoved)) > 0)
             {
                 // Moving piece to square attacked by enemy pawn(s) is unreasonable.
                 return true;
             }
         }
         
-        var lastMoveColorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(board.PreviousPosition?.PlayedMove ?? Move.Null));
-        if ((lastMoveColorlessCaptureVictim != ColorlessPiece.None) && (lastMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
+        var previousMoveColorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(board.PreviousPosition?.PlayedMove ?? Move.Null));
+        if ((previousMoveColorlessCaptureVictim != ColorlessPiece.None) && (previousMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
         {
-            // Last move captured a minor or major piece.
-            if (_evaluation.GetPieceMaterialScore(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialScore(lastMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
+            // Previous move captured a minor or major piece.
+            if (_evaluation.GetPieceMaterialScore(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialScore(previousMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
             {
                 // Move that fails to recapture equal or greater value piece is unreasonable.
                 return true;
             }
         }
 
-        var piece = board.CurrentPosition.GetPiece(fromSquare);
+        var piece = Move.Piece(move);
         for (var previousMoves = 2; previousMoves <= 6; previousMoves += 2)
         {
             var previousPosition = board.GetPreviousPosition(previousMoves);
@@ -437,7 +440,7 @@ public sealed class Search : IDisposable
             var previousMove = previousPosition.PlayedMove;
             var previousFromSquare = Move.From(previousMove);
             var previousToSquare = Move.To(previousMove);
-            var previouslyMovedPiece = previousPosition.GetPiece(previousFromSquare);
+            var previouslyMovedPiece = Move.Piece(previousPosition.PlayedMove);
 
             if ((previouslyMovedPiece == piece) && (previousToSquare == fromSquare) && (previousFromSquare == toSquare))
             {
@@ -455,9 +458,9 @@ public sealed class Search : IDisposable
     private static bool IsKingOrRookMoveThatForfeitsCastlingRights(Board board, ulong move)
     {
         var fromSquare = Move.From(move);
+        var piece = Move.Piece(move);
         var kingMove = Move.IsKingMove(move);
-        var rookMove = (Board.SquareMasks[(int)fromSquare] & board.CurrentPosition.GetRooks(board.CurrentPosition.ColorToMove)) > 0;
-        var piece = board.CurrentPosition.GetPiece(fromSquare);
+        var rookMove = piece == PieceHelper.GetPieceOfColor(ColorlessPiece.Rook, board.CurrentPosition.ColorToMove);
 
         if (Castling.Permitted(board.CurrentPosition.Castling) && (kingMove || rookMove))
         {
@@ -502,7 +505,7 @@ public sealed class Search : IDisposable
         if (!Continue && (_bestMoves[0].Move != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
 
         // Mate Distance Pruning
-        var (terminalDraw, repeatPosition) = _evaluation.IsTerminalDraw(board.CurrentPosition);
+        var (terminalDraw, repeatPosition) = _evaluation.IsTerminalDraw(board);
         if (depth > 0)
         {
             var lowestPossibleScore = Evaluation.GetMatedScore(depth);
@@ -593,7 +596,7 @@ public sealed class Search : IDisposable
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
-        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, alpha, beta))
+        if (nullMovePermitted && IsNullMovePermitted(board.CurrentPosition, beta))
         {
             // Null move is permitted.
             _stats.NullMoves++;
@@ -641,6 +644,7 @@ public sealed class Search : IDisposable
         var quietMoveNumber = 0;
         var moveIndex = -1;
         var lastMoveIndex = board.CurrentPosition.MoveIndex - 1;
+        var (killerMove1, killerMove2) = _killerMoves.Get(depth);
         if (depth > 0) board.CurrentPosition.PrepareMoveGeneration();
 
         do
@@ -674,7 +678,7 @@ public sealed class Search : IDisposable
             else
             {
                 // Search moves at current position.
-                (move, moveIndex) = GetNextMove(previousMove, board.CurrentPosition, Board.AllSquaresMask, depth, bestMove);
+                (move, moveIndex) = GetNextMove(previousMove, board.CurrentPosition, phase, Board.AllSquaresMask, depth, bestMove, killerMove1, killerMove2);
                 if (move == Move.Null) break; // All moves have been searched.
             }
 
@@ -757,7 +761,7 @@ public sealed class Search : IDisposable
                     _killerMoves.Update(depth, move);
                     _moveHistory.UpdateValue(previousMove, move, historyIncrement);
 
-                    moveIndex--; // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
+                    moveIndex--; // Decrement move index immediately so as not to include quiet move that caused beta cutoff.
 
                     while (moveIndex >= 0)
                     {
@@ -869,7 +873,7 @@ public sealed class Search : IDisposable
         if (!Continue && (_bestMoves[0].Move != Move.Null)) return StaticScore.Interrupted; // Search was interrupted.
 
         // Mate Distance Pruning
-        var (terminalDraw, _) = _evaluation.IsTerminalDraw(board.CurrentPosition);
+        var (terminalDraw, _) = _evaluation.IsTerminalDraw(board);
         if (depth > 0)
         {
             var lowestPossibleScore = Evaluation.GetMatedScore(depth);
@@ -911,11 +915,11 @@ public sealed class Search : IDisposable
             var fromHorizonExcludingChecks = depth - horizon - checksInQuietSearch;
             if ((fromHorizonExcludingChecks > _recapturesOnlyMaxFromHorizon) && !Move.IsKingMove(board.PreviousPosition.PlayedMove))
             {
-                // Past max distance from horizon and last move was not by king.
-                var lastMoveToSquare = Move.To(board.PreviousPosition.PlayedMove);
-                moveGenerationToSquareMask = lastMoveToSquare == Square.Illegal
+                // Past max distance from horizon and previous move was not by king.
+                var previousMoveToSquare = Move.To(board.PreviousPosition.PlayedMove);
+                moveGenerationToSquareMask = previousMoveToSquare == Square.Illegal
                     ? toSquareMask
-                    : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
+                    : Board.SquareMasks[(int)previousMoveToSquare]; // Search only recaptures.
             }
             else moveGenerationToSquareMask = toSquareMask;
             (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _evaluation.GetStaticScore(board.CurrentPosition);
@@ -926,12 +930,13 @@ public sealed class Search : IDisposable
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
         var legalMoveNumber = 0;
         var previousMove = board.PreviousPosition?.PlayedMove ?? Move.Null;
+        var (killerMove1, killerMove2) = _killerMoves.Get(depth);
         board.CurrentPosition.PrepareMoveGeneration();
 
         do
         {
             // Do not retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
-            var (move, moveIndex) = getNextMove(previousMove, board.CurrentPosition, moveGenerationToSquareMask, depth, Move.Null);
+            var (move, moveIndex) = getNextMove(previousMove, board.CurrentPosition, phase, moveGenerationToSquareMask, depth, Move.Null, killerMove1, killerMove2);
             if (move == Move.Null) break; // All moves have been searched.
 
             // Must call IsMoveInQuietSearchFutile before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
@@ -1009,7 +1014,6 @@ public sealed class Search : IDisposable
     {
         var toHorizon = horizon - depth;
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root position or position far from search horizon is not futile.
-        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Position when analyzing principal variations is not futile.
         if (isDrawnEndgame || position.KingInCheck) return false; // Position in drawn endgame or when king is in check is not futile.
         if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
 
@@ -1023,10 +1027,9 @@ public sealed class Search : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsNullMovePermitted(Position position, int alpha, int beta)
+    private static bool IsNullMovePermitted(Position position, int beta)
     {
         if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
-        if (AnalyzeMode && ((beta - alpha) > 1)) return false; // Do not attempt null move when analyzing principal variations.
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
@@ -1045,7 +1048,138 @@ public sealed class Search : IDisposable
     }
 
 
-    public (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove)
+    public bool DoesMoveMeetStaticExchangeThreshold(Position position, int phase, ulong move, bool adjustMaterialValuesByGamePhase, int threshold)
+    {
+        // Get move from and to square.
+        var fromSquare = Move.From(move);
+        var toSquare = Move.To(move);
+        var colorlessPromotedPiece = PieceHelper.GetColorlessPiece(Move.PromotedPiece(move));
+
+        if (adjustMaterialValuesByGamePhase)
+        {
+            // Adjust piece material values based on game phase.
+            _seePieceValues[(int)ColorlessPiece.Pawn] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Pawn, phase);
+            _seePieceValues[(int)ColorlessPiece.Knight] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Knight, phase);
+            _seePieceValues[(int)ColorlessPiece.Bishop] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Bishop, phase);
+            _seePieceValues[(int)ColorlessPiece.Rook] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Rook, phase);
+            _seePieceValues[(int)ColorlessPiece.Queen] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Queen, phase);
+        }
+        else
+        {
+            // Use standard piece material values.
+            _seePieceValues[(int)ColorlessPiece.Pawn] = 100;
+            _seePieceValues[(int)ColorlessPiece.Knight] = 300;
+            _seePieceValues[(int)ColorlessPiece.Bishop] = 300;
+            _seePieceValues[(int)ColorlessPiece.Rook] = 500;
+            _seePieceValues[(int)ColorlessPiece.Queen] = 900;
+        }
+
+        // Set initial victim and score.
+        ColorlessPiece colorlessVictim;
+        var score = -threshold;
+
+        if (Move.PromotedPiece(move) == Piece.None)
+        {
+            // Move is not a pawn promotion.
+            if (Move.IsEnPassantCapture(move))
+            {
+                // Move is an en passant capture.
+                colorlessVictim = ColorlessPiece.Pawn;
+                score += _seePieceValues[(int)ColorlessPiece.Pawn];
+            }
+            else
+            {
+                // Move is not an en passant capture.
+                colorlessVictim = PieceHelper.GetColorlessPiece(Move.Piece(move));
+                score += _seePieceValues[(int)PieceHelper.GetColorlessPiece(Move.CaptureVictim(move))];
+            }
+        }
+        else
+        {
+            // Move is a pawn promotion.
+            colorlessVictim = colorlessPromotedPiece;
+            score += _seePieceValues[(int)PieceHelper.GetColorlessPiece(Move.CaptureVictim(move))] + _seePieceValues[(int)colorlessPromotedPiece] - _seePieceValues[(int)ColorlessPiece.Pawn];
+        }
+
+        if (score < 0) return false; // Move fails to meet threshold.
+        score -= _seePieceValues[(int)colorlessVictim];
+        if (score >= 0) return true; // Exchange is guaranteed to meet threshold.
+
+        // Get sliding pieces to enable updating revealed attackers.
+        var queens = position.GetPieces(ColorlessPiece.Queen);
+        var bishopsAndQueens = position.GetPieces(ColorlessPiece.Bishop) | queens;
+        var rooksAndQueens = position.GetPieces(ColorlessPiece.Rook) | queens;
+
+        // Simulate move.
+        var occupancy = position.Occupancy;
+        Bitwise.ClearBit(ref occupancy, fromSquare);
+        Bitwise.SetBit(ref occupancy, toSquare);
+        if (Move.IsEnPassantCapture(move)) Bitwise.ClearBit(ref occupancy, Board.EnPassantVictimSquares[(int)toSquare]);
+        var colorToMove = position.ColorPreviouslyMoved;
+
+        // Get all attackers (black and white) minus attacker from simulated move.
+        var allAttackers = position.GetSquareAttackers(toSquare, occupancy);
+
+        do
+        {
+            var attackers = allAttackers & position.ColorOccupancy[(int)colorToMove];
+            if (attackers == 0) break; // No attackers remain.
+
+            // Find least valuable piece with which to attack.
+            for (colorlessVictim = ColorlessPiece.Pawn; colorlessVictim <= ColorlessPiece.King; colorlessVictim++)
+            {
+                var victim = PieceHelper.GetPieceOfColor(colorlessVictim, colorToMove);
+                var candidateAttackers = attackers & position.PieceBitboards[(int)victim];
+                if (candidateAttackers > 0)
+                {
+                    // Remove attacker from occupancy.
+                    Bitwise.ClearBit(ref occupancy, Bitwise.PopFirstSetSquare(ref candidateAttackers));
+                    break;
+                }
+            }
+
+            if ((colorlessVictim == ColorlessPiece.Pawn) || (colorlessVictim == ColorlessPiece.Bishop) || (colorlessVictim == ColorlessPiece.Queen))
+            {
+                // A diagonal attack may reveal bishop or queen attackers.
+                allAttackers |= Board.PrecalculatedMoves.GetBishopMovesMask(toSquare, occupancy) & bishopsAndQueens;
+            }
+            if ((colorlessVictim == ColorlessPiece.Rook) || (colorlessVictim == ColorlessPiece.Queen))
+            {
+                // A rank / file attack may reveal rook or queen attackers.
+                allAttackers |= Board.PrecalculatedMoves.GetRookMovesMask(toSquare, occupancy) & rooksAndQueens;
+            }
+            allAttackers &= occupancy; // BishopsAndQueens and RooksAndQueens masks aren't updated in this loop, so AND with occupancy to prevent same piece attacking twice.
+
+            // Simulate attack (attacker was removed from occupancy above) and adjust score.
+            score = -score - _seePieceValues[(int)colorlessVictim];
+            if ((colorlessVictim == ColorlessPiece.Pawn) && (Board.Ranks[(int)colorToMove][(int)toSquare] == 7))
+            {
+                // Attack is a pawn promotion.  Assume promotion to queen.
+                score += _seePieceValues[(int)ColorlessPiece.Queen] - _seePieceValues[(int)ColorlessPiece.Pawn];
+            }
+            colorToMove = 1 - colorToMove;
+
+            var pawnPromotionThreat = (Board.Ranks[(int)colorToMove][(int)toSquare] == 7) && ((allAttackers & position.GetPawns(colorToMove) & Board.PawnAttackMasks[1 - (int)colorToMove][(int)toSquare]) > 0);
+            if ((score > 0) && !pawnPromotionThreat)
+            {
+                // Exchange is guaranteed to meet threshold.
+                if ((colorlessVictim == ColorlessPiece.King) && ((allAttackers & position.ColorOccupancy[(int)colorToMove]) > 0))
+                {
+                    // Last attack made by king and enemy has remaining attackers.
+                    // Therefore, last attack was illegal (exposed own king to attack).
+                    colorToMove = 1 - colorToMove;
+                }
+                break;
+            }
+
+        } while (true);
+
+        // Move meets static exchange threshold if enemy exits loop with no attackers.
+        return colorToMove != position.ColorToMove;
+    }
+
+
+    public (ulong Move, int MoveIndex) GetNextMove(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2)
     {
         while (true)
         {
@@ -1056,9 +1190,17 @@ public sealed class Search : IDisposable
                 var moveIndex = position.CurrentMoveIndex;
                 var move = position.Moves[moveIndex];
                 position.CurrentMoveIndex++;
-                if (Move.Played(move) || ((moveIndex > 0) && Move.Equals(move, bestMove))) continue; // Do not play move twice.
+
+                if (Move.Played(move)) continue; // Do not play move twice.
+                if ((position.MoveGenerationStage > MoveGenerationStage.BestMove) && Move.Equals(move, bestMove)) continue; // Do not play best move twice.
+                if ((position.MoveGenerationStage == MoveGenerationStage.GoodCaptures) && !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, 0)) continue; // Skip losing capture.
+                if ((position.MoveGenerationStage > MoveGenerationStage.PawnPromotions) && (Move.PromotedPiece(move) != Piece.None)) continue; // Do not play pawn promotion twice.
+                if ((position.MoveGenerationStage > MoveGenerationStage.KillerMoves) && (Move.Killer(move) > 0)) continue; // Do not play killer move twice.
+                
                 return (move, moveIndex);
             }
+
+            position.MoveGenerationStage++;
 
             // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
@@ -1073,36 +1215,63 @@ public sealed class Search : IDisposable
                         position.Moves[position.MoveIndex] = bestMove;
                         position.MoveIndex++;
                     }
-                    position.MoveGenerationStage++;
                     continue;
 
-                case MoveGenerationStage.Captures:
+                case MoveGenerationStage.GoodCaptures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort captures.
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        // Prioritize and sort captures.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, KillerMove.Null, KillerMove.Null);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
-                    position.MoveGenerationStage++;
+                    continue;
+
+                case MoveGenerationStage.PawnPromotions:
+                    firstMoveIndex = position.MoveIndex;
+                    position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.RankMasks[(int)position.ColorToMove][6] & position.GetPawns(position.ColorToMove), Board.RankMasks[(int)position.ColorToMove][7] & toSquareMask);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
+                    if (firstMoveIndex < lastMoveIndex)
+                    {
+                        // Prioritize and sort pawn promotions.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, KillerMove.Null, KillerMove.Null);
+                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
+                    }
+                    continue;
+
+                case MoveGenerationStage.KillerMoves:
+                    firstMoveIndex = position.MoveIndex;
+                    if (killerMove1 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove1.Piece], Board.SquareMasks[(int)killerMove1.ToSquare] & toSquareMask);
+                    if (killerMove2 != KillerMove.Null) position.GenerateMoves(MoveGeneration.OnlyNonCaptures, position.PieceBitboards[(int)killerMove2.Piece], Board.SquareMasks[(int)killerMove2.ToSquare] & toSquareMask);
+                    lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
+                    if (firstMoveIndex < lastMoveIndex)
+                    {
+                        // Prioritize and sort killer moves.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, killerMove1, killerMove2);
+                        SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
+                    }
+                    continue;
+
+                case MoveGenerationStage.LosingCaptures:
+                    // Reset current move index to play losing captures that were skipped during GoodCaptures stage.
+                    position.CurrentMoveIndex = 0;
                     continue;
 
                 case MoveGenerationStage.NonCaptures:
                     firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyNonCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort non-captures.
                     lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        // Prioritize and sort non-captures.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, killerMove1, killerMove2);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
-                    position.MoveGenerationStage++;
                     continue;
-
-                case MoveGenerationStage.End:
+                
+                case MoveGenerationStage.Completed:
                     return (Move.Null, position.CurrentMoveIndex);
             }
             break;
@@ -1110,9 +1279,9 @@ public sealed class Search : IDisposable
 
         return (Move.Null, position.CurrentMoveIndex);
     }
-    
-    
-    private (ulong Move, int MoveIndex) GetNextCapture(ulong previousMove, Position position, ulong toSquareMask, int depth, ulong bestMove)
+
+
+    private (ulong Move, int MoveIndex) GetNextCapture(ulong previousMove, Position position, int phase, ulong toSquareMask, int depth, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2)
     {
         while (true)
         {
@@ -1120,29 +1289,35 @@ public sealed class Search : IDisposable
             {
                 var moveIndex = position.CurrentMoveIndex;
                 var move = position.Moves[moveIndex];
-                position.CurrentMoveIndex++;
                 Debug.Assert(Move.CaptureVictim(move) != Piece.None);
+                position.CurrentMoveIndex++;
                 return (move, moveIndex);
             }
+
+            position.MoveGenerationStage++;
 
             // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
             switch (position.MoveGenerationStage)
             {
                 case MoveGenerationStage.BestMove:
-                case MoveGenerationStage.Captures:
+                case MoveGenerationStage.GoodCaptures:
+                case MoveGenerationStage.PawnPromotions:
+                case MoveGenerationStage.KillerMoves:
+                case MoveGenerationStage.LosingCaptures:
+                case MoveGenerationStage.NonCaptures:
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort captures.
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
-                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, depth);
+                        // Prioritize and sort captures.
+                        PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, KillerMove.Null, KillerMove.Null);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
-                    position.MoveGenerationStage = MoveGenerationStage.End; // Skip non-captures.
+                    position.MoveGenerationStage = MoveGenerationStage.Completed;
                     continue;
-                case MoveGenerationStage.End:
+                case MoveGenerationStage.Completed:
                     return (Move.Null, position.CurrentMoveIndex);
             }
             break;
@@ -1154,7 +1329,7 @@ public sealed class Search : IDisposable
 
     private bool IsMoveInDynamicSearchFutile(Position position, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
-        Debug.Assert(_futilityPruningMargins.Length == _lateMovePruningMargins.Length);
+        Debug.Assert(_futilityPruningMargins.Length == _lateMovePruning.Length);
         var toHorizon = horizon - depth;
 
         if (legalMoveNumber == 1) return false; // First legal move is not futile.
@@ -1175,12 +1350,13 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
 
         // Determine if quiet move is too late to be worth searching.
-        if (quietMoveNumber >= _lateMovePruningMargins[toHorizon]) return true;
+        if (quietMoveNumber >= _lateMovePruning[toHorizon]) return true;
 
-        // No material improvement is possible because captures and pawn promotions (!Move.IsQuiet) are not futile.
-        // Determine if location improvement raises score to within futility margin of alpha.
+        // Determine if location improvement and static exchange raises score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        return (position.StaticScore + locationImprovement + _futilityPruningMargins[toHorizon]) < alpha;
+        var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[toHorizon];
+
+        return !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, threshold);
     }
 
 
@@ -1188,11 +1364,11 @@ public sealed class Search : IDisposable
     {
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
 
-        // Determine if material and location improvements raise score to within futility margin of alpha.
-        var captureVictim = Move.CaptureVictim(move);
-        var materialImprovement = _evaluation.GetPieceMaterialScore(PieceHelper.GetColorlessPiece(captureVictim), phase);
+        // Determine if location improvement and static exchange raises score to within futility margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
-        return (position.StaticScore + materialImprovement + locationImprovement + _futilityPruningMargins[0]) < alpha;
+        var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[0];
+
+        return !DoesMoveMeetStaticExchangeThreshold(position, phase, move, true, threshold);
     }
 
 
@@ -1294,7 +1470,7 @@ public sealed class Search : IDisposable
                     }
                 }
             }
-            
+
             // Prioritize by best move, killer moves, then move history.
             Move.SetIsBest(ref move, isBest);
             Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
@@ -1302,25 +1478,28 @@ public sealed class Search : IDisposable
         }
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth) => PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, depth);
+    
+    public void PrioritizeMoves(ulong previousMove, ulong[] moves, int lastMoveIndex, ulong bestMove, int depth)
+    {
+        var (killerMove1, killerMove2) = _killerMoves.Get(depth);
+        PrioritizeMoves(previousMove, moves, 0, lastMoveIndex, bestMove, killerMove1, killerMove2);
+    }
 
     
-    private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, int depth)
+    private void PrioritizeMoves(ulong previousMove, ulong[] moves, int firstMoveIndex, int lastMoveIndex, ulong bestMove, KillerMove killerMove1, KillerMove killerMove2)
     {
         for (var moveIndex = firstMoveIndex; moveIndex <= lastMoveIndex; moveIndex++)
         {
             // Prioritize by best move, killer moves, then move history.
             ref var move = ref moves[moveIndex];
+            var killerMove = KillerMove.Parse(move);
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
-            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
+            Move.SetKiller(ref move, killerMove == killerMove1 ? 2 : killerMove == killerMove2 ? 1 : 0);
             Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
         }
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     private void SortRootMovesByPriority(ScoredMove[] moves, int lastMoveIndex)
     {
         Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMovePriorityComparer);

@@ -13,8 +13,13 @@ namespace ErikTheCoder.MadChess.Core.Moves;
 
 public enum MoveGenerationStage
 {
+    Reset,
+    Prepared,
     BestMove,
-    Captures,
+    GoodCaptures,
+    PawnPromotions,
+    KillerMoves,
+    LosingCaptures,
     NonCaptures,
-    End
+    Completed
 }

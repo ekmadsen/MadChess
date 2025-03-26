@@ -9,6 +9,7 @@
 
 
 using System;
+using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
 
@@ -18,18 +19,36 @@ namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 public readonly struct KillerMove(Piece piece, Square toSquare) : IEquatable<KillerMove>
 {
-    private readonly Piece _piece = piece;
-    private readonly Square _toSquare = toSquare;
+    public static readonly KillerMove Null;
+    public readonly Piece Piece = piece;
+    public readonly Square ToSquare = toSquare;
 
 
-    public static bool operator ==(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1._piece == killerMove2._piece) && (killerMove1._toSquare == killerMove2._toSquare);
-    public static bool operator !=(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1._piece != killerMove2._piece) || (killerMove1._toSquare != killerMove2._toSquare);
+    static KillerMove()
+    {
+        Null = new KillerMove(Piece.None, Square.Illegal);
+    }
 
-    // ReSharper disable once MemberCanBePrivate.Global
-    public bool Equals(KillerMove otherKillerMove) => (_piece == otherKillerMove._piece) && (_toSquare == otherKillerMove._toSquare);
-    public override bool Equals(object other) => (other is KillerMove otherKillerMove) && Equals(otherKillerMove);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator ==(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1.Piece == killerMove2.Piece) && (killerMove1.ToSquare == killerMove2.ToSquare);
 
-    public override int GetHashCode() => HashCode.Combine((int)_piece, (int)_toSquare);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator !=(KillerMove killerMove1, KillerMove killerMove2) => (killerMove1.Piece != killerMove2.Piece) || (killerMove1.ToSquare != killerMove2.ToSquare);
 
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool Equals(KillerMove otherKillerMove) => otherKillerMove == this;
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override bool Equals(object other) => (other is KillerMove otherKillerMove) && otherKillerMove == this;
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override int GetHashCode() => HashCode.Combine((int)Piece, (int)ToSquare);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static KillerMove Parse(ulong move) => new(Move.Piece(move), Move.To(move));
 }

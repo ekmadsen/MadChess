@@ -39,16 +39,13 @@ public sealed class Position
     public ulong Key;
     public int StaticScore;
     public ulong PlayedMove;
-    private readonly Board _board;
 
 
-    public Color ColorLastMoved => 1 - ColorToMove;
+    public Color ColorPreviouslyMoved => 1 - ColorToMove;
 
 
-    public Position(Board board)
+    public Position()
     {
-        _board = board;
-
         PieceBitboards = new ulong[(int) Piece.BlackKing + 1];
         ColorOccupancy = new ulong[2];
         Moves = new ulong[MaxMoves];
@@ -122,8 +119,62 @@ public sealed class Position
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsRepeatPosition(int repeats) => _board.IsRepeatPosition(repeats);
+    public bool IsSquareAttacked(Square square, Color color)
+    {
+        var enemyColor = 1 - color;
+
+        // Determine if square is attacked by pawns.
+        // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+        var pawns = GetPawns(color);
+        if ((pawns & Board.PawnAttackMasks[(int)enemyColor][(int)square]) > 0) return true;
+
+        // Determine if square is attacked by knights.
+        var knights = GetKnights(color);
+        if ((knights & Board.KnightMoveMasks[(int)square]) > 0) return true;
+
+        // Determine if square is attacked by diagonal sliding piece.
+        var bishops = GetBishops(color);
+        var queens = GetQueens(color);
+        if (((bishops | queens) & Board.PrecalculatedMoves.GetBishopMovesMask(square, Occupancy)) > 0) return true;
+
+        // Determine if square is attacked by rank / file sliding pieces.
+        var rooks = GetRooks(color);
+        if (((rooks | queens) & Board.PrecalculatedMoves.GetRookMovesMask(square, Occupancy)) > 0) return true;
+
+        // Determine if square is attacked by king.
+        var king = GetKing(color);
+        return (king & Board.KingMoveMasks[(int)square]) > 0;
+    }
+
+
+    public ulong GetSquareAttackers(Square square, ulong modifiedOccupancy)
+    {
+        // This position's occupancy has been slightly modified (a move has been simulated but not actually played).
+        // Use given occupancy to determine attacks by sliding pieces.
+        var attackers = 0ul;
+
+        // Add pawn attackers.
+        // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+        attackers |= GetPawns(Color.White) & Board.PawnAttackMasks[(int)Color.Black][(int)square];
+        attackers |= GetPawns(Color.Black) & Board.PawnAttackMasks[(int)Color.White][(int)square];
+
+        // Add knight attackers.
+        attackers |= GetPieces(ColorlessPiece.Knight) & Board.KnightMoveMasks[(int)square];
+
+        // Add diagonal sliding piece attackers.
+        var bishops = GetPieces(ColorlessPiece.Bishop);
+        var queens = GetPieces(ColorlessPiece.Queen);
+        attackers |= (bishops | queens) & Board.PrecalculatedMoves.GetBishopMovesMask(square, modifiedOccupancy);
+
+        // Add rank / file sliding piece attackers.
+        var rooks = GetPieces(ColorlessPiece.Rook);
+        attackers |= (rooks | queens) & Board.PrecalculatedMoves.GetRookMovesMask(square, modifiedOccupancy);
+
+        // Add king attacker.
+        attackers |= GetPieces(ColorlessPiece.King) & Board.KingMoveMasks[(int)square];
+
+        return attackers & modifiedOccupancy;
+    }
 
 
     public void Set(Position copyFromPosition)
@@ -165,7 +216,7 @@ public sealed class Position
         PrepareMoveGeneration();
         FindPinnedPieces();
         GenerateMoves(MoveGeneration.AllMoves, Board.AllSquaresMask, Board.AllSquaresMask);
-        MoveGenerationStage = MoveGenerationStage.End;
+        MoveGenerationStage = MoveGenerationStage.Completed;
     }
 
 
@@ -183,7 +234,7 @@ public sealed class Position
     {
         CurrentMoveIndex = 0;
         MoveIndex = 0;
-        MoveGenerationStage = MoveGenerationStage.BestMove;
+        MoveGenerationStage = MoveGenerationStage.Prepared;
     }
 
 
@@ -196,7 +247,7 @@ public sealed class Position
         var pawnDoubleMoveMasks = Board.PawnDoubleMoveMasks[(int)ColorToMove];
         var pawnAttackMasks = Board.PawnAttackMasks[(int)ColorToMove];
 
-        var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
+        var enemyOccupiedSquares = ColorOccupancy[(int)ColorPreviouslyMoved];
         var unoccupiedSquares = ~Occupancy;
 
         var ranks = Board.Ranks[(int)ColorToMove];
@@ -204,7 +255,7 @@ public sealed class Position
         var attacker = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorToMove);
         var queen = PieceHelper.GetPieceOfColor(ColorlessPiece.Queen, ColorToMove);
         var knight = PieceHelper.GetPieceOfColor(ColorlessPiece.Knight, ColorToMove);
-        var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorLastMoved);
+        var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorPreviouslyMoved);
 
         Square fromSquare;
         ulong move;
@@ -342,7 +393,7 @@ public sealed class Position
             var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
             
             var unOrEnemyOccupiedSquares = ~ColorOccupancy[(int)ColorToMove];
-            var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
+            var enemyOccupiedSquares = ColorOccupancy[(int)ColorPreviouslyMoved];
 
             Square fromSquare;
             while ((fromSquare = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
@@ -384,7 +435,7 @@ public sealed class Position
         if (king == 0) return;
 
         var unOrEnemyOccupiedSquares = ~ColorOccupancy[(int)ColorToMove];
-        var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
+        var enemyOccupiedSquares = ColorOccupancy[(int)ColorPreviouslyMoved];
 
         var attacker = PieceHelper.GetPieceOfColor(ColorlessPiece.King, ColorToMove);
 
@@ -455,9 +506,9 @@ public sealed class Position
         var ownKingSquare = Bitwise.FirstSetSquare(GetKing(ColorToMove));
         var ownPieces = ColorOccupancy[(int)ColorToMove];
 
-        var enemyRankFileAttackers = GetRooks(ColorLastMoved) | GetQueens(ColorLastMoved);
-        var enemyDiagonalAttackers = GetBishops(ColorLastMoved) | GetQueens(ColorLastMoved);
-        var enemyPieces = ColorOccupancy[(int)ColorLastMoved];
+        var enemyRankFileAttackers = GetRooks(ColorPreviouslyMoved) | GetQueens(ColorPreviouslyMoved);
+        var enemyDiagonalAttackers = GetBishops(ColorPreviouslyMoved) | GetQueens(ColorPreviouslyMoved);
+        var enemyPieces = ColorOccupancy[(int)ColorPreviouslyMoved];
 
         // Find pieces pinned to own king by enemy rank / file attackers.
         PinnedPieces = 0;
@@ -574,14 +625,14 @@ public sealed class Position
         Move.SetPiece(ref move, attacker);
         Move.SetIsPawnMove(ref move, attacker == pawn);
         Move.SetIsDoublePawnMove(ref move, (attacker == pawn) && (distance == 2));
-        Move.SetIsCastling(ref move, castling);
         Move.SetIsKingMove(ref move, attacker == king);
+        Move.SetIsCastling(ref move, castling);
         if ((attacker == pawn) && (toSquare == EnPassantSquare))
         {
             // En Passant Capture
             Move.SetIsEnPassantCapture(ref move, true);
             Move.SetCaptureAttacker(ref move, attacker);
-            Move.SetCaptureVictim(ref move, PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorLastMoved));
+            Move.SetCaptureVictim(ref move, PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorPreviouslyMoved));
         }
         else if (victim != Piece.None)
         {
@@ -614,7 +665,7 @@ public sealed class Position
 
         CurrentMoveIndex = 0;
         MoveIndex = 0;
-        MoveGenerationStage = MoveGenerationStage.BestMove;
+        MoveGenerationStage = MoveGenerationStage.Reset;
 
         PiecesSquaresKey = 0;
         Key = 0;
@@ -707,7 +758,7 @@ public sealed class Position
     }
 
 
-    public override string ToString()
+    public string ToString(int positionCount)
     {
         // Iterate over the piece array to construct an 8 x 8 text display of the chessboard.
         var stringBuilder = new StringBuilder();
@@ -751,7 +802,7 @@ public sealed class Position
         // Display position properties.
         stringBuilder.AppendLine($"FEN:             {ToFen()}");
         stringBuilder.AppendLine($"Key:             {Key:X16}");
-        stringBuilder.AppendLine($"Position Count:  {_board.GetPositionCount()}");
+        stringBuilder.AppendLine($"Position Count:  {positionCount}");
         stringBuilder.AppendLine($"King in Check:   {(KingInCheck ? "Yes" : "No")}");
         stringBuilder.AppendLine($"Static Score:    {StaticScore}");
         stringBuilder.AppendLine("Played Move:");

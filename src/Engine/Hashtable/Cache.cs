@@ -24,7 +24,7 @@ namespace ErikTheCoder.MadChess.Engine.Hashtable;
 
 public sealed class Cache
 {
-    public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf(typeof(CachedPosition));
+    public static readonly int CapacityPerMegabyte = 1024 * 1024 / Marshal.SizeOf<CachedPosition>();
     public readonly CachedPosition NullPosition;
     public int Positions;
     private const int _buckets = 4;
@@ -57,9 +57,9 @@ public sealed class Cache
         // Set null position.
         NullPosition = new CachedPosition(0, 0);
         CachedPositionData.SetToHorizon(ref NullPosition.Data, 0);
-        CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
-        CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.A8);
         CachedPositionData.SetBestMovePromotedPiece(ref NullPosition.Data, Piece.None);
+        CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
+        CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
         CachedPositionData.SetDynamicScore(ref NullPosition.Data, StaticScore.NotCached);
         CachedPositionData.SetScorePrecision(ref NullPosition.Data, ScorePrecision.Unknown);
         CachedPositionData.SetLastAccessed(ref NullPosition.Data, 0);
@@ -150,7 +150,7 @@ public sealed class Cache
         Move.SetPromotedPiece(ref bestMove, CachedPositionData.BestMovePromotedPiece(cachedPosition));
         Move.SetIsBest(ref bestMove, true);
 
-        // Validate move is possible in current position on board.
+        // Validate move is possible in position.
         var validMove = position.ValidateMove(ref bestMove);
         if (validMove) _stats.CacheValidBestMove++;
         else _stats.CacheInvalidBestMove++;
