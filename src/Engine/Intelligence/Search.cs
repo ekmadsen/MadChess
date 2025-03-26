@@ -413,18 +413,18 @@ public sealed class Search : IDisposable
         if ((colorlessCaptureVictim == ColorlessPiece.None) && pieceMove)
         {
             // Non-Capture Piece Move
-            if ((Board.PawnAttackMasks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] & board.CurrentPosition.GetPawns(board.CurrentPosition.ColorLastMoved)) > 0)
+            if ((Board.PawnAttackMasks[(int)board.CurrentPosition.ColorToMove][(int)toSquare] & board.CurrentPosition.GetPawns(board.CurrentPosition.ColorPreviouslyMoved)) > 0)
             {
                 // Moving piece to square attacked by enemy pawn(s) is unreasonable.
                 return true;
             }
         }
         
-        var lastMoveColorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(board.PreviousPosition?.PlayedMove ?? Move.Null));
-        if ((lastMoveColorlessCaptureVictim != ColorlessPiece.None) && (lastMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
+        var previousMoveColorlessCaptureVictim = PieceHelper.GetColorlessPiece(Move.CaptureVictim(board.PreviousPosition?.PlayedMove ?? Move.Null));
+        if ((previousMoveColorlessCaptureVictim != ColorlessPiece.None) && (previousMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
         {
-            // Last move captured a minor or major piece.
-            if (_evaluation.GetPieceMaterialScore(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialScore(lastMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
+            // Previous move captured a minor or major piece.
+            if (_evaluation.GetPieceMaterialScore(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialScore(previousMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
             {
                 // Move that fails to recapture equal or greater value piece is unreasonable.
                 return true;
@@ -761,7 +761,7 @@ public sealed class Search : IDisposable
                     _killerMoves.Update(depth, move);
                     _moveHistory.UpdateValue(previousMove, move, historyIncrement);
 
-                    moveIndex--; // Decrement move index immediately so as not to include the quiet move that caused the beta cutoff.
+                    moveIndex--; // Decrement move index immediately so as not to include quiet move that caused beta cutoff.
 
                     while (moveIndex >= 0)
                     {
@@ -915,11 +915,11 @@ public sealed class Search : IDisposable
             var fromHorizonExcludingChecks = depth - horizon - checksInQuietSearch;
             if ((fromHorizonExcludingChecks > _recapturesOnlyMaxFromHorizon) && !Move.IsKingMove(board.PreviousPosition.PlayedMove))
             {
-                // Past max distance from horizon and last move was not by king.
-                var lastMoveToSquare = Move.To(board.PreviousPosition.PlayedMove);
-                moveGenerationToSquareMask = lastMoveToSquare == Square.Illegal
+                // Past max distance from horizon and previous move was not by king.
+                var previousMoveToSquare = Move.To(board.PreviousPosition.PlayedMove);
+                moveGenerationToSquareMask = previousMoveToSquare == Square.Illegal
                     ? toSquareMask
-                    : Board.SquareMasks[(int)lastMoveToSquare]; // Search only recaptures.
+                    : Board.SquareMasks[(int)previousMoveToSquare]; // Search only recaptures.
             }
             else moveGenerationToSquareMask = toSquareMask;
             (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _evaluation.GetStaticScore(board.CurrentPosition);
@@ -1115,7 +1115,7 @@ public sealed class Search : IDisposable
         Bitwise.ClearBit(ref occupancy, fromSquare);
         Bitwise.SetBit(ref occupancy, toSquare);
         if (Move.IsEnPassantCapture(move)) Bitwise.ClearBit(ref occupancy, Board.EnPassantVictimSquares[(int)toSquare]);
-        var colorToMove = position.ColorLastMoved;
+        var colorToMove = position.ColorPreviouslyMoved;
 
         // Get all attackers (black and white) minus attacker from simulated move.
         var allAttackers = position.GetSquareAttackers(toSquare, occupancy);
@@ -1308,10 +1308,10 @@ public sealed class Search : IDisposable
                     position.FindPinnedPieces();
                     var firstMoveIndex = position.MoveIndex;
                     position.GenerateMoves(MoveGeneration.OnlyCaptures, Board.AllSquaresMask, toSquareMask);
-                    // Prioritize and sort captures.
                     var lastMoveIndex = FastMath.Max(firstMoveIndex, position.MoveIndex - 1);
                     if (firstMoveIndex < lastMoveIndex)
                     {
+                        // Prioritize and sort captures.
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, KillerMove.Null, KillerMove.Null);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }

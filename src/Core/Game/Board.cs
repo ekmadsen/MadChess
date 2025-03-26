@@ -1145,7 +1145,7 @@ public sealed class Board
 
         // Determine if king is in check and set position key.
         PlayNullMove();
-        var kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
+        var kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorPreviouslyMoved));
         var kingInCheck = CurrentPosition.IsSquareAttacked(kingSquare, CurrentPosition.ColorToMove);
         UndoMove();
 
@@ -1184,7 +1184,7 @@ public sealed class Board
         }
 
         // Change side to move, then determine if move was legal.
-        CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
+        CurrentPosition.ColorToMove = CurrentPosition.ColorPreviouslyMoved;
         if (!PreviousPosition.KingInCheck && !Move.IsKingMove(move) && !Move.IsEnPassantCapture(move))
         {
             if ((SquareMasks[(int)fromSquare] & PreviousPosition.PinnedPieces) == 0)
@@ -1195,17 +1195,17 @@ public sealed class Board
         }
 
         // Determine if moving piece exposed king to check.
-        var kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
+        var kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorPreviouslyMoved));
         if (CurrentPosition.IsSquareAttacked(kingSquare, CurrentPosition.ColorToMove)) return (false, false);
         if (Move.IsCastling(move) && IsCastlePathAttacked(move)) return (false, false);
 
         ChecksEnemyKing:
         // Move is legal.
         // Determine if move checks enemy king.
-        CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
-        kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorLastMoved));
+        CurrentPosition.ColorToMove = CurrentPosition.ColorPreviouslyMoved;
+        kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorPreviouslyMoved));
         var check = CurrentPosition.IsSquareAttacked(kingSquare, CurrentPosition.ColorToMove);
-        CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
+        CurrentPosition.ColorToMove = CurrentPosition.ColorPreviouslyMoved;
 
         if (Castling.Permitted(CurrentPosition.Castling))
         {
@@ -1281,10 +1281,10 @@ public sealed class Board
         var toSquare = Move.To(move);
         ulong attackedSquaresMask;
 
-        if (toSquare == CastleToSquares[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.Queen])
-            attackedSquaresMask = _castleAttackedSquareMasks[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.Queen];
-        else if (toSquare == CastleToSquares[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.King])
-            attackedSquaresMask = _castleAttackedSquareMasks[(int)CurrentPosition.ColorLastMoved][(int)BoardSide.King];
+        if (toSquare == CastleToSquares[(int)CurrentPosition.ColorPreviouslyMoved][(int)BoardSide.Queen])
+            attackedSquaresMask = _castleAttackedSquareMasks[(int)CurrentPosition.ColorPreviouslyMoved][(int)BoardSide.Queen];
+        else if (toSquare == CastleToSquares[(int)CurrentPosition.ColorPreviouslyMoved][(int)BoardSide.King])
+            attackedSquaresMask = _castleAttackedSquareMasks[(int)CurrentPosition.ColorPreviouslyMoved][(int)BoardSide.King];
         else throw new Exception($"{CurrentPosition.ColorToMove} king cannot castle to {SquareLocations[(int)toSquare]}.");
 
         while ((toSquare = Bitwise.PopFirstSetSquare(ref attackedSquaresMask)) != Square.Illegal)
@@ -1307,7 +1307,7 @@ public sealed class Board
 
         // EnPassantVictim variable only used in Debug builds.
         // ReSharper disable RedundantAssignment
-        var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, CurrentPosition.ColorLastMoved);
+        var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, CurrentPosition.ColorPreviouslyMoved);
         var captureVictim = CurrentPosition.GetPiece(toSquare);
         var enPassantCapture = (CurrentPosition.EnPassantSquare != Square.Illegal) && (piece == pawn) && (toSquare == CurrentPosition.EnPassantSquare);
         Debug.Assert(Move.IsEnPassantCapture(move) == enPassantCapture, $"{CurrentPosition.ToFen()}{Environment.NewLine}Move = {Move.ToString(move)}{Environment.NewLine}{CurrentPosition}");
@@ -1416,7 +1416,7 @@ public sealed class Board
         // King cannot be in check, nor is en passant capture possible after null move.
         CurrentPosition.KingInCheck = false;
         CurrentPosition.EnPassantSquare = Square.Illegal;
-        CurrentPosition.ColorToMove = CurrentPosition.ColorLastMoved;
+        CurrentPosition.ColorToMove = CurrentPosition.ColorPreviouslyMoved;
         UpdateFullZobristKey();
 
         Nodes++;

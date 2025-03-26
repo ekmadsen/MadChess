@@ -498,7 +498,7 @@ public sealed class Evaluation
         if (EvaluateSimpleEndgame(position, Color.White) || EvaluateSimpleEndgame(position, Color.Black))
         {
             // Simple Endgame
-            var staticScore = _staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorLastMoved);
+            var staticScore = _staticScore.GetEg(position.ColorToMove) - _staticScore.GetEg(position.ColorPreviouslyMoved);
             var drawnEndgame = staticScore == 0;
             return (staticScore, drawnEndgame, phase);
         }

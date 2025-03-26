@@ -52,10 +52,11 @@ public static class CachedPositionData
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // To Horizon   |BMP    |Best To    |Best From    |Dynamic Score                                          |DSP|Last Accessed
+    // To Horizon   |BMPP   |Best To      |Best From    |Dynamic Score                                        |DSP|Last Accessed
 
-    // BMP =        Best Move Promoted Piece
-    // Best From =  Best Move From (one extra bit for Square.Illegal)
+    // BMPP =       Best Move Promoted Piece
+    // Best To =    Best Move To (one extra bit for illegal square)
+    // Best From =  Best Move From (one extra bit for illegal square)
     // DSP =        Dynamic Score Precision
 
 
@@ -70,17 +71,17 @@ public static class CachedPositionData
         _bestMovePromotedPieceMask = Bitwise.CreateULongMask(53, 56);
         _bestMovePromotedPieceUnmask = Bitwise.CreateULongUnmask(53, 56);
 
-        _bestMoveToShift = 47;
-        _bestMoveToMask = Bitwise.CreateULongMask(47, 52);
-        _bestMoveToUnmask = Bitwise.CreateULongUnmask(47, 52);
+        _bestMoveToShift = 46;
+        _bestMoveToMask = Bitwise.CreateULongMask(46, 52);
+        _bestMoveToUnmask = Bitwise.CreateULongUnmask(46, 52);
 
-        _bestMoveFromShift = 40;
-        _bestMoveFromMask = Bitwise.CreateULongMask(40, 46);
-        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(40, 46);
+        _bestMoveFromShift = 39;
+        _bestMoveFromMask = Bitwise.CreateULongMask(39, 45);
+        _bestMoveFromUnmask = Bitwise.CreateULongUnmask(39, 45);
 
         _dynamicScoreShift = 12;
-        _dynamicScoreMask = Bitwise.CreateULongMask(12, 39);
-        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(12, 39);
+        _dynamicScoreMask = Bitwise.CreateULongMask(12, 38);
+        _dynamicScoreUnmask = Bitwise.CreateULongUnmask(12, 38);
 
         _scorePrecisionShift = 10;
         _scorePrecisionMask = Bitwise.CreateULongMask(10, 11);

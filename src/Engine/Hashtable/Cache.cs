@@ -57,9 +57,9 @@ public sealed class Cache
         // Set null position.
         NullPosition = new CachedPosition(0, 0);
         CachedPositionData.SetToHorizon(ref NullPosition.Data, 0);
-        CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
-        CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.A8);
         CachedPositionData.SetBestMovePromotedPiece(ref NullPosition.Data, Piece.None);
+        CachedPositionData.SetBestMoveTo(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
+        CachedPositionData.SetBestMoveFrom(ref NullPosition.Data, Square.Illegal); // An illegal square indicates no best move stored in cached position.
         CachedPositionData.SetDynamicScore(ref NullPosition.Data, StaticScore.NotCached);
         CachedPositionData.SetScorePrecision(ref NullPosition.Data, ScorePrecision.Unknown);
         CachedPositionData.SetLastAccessed(ref NullPosition.Data, 0);

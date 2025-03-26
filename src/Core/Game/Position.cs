@@ -41,7 +41,7 @@ public sealed class Position
     public ulong PlayedMove;
 
 
-    public Color ColorLastMoved => 1 - ColorToMove;
+    public Color ColorPreviouslyMoved => 1 - ColorToMove;
 
 
     public Position()
@@ -247,7 +247,7 @@ public sealed class Position
         var pawnDoubleMoveMasks = Board.PawnDoubleMoveMasks[(int)ColorToMove];
         var pawnAttackMasks = Board.PawnAttackMasks[(int)ColorToMove];
 
-        var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
+        var enemyOccupiedSquares = ColorOccupancy[(int)ColorPreviouslyMoved];
         var unoccupiedSquares = ~Occupancy;
 
         var ranks = Board.Ranks[(int)ColorToMove];
@@ -255,7 +255,7 @@ public sealed class Position
         var attacker = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorToMove);
         var queen = PieceHelper.GetPieceOfColor(ColorlessPiece.Queen, ColorToMove);
         var knight = PieceHelper.GetPieceOfColor(ColorlessPiece.Knight, ColorToMove);
-        var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorLastMoved);
+        var enPassantVictim = PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorPreviouslyMoved);
 
         Square fromSquare;
         ulong move;
@@ -393,7 +393,7 @@ public sealed class Position
             var getPieceMovesMask = Board.PieceMoveMaskDelegates[(int)colorlessPiece];
             
             var unOrEnemyOccupiedSquares = ~ColorOccupancy[(int)ColorToMove];
-            var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
+            var enemyOccupiedSquares = ColorOccupancy[(int)ColorPreviouslyMoved];
 
             Square fromSquare;
             while ((fromSquare = Bitwise.PopFirstSetSquare(ref pieces)) != Square.Illegal)
@@ -435,7 +435,7 @@ public sealed class Position
         if (king == 0) return;
 
         var unOrEnemyOccupiedSquares = ~ColorOccupancy[(int)ColorToMove];
-        var enemyOccupiedSquares = ColorOccupancy[(int)ColorLastMoved];
+        var enemyOccupiedSquares = ColorOccupancy[(int)ColorPreviouslyMoved];
 
         var attacker = PieceHelper.GetPieceOfColor(ColorlessPiece.King, ColorToMove);
 
@@ -506,9 +506,9 @@ public sealed class Position
         var ownKingSquare = Bitwise.FirstSetSquare(GetKing(ColorToMove));
         var ownPieces = ColorOccupancy[(int)ColorToMove];
 
-        var enemyRankFileAttackers = GetRooks(ColorLastMoved) | GetQueens(ColorLastMoved);
-        var enemyDiagonalAttackers = GetBishops(ColorLastMoved) | GetQueens(ColorLastMoved);
-        var enemyPieces = ColorOccupancy[(int)ColorLastMoved];
+        var enemyRankFileAttackers = GetRooks(ColorPreviouslyMoved) | GetQueens(ColorPreviouslyMoved);
+        var enemyDiagonalAttackers = GetBishops(ColorPreviouslyMoved) | GetQueens(ColorPreviouslyMoved);
+        var enemyPieces = ColorOccupancy[(int)ColorPreviouslyMoved];
 
         // Find pieces pinned to own king by enemy rank / file attackers.
         PinnedPieces = 0;
@@ -632,7 +632,7 @@ public sealed class Position
             // En Passant Capture
             Move.SetIsEnPassantCapture(ref move, true);
             Move.SetCaptureAttacker(ref move, attacker);
-            Move.SetCaptureVictim(ref move, PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorLastMoved));
+            Move.SetCaptureVictim(ref move, PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorPreviouslyMoved));
         }
         else if (victim != Piece.None)
         {
