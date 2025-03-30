@@ -157,7 +157,7 @@ public sealed class Search : IDisposable
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
 
         // To Horizon =            000  001  002  003  004  005  006  007
-        _futilityPruningMargins = [040, 120, 200, 280, 360, 440, 520, 600]; // (80 * (toHorizon Pow 1)) + 40
+        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
         _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
