@@ -43,7 +43,6 @@ public sealed class UciStream : IDisposable
     private readonly Messenger _messenger; // Lifetime managed by caller.
     private readonly Stopwatch _commandStopwatch;
     private readonly Queue<List<string>> _asyncQueue;
-    private readonly AutoResetEvent _asyncSignal;
     private readonly Lock _queueLock;
     private readonly Board _board;
     private readonly TimeManagement _timeManagement;
@@ -52,9 +51,11 @@ public sealed class UciStream : IDisposable
     private readonly KillerMoves _killerMoves;
     private readonly MoveHistory _moveHistory;
     private readonly Evaluation _evaluation;
-    private readonly Search _search;
+    
     private readonly string[] _defaultPlyAndFullMove;
 
+    private Search _search;
+    private AutoResetEvent _asyncSignal;
     private Thread _asyncThread;
 
 
@@ -87,8 +88,17 @@ public sealed class UciStream : IDisposable
 
     public void Dispose()
     {
-        _search?.Dispose();
-        _asyncSignal?.Dispose();
+        if (_search != null)
+        {
+            _search.Dispose();
+            _search = null;
+        }
+
+        if (_asyncSignal != null)
+        {
+            _asyncSignal.Dispose();
+            _asyncSignal = null;
+        }
     }
 
 
@@ -355,7 +365,7 @@ public sealed class UciStream : IDisposable
     {
         // Display engine name.
         // ReSharper disable once ConvertToConstant.Local
-        var version = "3.3";
+        var version = "3.4";
 #if CPU64
         version = $"{version} x64";
 #else
