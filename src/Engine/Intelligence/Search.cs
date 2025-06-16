@@ -51,11 +51,11 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 2;
-    private const int _singularMoveMinToHorizon = 7;
-    private const int _singularMoveMaxInsufficientToHorizon = 2;
-    private const int _singularMoveReductionPer128 = 64;
-    private const int _singularMoveMargin = 10;
+    private const int _singularMoveMinToHorizon = 8;
+    private const int _singularMoveMaxInsufficientToHorizon = 3;
+    private const int _singularMoveMargin = 12;
     private const int _singularMoveMarginToHorizon = 1;
+    private const int _singularMoveReductionPer128 = 64;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
@@ -410,8 +410,6 @@ public sealed class Search : IDisposable
 
     private bool IsInferiorMoveUnreasonable(Board board, ulong move)
     {
-        // TODO: Moving pawn in front of castled king is unreasonable.
-
         if (IsKingOrRookMoveThatForfeitsCastlingRights(board, move)) return true;
 
         var fromSquare = Move.From(move);
@@ -705,8 +703,9 @@ public sealed class Search : IDisposable
 
             // Must call IsMoveInDynamicSearchFutile and GetSearchHorizon before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
             if (Move.IsQuiet(move)) quietMoveNumber++;
+            var singularMovePermitted = excludedMove == Move.Null;
             var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame, phase, alpha, beta);
-            var searchHorizon = GetSearchHorizon(board, depth, horizon, move, cachedPosition, legalMoveNumber + 1, quietMoveNumber, drawnEndgame);
+            var searchHorizon = GetSearchHorizon(board, depth, horizon, singularMovePermitted, move, cachedPosition, legalMoveNumber + 1, quietMoveNumber, drawnEndgame);
 
             // Play move.
             var (legalMove, checkingMove) = board.PlayMove(move);
@@ -754,7 +753,7 @@ public sealed class Search : IDisposable
                 if ((moveBeta < beta) || (searchHorizon < horizon))
                 {
                     // Search move at unreduced horizon with full alpha / beta window.
-                    score = -GetDynamicScore(board, depth + 1, horizon, true, -beta, -alpha);
+                    score = -GetDynamicScore(board, depth + 1, FastMath.Max(horizon, searchHorizon), true, -beta, -alpha);
                 }
             }
 
@@ -1387,9 +1386,9 @@ public sealed class Search : IDisposable
     }
 
 
-    private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, CachedPosition cachedPosition, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
+    private int GetSearchHorizon(Board board, int depth, int horizon, bool singularMovePermitted, ulong move, CachedPosition cachedPosition, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
     {
-        if (Move.IsBest(move) && IsBestMoveSingular(board, depth, horizon, move, cachedPosition))
+        if (singularMovePermitted && Move.IsBest(move) && IsBestMoveSingular(board, depth, horizon, move, cachedPosition))
         {
             // The best move from the cache is singular.  That is, it's the only good move in the position.
             // Evaluation of the current position relies on the accuracy of the singular move's score.
