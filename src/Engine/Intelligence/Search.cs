@@ -53,8 +53,8 @@ public sealed class Search : IDisposable
     private const int _iidReduction = 2;
     private const int _singularMoveMinToHorizon = 8;
     private const int _singularMoveMaxInsufficientToHorizon = 3;
-    private const int _singularMoveMargin = 12;
-    private const int _singularMoveMarginToHorizon = 1;
+    private const int _singularMoveMargin = 6;
+    private const int _singularMoveMarginToHorizonPer128 = 96;
     private const int _singularMoveReductionPer128 = 64;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
@@ -1449,7 +1449,7 @@ public sealed class Search : IDisposable
         if (CachedPositionData.ToHorizon(cachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientToHorizon)) return false;
 
         // Search position to reduced horizon, excluding best move.
-        var beta = dynamicScore - _singularMoveMargin - (_singularMoveMarginToHorizon * toHorizon);
+        var beta = dynamicScore - _singularMoveMargin - ((toHorizon * _singularMoveMarginToHorizonPer128) / 128);
         var searchHorizon = depth + ((toHorizon * _singularMoveReductionPer128) / 128);
         dynamicScore = GetDynamicScore(board, depth, searchHorizon, false, beta - 1, beta, bestMove);
 
