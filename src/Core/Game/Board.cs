@@ -1196,8 +1196,7 @@ public sealed class Board
 
         // Determine if moving piece exposed king to check.
         var kingSquare = Bitwise.FirstSetSquare(CurrentPosition.GetKing(CurrentPosition.ColorPreviouslyMoved));
-        if (CurrentPosition.IsSquareAttacked(kingSquare, CurrentPosition.ColorToMove)) return (false, false);
-        if (Move.IsCastling(move) && IsCastlePathAttacked(move)) return (false, false);
+        if (CurrentPosition.IsSquareAttacked(kingSquare, CurrentPosition.ColorToMove) || (Move.IsCastling(move) && IsCastlePathAttacked(move))) return (false, false);
 
         ChecksEnemyKing:
         // Move is legal.

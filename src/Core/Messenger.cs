@@ -21,8 +21,8 @@ public sealed class Messenger(Stream inputStream, Stream outputStream) : IAsyncD
 {
     public bool Debug;
     // Create stream readers.
-    private readonly StreamReader _inputStreamReader = new(inputStream, leaveOpen: true);
-    private readonly StreamWriter _outputStreamWriter = new(outputStream, leaveOpen: true) { AutoFlush = true };
+    private StreamReader _inputStreamReader = new(inputStream, leaveOpen: true);
+    private StreamWriter _outputStreamWriter = new(outputStream, leaveOpen: true) { AutoFlush = true };
     // Create diagnostic and synchronization objects.
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
     private readonly Lock _inputStreamLock = new();
@@ -66,9 +66,23 @@ public sealed class Messenger(Stream inputStream, Stream outputStream) : IAsyncD
     public async ValueTask DisposeAsync()
     {
         // ReSharper disable InconsistentlySynchronizedField
-        await (_outputStreamWriter?.DisposeAsync() ?? ValueTask.CompletedTask);
-        await (_logWriter?.DisposeAsync() ?? ValueTask.CompletedTask);
-        _inputStreamReader?.Dispose();
+        if (_outputStreamWriter != null)
+        {
+            await _outputStreamWriter.DisposeAsync();
+            _outputStreamWriter = null;
+        }
+
+        if (_logWriter != null)
+        {
+            await _logWriter.DisposeAsync();
+            _logWriter = null;
+        }
+
+        if (_inputStreamReader != null)
+        {
+            _inputStreamReader.Dispose();
+            _inputStreamReader = null;
+        }
         // ReSharper restore InconsistentlySynchronizedField
     }
 
