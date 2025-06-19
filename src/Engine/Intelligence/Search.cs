@@ -53,8 +53,8 @@ public sealed class Search : IDisposable
     private const int _iidReduction = 2;
     private const int _singularMoveMinToHorizon = 8;
     private const int _singularMoveMaxInsufficientToHorizon = 3;
-    private const int _singularMoveMargin = 6;
-    private const int _singularMoveMarginToHorizonPer128 = 96;
+    private const int _singularMoveMargin = 16;
+    private const int _singularMoveMarginToHorizonPer128 = 64;
     private const int _singularMoveReductionPer128 = 64;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
