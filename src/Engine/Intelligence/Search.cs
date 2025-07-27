@@ -49,14 +49,13 @@ public sealed class Search : IDisposable
 
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 180;
-    private const int _nullStaticScoreMaxReduction = 4;
+    private const int _nullStaticScoreMaxReduction = 5;
     private const int _iidReduction = 2;
     private const int _singularMoveMinToHorizon = 8;
     private const int _singularMoveMaxInsufficientToHorizon = 3;
     private const int _singularMoveMargin = 16;
     private const int _singularMoveMarginToHorizonPer128 = 64;
     private const int _singularMoveReductionPer128 = 64;
-    private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
     private const int _recapturesOnlyMaxFromHorizon = 3;
@@ -204,12 +203,12 @@ public sealed class Search : IDisposable
 
     private static int[][] GetLateMoveReductions()
     {
-        var lateMoveReductions = new int[_lmrMaxIndex + 1][];
+        var lateMoveReductions = new int[MaxHorizon][];
         const double constReduction = (double)_lmrConstPer128 / 128;
-        for (var quietMoveNumber = 0; quietMoveNumber <= _lmrMaxIndex; quietMoveNumber++)
+        for (var quietMoveNumber = 1; quietMoveNumber < MaxHorizon; quietMoveNumber++)
         {
-            lateMoveReductions[quietMoveNumber] = new int[_lmrMaxIndex + 1];
-            for (var toHorizon = 0; toHorizon <= _lmrMaxIndex; toHorizon++)
+            lateMoveReductions[quietMoveNumber] = new int[MaxHorizon];
+            for (var toHorizon = 1; toHorizon < MaxHorizon; toHorizon++)
             {
                 var logReduction = _lmrScalePer128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon) / 128;
                 lateMoveReductions[quietMoveNumber][toHorizon] = (int)Math.Max(logReduction + constReduction, 0);
@@ -1044,12 +1043,14 @@ public sealed class Search : IDisposable
     private static bool IsNullMovePermitted(Position position, int beta)
     {
         if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
+
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
     }
 
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
         var reduction = _nullMoveReduction + FastMath.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
@@ -1416,8 +1417,8 @@ public sealed class Search : IDisposable
         }
 
         // Reduce search horizon of late move.
-        var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
-        var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
+        var quietMoveIndex = FastMath.Min(quietMoveNumber, MaxHorizon - 1);
+        var toHorizonIndex = FastMath.Min(horizon - depth, MaxHorizon - 1);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
 
         var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;

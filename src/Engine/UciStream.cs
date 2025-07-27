@@ -51,7 +51,6 @@ public sealed class UciStream : IDisposable
     private readonly KillerMoves _killerMoves;
     private readonly MoveHistory _moveHistory;
     private readonly Evaluation _evaluation;
-    
     private readonly string[] _defaultPlyAndFullMove;
 
     private Search _search;
