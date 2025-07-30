@@ -49,7 +49,7 @@ public sealed class Search : IDisposable
 
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 180;
-    private const int _nullStaticScoreMaxReduction = 5;
+    private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 2;
     private const int _singularMoveMinToHorizon = 8;
     private const int _singularMoveMaxInsufficientToHorizon = 3;
@@ -1440,12 +1440,16 @@ public sealed class Search : IDisposable
     private bool IsBestMoveSingular(Board board, int depth, int horizon, ulong bestMove, CachedPosition cachedPosition)
     {
         // Determine if best move that failed high in recent searches is best by a significant margin.
+
+        // Do not attempt singular move search at root position or close to search horizon.
         var toHorizon = horizon - depth;
         if ((depth == 0) || (toHorizon < _singularMoveMinToHorizon)) return false;
 
+        // Do not attempt singular move search if cached position does not provide a dynamic score, nor if it does, but it's a checkmate score.
         var dynamicScore = CachedPositionData.DynamicScore(cachedPosition.Data);
         if ((dynamicScore == StaticScore.NotCached) || (FastMath.Abs(dynamicScore) >= StaticScore.Checkmate)) return false;
 
+        // Do not attempt singular move search unless the cached position's dynamic score is a fail high with sufficient distance to search horizon.
         if (CachedPositionData.ScorePrecision(cachedPosition.Data) != ScorePrecision.LowerBound) return false;
         if (CachedPositionData.ToHorizon(cachedPosition.Data) < (toHorizon - _singularMoveMaxInsufficientToHorizon)) return false;
 
