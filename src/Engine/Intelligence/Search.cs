@@ -1421,17 +1421,14 @@ public sealed class Search : IDisposable
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
 
-        if (depth >= 4)
+        var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
+        if (board.CurrentPosition.StaticScore < previous2StaticScore)
         {
-            var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
-            if (board.CurrentPosition.StaticScore < previous2StaticScore)
+            var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -StaticScore.Max;
+            if (previous2StaticScore < previous4StaticScore)
             {
-                var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -StaticScore.Max;
-                if (previous2StaticScore < previous4StaticScore)
-                {
-                    // Reduce more when static evaluation score has worsened in each of previous two moves by same color.
-                    reduction++;
-                }
+                // Reduce more when static evaluation score has worsened in each of previous two moves by same color.
+                reduction++;
             }
         }
 
