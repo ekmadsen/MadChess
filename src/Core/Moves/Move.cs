@@ -493,9 +493,9 @@ public static class Move
                 SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                 SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.Queen]);
 
-                if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
-
-                return move;
+                return !board.CurrentPosition.ValidateMove(ref move)
+                    ? throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.")
+                    : move;
 
             case "O-O":
             case "0-0":
@@ -503,9 +503,9 @@ public static class Move
                 SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                 SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.King]);
 
-                if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
-
-                return move;
+                return !board.CurrentPosition.ValidateMove(ref move)
+                    ? throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.")
+                    : move;
         }
 
         var length = standardAlgebraicNoCheck.Length;
@@ -650,9 +650,9 @@ public static class Move
                 if (moveFromRank != fromRank) continue; // Wrong Rank
             }
 
-            if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
-
-            return move;
+            return board.CurrentPosition.ValidateMove(ref move)
+                ? move
+                : throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
         }
 
         throw new Exception($"Failed to parse {standardAlgebraic} standard algebraic notation move.");

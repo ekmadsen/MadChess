@@ -54,6 +54,7 @@ public sealed class Search : IDisposable
     private const int _singularMoveMinToHorizon = 8;
     private const int _singularMoveMaxInsufficientToHorizon = 3;
     private const int _singularMoveMargin = 16;
+    private const int _lmrMaxIndex = 64;
     private const int _singularMoveMarginToHorizonPer128 = 64;
     private const int _singularMoveReductionPer128 = 64;
     private const int _lmrScalePer128 = 48;
@@ -203,12 +204,12 @@ public sealed class Search : IDisposable
 
     private static int[][] GetLateMoveReductions()
     {
-        var lateMoveReductions = new int[MaxHorizon][];
+        var lateMoveReductions = new int[_lmrMaxIndex + 1][];
         const double constReduction = (double)_lmrConstPer128 / 128;
-        for (var quietMoveNumber = 1; quietMoveNumber < MaxHorizon; quietMoveNumber++)
+        for (var quietMoveNumber = 1; quietMoveNumber <= _lmrMaxIndex; quietMoveNumber++)
         {
-            lateMoveReductions[quietMoveNumber] = new int[MaxHorizon];
-            for (var toHorizon = 1; toHorizon < MaxHorizon; toHorizon++)
+            lateMoveReductions[quietMoveNumber] = new int[_lmrMaxIndex + 1];
+            for (var toHorizon = 1; toHorizon <= _lmrMaxIndex; toHorizon++)
             {
                 var logReduction = _lmrScalePer128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon) / 128;
                 lateMoveReductions[quietMoveNumber][toHorizon] = (int)Math.Max(logReduction + constReduction, 0);
@@ -1050,7 +1051,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
         var reduction = _nullMoveReduction + FastMath.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
@@ -1417,18 +1417,21 @@ public sealed class Search : IDisposable
         }
 
         // Reduce search horizon of late move.
-        var quietMoveIndex = FastMath.Min(quietMoveNumber, MaxHorizon - 1);
-        var toHorizonIndex = FastMath.Min(horizon - depth, MaxHorizon - 1);
+        var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
+        var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
 
-        var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
-        if (board.CurrentPosition.StaticScore < previous2StaticScore)
+        if (depth >= 4)
         {
-            var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -StaticScore.Max;
-            if (previous2StaticScore < previous4StaticScore)
+            var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
+            if (board.CurrentPosition.StaticScore < previous2StaticScore)
             {
-                // Reduce more when static evaluation score has worsened in each of previous two moves by same color.
-                reduction++;
+                var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -StaticScore.Max;
+                if (previous2StaticScore < previous4StaticScore)
+                {
+                    // Reduce more when static evaluation score has worsened in each of previous two moves by same color.
+                    reduction++;
+                }
             }
         }
 

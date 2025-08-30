@@ -685,7 +685,7 @@ public sealed class Evaluation
         var pawnRank = Board.Ranks[(int)lonePawnColor][(int)pawnSquare];
         var pawnFile = Board.Files[(int)pawnSquare];
 
-        if ((pawnFile == 0) || (pawnFile == 7))
+        if (pawnFile is 0 or 7)
         {
             // Pawn is on rook file.
             if ((defendingKingFile == pawnFile) && (defendingKingRank > pawnRank))
@@ -703,9 +703,7 @@ public sealed class Evaluation
 
             var winningKingOnKeySquare = pawnRank switch
             {
-                1 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
-                2 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
-                3 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
+                1 or 2 or 3 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
                 4 => ((kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1)),
                 5 => ((kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1)),
                 6 => ((kingPawnRankDifference >= 0) && (kingPawnRankDifference <= 1) && (kingPawnAbsoluteFileDifference <= 1)),
@@ -1073,7 +1071,7 @@ public sealed class Evaluation
         while ((square = Bitwise.PopFirstSetSquare(ref knights)) != Square.Illegal)
         {
             if ((Board.SquareMasks[(int)square] & outpostMask) == 0) continue; // Knight is not in enemy outpost territory.
-            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice versa.
             if ((pawns & supportingPawnsMask) == 0) continue; // Knight is unsupported by own pawns.
             potentialAttackMask = Board.PassedPawnMasks[(int)color][(int)square] & ~Board.FreePawnMasks[(int)color][(int)square];
             if ((enemyPawns & potentialAttackMask) > 0) continue; // Knight can be attacked by enemy pawns.
@@ -1087,7 +1085,7 @@ public sealed class Evaluation
         while ((square = Bitwise.PopFirstSetSquare(ref bishops)) != Square.Illegal)
         {
             if ((Board.SquareMasks[(int)square] & outpostMask) == 0) continue; // Bishop is not in enemy outpost territory.
-            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice versa.
             if ((pawns & supportingPawnsMask) == 0) continue; // Bishop is unsupported by own pawns.
             potentialAttackMask = Board.PassedPawnMasks[(int)color][(int)square] & ~Board.FreePawnMasks[(int)color][(int)square];
             if ((enemyPawns & potentialAttackMask) > 0) continue; // Bishop can be attacked by enemy pawns.

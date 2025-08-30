@@ -844,32 +844,30 @@ public sealed class UciStream : IDisposable
         _search.NodesInfoUpdate = long.MaxValue; // Do not display node count.
 
         // Verify move counts of test positions.
-        using (var reader = File.OpenText(file))
+        using var reader = File.OpenText(file);
+        while (!reader.EndOfStream)
         {
-            while (!reader.EndOfStream)
-            {
-                // Load position, move, and threshold.
-                var line = reader.ReadLine();
-                if (line == null) continue;
+            // Load position, move, and threshold.
+            var line = reader.ReadLine();
+            if (line == null) continue;
 
-                positions++;
+            positions++;
 
-                var parsedTokens = Tokens.Parse(line, '|', '"');
-                var fen = parsedTokens[0];
-                _board.SetPosition(fen);
-                var move = Move.ParseStandardAlgebraic(_board, parsedTokens[1]);
-                var threshold = int.Parse(parsedTokens[2]);
-                var expectedMeetsThreshold = bool.Parse(parsedTokens[3]);
+            var parsedTokens = Tokens.Parse(line, '|', '"');
+            var fen = parsedTokens[0];
+            _board.SetPosition(fen);
+            var move = Move.ParseStandardAlgebraic(_board, parsedTokens[1]);
+            var threshold = int.Parse(parsedTokens[2]);
+            var expectedMeetsThreshold = bool.Parse(parsedTokens[3]);
 
-                // Determine if static exchange evaluation meets threshold score value.
-                var meetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, Evaluation.MiddlegamePhase, move, false, threshold);
+            // Determine if static exchange evaluation meets threshold score value.
+            var meetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, Evaluation.MiddlegamePhase, move, false, threshold);
 
-                var correct = meetsThreshold == expectedMeetsThreshold;
-                if (correct) correctPositions++;
-                var correctFraction = (100d * correctPositions) / positions;
+            var correct = meetsThreshold == expectedMeetsThreshold;
+            if (correct) correctPositions++;
+            var correctFraction = (100d * correctPositions) / positions;
 
-                _messenger.WriteLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),7}  {threshold,9}  {expectedMeetsThreshold,15}  {correct,7}  {correctFraction,5:0.0}");
-            }
+            _messenger.WriteLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),7}  {threshold,9}  {expectedMeetsThreshold,15}  {correct,7}  {correctFraction,5:0.0}");
         }
     }
 
