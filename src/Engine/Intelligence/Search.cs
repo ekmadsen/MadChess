@@ -57,8 +57,8 @@ public sealed class Search : IDisposable
     private const int _singularMoveMarginToHorizonPer128 = 64;
     private const int _singularMoveReductionPer128 = 64;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 48;
-    private const int _lmrConstPer128 = -128;
+    private const int _lmrScalePer128 = 36;
+    private const int _lmrConstPer128 = 36;
     private const int _recapturesOnlyMaxFromHorizon = 3;
     private const int _forfeitCastlingRightsPenalty = 150;
 
@@ -162,7 +162,7 @@ public sealed class Search : IDisposable
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
 
         // To Horizon =            000  001  002  003  004  005  006  007
-        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
+        _futilityPruningMargins = [040, 120, 200, 280, 360, 440, 520, 600]; // (80 * (toHorizon Pow 1)) + 40
         _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
         _lateMoveReductions = GetLateMoveReductions();
 
@@ -1051,6 +1051,7 @@ public sealed class Search : IDisposable
     }
 
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool DoesNullMoveCauseBetaCutoff(Board board, int depth, int horizon, int beta)
     {
         var reduction = _nullMoveReduction + FastMath.Min((board.CurrentPosition.StaticScore - beta) / _nullStaticScoreReduction, _nullStaticScoreMaxReduction);
@@ -1421,14 +1422,17 @@ public sealed class Search : IDisposable
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
 
-        var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
-        if (board.CurrentPosition.StaticScore < previous2StaticScore)
+        if (depth >= 4)
         {
-            var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -StaticScore.Max;
-            if (previous2StaticScore < previous4StaticScore)
+            var previous2StaticScore = board.GetPreviousPosition(2)?.StaticScore ?? -StaticScore.Max;
+            if (board.CurrentPosition.StaticScore < previous2StaticScore)
             {
-                // Reduce more when static evaluation score has worsened in each of previous two moves by same color.
-                reduction++;
+                var previous4StaticScore = board.GetPreviousPosition(4)?.StaticScore ?? -StaticScore.Max;
+                if (previous2StaticScore < previous4StaticScore)
+                {
+                    // Reduce more when static evaluation score has worsened in each of previous two moves by same color.
+                    reduction++;
+                }
             }
         }
 
