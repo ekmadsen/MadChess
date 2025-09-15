@@ -50,7 +50,7 @@ public sealed class Search : IDisposable
     private const int _nullMoveReduction = 3;
     private const int _nullStaticScoreReduction = 200;
     private const int _nullStaticScoreMaxReduction = 4;
-    private const int _iidReduction = 2;
+    private const int _iidReduction = 4;
     private const int _singularMoveMinToHorizon = 8;
     private const int _singularMoveMaxInsufficientToHorizon = 3;
     private const int _singularMoveMargin = 14;
@@ -627,7 +627,7 @@ public sealed class Search : IDisposable
 
         if ((bestMove == Move.Null) || Move.Equals(bestMove, excludedMove))
         {
-            if ((depth == 0) && (_originalHorizon > 0))
+            if ((depth == 0) && (_originalHorizon > 1))
             {
                 // Use best move from previous search.
                 bestMove = _bestMoves[0].Move;
@@ -1515,7 +1515,7 @@ public sealed class Search : IDisposable
             ref var move = ref moves[moveIndex].Move;
             var isBest = Move.Equals(move, bestMove);
 
-            if (!isBest && (MultiPv > 1) && (depth == 0) && (_originalHorizon > 0))
+            if (!isBest && (MultiPv > 1) && (depth == 0) && (_originalHorizon > 1))
             {
                 // Mark first move of all principal variations as best so they're searched before non-PV moves.
                 var legalPv = FastMath.Min(MultiPv, lastMoveIndex + 1); // Less legal moves may exist than principal variations requested.
@@ -1562,7 +1562,7 @@ public sealed class Search : IDisposable
     {
         Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMovePriorityComparer);
 
-        if ((MultiPv > 1) && (_originalHorizon > 0))
+        if ((MultiPv > 1) && (_originalHorizon > 1))
         {
             // Ensure first move of principal variations are sorted in correct order.
             //   All PV moves have IsBest = true, ensuring they're sorted at top of move array.
