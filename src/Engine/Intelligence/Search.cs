@@ -1154,12 +1154,12 @@ public sealed class Search : IDisposable
                 }
             }
 
-            if ((colorlessVictim == ColorlessPiece.Pawn) || (colorlessVictim == ColorlessPiece.Bishop) || (colorlessVictim == ColorlessPiece.Queen))
+            if (colorlessVictim is ColorlessPiece.Pawn or ColorlessPiece.Bishop or ColorlessPiece.Queen)
             {
                 // A diagonal attack may reveal bishop or queen attackers.
                 allAttackers |= Board.PrecalculatedMoves.GetBishopMovesMask(toSquare, occupancy) & bishopsAndQueens;
             }
-            if ((colorlessVictim == ColorlessPiece.Rook) || (colorlessVictim == ColorlessPiece.Queen))
+            if (colorlessVictim is ColorlessPiece.Rook or ColorlessPiece.Queen)
             {
                 // A rank / file attack may reveal rook or queen attackers.
                 allAttackers |= Board.PrecalculatedMoves.GetRookMovesMask(toSquare, occupancy) & rooksAndQueens;

@@ -68,17 +68,12 @@ public sealed class Particle
 
         // Material
         Parameters[nameof(evalConfig.EgPawnMaterial)].Value = evalConfig.EgPawnMaterial;
-        Parameters[nameof(evalConfig.MgKnightMaterial)].Value = evalConfig.MgKnightMaterial;
         Parameters[nameof(evalConfig.EgKnightMaterial)].Value = evalConfig.EgKnightMaterial;
-        Parameters[nameof(evalConfig.MgBishopMaterial)].Value = evalConfig.MgBishopMaterial;
         Parameters[nameof(evalConfig.EgBishopMaterial)].Value = evalConfig.EgBishopMaterial;
-        Parameters[nameof(evalConfig.MgRookMaterial)].Value = evalConfig.MgRookMaterial;
         Parameters[nameof(evalConfig.EgRookMaterial)].Value = evalConfig.EgRookMaterial;
-        Parameters[nameof(evalConfig.MgQueenMaterial)].Value = evalConfig.MgQueenMaterial;
         Parameters[nameof(evalConfig.EgQueenMaterial)].Value = evalConfig.EgQueenMaterial;
 
         // Passed Pawns
-        Parameters[nameof(evalConfig.PassedPawnPowerPer128)].Value = evalConfig.PassedPawnPowerPer128;
         Parameters[nameof(evalConfig.MgPassedPawnScalePer128)].Value = evalConfig.MgPassedPawnScalePer128;
         Parameters[nameof(evalConfig.EgPassedPawnScalePer128)].Value = evalConfig.EgPassedPawnScalePer128;
         Parameters[nameof(evalConfig.MgFreePassedPawnScalePer128)].Value = evalConfig.MgFreePassedPawnScalePer128;
@@ -88,7 +83,6 @@ public sealed class Particle
         Parameters[nameof(evalConfig.EgKingEscortedPassedPawn)].Value = evalConfig.EgKingEscortedPassedPawn;
 
         // King Safety
-        Parameters[nameof(evalConfig.MgKingSafetyPowerPer128)].Value = evalConfig.MgKingSafetyPowerPer128;
         Parameters[nameof(evalConfig.MgKingSafetyScalePer128)].Value = evalConfig.MgKingSafetyScalePer128;
         Parameters[nameof(evalConfig.MgKingSafetyKnightAttackOuterRingPer8)].Value = evalConfig.MgKingSafetyKnightAttackOuterRingPer8;
         Parameters[nameof(evalConfig.MgKingSafetyKnightAttackInnerRingPer8)].Value = evalConfig.MgKingSafetyKnightAttackInnerRingPer8;
@@ -167,7 +161,6 @@ public sealed class Particle
         Parameters[nameof(evalConfig.EgKingCorner)].Value = evalConfig.EgKingCorner;
 
         // Piece Mobility
-        Parameters[nameof(evalConfig.PieceMobilityPowerPer128)].Value = evalConfig.PieceMobilityPowerPer128;
         Parameters[nameof(evalConfig.MgKnightMobilityScale)].Value = evalConfig.MgKnightMobilityScale;
         Parameters[nameof(evalConfig.EgKnightMobilityScale)].Value = evalConfig.EgKnightMobilityScale;
         Parameters[nameof(evalConfig.MgBishopMobilityScale)].Value = evalConfig.MgBishopMobilityScale;
@@ -209,17 +202,12 @@ public sealed class Particle
     {
         // Material
         evaluation.Config.EgPawnMaterial = Parameters[nameof(EvaluationConfig.EgPawnMaterial)].Value;
-        evaluation.Config.MgKnightMaterial = Parameters[nameof(EvaluationConfig.MgKnightMaterial)].Value;
         evaluation.Config.EgKnightMaterial = Parameters[nameof(EvaluationConfig.EgKnightMaterial)].Value;
-        evaluation.Config.MgBishopMaterial = Parameters[nameof(EvaluationConfig.MgBishopMaterial)].Value;
         evaluation.Config.EgBishopMaterial = Parameters[nameof(EvaluationConfig.EgBishopMaterial)].Value;
-        evaluation.Config.MgRookMaterial = Parameters[nameof(EvaluationConfig.MgRookMaterial)].Value;
         evaluation.Config.EgRookMaterial = Parameters[nameof(EvaluationConfig.EgRookMaterial)].Value;
-        evaluation.Config.MgQueenMaterial = Parameters[nameof(EvaluationConfig.MgQueenMaterial)].Value;
         evaluation.Config.EgQueenMaterial = Parameters[nameof(EvaluationConfig.EgQueenMaterial)].Value;
 
         // Passed Pawns
-        evaluation.Config.PassedPawnPowerPer128 = Parameters[nameof(EvaluationConfig.PassedPawnPowerPer128)].Value;
         evaluation.Config.MgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.MgPassedPawnScalePer128)].Value;
         evaluation.Config.EgPassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.EgPassedPawnScalePer128)].Value;
         evaluation.Config.MgFreePassedPawnScalePer128 = Parameters[nameof(EvaluationConfig.MgFreePassedPawnScalePer128)].Value;
@@ -229,7 +217,6 @@ public sealed class Particle
         evaluation.Config.EgKingEscortedPassedPawn = Parameters[nameof(EvaluationConfig.EgKingEscortedPassedPawn)].Value;
 
         // King Safety
-        evaluation.Config.MgKingSafetyPowerPer128 = Parameters[nameof(EvaluationConfig.MgKingSafetyPowerPer128)].Value;
         evaluation.Config.MgKingSafetyScalePer128 = Parameters[nameof(EvaluationConfig.MgKingSafetyScalePer128)].Value;
         evaluation.Config.MgKingSafetyKnightAttackOuterRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyKnightAttackOuterRingPer8)].Value;
         evaluation.Config.MgKingSafetyKnightAttackInnerRingPer8 = Parameters[nameof(EvaluationConfig.MgKingSafetyKnightAttackInnerRingPer8)].Value;
@@ -308,7 +295,6 @@ public sealed class Particle
         evaluation.Config.EgKingCorner = Parameters[nameof(EvaluationConfig.EgKingCorner)].Value;
 
         // Piece Mobility
-        evaluation.Config.PieceMobilityPowerPer128 = Parameters[nameof(EvaluationConfig.PieceMobilityPowerPer128)].Value;
         evaluation.Config.MgKnightMobilityScale = Parameters[nameof(EvaluationConfig.MgKnightMobilityScale)].Value;
         evaluation.Config.EgKnightMobilityScale = Parameters[nameof(EvaluationConfig.EgKnightMobilityScale)].Value;
         evaluation.Config.MgBishopMobilityScale = Parameters[nameof(EvaluationConfig.MgBishopMobilityScale)].Value;
