@@ -128,6 +128,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         new Parameter(nameof(EvaluationConfig.EgQueenMaterial), 1000, 2400),
 
         // Passed Pawns
+        new Parameter(nameof(EvaluationConfig.PassedPawnPowerPer128), 128, 384),
         new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePer128), 0, 256),
         new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePer128), 64, 512),
         new Parameter(nameof(EvaluationConfig.MgFreePassedPawnScalePer128), 0, 1024),
@@ -137,6 +138,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 32),
 
         // King Safety
+        new Parameter(nameof(EvaluationConfig.MgKingSafetyPowerPer128), 128, 384),
         new Parameter(nameof(EvaluationConfig.MgKingSafetyScalePer128), 0, 128),
         new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightAttackOuterRingPer8), 0, 32),
         new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightAttackInnerRingPer8), 0, 32),
@@ -215,6 +217,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         new Parameter(nameof(EvaluationConfig.EgKingCorner), -32, 32),
 
         // Piece Mobility
+        new Parameter(nameof(EvaluationConfig.PieceMobilityPowerPer128), 0, 128),
         new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 128),
         new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 256),
         new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 128),

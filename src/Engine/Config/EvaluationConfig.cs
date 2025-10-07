@@ -30,32 +30,34 @@ public sealed class EvaluationConfig
     public int EgQueenMaterial = 2200;
 
     // Passed Pawns
-    public int MgPassedPawnScalePer128 = 156;
-    public int EgPassedPawnScalePer128 = 328;
-    public int MgFreePassedPawnScalePer128 = 197;
-    public int EgFreePassedPawnScalePer128 = 675;
-    public int MgConnectedPassedPawnScalePer128 = 15;
-    public int EgConnectedPassedPawnScalePer128 = 113;
-    public int EgKingEscortedPassedPawn = 18;
+    public int PassedPawnPowerPer128 = 327;
+    public int MgPassedPawnScalePer128 = 162;
+    public int EgPassedPawnScalePer128 = 301;
+    public int MgFreePassedPawnScalePer128 = 207;
+    public int EgFreePassedPawnScalePer128 = 610;
+    public int MgConnectedPassedPawnScalePer128 = 4;
+    public int EgConnectedPassedPawnScalePer128 = 119;
+    public int EgKingEscortedPassedPawn = 19;
     public int UnstoppablePassedPawn => EgQueenMaterial - (2 * EgPawnMaterial); // Incentivize engine to promote pawns.
 
     // King Safety
-    public int MgKingSafetyScalePer128 = 29;
+    public int MgKingSafetyPowerPer128 = 260;
+    public int MgKingSafetyScalePer128 = 37;
     public int MgKingSafetyKnightAttackOuterRingPer8 = 28;
-    public int MgKingSafetyKnightAttackInnerRingPer8 = 18;
-    public int MgKingSafetyKnightProximityPer8 = 4;
-    public int MgKingSafetyBishopAttackOuterRingPer8 = 10;
+    public int MgKingSafetyKnightAttackInnerRingPer8 = 22;
+    public int MgKingSafetyKnightProximityPer8 = 0;
+    public int MgKingSafetyBishopAttackOuterRingPer8 = 12;
     public int MgKingSafetyBishopAttackInnerRingPer8 = 26;
-    public int MgKingSafetyBishopProximityPer8 = 4;
-    public int MgKingSafetyRookAttackOuterRingPer8 = 15;
+    public int MgKingSafetyBishopProximityPer8 = 0;
+    public int MgKingSafetyRookAttackOuterRingPer8 = 14;
     public int MgKingSafetyRookAttackInnerRingPer8 = 18;
-    public int MgKingSafetyRookProximityPer8 = 6;
-    public int MgKingSafetyQueenAttackOuterRingPer8 = 23;
+    public int MgKingSafetyRookProximityPer8 = 3;
+    public int MgKingSafetyQueenAttackOuterRingPer8 = 19;
     public int MgKingSafetyQueenAttackInnerRingPer8 = 16;
-    public int MgKingSafetyQueenProximityPer8 = 11;
-    public int MgKingSafetySemiOpenFilePer8 = 25;
-    public int MgKingSafetyPawnShieldPer8 = 14;
-    public int MgKingSafetyDefendingPiecesPer8 = 18;
+    public int MgKingSafetyQueenProximityPer8 = 12;
+    public int MgKingSafetySemiOpenFilePer8 = 21;
+    public int MgKingSafetyPawnShieldPer8 = 15;
+    public int MgKingSafetyDefendingPiecesPer8 = 13;
 
     // Pawn Location
     public int MgPawnAdvancement = 0;
@@ -118,14 +120,15 @@ public sealed class EvaluationConfig
     public int EgKingCorner = -4;
 
     // Piece Mobility
-    public int MgKnightMobilityScale = 54;
-    public int EgKnightMobilityScale = 186;
-    public int MgBishopMobilityScale = 54;
-    public int EgBishopMobilityScale = 213;
-    public int MgRookMobilityScale = 78;
-    public int EgRookMobilityScale = 179;
-    public int MgQueenMobilityScale = 78;
-    public int EgQueenMobilityScale = 127;
+    public int PieceMobilityPowerPer128 = 96;
+    public int MgKnightMobilityScale = 64;
+    public int EgKnightMobilityScale = 96;
+    public int MgBishopMobilityScale = 68;
+    public int EgBishopMobilityScale = 175;
+    public int MgRookMobilityScale = 96;
+    public int EgRookMobilityScale = 125;
+    public int MgQueenMobilityScale = 95;
+    public int EgQueenMobilityScale = 126;
 
     // Pawn Structure
     public int MgIsolatedPawn = 25;
@@ -184,6 +187,7 @@ public sealed class EvaluationConfig
         EgQueenMaterial = copyFromConfig.EgQueenMaterial;
 
         // Copy passed pawn values.
+        PassedPawnPowerPer128 = copyFromConfig.PassedPawnPowerPer128;
         MgPassedPawnScalePer128 = copyFromConfig.MgPassedPawnScalePer128;
         EgPassedPawnScalePer128 = copyFromConfig.EgPassedPawnScalePer128;
         MgFreePassedPawnScalePer128 = copyFromConfig.MgFreePassedPawnScalePer128;
@@ -266,6 +270,7 @@ public sealed class EvaluationConfig
         EgKingCorner = copyFromConfig.EgKingCorner;
 
         // Copy piece mobility values.
+        PieceMobilityPowerPer128 = copyFromConfig.PieceMobilityPowerPer128;
         MgKnightMobilityScale = copyFromConfig.MgKnightMobilityScale;
         EgKnightMobilityScale = copyFromConfig.EgKnightMobilityScale;
         MgBishopMobilityScale = copyFromConfig.MgBishopMobilityScale;

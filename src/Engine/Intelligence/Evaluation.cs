@@ -26,9 +26,6 @@ namespace ErikTheCoder.MadChess.Engine.Intelligence;
 
 public sealed class Evaluation
 {
-    private const double _passedPawnPower = 2.5;
-    private const double _kingSafetyPower = 2;
-    private const double _pieceMobilityPower = 0.5;
     private const int _egKingCornerFactor = 50;
     private const int _egKbnPenalty = 300;
     private readonly LimitStrengthEvalConfig _limitStrengthConfig;
@@ -172,6 +169,7 @@ public sealed class Evaluation
         _egMaterialScores[(int)ColorlessPiece.King] = 0;
 
         // Calculate passed pawn values.
+        var passedPawnPower = Config.PassedPawnPowerPer128 / 128d;
         var mgScale = Config.MgPassedPawnScalePer128 / 128d;
         var egScale = Config.EgPassedPawnScalePer128 / 128d;
         var mgFreeScale = Config.MgFreePassedPawnScalePer128 / 128d;
@@ -181,12 +179,12 @@ public sealed class Evaluation
 
         for (var rank = 1; rank < 7; rank++)
         {
-            _mgPassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgScale, _passedPawnPower, 0);
-            _egPassedPawns[rank] = Formula.GetNonLinearBonus(rank, egScale, _passedPawnPower, 0);
-            _mgFreePassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgFreeScale, _passedPawnPower, 0);
-            _egFreePassedPawns[rank] = Formula.GetNonLinearBonus(rank, egFreeScale, _passedPawnPower, 0);
-            _mgConnectedPassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgConnectedScale, _passedPawnPower, 0);
-            _egConnectedPassedPawns[rank] = Formula.GetNonLinearBonus(rank, egConnectedScale, _passedPawnPower, 0);
+            _mgPassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgScale, passedPawnPower, 0);
+            _egPassedPawns[rank] = Formula.GetNonLinearBonus(rank, egScale, passedPawnPower, 0);
+            _mgFreePassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgFreeScale, passedPawnPower, 0);
+            _egFreePassedPawns[rank] = Formula.GetNonLinearBonus(rank, egFreeScale, passedPawnPower, 0);
+            _mgConnectedPassedPawns[rank] = Formula.GetNonLinearBonus(rank, mgConnectedScale, passedPawnPower, 0);
+            _egConnectedPassedPawns[rank] = Formula.GetNonLinearBonus(rank, egConnectedScale, passedPawnPower, 0);
         }
 
         // Calculate king safety values.
@@ -203,9 +201,10 @@ public sealed class Evaluation
         _mgKingSafetyPieceProximityWeights[(int)ColorlessPiece.Rook] = Config.MgKingSafetyRookProximityPer8;
         _mgKingSafetyPieceProximityWeights[(int)ColorlessPiece.Queen] = Config.MgKingSafetyQueenProximityPer8;
 
+        var kingSafetyPower = Config.MgKingSafetyPowerPer128 / 128d;
         var kingSafetyScale = Config.MgKingSafetyScalePer128 / 128d;
         for (var index = 0; index < _mgKingSafety.Length; index++)
-            _mgKingSafety[index] = Formula.GetNonLinearBonus(index, kingSafetyScale, _kingSafetyPower, 0);
+            _mgKingSafety[index] = Formula.GetNonLinearBonus(index, kingSafetyScale, kingSafetyPower, 0);
 
         // Calculate piece location values.
         for (var colorlessPiece = ColorlessPiece.Pawn; colorlessPiece <= ColorlessPiece.King; colorlessPiece++)
@@ -313,16 +312,18 @@ public sealed class Evaluation
     }
 
 
-    private static void CalculatePieceMobility(int[] mgPieceMobility, int[] egPieceMobility, int mgMobilityScale, int egMobilityScale)
+    private void CalculatePieceMobility(int[] mgPieceMobility, int[] egPieceMobility, int mgMobilityScale, int egMobilityScale)
     {
         Debug.Assert(mgPieceMobility.Length == egPieceMobility.Length);
 
         var maxMoves = mgPieceMobility.Length - 1;
+        var pieceMobilityPower = Config.PieceMobilityPowerPer128 / 128d;
+
         for (var moves = 0; moves <= maxMoves; moves++)
         {
             var fractionOfMaxMoves = (double) moves / maxMoves;
-            mgPieceMobility[moves] = Formula.GetNonLinearBonus(fractionOfMaxMoves, mgMobilityScale, _pieceMobilityPower, -mgMobilityScale / 2);
-            egPieceMobility[moves] = Formula.GetNonLinearBonus(fractionOfMaxMoves, egMobilityScale, _pieceMobilityPower, -egMobilityScale / 2);
+            mgPieceMobility[moves] = Formula.GetNonLinearBonus(fractionOfMaxMoves, mgMobilityScale, pieceMobilityPower, -mgMobilityScale / 2);
+            egPieceMobility[moves] = Formula.GetNonLinearBonus(fractionOfMaxMoves, egMobilityScale, pieceMobilityPower, -egMobilityScale / 2);
         }
 
         // Adjust constant so piece mobility bonus for average number of moves is zero.
