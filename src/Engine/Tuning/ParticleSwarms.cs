@@ -121,11 +121,15 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
     public static Parameters CreateParameters() =>
     [
         // Material
-        new Parameter(nameof(EvaluationConfig.EgPawnMaterial), 100, 300),
-        new Parameter(nameof(EvaluationConfig.EgKnightMaterial), 300, 800),
-        new Parameter(nameof(EvaluationConfig.EgBishopMaterial), 300, 800),
-        new Parameter(nameof(EvaluationConfig.EgRookMaterial), 500, 1300),
-        new Parameter(nameof(EvaluationConfig.EgQueenMaterial), 1000, 2400),
+        new Parameter(nameof(EvaluationConfig.EgPawnMaterial), 50, 300),
+        new Parameter(nameof(EvaluationConfig.MgKnightMaterial), 200, 800),
+        new Parameter(nameof(EvaluationConfig.EgKnightMaterial), 200, 800),
+        new Parameter(nameof(EvaluationConfig.MgBishopMaterial), 200, 800),
+        new Parameter(nameof(EvaluationConfig.EgBishopMaterial), 200, 800),
+        new Parameter(nameof(EvaluationConfig.MgRookMaterial), 400, 2000),
+        new Parameter(nameof(EvaluationConfig.EgRookMaterial), 400, 2000),
+        new Parameter(nameof(EvaluationConfig.MgQueenMaterial), 800, 3000),
+        new Parameter(nameof(EvaluationConfig.EgQueenMaterial), 800, 3000),
 
         // Passed Pawns
         new Parameter(nameof(EvaluationConfig.PassedPawnPowerPer128), 128, 384),
