@@ -783,8 +783,8 @@ public sealed class Evaluation
 
     private void EvaluatePawns(Position position, Color color)
     {
-        var pawns = position.GetPawns(color);
-        if (pawns == 0) return;
+        var allPawns = position.GetPawns(color);
+        if (allPawns == 0) return;
 
         var enemyColor = 1 - color;
 
@@ -795,13 +795,14 @@ public sealed class Evaluation
         var enemyMajorPieces = position.GetMajorPieces(enemyColor);
 
         Square square;
+        var pawns = allPawns; // Store into second variable because while loop will pop all pawn squares.
         while ((square = Bitwise.PopFirstSetSquare(ref pawns)) != Square.Illegal)
         {
             var file = Board.Files[(int)square];
 
             // Evaluate pawn structure.
-            var pawnsOccupyLeftFile = (file > 0) && ((Board.FileMasks[file - 1] & pawns) > 0);
-            var pawnsOccupyRightFile = (file < 7) && ((Board.FileMasks[file + 1] & pawns) > 0);
+            var pawnsOccupyLeftFile = (file > 0) && ((Board.FileMasks[file - 1] & allPawns) > 0);
+            var pawnsOccupyRightFile = (file < 7) && ((Board.FileMasks[file + 1] & allPawns) > 0);
 
             if (!pawnsOccupyLeftFile && !pawnsOccupyRightFile)
             {
@@ -851,7 +852,7 @@ public sealed class Evaluation
         // Evaluate doubled pawns.
         for (var file = 0; file < 8; file++)
         {
-            var pawnCount = Bitwise.CountSetBits(Board.FileMasks[file] & pawns);
+            var pawnCount = Bitwise.CountSetBits(Board.FileMasks[file] & allPawns);
             if (pawnCount > 1)
             {
                 // File has double (or more) pawns.
@@ -863,7 +864,8 @@ public sealed class Evaluation
 
         // Evaluate connected passed pawns.
         var allPassedPawns = _passedPawns[(int)color];
-        var passedPawns = allPassedPawns; // Store into second variable because while loop will pop all pawn squares.
+        var passedPawns = allPassedPawns; // Store into second variable because while loop will pop all passed pawn squares.
+
         while ((square = Bitwise.PopFirstSetSquare(ref passedPawns)) != Square.Illegal)
         {
             var rank = Board.Ranks[(int)color][(int)square];
@@ -938,7 +940,7 @@ public sealed class Evaluation
         var enemyKingInnerRing = Board.InnerRingMasks[(int)enemyKingSquare];
         var enemyKingFile = Board.Files[(int)enemyKingSquare];
 
-        var enemyPawns = position.GetPawns(enemyColor);
+        var allEnemyPawns = position.GetPawns(enemyColor);
         var enemyMajorPieces = position.GetMajorPieces(enemyColor);
         var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
 
@@ -947,11 +949,10 @@ public sealed class Evaluation
         // Determine safe squares (not attacked by enemy pawns).
         Square square;
         var squaresAttackedByEnemyPawns = 0ul;
+        var enemyPawns = allEnemyPawns; // Store into second variable because while loop will pop all enemy pawn squares.
         while ((square = Bitwise.PopFirstSetSquare(ref enemyPawns)) != Square.Illegal)
             squaresAttackedByEnemyPawns |= Board.PawnAttackMasks[(int)enemyColor][(int)square];
         var safeSquares = ~squaresAttackedByEnemyPawns;
-
-        enemyPawns = position.GetPawns(enemyColor); // Repopulate after above while loop popped all enemy pawn squares.
 
         for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
         {
@@ -996,13 +997,13 @@ public sealed class Evaluation
 
         // Evaluate enemy king near semi-open files.
         var semiOpenFilesNearEnemyKing = 0;
-        if ((enemyKingFile > 0) && ((Board.FileMasks[enemyKingFile - 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Left of Enemy King
-        if ((Board.FileMasks[enemyKingFile] & enemyPawns) == 0) semiOpenFilesNearEnemyKing++; // Enemy King File
-        if ((enemyKingFile < 7) && ((Board.FileMasks[enemyKingFile + 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Right of Enemy King
+        if ((enemyKingFile > 0) && ((Board.FileMasks[enemyKingFile - 1] & allEnemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Left of Enemy King
+        if ((Board.FileMasks[enemyKingFile] & allEnemyPawns) == 0) semiOpenFilesNearEnemyKing++; // Enemy King File
+        if ((enemyKingFile < 7) && ((Board.FileMasks[enemyKingFile + 1] & allEnemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Right of Enemy King
         mgEnemyKingSafetyPer8 += semiOpenFilesNearEnemyKing * Config.MgKingSafetySemiOpenFilePer8;
 
         // Evaluate enemy king pawn shield.
-        var pawnsMissingFromShield = 3 - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
+        var pawnsMissingFromShield = 3 - Bitwise.CountSetBits(allEnemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
         mgEnemyKingSafetyPer8 += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
 
         // Evaluate average distance of defending pieces from enemy king.
