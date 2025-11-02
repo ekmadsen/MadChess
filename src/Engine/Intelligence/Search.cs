@@ -48,7 +48,7 @@ public sealed class Search : IDisposable
     public AutoResetEvent Signal;
 
     private const int _nullMoveReduction = 3;
-    private const int _nullStaticScoreReduction = 200;
+    private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
     private const int _singularMoveMinToHorizon = 8;
@@ -58,7 +58,7 @@ public sealed class Search : IDisposable
     private const int _singularMoveReductionPer128 = 64;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
-    private const int _lmrConstPer128 = -144;
+    private const int _lmrConstPer128 = -128;
     private const int _recapturesOnlyMaxFromHorizon = 3;
     private const int _forfeitCastlingRightsPenalty = 150;
 
