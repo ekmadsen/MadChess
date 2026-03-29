@@ -3,17 +3,17 @@
   <PropertyGroup>
 	  <AssemblyTitle>MadChess.Core</AssemblyTitle>
 	  <AssemblyName>MadChess.Core</AssemblyName>
-	  <Version>3.2</Version>
+	  <Version>3.4</Version>
 	  <Authors>Erik Madsen</Authors>
 	  <Description>Core Chess Classes</Description>
-	  <Copyright>2022</Copyright>
+	  <Copyright>2026</Copyright>
 	  <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
 	  <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 	  <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 	  <RootNamespace>ErikTheCoder.MadChess.Core</RootNamespace>
 	  <LangVersion>latest</LangVersion>
 	  <Nullable>disable</Nullable>
-	  <TargetFramework>net9.0</TargetFramework>
+	  <TargetFramework>net10.0</TargetFramework>
 	  <TieredCompilation>true</TieredCompilation>
 	  <TieredPGO>true</TieredPGO>
 	  <OutputType>Library</OutputType>
@@ -23,7 +23,7 @@
   </PropertyGroup>
 
 	<ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" />
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
   </ItemGroup>
 
 </Project>
