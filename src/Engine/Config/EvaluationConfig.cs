@@ -28,6 +28,9 @@ public sealed class EvaluationConfig
     public int EgRookMaterial = 1192;
     public int MgQueenMaterial = 1311;
     public int EgQueenMaterial = 2091;
+    public int EgMaterialAdvantagePieces = 26;
+    public int EgMaterialDisadvantagePawns = 84;
+    public int EgMaterialDisadvantageAtLeastOnePawn = 84;
 
     // Passed Pawns
     public int PassedPawnPowerPer128 = 327;
@@ -185,6 +188,9 @@ public sealed class EvaluationConfig
         EgRookMaterial = copyFromConfig.EgRookMaterial;
         MgQueenMaterial = copyFromConfig.MgQueenMaterial;
         EgQueenMaterial = copyFromConfig.EgQueenMaterial;
+        EgMaterialAdvantagePieces = copyFromConfig.EgMaterialAdvantagePieces;
+        EgMaterialDisadvantagePawns = copyFromConfig.EgMaterialDisadvantagePawns;
+        EgMaterialDisadvantageAtLeastOnePawn = copyFromConfig.EgMaterialDisadvantageAtLeastOnePawn;
 
         // Copy passed pawn values.
         PassedPawnPowerPer128 = copyFromConfig.PassedPawnPowerPer128;

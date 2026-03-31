@@ -74,41 +74,21 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         var evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, messenger, stats);
         var search = new Search(_advancedConfig.LimitStrength.Search, messenger, timeManagement, stats, cache, killerMoves, moveHistory, evaluation);
 
-        // Set default parameter values for all particles.
         for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
         {
             var particleSwarm = this[particleSwarmIndex];
             for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
             {
                 var particle = particleSwarm.Particles[particleIndex];
-                particle.SetDefaultParameters();
                 particle.ConfigureEvaluation(evaluation);
             }
         }
 
-        //// Set default parameter values for one particle.
-        //for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
-        //{
-        //    var particleSwarm = this[particleSwarmIndex];
-        //    for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
-        //    {
-        //        var particle = particleSwarm.Particles[particleIndex];
-        //        particle.ConfigureEvaluation(evaluation);
-        //    }
-        //}
+        // Set default parameter values for one particle.
         var firstParticleInFirstSwarm = this[0].Particles[0];
+        firstParticleInFirstSwarm.SetDefaultParameters();
+        firstParticleInFirstSwarm.ConfigureEvaluation(evaluation);
         firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
-
-        //// Leave all parameter values random.
-        //for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
-        //{
-        //    var particleSwarm = this[particleSwarmIndex];
-        //    for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
-        //    {
-        //        var particle = particleSwarm.Particles[particleIndex];
-        //        particle.ConfigureEvaluation(evaluation);
-        //    }
-        //}
 
         var bestParticle = GetBestParticle();
         _originalEvaluationError = bestParticle.EvaluationError;
@@ -130,6 +110,9 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         new Parameter(nameof(EvaluationConfig.EgRookMaterial), 400, 2000),
         new Parameter(nameof(EvaluationConfig.MgQueenMaterial), 800, 3000),
         new Parameter(nameof(EvaluationConfig.EgQueenMaterial), 800, 3000),
+        new Parameter(nameof(EvaluationConfig.EgMaterialAdvantagePieces), 0, 100),
+        new Parameter(nameof(EvaluationConfig.EgMaterialDisadvantagePawns), 0, 100),
+        new Parameter(nameof(EvaluationConfig.EgMaterialDisadvantageAtLeastOnePawn), 0, 100),
 
         // Passed Pawns
         new Parameter(nameof(EvaluationConfig.PassedPawnPowerPer128), 128, 384),

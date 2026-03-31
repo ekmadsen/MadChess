@@ -76,6 +76,9 @@ public sealed class Particle
         Parameters[nameof(evalConfig.EgRookMaterial)].Value = evalConfig.EgRookMaterial;
         Parameters[nameof(evalConfig.MgQueenMaterial)].Value = evalConfig.MgQueenMaterial;
         Parameters[nameof(evalConfig.EgQueenMaterial)].Value = evalConfig.EgQueenMaterial;
+        Parameters[nameof(evalConfig.EgMaterialAdvantagePieces)].Value = evalConfig.EgMaterialAdvantagePieces;
+        Parameters[nameof(evalConfig.EgMaterialDisadvantagePawns)].Value = evalConfig.EgMaterialDisadvantagePawns;
+        Parameters[nameof(evalConfig.EgMaterialDisadvantageAtLeastOnePawn)].Value = evalConfig.EgMaterialDisadvantageAtLeastOnePawn;
 
         // Passed Pawns
         Parameters[nameof(evalConfig.PassedPawnPowerPer128)].Value = evalConfig.PassedPawnPowerPer128;
@@ -217,6 +220,9 @@ public sealed class Particle
         evaluation.Config.EgRookMaterial = Parameters[nameof(EvaluationConfig.EgRookMaterial)].Value;
         evaluation.Config.MgQueenMaterial = Parameters[nameof(EvaluationConfig.MgQueenMaterial)].Value;
         evaluation.Config.EgQueenMaterial = Parameters[nameof(EvaluationConfig.EgQueenMaterial)].Value;
+        evaluation.Config.EgMaterialAdvantagePieces = Parameters[nameof(EvaluationConfig.EgMaterialAdvantagePieces)].Value;
+        evaluation.Config.EgMaterialDisadvantagePawns = Parameters[nameof(EvaluationConfig.EgMaterialDisadvantagePawns)].Value;
+        evaluation.Config.EgMaterialDisadvantageAtLeastOnePawn = Parameters[nameof(EvaluationConfig.EgMaterialDisadvantageAtLeastOnePawn)].Value;
 
         // Passed Pawns
         evaluation.Config.PassedPawnPowerPer128 = Parameters[nameof(EvaluationConfig.PassedPawnPowerPer128)].Value;

@@ -35,6 +35,7 @@ public sealed class Search : IDisposable
     public const int MaxHorizon = 64;
     public const int MaxQuietDepth = 8;
     public const int MaxPlyWithoutCaptureOrPawnMove = 100;
+    private const int _egScorePer128 = 72;
 
     public readonly List<ulong> CandidateMoves;
 
@@ -1675,9 +1676,20 @@ public sealed class Search : IDisposable
                 writePv:
                 // Write message with principal variation(s).
                 var pvLongAlgebraic = stringBuilder.ToString();
+
                 var score = bestMove.Score;
+                int calibratedScore;
+                if (FastMath.Abs(score) < StaticScore.SimpleEndgame)
+                {
+                    // Reduce inflated endgame scores (for display only, not affecting internal search logic or cached position data).
+                    var phase = Evaluation.DetermineGamePhase(board.CurrentPosition);
+                    var egScore = (score * _egScorePer128) / 128;
+                    calibratedScore = StaticScore.GetTaperedScore(score, egScore, phase);
+                }
+                else calibratedScore = score;
+                
                 var multiPvPhrase = MultiPv > 1 ? $"multipv {pv + 1} " : null;
-                var scorePhrase = FastMath.Abs(score) >= StaticScore.Checkmate ? $"mate {Evaluation.GetMateMoveCount(score)}" : $"cp {score}";
+                var scorePhrase = FastMath.Abs(score) >= StaticScore.Checkmate ? $"mate {Evaluation.GetMateMoveCount(score)}" : $"cp {calibratedScore}";
                 _messenger.WriteLine($"info {multiPvPhrase}depth {_originalHorizon} seldepth {FastMath.Max(_selectiveHorizon, _originalHorizon)} time {milliseconds:0} nodes {nodes} score {scorePhrase} nps {nodesPerSecond:0} {pvLongAlgebraic}");
             }
         }

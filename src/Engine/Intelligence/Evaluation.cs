@@ -508,6 +508,9 @@ public sealed class Evaluation
         EvaluateMaterial(position, Color.White);
         EvaluateMaterial(position, Color.Black);
 
+        EvaluateMaterialBalance(position, Color.White);
+        EvaluateMaterialBalance(position, Color.Black);
+
         EvaluatePieceLocation(position, Color.White);
         EvaluatePieceLocation(position, Color.Black);
 
@@ -760,6 +763,48 @@ public sealed class Evaluation
         // Total
         _staticScore.MgPieceMaterial[(int)color] = mgKnightMaterial + mgBishopMaterial + mgRookMaterial + mgQueenMaterial;
         _staticScore.EgPieceMaterial[(int)color] = egKnightMaterial + egBishopMaterial + egRookMaterial + egQueenMaterial;
+    }
+
+    private void EvaluateMaterialBalance(Position position, Color color)
+    {
+        var enemyColor = 1 - color;
+
+        // Pawns
+        var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
+        var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));
+
+        // Minor Pieces
+        var minorPieceCount = Bitwise.CountSetBits(position.GetMinorPieces(color));
+        var enemyMinorPieceCount = Bitwise.CountSetBits(position.GetMinorPieces(enemyColor));
+
+        // Rooks
+        var rookCount = Bitwise.CountSetBits(position.GetRooks(color));
+        var enemyRookCount = Bitwise.CountSetBits(position.GetRooks(enemyColor));
+
+        // Queens
+        var queenCount = Bitwise.CountSetBits(position.GetQueens(color));
+        var enemyQueenCount = Bitwise.CountSetBits(position.GetQueens(enemyColor));
+
+        // Determine material score using standard piece material values.
+        var materialScore = ((pawnCount - enemyPawnCount) * 100) + ((minorPieceCount - enemyMinorPieceCount) * 300) + ((rookCount - enemyRookCount) * 500) + ((queenCount - enemyQueenCount) * 900);
+
+        if (materialScore >= 400)
+        {
+            // The given color has a material advantage of at least a minor piece and a pawn.
+            // Encourage trading of pieces.
+            var inversePieceCount = 14 - minorPieceCount - enemyMinorPieceCount - rookCount - enemyRookCount - queenCount - enemyQueenCount;
+            _staticScore.EgMaterialBalance[(int)color] = inversePieceCount * Config.EgMaterialAdvantagePieces;
+        }
+        else if (materialScore <= -400)
+        {
+            // The given color has a material disadvantage of at least a minor piece and a pawn.
+            // Encourage retention of pawns.
+            if (pawnCount > 0)
+            {
+                _staticScore.EgMaterialBalance[(int)color] += Config.EgMaterialDisadvantageAtLeastOnePawn;
+                _staticScore.EgMaterialBalance[(int)color] += pawnCount * Config.EgMaterialDisadvantagePawns;
+            }
+        }
     }
 
 
