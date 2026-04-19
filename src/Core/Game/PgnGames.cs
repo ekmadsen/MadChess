@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Core.Game;

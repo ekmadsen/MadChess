@@ -11,6 +11,7 @@
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Heuristics;

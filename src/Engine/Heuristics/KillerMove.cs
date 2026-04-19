@@ -12,6 +12,7 @@ using System;
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Moves;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Heuristics;

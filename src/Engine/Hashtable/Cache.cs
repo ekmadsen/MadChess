@@ -17,6 +17,7 @@ using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Hashtable;

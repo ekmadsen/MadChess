@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Numerics; // Enables CPU intrinsics (popcount and bitscan).  Falls back to software implementation when CPU lacks the intrinsic operation.
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Core.Utilities;

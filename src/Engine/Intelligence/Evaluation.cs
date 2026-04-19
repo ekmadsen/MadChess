@@ -19,6 +19,7 @@ using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
@@ -508,8 +509,8 @@ public sealed class Evaluation
         EvaluateMaterial(position, Color.White);
         EvaluateMaterial(position, Color.Black);
 
-        EvaluateMaterialBalance(position, Color.White);
-        EvaluateMaterialBalance(position, Color.Black);
+        EvaluateMaterialImbalance(position, Color.White);
+        EvaluateMaterialImbalance(position, Color.Black);
 
         EvaluatePieceLocation(position, Color.White);
         EvaluatePieceLocation(position, Color.Black);
@@ -765,7 +766,7 @@ public sealed class Evaluation
         _staticScore.EgPieceMaterial[(int)color] = egKnightMaterial + egBishopMaterial + egRookMaterial + egQueenMaterial;
     }
 
-    private void EvaluateMaterialBalance(Position position, Color color)
+    private void EvaluateMaterialImbalance(Position position, Color color)
     {
         var enemyColor = 1 - color;
 
@@ -793,7 +794,7 @@ public sealed class Evaluation
             // The given color has a material advantage of at least a minor piece and a pawn.
             // Encourage trading of pieces.
             var inversePieceCount = 14 - minorPieceCount - enemyMinorPieceCount - rookCount - enemyRookCount - queenCount - enemyQueenCount;
-            _staticScore.EgMaterialBalance[(int)color] = inversePieceCount * Config.EgMaterialAdvantagePieces;
+            _staticScore.EgMaterialImbalance[(int)color] = inversePieceCount * Config.EgMaterialAdvantagePieces;
         }
         else if (materialScore <= -400)
         {
@@ -801,8 +802,8 @@ public sealed class Evaluation
             // Encourage retention of pawns.
             if (pawnCount > 0)
             {
-                _staticScore.EgMaterialBalance[(int)color] += Config.EgMaterialDisadvantageAtLeastOnePawn;
-                _staticScore.EgMaterialBalance[(int)color] += pawnCount * Config.EgMaterialDisadvantagePawns;
+                _staticScore.EgMaterialImbalance[(int)color] += Config.EgMaterialDisadvantageAtLeastOnePawn;
+                _staticScore.EgMaterialImbalance[(int)color] += pawnCount * Config.EgMaterialDisadvantagePawns;
             }
         }
     }

@@ -24,6 +24,7 @@ using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Tuning;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine;
@@ -87,17 +88,10 @@ public sealed class UciStream : IDisposable
 
     public void Dispose()
     {
-        if (_search != null)
-        {
-            _search.Dispose();
-            _search = null;
-        }
-
-        if (_asyncSignal != null)
-        {
-            _asyncSignal.Dispose();
-            _asyncSignal = null;
-        }
+        _search?.Dispose();
+        _search = null;
+        _asyncSignal?.Dispose();
+        _asyncSignal = null;
     }
 
 
@@ -825,9 +819,7 @@ public sealed class UciStream : IDisposable
     {
         var move = Move.ParseStandardAlgebraic(_board, tokens[1]);
         var threshold = int.Parse(tokens[2]);
-
-        var phase = Evaluation.DetermineGamePhase(_board.CurrentPosition);
-        var staticExchangeMeetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, phase, move, false, threshold);
+        var staticExchangeMeetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, move, threshold);
         _messenger.WriteLine(staticExchangeMeetsThreshold.ToString());
     }
 
@@ -861,7 +853,7 @@ public sealed class UciStream : IDisposable
             var expectedMeetsThreshold = bool.Parse(parsedTokens[3]);
 
             // Determine if static exchange evaluation meets threshold score value.
-            var meetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, Evaluation.MiddlegamePhase, move, false, threshold);
+            var meetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, move, threshold);
 
             var correct = meetsThreshold == expectedMeetsThreshold;
             if (correct) correctPositions++;

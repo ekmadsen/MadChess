@@ -15,6 +15,7 @@ using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Score;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Tuning;

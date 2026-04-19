@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using JetBrains.Annotations;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Core.Utilities;

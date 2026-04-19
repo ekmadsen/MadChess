@@ -8,6 +8,7 @@
 // +---------------------------------------------------------------------------+
 
 
+#pragma warning disable IDE0047
 namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 

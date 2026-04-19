@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Core.Moves;

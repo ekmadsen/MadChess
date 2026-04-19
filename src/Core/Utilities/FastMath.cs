@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Core.Utilities;
