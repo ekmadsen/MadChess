@@ -53,6 +53,7 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
+    private const int _losingCaptureReduction = 1;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
@@ -1123,7 +1124,7 @@ public sealed class Search : IDisposable
         if (Move.IsEnPassantCapture(move)) Bitwise.ClearBit(ref occupancy, Board.EnPassantVictimSquares[(int)toSquare]);
         var colorToMove = position.ColorPreviouslyMoved;
 
-        // Get all attackers (black and white) minus attacker from simulated move.
+        // Get all attackers, for both colors, minus attacker from simulated move.
         var allAttackers = position.GetSquareAttackers(toSquare, occupancy);
 
         do
@@ -1381,7 +1382,6 @@ public sealed class Search : IDisposable
     private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
     {
         if (legalMoveNumber == 1) return horizon; // Do not reduce first legal move.
-        if (!Move.IsQuiet(move)) return horizon; // Do not reduce tactical move.
 
         if (depth == 0)
         {
@@ -1397,6 +1397,14 @@ public sealed class Search : IDisposable
             var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
             if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
         }
+
+        if (board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures)
+        {
+            // Reduce search horizon of losing capture.
+            return horizon - _losingCaptureReduction;
+        }
+
+        if (!Move.IsQuiet(move)) return horizon;
 
         // Reduce search horizon of late move.
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
