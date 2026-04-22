@@ -54,6 +54,7 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
     private const int _losingCaptureReduction = 1;
+    private const int _losingCheckReduction = 1;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
@@ -426,7 +427,7 @@ public sealed class Search : IDisposable
         if ((previousMoveColorlessCaptureVictim != ColorlessPiece.None) && (previousMoveColorlessCaptureVictim != ColorlessPiece.Pawn))
         {
             // Previous move captured a minor or major piece.
-            if (_evaluation.GetPieceMaterialScore(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialScore(previousMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
+            if (_evaluation.GetPieceMaterialValue(colorlessCaptureVictim, Evaluation.MiddlegamePhase) < _evaluation.GetPieceMaterialValue(previousMoveColorlessCaptureVictim, Evaluation.MiddlegamePhase))
             {
                 // Move that fails to recapture equal or greater value piece is unreasonable.
                 return true;
@@ -712,7 +713,22 @@ public sealed class Search : IDisposable
                 board.UndoMove();
                 continue;
             }
-            if (checkingMove) searchHorizon = horizon; // Do not reduce move that delivers check.
+
+            if (checkingMove)
+            {
+                var colorlessPiece = PieceHelper.GetColorlessPiece(Move.Piece(move));
+                var materialValue = _evaluation.GetPieceMaterialValue(colorlessPiece, phase);
+                if ((colorlessPiece != ColorlessPiece.Pawn) && (colorlessPiece != ColorlessPiece.King) && !DoesMoveMeetStaticExchangeThreshold(board.PreviousPosition, phase, move, true, -materialValue + 1))
+                {
+                    // Reduce search horizon of move that delivers check but loses a minor or major piece.
+                    searchHorizon = horizon - _losingCheckReduction;
+                }
+                else
+                {
+                    // Do not reduce move that delivers check.
+                    searchHorizon = horizon;
+                }
+            }
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
@@ -1065,11 +1081,11 @@ public sealed class Search : IDisposable
         if (adjustMaterialValuesByGamePhase)
         {
             // Adjust piece material values based on game phase.
-            _seePieceValues[(int)ColorlessPiece.Pawn] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Pawn, phase);
-            _seePieceValues[(int)ColorlessPiece.Knight] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Knight, phase);
-            _seePieceValues[(int)ColorlessPiece.Bishop] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Bishop, phase);
-            _seePieceValues[(int)ColorlessPiece.Rook] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Rook, phase);
-            _seePieceValues[(int)ColorlessPiece.Queen] = _evaluation.GetPieceMaterialScore(ColorlessPiece.Queen, phase);
+            _seePieceValues[(int)ColorlessPiece.Pawn] = _evaluation.GetPieceMaterialValue(ColorlessPiece.Pawn, phase);
+            _seePieceValues[(int)ColorlessPiece.Knight] = _evaluation.GetPieceMaterialValue(ColorlessPiece.Knight, phase);
+            _seePieceValues[(int)ColorlessPiece.Bishop] = _evaluation.GetPieceMaterialValue(ColorlessPiece.Bishop, phase);
+            _seePieceValues[(int)ColorlessPiece.Rook] = _evaluation.GetPieceMaterialValue(ColorlessPiece.Rook, phase);
+            _seePieceValues[(int)ColorlessPiece.Queen] = _evaluation.GetPieceMaterialValue(ColorlessPiece.Queen, phase);
         }
         else
         {

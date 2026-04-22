@@ -461,7 +461,7 @@ public sealed class Evaluation
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetPieceMaterialScore(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
+    public int GetPieceMaterialValue(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
 
 
     public int GetPieceLocationImprovement(ulong move, int phase)
