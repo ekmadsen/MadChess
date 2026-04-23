@@ -721,7 +721,7 @@ public sealed class Search : IDisposable
                 if ((colorlessPiece != ColorlessPiece.Pawn) && (colorlessPiece != ColorlessPiece.King) && !DoesMoveMeetStaticExchangeThreshold(board.PreviousPosition, phase, move, true, -materialValue + 1))
                 {
                     // Reduce search horizon of move that delivers check but loses a minor or major piece.
-                    searchHorizon = horizon - _losingCheckReduction;
+                    searchHorizon = FastMath.Max(searchHorizon, horizon - _losingCheckReduction);
                 }
                 else
                 {
