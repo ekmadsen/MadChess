@@ -20,18 +20,17 @@ public sealed class EvaluationConfig
 
     // Material
     public int MgPawnMaterial = 100;
-    public int EgPawnMaterial = 184;
-    public int MgKnightMaterial = 424;
-    public int EgKnightMaterial = 632;
-    public int MgBishopMaterial = 455;
-    public int EgBishopMaterial = 657;
-    public int MgRookMaterial = 558;
-    public int EgRookMaterial = 1192;
-    public int MgQueenMaterial = 1311;
-    public int EgQueenMaterial = 2091;
-    public int EgMaterialAdvantagePieces = 26;
-    public int EgMaterialDisadvantagePawns = 84;
-    public int EgMaterialDisadvantageAtLeastOnePawn = 84;
+    public int EgPawnMaterial = 199;
+    public int MgKnightMaterial = 395;
+    public int EgKnightMaterial = 729;
+    public int MgBishopMaterial = 426;
+    public int EgBishopMaterial = 757;
+    public int MgRookMaterial = 535;
+    public int EgRookMaterial = 1337;
+    public int MgQueenMaterial = 1266;
+    public int EgQueenMaterial = 2358;
+    public int EgMaterialDisadvantagePawns = 141;
+    public int EgMaterialDisadvantageAtLeastOnePawn = 95;
 
     // Passed Pawns
     public int PassedPawnPowerPer128 = 327;
@@ -189,7 +188,6 @@ public sealed class EvaluationConfig
         EgRookMaterial = copyFromConfig.EgRookMaterial;
         MgQueenMaterial = copyFromConfig.MgQueenMaterial;
         EgQueenMaterial = copyFromConfig.EgQueenMaterial;
-        EgMaterialAdvantagePieces = copyFromConfig.EgMaterialAdvantagePieces;
         EgMaterialDisadvantagePawns = copyFromConfig.EgMaterialDisadvantagePawns;
         EgMaterialDisadvantageAtLeastOnePawn = copyFromConfig.EgMaterialDisadvantageAtLeastOnePawn;
 

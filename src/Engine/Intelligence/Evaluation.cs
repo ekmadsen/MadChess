@@ -789,14 +789,7 @@ public sealed class Evaluation
         // Determine material score using standard piece material values.
         var materialScore = ((pawnCount - enemyPawnCount) * 100) + ((minorPieceCount - enemyMinorPieceCount) * 300) + ((rookCount - enemyRookCount) * 500) + ((queenCount - enemyQueenCount) * 900);
 
-        if (materialScore >= 400)
-        {
-            // The given color has a material advantage of at least a minor piece and a pawn.
-            // Encourage trading of pieces.
-            var inversePieceCount = 14 - minorPieceCount - enemyMinorPieceCount - rookCount - enemyRookCount - queenCount - enemyQueenCount;
-            _staticScore.EgMaterialImbalance[(int)color] = inversePieceCount * Config.EgMaterialAdvantagePieces;
-        }
-        else if (materialScore <= -400)
+        if (materialScore <= -400)
         {
             // The given color has a material disadvantage of at least a minor piece and a pawn.
             // Encourage retention of pawns.

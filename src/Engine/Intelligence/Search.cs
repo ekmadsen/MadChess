@@ -36,7 +36,7 @@ public sealed class Search : IDisposable
     public const int MaxHorizon = 64;
     public const int MaxQuietDepth = 8;
     public const int MaxPlyWithoutCaptureOrPawnMove = 100;
-    private const int _egScorePer128 = 56;
+    private const int _egScorePer128 = 48;
 
     public readonly List<ulong> CandidateMoves;
 
