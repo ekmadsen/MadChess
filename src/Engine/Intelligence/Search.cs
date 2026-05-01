@@ -53,8 +53,8 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
+    private const int _losingCaptureMargin = 100;
     private const int _losingCaptureReduction = 1;
-    private const int _losingCheckReduction = 1;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
     private const int _lmrConstPer128 = -128;
@@ -700,13 +700,12 @@ public sealed class Search : IDisposable
             // Must call IsMoveInDynamicSearchFutile and GetSearchHorizon before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
             if (Move.IsQuiet(move)) quietMoveNumber++;
             var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, toHorizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame, phase, alpha, beta);
-            var searchHorizon = GetSearchHorizon(board, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame);
+            var searchHorizon = GetSearchHorizon(board, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, phase, drawnEndgame);
 
             // Play move.
             var (legalMove, checkingMove) = board.PlayMove(move);
             if (!legalMove)
             {
-                // TODO: Mark move as illegal (but not played).  Add condition to GetNextMove method to skip illegal move so legality is not re-tested in LosingCaptures stage.
                 // Skip illegal move.
                 if (Move.IsQuiet(move)) quietMoveNumber--;
                 board.UndoMove();
@@ -719,22 +718,6 @@ public sealed class Search : IDisposable
                 // Skip futile move that doesn't check enemy king.
                 board.UndoMove();
                 continue;
-            }
-
-            if (checkingMove)
-            {
-                var colorlessPiece = PieceHelper.GetColorlessPiece(Move.Piece(move));
-                var materialValue = _evaluation.GetPieceMaterialValue(colorlessPiece, phase);
-                if ((colorlessPiece != ColorlessPiece.Pawn) && (colorlessPiece != ColorlessPiece.King) && !DoesMoveMeetStaticExchangeThreshold(board.PreviousPosition, phase, move, true, -materialValue + 1))
-                {
-                    // Reduce search horizon of move that delivers check but loses a minor or major piece.
-                    searchHorizon = FastMath.Max(searchHorizon, horizon - _losingCheckReduction);
-                }
-                else
-                {
-                    // Do not reduce move that delivers check.
-                    searchHorizon = horizon;
-                }
             }
 
             // +---------------------------------------------------------------------------+
@@ -1401,7 +1384,7 @@ public sealed class Search : IDisposable
     }
 
 
-    private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
+    private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, int phase, bool drawnEndgame)
     {
         if (legalMoveNumber == 1) return horizon; // Do not reduce first legal move.
 
@@ -1420,7 +1403,7 @@ public sealed class Search : IDisposable
             if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
         }
 
-        if (board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures)
+        if ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -_losingCaptureMargin))
         {
             // Reduce search horizon of losing capture.
             return horizon - _losingCaptureReduction;
