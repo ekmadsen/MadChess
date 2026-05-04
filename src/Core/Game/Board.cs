@@ -260,9 +260,9 @@ public sealed class Board
     }
 
 
-    public Position GetPreviousPosition(int previousMoves)
+    public Position GetPreviousPosition(int ply)
     {
-        var positionIndex = _positionIndex - previousMoves;
+        var positionIndex = _positionIndex - ply;
         return positionIndex >= 0 ? _positions[positionIndex] : null;
     }
 
