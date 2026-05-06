@@ -53,6 +53,8 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
+    private const int _losingCaptureMargin = 100;
+    private const int _losingCaptureReduction = 1;
     private const int _staticScoreWorseningMoves = 2;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
@@ -698,7 +700,7 @@ public sealed class Search : IDisposable
 
             // Must call IsMoveInDynamicSearchFutile and GetSearchHorizon before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
             if (Move.IsQuiet(move)) quietMoveNumber++;
-            var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, toHorizon, move, legalMoveNumber + 1, drawnEndgame, phase, alpha, beta);
+            var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, toHorizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame, phase, alpha, beta);
             var searchHorizon = GetSearchHorizon(board, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, phase, drawnEndgame);
 
             // Play move.
@@ -1364,8 +1366,6 @@ public sealed class Search : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMoveInDynamicSearchFutile(Position position, int depth, int toHorizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
-        Debug.Assert(_futilityPruningMargins.Length == _lateMovePruning.Length);
-
         if (legalMoveNumber == 1) return false; // First legal move is not futile.
         if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
@@ -1427,11 +1427,10 @@ public sealed class Search : IDisposable
             if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
         }
 
-        var pawnMaterialValue = _evaluation.GetPieceMaterialValue(ColorlessPiece.Pawn, phase);
-        if ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -pawnMaterialValue + 1))
+        if ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -_losingCaptureMargin))
         {
             // Reduce search horizon of capture that loses at least a pawn.
-            return horizon - 1;
+            return horizon - _losingCaptureReduction;
         }
 
         if (!Move.IsQuiet(move)) return horizon;
