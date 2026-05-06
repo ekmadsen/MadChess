@@ -698,7 +698,7 @@ public sealed class Search : IDisposable
 
             // Must call IsMoveInDynamicSearchFutile and GetSearchHorizon before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
             if (Move.IsQuiet(move)) quietMoveNumber++;
-            var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, toHorizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame, phase, alpha, beta);
+            var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, depth, toHorizon, move, legalMoveNumber + 1, drawnEndgame, phase, alpha, beta);
             var searchHorizon = GetSearchHorizon(board, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, phase, drawnEndgame);
 
             // Play move.
