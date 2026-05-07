@@ -164,7 +164,7 @@ public sealed class Search : IDisposable
 
         // To Horizon =            000  001  002  003  004  005  006  007
         _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
-        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
+        _futilityPruningMargins = [050, 065, 110, 185, 290, 425, 590, 785]; // (15 * (toHorizon Pow 2)) + 50
 
         // Create scored move and principal variation arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
@@ -1009,8 +1009,7 @@ public sealed class Search : IDisposable
         return true;
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     private void ExamineTimeAndNodes(long nodes)
     {
         if (nodes >= _timeManagement.NodeLimit)
@@ -1041,7 +1040,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsPositionFutile(Position position, int depth, int toHorizon, bool isDrawnEndgame, int alpha, int beta)
     {
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root position or position far from search horizon is not futile.
@@ -1363,9 +1361,10 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMoveInDynamicSearchFutile(Position position, int depth, int toHorizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame, int phase, int alpha, int beta)
     {
+        Debug.Assert(_lateMovePruning.Length == _futilityPruningMargins.Length);
+
         if (legalMoveNumber == 1) return false; // First legal move is not futile.
         if (!Move.IsQuiet(move)) return false; // Tactical move is not futile.
         if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root move or move far from search horizon is not futile.
@@ -1394,7 +1393,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMoveInQuietSearchFutile(Position position, ulong move, bool drawnEndgame, int phase, int alpha)
     {
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
@@ -1407,7 +1405,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetSearchHorizon(Board board, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, int phase, bool drawnEndgame)
     {
         if (legalMoveNumber == 1) return horizon; // Do not reduce first legal move.
@@ -1429,7 +1426,7 @@ public sealed class Search : IDisposable
 
         if ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -_losingCaptureMargin))
         {
-            // Reduce search horizon of capture that loses at least a pawn.
+            // Reduce search horizon of losing capture.
             return horizon - _losingCaptureReduction;
         }
 
@@ -1442,7 +1439,7 @@ public sealed class Search : IDisposable
 
         if (IsStaticScoreWorsening(board, depth))
         {
-            // Reduce search horizon of variation that is not showing recent improvement.
+            // Reduce search horizon of variation that has not shown improvement in recent moves.
             reduction++;
         }
 
@@ -1450,7 +1447,6 @@ public sealed class Search : IDisposable
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetCachedDynamicScore(ulong cachedPositionData, int depth, int toHorizon, int alpha, int beta)
     {
         var dynamicScore = CachedPositionData.DynamicScore(cachedPositionData);
