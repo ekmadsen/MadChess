@@ -164,7 +164,7 @@ public sealed class Search : IDisposable
 
         // To Horizon =            000  001  002  003  004  005  006  007
         _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
-        _futilityPruningMargins = [050, 065, 110, 185, 290, 425, 590, 785]; // (15 * (toHorizon Pow 2)) + 50
+        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
 
         // Create scored move and principal variation arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
