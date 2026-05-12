@@ -36,7 +36,7 @@ public sealed class Search : IDisposable
     public const int MaxHorizon = 64;
     public const int MaxQuietDepth = 8;
     public const int MaxPlyWithoutCaptureOrPawnMove = 100;
-    private const int _egScorePer128 = 48;
+    private const int _egScorePer128 = 48; // Endgame scores are inflated by 2.66x.
 
     public readonly List<ulong> CandidateMoves;
 
@@ -54,7 +54,7 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
     private const int _mgLosingCaptureMargin = 100;
-    private const int _egLosingCaptureMargin = 200;
+    private const int _egLosingCaptureMargin = 266;
     private const int _losingCaptureReduction = 1;
     private const int _worseningMoves = 2;
     private const int _worseningMovesReduction = 1;
@@ -167,8 +167,8 @@ public sealed class Search : IDisposable
 
         // To Horizon =              000  001  002  003  004  005  0006  0007
         _lateMovePruning =          [999, 004, 007, 012, 019, 028, 0039, 0052]; // (01 * (toHorizon Pow 2)) + 003... quiet search excluded
-        _mgFutilityPruningMargins = [050, 062, 098, 158, 242, 350, 0482, 0638]; // (12 * (toHorizon Pow 2)) + 050
-        _egFutilityPruningMargins = [100, 124, 196, 316, 484, 700, 0964, 1276]; // (24 + (toHorizon Pow 2)) + 100
+        _mgFutilityPruningMargins = [050, 060, 090, 140, 210, 300, 0410, 0540]; // (10 * (toHorizon Pow 2)) + 050
+        _egFutilityPruningMargins = [100, 126, 204, 334, 516, 750, 1036, 1374]; // (22 * (toHorizon Pow 2)) + 100
 
         // Create scored move and principal variation arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
