@@ -56,7 +56,7 @@ public sealed class Search : IDisposable
     private const int _worseningMoves = 2;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 48;
-    private const int _lmrConstPer128 = -128;
+    private const int _lmrConstPer128 = -160;
     private const int _recapturesOnlyMaxFromHorizon = 3;
     private const int _forfeitCastlingRightsPenalty = 150;
 
@@ -1435,6 +1435,8 @@ public sealed class Search : IDisposable
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
+
+        // TODO: Reduce more based on magnitude of negative history score.
 
         if (IsStaticScoreWorsening(board, depth))
         {
