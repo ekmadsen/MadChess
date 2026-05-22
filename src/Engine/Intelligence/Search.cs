@@ -160,9 +160,9 @@ public sealed class Search : IDisposable
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
         _lateMoveReductions = GetLateMoveReductions();
 
-        // To Horizon =            000  001  002  003  004  005  006  007
-        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
-        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
+        // To Horizon =            000  001  002  003  004  005  006  0007
+        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 0052]; // (01 * (toHorizon Pow 2)) + 003... quiet search excluded
+        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 0834]; // (16 * (toHorizon Pow 2)) + 050
 
         // Create scored move and principal variation arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
@@ -584,13 +584,6 @@ public sealed class Search : IDisposable
         else (board.CurrentPosition.StaticScore, drawnEndgame, phase) = _evaluation.GetStaticScore(board.CurrentPosition);
 
         // Even if endgame is drawn, search moves for a swindle (enemy mistake that makes drawn game winnable).
-        if (IsPositionFutile(board.CurrentPosition, depth, toHorizon, drawnEndgame, alpha, beta))
-        {
-            // Position is futile.
-            // Position is not the result of best play by both players.
-            UpdateCache(board.CurrentPosition.Key, depth, toHorizon, Move.Null, beta, alpha, beta);
-            return beta;
-        }
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
@@ -1038,21 +1031,6 @@ public sealed class Search : IDisposable
     }
 
 
-    private bool IsPositionFutile(Position position, int depth, int toHorizon, bool isDrawnEndgame, int alpha, int beta)
-    {
-        if ((depth == 0) || (toHorizon >= _futilityPruningMargins.Length)) return false; // Root position or position far from search horizon is not futile.
-        if (isDrawnEndgame || position.KingInCheck) return false; // Position in drawn endgame or when king is in check is not futile.
-        if ((FastMath.Abs(alpha) >= StaticScore.Checkmate) || (FastMath.Abs(beta) >= StaticScore.Checkmate)) return false; // Position under threat of checkmate is not futile.
-
-        // Position with lone king on board is not futile.
-        if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
-        if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
-
-        // Determine if any move can lower score under beta.
-        return position.StaticScore - _futilityPruningMargins[toHorizon] >= beta;
-    }
-
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsNullMovePermitted(Position position, int beta)
     {
@@ -1383,7 +1361,7 @@ public sealed class Search : IDisposable
         // Determine if quiet move is too late to be worth searching.
         if (quietMoveNumber >= _lateMovePruning[toHorizon]) return true;
 
-        // Determine if location improvement and static exchange raises score to within futility margin of alpha.
+        // Determine if location improvement and static exchange raises score to within futility pruning margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
         var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[toHorizon];
 
@@ -1395,7 +1373,7 @@ public sealed class Search : IDisposable
     {
         if (drawnEndgame || position.KingInCheck) return false; // Move in drawn endgame or move when king is in check is not futile.
 
-        // Determine if location improvement and static exchange raises score to within futility margin of alpha.
+        // Determine if location improvement and static exchange raises score to within futility pruning margin of alpha.
         var locationImprovement = _evaluation.GetPieceLocationImprovement(move, phase);
         var threshold = alpha - position.StaticScore - locationImprovement - _futilityPruningMargins[0];
 
