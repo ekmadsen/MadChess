@@ -511,17 +511,13 @@ public sealed class Search : IDisposable
         if (depth > 0)
         {
             var lowestPossibleScore = Evaluation.GetMatedScore(depth);
-            if (alpha < lowestPossibleScore)
-            {
-                alpha = lowestPossibleScore;
-                if (lowestPossibleScore >= beta) return beta;
-            }
+            if (lowestPossibleScore >= beta) return beta;
+            alpha = FastMath.Max(alpha, lowestPossibleScore);
+
             var highestPossibleScore = Evaluation.GetMatingScore(depth);
-            if (beta > highestPossibleScore)
-            {
-                beta = highestPossibleScore;
-                if (highestPossibleScore <= alpha) return alpha;
-            }
+            if (highestPossibleScore <= alpha) return alpha;
+            beta = FastMath.Min(beta, highestPossibleScore);
+
             if (terminalDraw) return 0; // Game ends on this move.
         }
 
@@ -620,7 +616,6 @@ public sealed class Search : IDisposable
         // +---------------------------------------------------------------------------+
 
         bestMove = _cache.GetBestMove(board.CurrentPosition, cachedPosition.Data);
-        var inPv = (beta - alpha) > 1;
 
         if (bestMove == Move.Null)
         {
@@ -630,7 +625,7 @@ public sealed class Search : IDisposable
                     // Use best move from previous search.
                     bestMove = _bestMoves[0].Move;
                 }
-                else if ((depth > 0) && inPv && (toHorizon > _iidReduction))
+                else if ((depth > 0) && ((beta - alpha) > 1) && (toHorizon > _iidReduction))
                 {
                     // Cached position in principal variation does not specify best move.
                     // Find best move via Internal Iterative Deepening.
@@ -886,17 +881,13 @@ public sealed class Search : IDisposable
         if (depth > 0)
         {
             var lowestPossibleScore = Evaluation.GetMatedScore(depth);
-            if (alpha < lowestPossibleScore)
-            {
-                alpha = lowestPossibleScore;
-                if (lowestPossibleScore >= beta) return beta;
-            }
+            if (lowestPossibleScore >= beta) return beta;
+            alpha = FastMath.Max(alpha, lowestPossibleScore);
+
             var highestPossibleScore = Evaluation.GetMatingScore(depth);
-            if (beta > highestPossibleScore)
-            {
-                beta = highestPossibleScore;
-                if (highestPossibleScore <= alpha) return alpha;
-            }
+            if (highestPossibleScore <= alpha) return alpha;
+            beta = FastMath.Min(beta, highestPossibleScore);
+
             if (terminalDraw) return 0; // Game ends on this move.
         }
 
@@ -1059,7 +1050,7 @@ public sealed class Search : IDisposable
     private static bool IsNullMovePermitted(Position position, int beta)
     {
         if ((position.StaticScore < beta) || position.KingInCheck) return false; // Do not attempt null move if static score is weak, nor if king is in check.
-
+        
         // Do not attempt null move in pawn endgames.  Side to move may be in zugzwang.
         var minorAndMajorPieces = Bitwise.CountSetBits(position.GetMajorAndMinorPieces(position.ColorToMove));
         return minorAndMajorPieces > 0;
@@ -1407,21 +1398,21 @@ public sealed class Search : IDisposable
 
     private int GetSearchHorizon(Board board, int phase, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
     {
-        if (legalMoveNumber == 1) return horizon; // Do not reduce first legal move.
+        if (legalMoveNumber == 1) return horizon; // Do not reduce search horizon of first legal move.
 
         if (depth == 0)
         {
-            if (legalMoveNumber <= MultiPv) return horizon; // Do not reduce first move of principal variations.
-            if (_limitedStrength) return horizon; // Do not reduce limited strength root move.
+            if (legalMoveNumber <= MultiPv) return horizon; // Do not reduce search horizon of first move of principal variations.
+            if (_limitedStrength) return horizon; // Do not reduce search horizon of limited strength root move.
         }
 
-        if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce move in drawn endgame or move when king is in check.
-        if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return horizon; // Do not reduce killer move or castling.
+        if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce search horizon of move in drawn endgame or move when king is in check.
+        if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return horizon; // Do not reduce search horizon of killer move or castling.
 
         if (Move.IsPawnMove(move))
         {
             var rank = Board.Ranks[(int)board.CurrentPosition.ColorToMove][(int)Move.To(move)];
-            if (rank >= 6) return horizon; // Do not reduce pawn push to 7th rank.
+            if (rank == 6) return horizon; // Do not reduce search horizon of pawn push to 7th rank.
         }
 
         var pawnMaterialValue = _evaluation.GetPieceMaterialValue(ColorlessPiece.Pawn, phase);
@@ -1431,7 +1422,7 @@ public sealed class Search : IDisposable
             return horizon - 1;
         }
 
-        if (!Move.IsQuiet(move)) return horizon;
+        if (!Move.IsQuiet(move)) return horizon; // Do not reduce search horizon of capture or pawn promotion.
 
         // Reduce search horizon of late move.
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
