@@ -1,6 +1,6 @@
 ﻿// +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -57,19 +57,17 @@ public static class Program
         // Segmenting configuration like this prevents casual users from becoming confused and overwhelmed by too many / too complex options.
         var advancedConfig = await LoadAdvancedConfig();
 
-        await using (var inputStream = Console.OpenStandardInput())
-        await using (var outputStream = Console.OpenStandardOutput())
-        await using (var messenger = new Messenger(inputStream, outputStream))
-        using (var uciStream = new UciStream(advancedConfig, messenger))
+        await using var inputStream = Console.OpenStandardInput();
+        await using var outputStream = Console.OpenStandardOutput();
+        await using var messenger = new Messenger(inputStream, outputStream);
+        using var uciStream = new UciStream(advancedConfig, messenger);
+        try
         {
-            try
-            {
-                uciStream.Run();
-            }
-            catch (Exception exception)
-            {
-                uciStream.HandleException(exception);
-            }
+            uciStream.Run();
+        }
+        catch (Exception exception)
+        {
+            uciStream.HandleException(exception);
         }
     }
 
@@ -78,19 +76,15 @@ public static class Program
         if (File.Exists(_advancedConfigFilename))
         {
             // Load advanced config (potentially containing user-modified values) from file.
-            await using (var stream = File.OpenRead(_advancedConfigFilename))
-            {
-                return await DeserializeConfigJson(stream);
-            }
+            await using var fileStream = File.OpenRead(_advancedConfigFilename);
+            return await DeserializeConfigJson(fileStream);
         }
 
         // Load advanced config (containing default values) from embedded resource.
-        await using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(_advancedConfigResource))
-        {
-            return stream == null
-                ? null
-                : await DeserializeConfigJson(stream);
-        }
+        await using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(_advancedConfigResource);
+        return resourceStream == null
+            ? null
+            : await DeserializeConfigJson(resourceStream);
     }
 
 

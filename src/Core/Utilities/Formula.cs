@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+#pragma warning disable IDE0047
 
 namespace ErikTheCoder.MadChess.Core.Utilities;
 

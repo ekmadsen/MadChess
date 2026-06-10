@@ -1,6 +1,6 @@
 ﻿// +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Core.Game;
@@ -102,9 +103,9 @@ public sealed class Position
             if ((PieceBitboards[(int)Piece.WhiteBishop] & squareMask) > 0) return Piece.WhiteBishop;
             if ((PieceBitboards[(int)Piece.WhiteRook] & squareMask) > 0) return Piece.WhiteRook;
             if ((PieceBitboards[(int)Piece.WhiteQueen] & squareMask) > 0) return Piece.WhiteQueen;
-            if ((PieceBitboards[(int)Piece.WhiteKing] & squareMask) > 0) return Piece.WhiteKing;
-
-            throw new Exception($"White piece not found at {Board.SquareLocations[(int) square]}.");
+            return (PieceBitboards[(int)Piece.WhiteKing] & squareMask) > 0
+                ? Piece.WhiteKing
+                : throw new Exception($"White piece not found at {Board.SquareLocations[(int) square]}.");
         }
 
         // Locate black piece.  // Explicit array lookups are faster than looping through pieces.
@@ -113,9 +114,9 @@ public sealed class Position
         if ((PieceBitboards[(int)Piece.BlackBishop] & squareMask) > 0) return Piece.BlackBishop;
         if ((PieceBitboards[(int)Piece.BlackRook] & squareMask) > 0) return Piece.BlackRook;
         if ((PieceBitboards[(int)Piece.BlackQueen] & squareMask) > 0) return Piece.BlackQueen;
-        if ((PieceBitboards[(int)Piece.BlackKing] & squareMask) > 0) return Piece.BlackKing;
-
-        throw new Exception($"Black piece not found at {Board.SquareLocations[(int) square]}.");
+        return (PieceBitboards[(int)Piece.BlackKing] & squareMask) > 0
+            ? Piece.BlackKing
+            : throw new Exception($"Black piece not found at {Board.SquareLocations[(int) square]}.");
     }
 
 
@@ -124,7 +125,7 @@ public sealed class Position
         var enemyColor = 1 - color;
 
         // Determine if square is attacked by pawns.
-        // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+        // Attacked by white pawn masks = black pawn attack masks and vice versa.
         var pawns = GetPawns(color);
         if ((pawns & Board.PawnAttackMasks[(int)enemyColor][(int)square]) > 0) return true;
 
@@ -572,7 +573,7 @@ public sealed class Position
         var colorlessAttacker = PieceHelper.GetColorlessPiece(attacker);
         var victim = GetPiece(toSquare);
         if ((victim != Piece.None) && (PieceHelper.GetColor(victim) == attackerColor)) return false; // Piece cannot attack its own color.
-        if ((victim == Piece.WhiteKing) || (victim == Piece.BlackKing)) return false;  // Piece cannot attack king.
+        if (victim is Piece.WhiteKing or Piece.BlackKing) return false;  // Piece cannot attack king.
 
         var promotedPiece = Move.PromotedPiece(move);
         if ((promotedPiece != Piece.None) && (ColorToMove != PieceHelper.GetColor(promotedPiece))) return false; // Promoted piece is wrong color.

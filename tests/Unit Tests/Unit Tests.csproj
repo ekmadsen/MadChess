@@ -3,17 +3,17 @@
 	<PropertyGroup>
 		<AssemblyTitle>MadChess.Tests</AssemblyTitle>
 		<AssemblyName>MadChess.Tests</AssemblyName>
-		<Version>3.2</Version>
+		<Version>3.4</Version>
 		<Authors>Erik Madsen</Authors>
 		<Description>Tests for a UCI chess engine.</Description>
-		<Copyright>2022</Copyright>
+		<Copyright>2026</Copyright>
 		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<RootNamespace>ErikTheCoder.MadChess.Tests</RootNamespace>
 		<LangVersion>latest</LangVersion>
 		<Nullable>disable</Nullable>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<OutputType>Library</OutputType>
 		<PackageId>MadChess.Tests</PackageId>
 		<Configurations>Debug;Release</Configurations>
@@ -21,9 +21,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-		<PackageReference Include="NUnit" Version="4.3.2" />
-		<PackageReference Include="NUnit3TestAdapter" Version="5.0.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+		<PackageReference Include="NUnit" Version="4.5.1" />
+		<PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
 	</ItemGroup>
 
 	<ItemGroup>

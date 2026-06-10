@@ -1,6 +1,6 @@
 ﻿// +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -19,6 +19,7 @@ using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Config;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Score;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
@@ -460,7 +461,7 @@ public sealed class Evaluation
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetPieceMaterialScore(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
+    public int GetPieceMaterialValue(ColorlessPiece colorlessPiece, int phase) => StaticScore.GetTaperedScore(_mgMaterialScores[(int)colorlessPiece], _egMaterialScores[(int)colorlessPiece], phase);
 
 
     public int GetPieceLocationImprovement(ulong move, int phase)
@@ -507,6 +508,9 @@ public sealed class Evaluation
         // Explicit array lookups are faster than looping through colors.
         EvaluateMaterial(position, Color.White);
         EvaluateMaterial(position, Color.Black);
+
+        EvaluateMaterialImbalance(position, Color.White);
+        EvaluateMaterialImbalance(position, Color.Black);
 
         EvaluatePieceLocation(position, Color.White);
         EvaluatePieceLocation(position, Color.Black);
@@ -685,7 +689,7 @@ public sealed class Evaluation
         var pawnRank = Board.Ranks[(int)lonePawnColor][(int)pawnSquare];
         var pawnFile = Board.Files[(int)pawnSquare];
 
-        if ((pawnFile == 0) || (pawnFile == 7))
+        if (pawnFile is 0 or 7)
         {
             // Pawn is on rook file.
             if ((defendingKingFile == pawnFile) && (defendingKingRank > pawnRank))
@@ -703,9 +707,7 @@ public sealed class Evaluation
 
             var winningKingOnKeySquare = pawnRank switch
             {
-                1 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
-                2 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
-                3 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
+                1 or 2 or 3 => ((winningKingRank == pawnRank + 2) && (kingPawnAbsoluteFileDifference <= 1)),
                 4 => ((kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1)),
                 5 => ((kingPawnRankDifference > 0) && (kingPawnRankDifference <= 2) && (kingPawnAbsoluteFileDifference <= 1)),
                 6 => ((kingPawnRankDifference >= 0) && (kingPawnRankDifference <= 1) && (kingPawnAbsoluteFileDifference <= 1)),
@@ -764,6 +766,41 @@ public sealed class Evaluation
         _staticScore.EgPieceMaterial[(int)color] = egKnightMaterial + egBishopMaterial + egRookMaterial + egQueenMaterial;
     }
 
+    private void EvaluateMaterialImbalance(Position position, Color color)
+    {
+        var enemyColor = 1 - color;
+
+        // Pawns
+        var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));
+        var enemyPawnCount = Bitwise.CountSetBits(position.GetPawns(enemyColor));
+
+        // Minor Pieces
+        var minorPieceCount = Bitwise.CountSetBits(position.GetMinorPieces(color));
+        var enemyMinorPieceCount = Bitwise.CountSetBits(position.GetMinorPieces(enemyColor));
+
+        // Rooks
+        var rookCount = Bitwise.CountSetBits(position.GetRooks(color));
+        var enemyRookCount = Bitwise.CountSetBits(position.GetRooks(enemyColor));
+
+        // Queens
+        var queenCount = Bitwise.CountSetBits(position.GetQueens(color));
+        var enemyQueenCount = Bitwise.CountSetBits(position.GetQueens(enemyColor));
+
+        // Determine material score using standard piece material values.
+        var materialScore = ((pawnCount - enemyPawnCount) * 100) + ((minorPieceCount - enemyMinorPieceCount) * 300) + ((rookCount - enemyRookCount) * 500) + ((queenCount - enemyQueenCount) * 900);
+
+        if (materialScore <= -400)
+        {
+            // The given color has a material disadvantage of at least a minor piece and a pawn.
+            // Encourage retention of pawns.
+            if (pawnCount > 0)
+            {
+                _staticScore.EgMaterialImbalance[(int)color] += Config.EgMaterialDisadvantageAtLeastOnePawn;
+                _staticScore.EgMaterialImbalance[(int)color] += pawnCount * Config.EgMaterialDisadvantagePawns;
+            }
+        }
+    }
+
 
     private void EvaluatePieceLocation(Position position, Color color)
     {
@@ -785,8 +822,8 @@ public sealed class Evaluation
 
     private void EvaluatePawns(Position position, Color color)
     {
-        var pawns = position.GetPawns(color);
-        if (pawns == 0) return;
+        var allPawns = position.GetPawns(color);
+        if (allPawns == 0) return;
 
         var enemyColor = 1 - color;
 
@@ -797,13 +834,14 @@ public sealed class Evaluation
         var enemyMajorPieces = position.GetMajorPieces(enemyColor);
 
         Square square;
+        var pawns = allPawns; // Store into second variable because while loop will pop all pawn squares.
         while ((square = Bitwise.PopFirstSetSquare(ref pawns)) != Square.Illegal)
         {
             var file = Board.Files[(int)square];
 
             // Evaluate pawn structure.
-            var pawnsOccupyLeftFile = (file > 0) && ((Board.FileMasks[file - 1] & pawns) > 0);
-            var pawnsOccupyRightFile = (file < 7) && ((Board.FileMasks[file + 1] & pawns) > 0);
+            var pawnsOccupyLeftFile = (file > 0) && ((Board.FileMasks[file - 1] & allPawns) > 0);
+            var pawnsOccupyRightFile = (file < 7) && ((Board.FileMasks[file + 1] & allPawns) > 0);
 
             if (!pawnsOccupyLeftFile && !pawnsOccupyRightFile)
             {
@@ -853,7 +891,7 @@ public sealed class Evaluation
         // Evaluate doubled pawns.
         for (var file = 0; file < 8; file++)
         {
-            var pawnCount = Bitwise.CountSetBits(Board.FileMasks[file] & pawns);
+            var pawnCount = Bitwise.CountSetBits(Board.FileMasks[file] & allPawns);
             if (pawnCount > 1)
             {
                 // File has double (or more) pawns.
@@ -865,7 +903,8 @@ public sealed class Evaluation
 
         // Evaluate connected passed pawns.
         var allPassedPawns = _passedPawns[(int)color];
-        var passedPawns = allPassedPawns; // Store into second variable because while loop will pop all pawn squares.
+        var passedPawns = allPassedPawns; // Store into second variable because while loop will pop all passed pawn squares.
+
         while ((square = Bitwise.PopFirstSetSquare(ref passedPawns)) != Square.Illegal)
         {
             var rank = Board.Ranks[(int)color][(int)square];
@@ -940,7 +979,7 @@ public sealed class Evaluation
         var enemyKingInnerRing = Board.InnerRingMasks[(int)enemyKingSquare];
         var enemyKingFile = Board.Files[(int)enemyKingSquare];
 
-        var enemyPawns = position.GetPawns(enemyColor);
+        var allEnemyPawns = position.GetPawns(enemyColor);
         var enemyMajorPieces = position.GetMajorPieces(enemyColor);
         var unOrEnemyOccupiedSquares = ~position.ColorOccupancy[(int)color];
 
@@ -949,11 +988,10 @@ public sealed class Evaluation
         // Determine safe squares (not attacked by enemy pawns).
         Square square;
         var squaresAttackedByEnemyPawns = 0ul;
+        var enemyPawns = allEnemyPawns; // Store into second variable because while loop will pop all enemy pawn squares.
         while ((square = Bitwise.PopFirstSetSquare(ref enemyPawns)) != Square.Illegal)
             squaresAttackedByEnemyPawns |= Board.PawnAttackMasks[(int)enemyColor][(int)square];
         var safeSquares = ~squaresAttackedByEnemyPawns;
-
-        enemyPawns = position.GetPawns(enemyColor); // Repopulate after above while loop popped all enemy pawn squares.
 
         for (var colorlessPiece = ColorlessPiece.Knight; colorlessPiece <= ColorlessPiece.Queen; colorlessPiece++)
         {
@@ -998,13 +1036,13 @@ public sealed class Evaluation
 
         // Evaluate enemy king near semi-open files.
         var semiOpenFilesNearEnemyKing = 0;
-        if ((enemyKingFile > 0) && ((Board.FileMasks[enemyKingFile - 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Left of Enemy King
-        if ((Board.FileMasks[enemyKingFile] & enemyPawns) == 0) semiOpenFilesNearEnemyKing++; // Enemy King File
-        if ((enemyKingFile < 7) && ((Board.FileMasks[enemyKingFile + 1] & enemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Right of Enemy King
+        if ((enemyKingFile > 0) && ((Board.FileMasks[enemyKingFile - 1] & allEnemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Left of Enemy King
+        if ((Board.FileMasks[enemyKingFile] & allEnemyPawns) == 0) semiOpenFilesNearEnemyKing++; // Enemy King File
+        if ((enemyKingFile < 7) && ((Board.FileMasks[enemyKingFile + 1] & allEnemyPawns) == 0)) semiOpenFilesNearEnemyKing++; // File Right of Enemy King
         mgEnemyKingSafetyPer8 += semiOpenFilesNearEnemyKing * Config.MgKingSafetySemiOpenFilePer8;
 
         // Evaluate enemy king pawn shield.
-        var pawnsMissingFromShield = 3 - Bitwise.CountSetBits(enemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
+        var pawnsMissingFromShield = 3 - Bitwise.CountSetBits(allEnemyPawns & Board.PawnShieldMasks[(int)enemyColor][(int)enemyKingSquare]);
         mgEnemyKingSafetyPer8 += pawnsMissingFromShield * Config.MgKingSafetyPawnShieldPer8;
 
         // Evaluate average distance of defending pieces from enemy king.
@@ -1073,7 +1111,7 @@ public sealed class Evaluation
         while ((square = Bitwise.PopFirstSetSquare(ref knights)) != Square.Illegal)
         {
             if ((Board.SquareMasks[(int)square] & outpostMask) == 0) continue; // Knight is not in enemy outpost territory.
-            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice versa.
             if ((pawns & supportingPawnsMask) == 0) continue; // Knight is unsupported by own pawns.
             potentialAttackMask = Board.PassedPawnMasks[(int)color][(int)square] & ~Board.FreePawnMasks[(int)color][(int)square];
             if ((enemyPawns & potentialAttackMask) > 0) continue; // Knight can be attacked by enemy pawns.
@@ -1087,7 +1125,7 @@ public sealed class Evaluation
         while ((square = Bitwise.PopFirstSetSquare(ref bishops)) != Square.Illegal)
         {
             if ((Board.SquareMasks[(int)square] & outpostMask) == 0) continue; // Bishop is not in enemy outpost territory.
-            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+            supportingPawnsMask = Board.PawnAttackMasks[(int)enemyColor][(int)square]; // Attacked by white pawn masks = black pawn attack masks and vice versa.
             if ((pawns & supportingPawnsMask) == 0) continue; // Bishop is unsupported by own pawns.
             potentialAttackMask = Board.PassedPawnMasks[(int)color][(int)square] & ~Board.FreePawnMasks[(int)color][(int)square];
             if ((enemyPawns & potentialAttackMask) > 0) continue; // Bishop can be attacked by enemy pawns.

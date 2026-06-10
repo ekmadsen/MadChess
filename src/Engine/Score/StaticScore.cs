@@ -1,6 +1,6 @@
 ﻿// +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Engine.Intelligence;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Score;
@@ -24,14 +25,15 @@ public sealed class StaticScore
     public const int Interrupted = Max - Search.MaxHorizon - 1;
     public const int NotCached = Max - Search.MaxHorizon - 2;
     public const int SimpleEndgame = 20_000;
+    public const int SimpleEndgameMin = SimpleEndgame - 1_000;
 
     public readonly int[] EgSimple; // [color]
 
     public readonly int[] MgPawnMaterial; // [color]
     public readonly int[] EgPawnMaterial; // [color]
-
     public readonly int[] MgPieceMaterial; // [color]
     public readonly int[] EgPieceMaterial; // [color]
+    public readonly int[] EgMaterialImbalance; // [color]
 
     public readonly int[] MgPassedPawns; // [color]
     public readonly int[] EgPassedPawns; // [color]
@@ -75,9 +77,9 @@ public sealed class StaticScore
 
         MgPawnMaterial = new int[2];
         EgPawnMaterial = new int[2];
-
         MgPieceMaterial = new int[2];
         EgPieceMaterial = new int[2];
+        EgMaterialImbalance = new int[2];
 
         MgPassedPawns = new int[2];
         EgPassedPawns = new int[2];
@@ -126,7 +128,7 @@ public sealed class StaticScore
     private int GetEgMaterial(Color color) => EgPawnMaterial[(int)color] + EgPieceMaterial[(int)color];
 
 
-    public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) +
+    public int GetEg(Color color) => EgSimple[(int)color] + GetEgMaterial(color) + EgMaterialImbalance[(int)color] +
                                      EgPassedPawns[(int)color] + EgFreePassedPawns[(int)color] + EgConnectedPassedPawns[(int)color] + EgKingEscortedPassedPawns[(int)color] + UnstoppablePassedPawns[(int)color] +
                                      EgPieceLocation[(int)color] + EgPieceMobility[(int)color] + EgPawnStructure[(int)color] +
                                      EgThreats[(int)color] + EgBishopPair[(int)color] + EgOutposts[(int)color] + EgRookOn7thRank[(int)color];
@@ -169,11 +171,12 @@ public sealed class StaticScore
         MgPawnMaterial[(int)Color.Black] = 0;
         EgPawnMaterial[(int)Color.White] = 0;
         EgPawnMaterial[(int)Color.Black] = 0;
-
         MgPieceMaterial[(int)Color.White] = 0;
         MgPieceMaterial[(int)Color.Black] = 0;
         EgPieceMaterial[(int)Color.White] = 0;
         EgPieceMaterial[(int)Color.Black] = 0;
+        EgMaterialImbalance[(int)Color.White] = 0;
+        EgMaterialImbalance[(int)Color.Black] = 0;
 
         MgPassedPawns[(int)Color.White] = 0;
         MgPassedPawns[(int)Color.Black] = 0;
@@ -242,25 +245,20 @@ public sealed class StaticScore
         stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
 
         AppendStaticScoreLine(stringBuilder, "Simple Endgame", EgSimple[(int)Color.White], EgSimple[(int)Color.Black], EgSimple[(int)Color.White], EgSimple[(int)Color.Black], phase);
-
         AppendStaticScoreLine(stringBuilder, "Material", GetMgMaterial(Color.White), GetMgMaterial(Color.Black), GetEgMaterial(Color.White), GetEgMaterial(Color.Black), phase);
-
+        AppendStaticScoreLine(stringBuilder, "Material Imbalance", 0, 0, EgMaterialImbalance[(int)Color.White], EgMaterialImbalance[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Passed Pawns", MgPassedPawns[(int)Color.White], MgPassedPawns[(int)Color.Black], EgPassedPawns[(int)Color.White], EgPassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Free Passed Pawns", MgFreePassedPawns[(int)Color.White], MgFreePassedPawns[(int)Color.Black] , EgFreePassedPawns[(int)Color.White], EgFreePassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Connected Passed Pawns", MgConnectedPassedPawns[(int)Color.White], MgConnectedPassedPawns[(int)Color.Black] , EgConnectedPassedPawns[(int)Color.White], EgConnectedPassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "King Escorted Passed Pawns", 0, 0, EgKingEscortedPassedPawns[(int)Color.White], EgKingEscortedPassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Unstoppable Passed Pawns", UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], UnstoppablePassedPawns[(int)Color.White], UnstoppablePassedPawns[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "King Safety", MgKingSafety[(int)Color.White], MgKingSafety[(int)Color.Black], 0, 0, phase);
-
         AppendStaticScoreLine(stringBuilder, "Piece Location", MgPieceLocation[(int)Color.White], MgPieceLocation[(int)Color.Black], EgPieceLocation[(int)Color.White], EgPieceLocation[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Piece Mobility", MgPieceMobility[(int)Color.White], MgPieceMobility[(int)Color.Black], EgPieceMobility[(int)Color.White], EgPieceMobility[(int)Color.Black], phase);
-
         AppendStaticScoreLine(stringBuilder, "Pawn Structure", MgPawnStructure[(int)Color.White], MgPawnStructure[(int)Color.Black], EgPawnStructure[(int)Color.White], EgPawnStructure[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Threats", MgThreats[(int)Color.White], MgThreats[(int)Color.Black], EgThreats[(int)Color.White], EgThreats[(int)Color.Black], phase);
-
         AppendStaticScoreLine(stringBuilder, "Bishop Pair", MgBishopPair[(int)Color.White], MgBishopPair[(int)Color.Black], EgBishopPair[(int)Color.White], EgBishopPair[(int)Color.Black], phase);
         AppendStaticScoreLine(stringBuilder, "Outposts", MgOutposts[(int)Color.White], MgOutposts[(int)Color.Black], EgOutposts[(int)Color.White], EgOutposts[(int)Color.Black], phase);
-
         AppendStaticScoreLine(stringBuilder, "Rook on 7th Rank", MgRookOn7thRank[(int)Color.White], MgRookOn7thRank[(int)Color.Black], EgRookOn7thRank[(int)Color.White], EgRookOn7thRank[(int)Color.Black], phase);
         stringBuilder.AppendLine("=============================+===========================+===========================+===========================+");
 

@@ -1,6 +1,6 @@
 ﻿// +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -14,6 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Core.Utilities;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Core.Game;
@@ -259,9 +260,9 @@ public sealed class Board
     }
 
 
-    public Position GetPreviousPosition(int previousMoves)
+    public Position GetPreviousPosition(int ply)
     {
-        var positionIndex = _positionIndex - previousMoves;
+        var positionIndex = _positionIndex - ply;
         return positionIndex >= 0 ? _positions[positionIndex] : null;
     }
 

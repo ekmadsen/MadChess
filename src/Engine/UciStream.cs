@@ -1,6 +1,6 @@
 ﻿// +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -24,6 +24,7 @@ using ErikTheCoder.MadChess.Engine.Hashtable;
 using ErikTheCoder.MadChess.Engine.Heuristics;
 using ErikTheCoder.MadChess.Engine.Intelligence;
 using ErikTheCoder.MadChess.Engine.Tuning;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine;
@@ -51,7 +52,6 @@ public sealed class UciStream : IDisposable
     private readonly KillerMoves _killerMoves;
     private readonly MoveHistory _moveHistory;
     private readonly Evaluation _evaluation;
-    
     private readonly string[] _defaultPlyAndFullMove;
 
     private Search _search;
@@ -88,17 +88,10 @@ public sealed class UciStream : IDisposable
 
     public void Dispose()
     {
-        if (_search != null)
-        {
-            _search.Dispose();
-            _search = null;
-        }
-
-        if (_asyncSignal != null)
-        {
-            _asyncSignal.Dispose();
-            _asyncSignal = null;
-        }
+        _search?.Dispose();
+        _search = null;
+        _asyncSignal?.Dispose();
+        _asyncSignal = null;
     }
 
 
@@ -826,9 +819,7 @@ public sealed class UciStream : IDisposable
     {
         var move = Move.ParseStandardAlgebraic(_board, tokens[1]);
         var threshold = int.Parse(tokens[2]);
-
-        var phase = Evaluation.DetermineGamePhase(_board.CurrentPosition);
-        var staticExchangeMeetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, phase, move, false, threshold);
+        var staticExchangeMeetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, move, threshold);
         _messenger.WriteLine(staticExchangeMeetsThreshold.ToString());
     }
 
@@ -845,32 +836,30 @@ public sealed class UciStream : IDisposable
         _search.NodesInfoUpdate = long.MaxValue; // Do not display node count.
 
         // Verify move counts of test positions.
-        using (var reader = File.OpenText(file))
+        using var reader = File.OpenText(file);
+        while (!reader.EndOfStream)
         {
-            while (!reader.EndOfStream)
-            {
-                // Load position, move, and threshold.
-                var line = reader.ReadLine();
-                if (line == null) continue;
+            // Load position, move, and threshold.
+            var line = reader.ReadLine();
+            if (line == null) continue;
 
-                positions++;
+            positions++;
 
-                var parsedTokens = Tokens.Parse(line, '|', '"');
-                var fen = parsedTokens[0];
-                _board.SetPosition(fen);
-                var move = Move.ParseStandardAlgebraic(_board, parsedTokens[1]);
-                var threshold = int.Parse(parsedTokens[2]);
-                var expectedMeetsThreshold = bool.Parse(parsedTokens[3]);
+            var parsedTokens = Tokens.Parse(line, '|', '"');
+            var fen = parsedTokens[0];
+            _board.SetPosition(fen);
+            var move = Move.ParseStandardAlgebraic(_board, parsedTokens[1]);
+            var threshold = int.Parse(parsedTokens[2]);
+            var expectedMeetsThreshold = bool.Parse(parsedTokens[3]);
 
-                // Determine if static exchange evaluation meets threshold score value.
-                var meetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, Evaluation.MiddlegamePhase, move, false, threshold);
+            // Determine if static exchange evaluation meets threshold score value.
+            var meetsThreshold = _search.DoesMoveMeetStaticExchangeThreshold(_board.CurrentPosition, move, threshold);
 
-                var correct = meetsThreshold == expectedMeetsThreshold;
-                if (correct) correctPositions++;
-                var correctFraction = (100d * correctPositions) / positions;
+            var correct = meetsThreshold == expectedMeetsThreshold;
+            if (correct) correctPositions++;
+            var correctFraction = (100d * correctPositions) / positions;
 
-                _messenger.WriteLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),7}  {threshold,9}  {expectedMeetsThreshold,15}  {correct,7}  {correctFraction,5:0.0}");
-            }
+            _messenger.WriteLine($"{positions,6}  {fen,75}  {Move.ToLongAlgebraic(move),7}  {threshold,9}  {expectedMeetsThreshold,15}  {correct,7}  {correctFraction,5:0.0}");
         }
     }
 
@@ -1092,7 +1081,7 @@ public sealed class UciStream : IDisposable
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 721 for GM2600EloGamesClean.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 741 for GM2600EloGamesClean.pgn.
         var iterations = int.Parse(tokens[5].Trim());
 
         var particleSwarms = new ParticleSwarms(_advancedConfig, _messenger, pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale);

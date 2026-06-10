@@ -1,6 +1,6 @@
 // +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Core.Moves;
@@ -493,9 +494,9 @@ public static class Move
                 SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                 SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.Queen]);
 
-                if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
-
-                return move;
+                return !board.CurrentPosition.ValidateMove(ref move)
+                    ? throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.")
+                    : move;
 
             case "O-O":
             case "0-0":
@@ -503,9 +504,9 @@ public static class Move
                 SetFrom(ref move, Board.CastleFromSquares[(int)board.CurrentPosition.ColorToMove]);
                 SetTo(ref move, Board.CastleToSquares[(int)board.CurrentPosition.ColorToMove][(int)BoardSide.King]);
 
-                if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
-
-                return move;
+                return !board.CurrentPosition.ValidateMove(ref move)
+                    ? throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.")
+                    : move;
         }
 
         var length = standardAlgebraicNoCheck.Length;
@@ -650,9 +651,9 @@ public static class Move
                 if (moveFromRank != fromRank) continue; // Wrong Rank
             }
 
-            if (!board.CurrentPosition.ValidateMove(ref move)) throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
-
-            return move;
+            return board.CurrentPosition.ValidateMove(ref move)
+                ? move
+                : throw new Exception($"Move {standardAlgebraic} is illegal in position {board.CurrentPosition.ToFen()}.");
         }
 
         throw new Exception($"Failed to parse {standardAlgebraic} standard algebraic notation move.");

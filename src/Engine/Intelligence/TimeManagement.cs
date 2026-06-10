@@ -1,6 +1,6 @@
 ﻿// +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -13,6 +13,7 @@ using ErikTheCoder.MadChess.Core;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
 using ErikTheCoder.MadChess.Engine.Score;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Intelligence;
@@ -38,7 +39,6 @@ public sealed class TimeManagement(Messenger messenger) // Messenger lifetime ma
     private const int _adjustMoveTimePer128 = 64;
     private const int _haveTimeSearchNextPlyPer128 = 70; // Half of soft time limit + 10%.
 
-    // TODO: Consider increasing time reserved or how often remaining time is checked.  Have seen 2 time forfeits per 5,000 games.
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
 
 

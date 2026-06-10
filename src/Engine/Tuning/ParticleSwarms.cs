@@ -1,6 +1,6 @@
 ﻿// +---------------------------------------------------------------------------+
 // |                                                                           |
-// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2024.       |
+// |       MadChess is developed by Erik Madsen.  Copyright 2012 - 2026.       |
 // |       MadChess is free software.  It is distributed under the MIT         |
 // |       license.  See LICENSE.md file for details.                          |
 // |       See https://www.madchess.net/ for user and developer guides.        |
@@ -74,24 +74,24 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         var evaluation = new Evaluation(_advancedConfig.LimitStrength.Evaluation, messenger, stats);
         var search = new Search(_advancedConfig.LimitStrength.Search, messenger, timeManagement, stats, cache, killerMoves, moveHistory, evaluation);
 
-        //// Set default parameters for all particles.
-        //for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
-        //{
-        //    var particleSwarm = this[particleSwarmIndex];
-        //    for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
-        //    {
-        //        var particle = particleSwarm.Particles[particleIndex];
-        //        particle.SetDefaultParameters();
-        //        particle.ConfigureEvaluation(evaluation);
-        //    }
-        //}
+        for (var particleSwarmIndex = 0; particleSwarmIndex < Count; particleSwarmIndex++)
+        {
+            var particleSwarm = this[particleSwarmIndex];
+            for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
+            {
+                var particle = particleSwarm.Particles[particleIndex];
+                particle.ConfigureEvaluation(evaluation);
+            }
+        }
 
-        // Set default parameters for one particle and determine original evaluation error.
+        // Set default parameter values for one particle.
         var firstParticleInFirstSwarm = this[0].Particles[0];
         firstParticleInFirstSwarm.SetDefaultParameters();
         firstParticleInFirstSwarm.ConfigureEvaluation(evaluation);
         firstParticleInFirstSwarm.CalculateEvaluationError(board, search, winScale);
-        _originalEvaluationError = firstParticleInFirstSwarm.EvaluationError;
+
+        var bestParticle = GetBestParticle();
+        _originalEvaluationError = bestParticle.EvaluationError;
 
         stopwatch.Stop();
         messenger.WriteLine($"Created data structures in {stopwatch.Elapsed.TotalSeconds:0.000} seconds.");
@@ -101,18 +101,20 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
     public static Parameters CreateParameters() =>
     [
         // Material
-        new Parameter(nameof(EvaluationConfig.EgPawnMaterial), 50, 200),
-        new Parameter(nameof(EvaluationConfig.MgKnightMaterial), 200, 900),
-        new Parameter(nameof(EvaluationConfig.EgKnightMaterial), 200, 900),
-        new Parameter(nameof(EvaluationConfig.MgBishopMaterial), 200, 900),
-        new Parameter(nameof(EvaluationConfig.EgBishopMaterial), 200, 900),
+        new Parameter(nameof(EvaluationConfig.EgPawnMaterial), 50, 300),
+        new Parameter(nameof(EvaluationConfig.MgKnightMaterial), 200, 800),
+        new Parameter(nameof(EvaluationConfig.EgKnightMaterial), 200, 800),
+        new Parameter(nameof(EvaluationConfig.MgBishopMaterial), 200, 800),
+        new Parameter(nameof(EvaluationConfig.EgBishopMaterial), 200, 800),
         new Parameter(nameof(EvaluationConfig.MgRookMaterial), 400, 2000),
         new Parameter(nameof(EvaluationConfig.EgRookMaterial), 400, 2000),
-        new Parameter(nameof(EvaluationConfig.MgQueenMaterial), 800, 4000),
-        new Parameter(nameof(EvaluationConfig.EgQueenMaterial), 800, 4000),
+        new Parameter(nameof(EvaluationConfig.MgQueenMaterial), 800, 3000),
+        new Parameter(nameof(EvaluationConfig.EgQueenMaterial), 800, 3000),
+        new Parameter(nameof(EvaluationConfig.EgMaterialDisadvantagePawns), 0, 200),
+        new Parameter(nameof(EvaluationConfig.EgMaterialDisadvantageAtLeastOnePawn), 0, 200),
 
         // Passed Pawns
-        new Parameter(nameof(EvaluationConfig.PassedPawnPowerPer128), 128, 512),
+        new Parameter(nameof(EvaluationConfig.PassedPawnPowerPer128), 128, 384),
         new Parameter(nameof(EvaluationConfig.MgPassedPawnScalePer128), 0, 256),
         new Parameter(nameof(EvaluationConfig.EgPassedPawnScalePer128), 64, 512),
         new Parameter(nameof(EvaluationConfig.MgFreePassedPawnScalePer128), 0, 1024),
@@ -122,7 +124,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         new Parameter(nameof(EvaluationConfig.EgKingEscortedPassedPawn), 0, 32),
 
         // King Safety
-        new Parameter(nameof(EvaluationConfig.MgKingSafetyPowerPer128), 128, 512),
+        new Parameter(nameof(EvaluationConfig.MgKingSafetyPowerPer128), 128, 384),
         new Parameter(nameof(EvaluationConfig.MgKingSafetyScalePer128), 0, 128),
         new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightAttackOuterRingPer8), 0, 32),
         new Parameter(nameof(EvaluationConfig.MgKingSafetyKnightAttackInnerRingPer8), 0, 32),
@@ -201,7 +203,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         new Parameter(nameof(EvaluationConfig.EgKingCorner), -32, 32),
 
         // Piece Mobility
-        new Parameter(nameof(EvaluationConfig.PieceMobilityPowerPer128), 0, 256),
+        new Parameter(nameof(EvaluationConfig.PieceMobilityPowerPer128), 0, 128),
         new Parameter(nameof(EvaluationConfig.MgKnightMobilityScale), 0, 128),
         new Parameter(nameof(EvaluationConfig.EgKnightMobilityScale), 0, 256),
         new Parameter(nameof(EvaluationConfig.MgBishopMobilityScale), 0, 128),
