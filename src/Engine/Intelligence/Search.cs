@@ -160,9 +160,9 @@ public sealed class Search : IDisposable
         _seePieceValues = [0, 100, 300, 300, 500, 900, int.MaxValue];
         _lateMoveReductions = GetLateMoveReductions();
 
-        // To Horizon =            000  001  002  003  004  005  006  007
-        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
-        _futilityPruningMargins = [050, 066, 114, 194, 306, 450, 626, 834]; // (16 * (toHorizon Pow 2)) + 50
+        // To Horizon =            000  001  002  003  004  005  006  007  008  009
+        _lateMovePruning =        [999, 003, 005, 008, 013, 019, 026, 034, 043, 054]; // (00.64 * (toHorizon Pow 2)) + 03... quiet search excluded
+        _futilityPruningMargins = [050, 060, 090, 140, 210, 300, 410, 540, 690, 860]; // (10.00 * (toHorizon Pow 2)) + 50
 
         // Create scored move and principal variation arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
@@ -529,10 +529,10 @@ public sealed class Search : IDisposable
 
         // Determine if cached dynamic score causes a beta cutoff or score cutoff.
         var cachedPosition = _cache.GetPosition(board.CurrentPosition.Key, Count);
+        var bestMove = _cache.GetBestMove(board.CurrentPosition, cachedPosition.Data);
+        var previousMove = board.PreviousPosition?.PlayedMove ?? Move.Null;
         var toHorizon = horizon - depth;
         var historyIncrement = toHorizon * toHorizon;
-        var previousMove = board.PreviousPosition?.PlayedMove ?? Move.Null;
-        ulong bestMove;
 
         if ((cachedPosition.Key != _cache.NullPosition.Key) && (depth > 0) && !repeatPosition)
         {
@@ -545,7 +545,6 @@ public sealed class Search : IDisposable
                 if (cachedDynamicScore >= beta)
                 {
                     // Cached dynamic score causes a beta cutoff.
-                    bestMove = _cache.GetBestMove(board.CurrentPosition, cachedPosition.Data);
                     if ((bestMove != Move.Null) && Move.IsQuiet(bestMove))
                     {
                         // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
@@ -559,6 +558,8 @@ public sealed class Search : IDisposable
                 return cachedDynamicScore;
             }
         }
+
+        cachedPosition.Key = board.CurrentPosition.Key;
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
@@ -584,7 +585,7 @@ public sealed class Search : IDisposable
         {
             // Position is futile.
             // Position is not the result of best play by both players.
-            UpdateCache(board.CurrentPosition.Key, depth, toHorizon, Move.Null, beta, alpha, beta);
+            UpdateCache(cachedPosition, depth, toHorizon, Move.Null, beta, alpha, beta);
             return beta;
         }
 
@@ -603,7 +604,7 @@ public sealed class Search : IDisposable
                 // Enemy is unable to capitalize on position even if player forfeits right to move.
                 // While forfeiting right to move is illegal, this indicates position is strong.
                 // Position is not the result of best play by both players.
-                UpdateCache(board.CurrentPosition.Key, depth, toHorizon, Move.Null, beta, alpha, beta);
+                UpdateCache(cachedPosition, depth, toHorizon, Move.Null, beta, alpha, beta);
                 _stats.NullMoveCutoffs++;
                 return beta;
             }
@@ -614,8 +615,6 @@ public sealed class Search : IDisposable
         // |                Search Step 5: Internal Iterative Deepening                |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
-
-        bestMove = _cache.GetBestMove(board.CurrentPosition, cachedPosition.Data);
 
         if (bestMove == Move.Null)
         {
@@ -780,7 +779,7 @@ public sealed class Search : IDisposable
                 }
 
                 // Update cache and stats.
-                UpdateCache(board.CurrentPosition.Key, depth, toHorizon, move, score, alpha, beta);
+                UpdateCache(cachedPosition, depth, toHorizon, move, score, alpha, beta);
                 _stats.MovesCausingBetaCutoff++;
                 _stats.BetaCutoffMoveNumber += legalMoveNumber;
                 if (legalMoveNumber == 1) _stats.BetaCutoffFirstMove++;
@@ -808,7 +807,7 @@ public sealed class Search : IDisposable
                 {
                     // Found new best move.
                     bestScore = score;
-                    UpdateCache(board.CurrentPosition.Key, depth, toHorizon, move, score, alpha, beta);
+                    UpdateCache(cachedPosition, depth, toHorizon, move, score, alpha, beta);
                     // Raise alpha except when searching multiple principal variations or when limiting strength.
                     if ((depth > 0) || ((MultiPv == 1) && !LimitedStrength)) alpha = score;
                 }
@@ -854,7 +853,7 @@ public sealed class Search : IDisposable
         if (bestScore == originalAlpha)
         {
             // Score failed low.
-            UpdateCache(board.CurrentPosition.Key, depth, toHorizon, Move.Null, bestScore, originalAlpha, beta);
+            UpdateCache(cachedPosition, depth, toHorizon, Move.Null, bestScore, originalAlpha, beta);
         }
         return bestScore;
     }
@@ -1041,7 +1040,7 @@ public sealed class Search : IDisposable
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.White]) == 1) return false;
         if (Bitwise.CountSetBits(position.ColorOccupancy[(int)Color.Black]) == 1) return false;
 
-        // Determine if any move can lower score under beta.
+        // Estimate whether best variation can lower score under beta.
         return position.StaticScore - _futilityPruningMargins[toHorizon] >= beta;
     }
 
@@ -1366,7 +1365,7 @@ public sealed class Search : IDisposable
         if (Move.IsPawnMove(move))
         {
             var rank = Board.Ranks[(int)position.ColorToMove][(int)Move.To(move)];
-            if (rank >= 6) return false; // Pawn push to 7th rank is not futile.
+            if (rank == 6) return false; // Pawn push to 7th rank is not futile.
         }
 
         // Move with lone king on board is not futile.
@@ -1422,7 +1421,7 @@ public sealed class Search : IDisposable
             return horizon - 1;
         }
 
-        if (!Move.IsQuiet(move)) return horizon; // Do not reduce search horizon of capture or pawn promotion.
+        if (!Move.IsQuiet(move)) return horizon; // Do not reduce search horizon of tactical move.
 
         // Reduce search horizon of late move.
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
@@ -1566,12 +1565,10 @@ public sealed class Search : IDisposable
     private void SortMovesByScore(ScoredMove[] moves, int lastMoveIndex) => Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMoveComparer);
 
 
-    private void UpdateCache(ulong positionKey, int depth, int toHorizon, ulong bestMove, int dynamicScore, int alpha, int beta)
+    private void UpdateCache(CachedPosition cachedPosition, int depth, int toHorizon, ulong bestMove, int dynamicScore, int alpha, int beta)
     {
         if (FastMath.Abs(dynamicScore) == StaticScore.Interrupted) return;
 
-        var cachedPosition = _cache.NullPosition;
-        cachedPosition.Key = positionKey;
         CachedPositionData.SetLastAccessed(ref cachedPosition.Data, Count);
         CachedPositionData.SetToHorizon(ref cachedPosition.Data, toHorizon);
 
