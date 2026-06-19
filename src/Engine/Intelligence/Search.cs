@@ -161,8 +161,8 @@ public sealed class Search : IDisposable
         _lateMoveReductions = GetLateMoveReductions();
 
         // To Horizon =            000  001  002  003  004  005  006  007  008  009
-        _lateMovePruning =        [999, 003, 005, 008, 013, 019, 026, 034, 043, 054]; // (00.64 * (toHorizon Pow 2)) + 03... quiet search excluded
-        _futilityPruningMargins = [050, 060, 090, 140, 210, 300, 410, 540, 690, 860]; // (10.00 * (toHorizon Pow 2)) + 50
+        _lateMovePruning =        [999, 004, 007, 012, 019, 028, 039, 052, 067, 084]; // (01 * (toHorizon Pow 2)) + 03... quiet search excluded
+        _futilityPruningMargins = [050, 060, 090, 140, 210, 300, 410, 540, 690, 860]; // (10 * (toHorizon Pow 2)) + 50
 
         // Create scored move and principal variation arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
