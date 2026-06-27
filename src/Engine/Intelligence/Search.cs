@@ -55,8 +55,8 @@ public sealed class Search : IDisposable
     private const int _iidReduction = 4;
     private const int _worseningMoves = 2;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 48;
-    private const int _lmrConstPer128 = -160;
+    private const int _lmrScalePer128 = 40;
+    private const int _lmrConstPer128 = -64;
     private const int _recapturesOnlyMaxFromHorizon = 3;
     private const int _forfeitCastlingRightsPenalty = 150;
 
