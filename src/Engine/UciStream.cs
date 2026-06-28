@@ -41,7 +41,7 @@ public sealed class UciStream : IDisposable
 
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(100);
     private readonly AdvancedConfig _advancedConfig;
-    private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly Messenger _messenger;
     private readonly Stopwatch _commandStopwatch;
     private readonly Queue<List<string>> _asyncQueue;
     private readonly Lock _queueLock;
@@ -86,6 +86,7 @@ public sealed class UciStream : IDisposable
     }
 
 
+    // TODO: Implement DisposeAsync method (and update using statement in Program class).
     public void Dispose()
     {
         _search?.Dispose();
@@ -567,12 +568,12 @@ public sealed class UciStream : IDisposable
 
                 case "depth":
                     _timeManagement.HorizonLimit = FastMath.Min(int.Parse(tokens[tokenIndex + 1]), Search.MaxHorizon);
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
 
                 case "nodes":
                     _timeManagement.NodeLimit = long.Parse(tokens[tokenIndex + 1]);
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
 
                 case "mate":
@@ -580,19 +581,19 @@ public sealed class UciStream : IDisposable
                     _timeManagement.MoveTimeHardLimit = TimeSpan.MaxValue;
                     _timeManagement.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
                     _timeManagement.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
 
                 case "movetime":
                     _timeManagement.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
 
                 case "infinite":
                     _timeManagement.MoveTimeHardLimit = TimeSpan.MaxValue;
                     _timeManagement.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
                     _timeManagement.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
             }
         }
@@ -1015,7 +1016,7 @@ public sealed class UciStream : IDisposable
                 _search.PvInfoUpdate = false;
                 _timeManagement.MoveTimeSoftLimit = TimeSpan.MaxValue;
                 _timeManagement.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
-                _timeManagement.CanAdjustMoveTime = false;
+                _timeManagement.CanIncreaseMoveTime = false;
 
                 var bestMove = _search.FindBestMove(_board);
 

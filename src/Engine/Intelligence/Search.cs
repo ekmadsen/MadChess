@@ -62,7 +62,7 @@ public sealed class Search : IDisposable
 
     private readonly LimitStrengthSearchConfig _limitStrengthConfig;
     private readonly int[] _limitStrengthElos;
-    private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly Messenger _messenger;
     private readonly TimeManagement _timeManagement;
     private readonly Stats _stats;
     private readonly Cache _cache;
@@ -81,7 +81,7 @@ public sealed class Search : IDisposable
     private readonly int[] _futilityPruningMargins;
     private readonly ScoredMove[] _rootMoves;
     private readonly ScoredMove[] _bestMoves;
-    private readonly ScoredMove[] _bestMovePlies;
+    private readonly ScoredMove[] _bestMovePlies; // TODO: Rename to _bestMoveIterations.
     private readonly ScoredMove[] _multiPvMoves;
     private readonly ulong[][][] _principalVariations; // [rootMoveIndex][depth][pvMoveIndex]
 
@@ -281,13 +281,19 @@ public sealed class Search : IDisposable
         }
         board.CurrentPosition.MoveIndex = legalMoveIndex;
 
+        if ((legalMoveIndex == 1) && !LimitedStrength)
+        {
+            // Play only legal move without searching.
+            return board.CurrentPosition.Moves[0];
+        }
+
         // Copy legal moves to root moves.
         for (var moveIndex = 0; moveIndex < legalMoveIndex; moveIndex++)
         {
             var move = board.CurrentPosition.Moves[moveIndex];
             _rootMoves[moveIndex] = new ScoredMove(move, -StaticScore.Max);
         }
-
+        
         // Determine score error and move time.
         var scoreError = ((_blunderError > 0) && (SafeRandom.NextInt(0, 1024) < _blunderPer1024))
             ? _blunderError // Blunder
@@ -327,7 +333,7 @@ public sealed class Search : IDisposable
             // Update principal variation status and determine whether to keep searching.
             if (PvInfoUpdate) UpdateStatus(board, true);
             if (_timeManagement.MateInMoves.HasValue && (bestMove.Score >= StaticScore.Checkmate) && (Evaluation.GetMateMoveCount(bestMove.Score) <= _timeManagement.MateInMoves.Value)) break; // Found checkmate in correct number of moves.
-            _timeManagement.AdjustMoveTime(_originalHorizon, _bestMovePlies);
+            _timeManagement.IncreaseMoveTime(_originalHorizon, _bestMovePlies);
             if (!_timeManagement.HaveTimeForNextHorizon(_stopwatch.Elapsed)) break; // Do not have time to search next ply.
 
         } while (Continue && (_originalHorizon < _timeManagement.HorizonLimit));
