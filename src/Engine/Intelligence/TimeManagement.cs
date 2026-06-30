@@ -32,15 +32,20 @@ public sealed class TimeManagement(Messenger messenger)
     public bool CanIncreaseMoveTime;
 
     private const int _moveTimePer1024 = 50;
-    private const int _incrementTimePer128 = 64;
-    private const int _moveTimeHardLimitPer128 = 512;
+    private const int _incrementTimePer128 = 96;
+    private const int _moveTimeInitialHardLimitPer128 = 384;
+    private const int _moveTimeHardLimitPer128 = 768;
     private const int _movesRemainingTimePressure = 4;
-    private const int _increaseMoveTimeMinToHorizon = 15;
-    private const int _increaseMoveTimeMinScoreDecrease = 33;
-    private const int _increaseMoveTimePer128 = 128;
+    private const int _increaseMoveTimeMinToHorizon = 13;
+    private const int _increaseMoveTimeMarginalScoreDecrease = 30;
+    private const int _increaseMoveTimeMarginalPer128 = 128;
+    private const int _increaseMoveTimeSignificantScoreDecrease = 150;
+    private const int _increaseMoveTimeSignificantPer128 = 256;
     private const int _haveTimeSearchNextPlyPer128 = 70;
 
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
+    private double _softLimitMilliseconds;
+    private double _hardLimitMilliseconds;
 
 
     public void DetermineMoveTime(Position position, TimeSpan searchTimeElapsed)
@@ -51,16 +56,15 @@ public sealed class TimeManagement(Messenger messenger)
         // Retrieve time remaining and time increment.
         var timeRemaining = TimeRemaining[(int)position.ColorToMove] ?? throw new Exception($"{nameof(TimeRemaining)} for {position.ColorToMove} is null.");
         if (timeRemaining == TimeSpan.MaxValue) return; // No need to calculate move time if go command specifies infinite search.
-        timeRemaining -= searchTimeElapsed + _moveTimeReserved; // Reserve time to prevent flagging (losing on time).
+        timeRemaining -= searchTimeElapsed + _moveTimeReserved;
         var timeIncrement = TimeIncrement[(int)position.ColorToMove] ?? TimeSpan.Zero;
 
         // Calculate move time.
         double moveMilliseconds;
-        double millisecondsRemaining;
         if (MovesToTimeControl.HasValue)
         {
             // Specific number of moves must be made before time expires.
-            millisecondsRemaining = timeRemaining.TotalMilliseconds + (MovesToTimeControl.Value * timeIncrement.TotalMilliseconds);
+            var millisecondsRemaining = timeRemaining.TotalMilliseconds + (MovesToTimeControl.Value * timeIncrement.TotalMilliseconds);
             moveMilliseconds = millisecondsRemaining / MovesToTimeControl.Value;
         }
         else
@@ -71,19 +75,11 @@ public sealed class TimeManagement(Messenger messenger)
         }
 
         MoveTimeSoftLimit = TimeSpan.FromMilliseconds(moveMilliseconds);
-        MoveTimeHardLimit = TimeSpan.FromMilliseconds((moveMilliseconds * _moveTimeHardLimitPer128) / 128);
+        MoveTimeHardLimit = TimeSpan.FromMilliseconds((moveMilliseconds * _moveTimeInitialHardLimitPer128) / 128);
+        _softLimitMilliseconds = moveMilliseconds;
+        _hardLimitMilliseconds = (moveMilliseconds * _moveTimeHardLimitPer128) / 128;
 
-        if (MoveTimeHardLimit > timeRemaining)
-        {
-            // Prevent flagging.
-            var movesRemaining = MovesToTimeControl ?? _movesRemainingTimePressure;
-            millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
-            moveMilliseconds = FastMath.Min(millisecondsRemaining / movesRemaining, timeRemaining.TotalMilliseconds);
-
-            MoveTimeSoftLimit = TimeSpan.FromMilliseconds(moveMilliseconds);
-            MoveTimeHardLimit = MoveTimeSoftLimit;
-            if (messenger.Debug) messenger.WriteLine("info string Preventing loss on time.");
-        }
+        if (MoveTimeHardLimit > timeRemaining) PreventLossOnTime(timeRemaining, timeIncrement);
 
         if (messenger.Debug)
         {
@@ -93,17 +89,55 @@ public sealed class TimeManagement(Messenger messenger)
     }
 
 
-    public void IncreaseMoveTime(int originalHorizon, ScoredMove[] bestMovePlies)
+    public void IncreaseMoveTime(Position position, TimeSpan searchTimeElapsed, int originalHorizon, ScoredMove[] bestMoveIterations)
     {
-        if (!CanIncreaseMoveTime || (originalHorizon < _increaseMoveTimeMinToHorizon) || (MoveTimeSoftLimit == MoveTimeHardLimit)) return;
-        if (bestMovePlies[originalHorizon].Score >= (bestMovePlies[originalHorizon - 1].Score - _increaseMoveTimeMinScoreDecrease)) return;
+        if (!CanIncreaseMoveTime || (originalHorizon < _increaseMoveTimeMinToHorizon) || (MoveTimeSoftLimit.TotalMilliseconds >= _hardLimitMilliseconds)) return;
+        var scoreDecrease = bestMoveIterations[originalHorizon - 1].Score - bestMoveIterations[originalHorizon].Score;
+        if (scoreDecrease < _increaseMoveTimeMarginalScoreDecrease) return;
 
-        // TODO: Increase move time more significantly if score decreases >= 200 centipawns from previous search (search, not iteration) and crosses from positive to negative.
+        // Calculate new move times.
+        double millisecondsIncrease;
+        if (scoreDecrease >= _increaseMoveTimeSignificantScoreDecrease)
+        {
+            // Score has decreased significantly from previous iteration.
+            if (messenger.Debug) messenger.WriteLine("Increasing move time because score has decreased significantly from previous search iteration.");
+            millisecondsIncrease = (_softLimitMilliseconds * _increaseMoveTimeSignificantPer128) / 128;
+        }
+        else
+        {
+            // Score has decreased marginally from previous iteration.
+            if (messenger.Debug) messenger.WriteLine("Increasing move time because score has decreased marginally from previous search iteration.");
+            millisecondsIncrease = (_softLimitMilliseconds * _increaseMoveTimeMarginalPer128) / 128;
+        }
+        MoveTimeSoftLimit += TimeSpan.FromMilliseconds(millisecondsIncrease);
+        MoveTimeHardLimit += TimeSpan.FromMilliseconds(millisecondsIncrease);
 
-        // Score has decreased marginally from previous iteration.
-        if (messenger.Debug) messenger.WriteLine("Increasing move time because score has decreased significantly from previous ply.");
-        MoveTimeSoftLimit += TimeSpan.FromMilliseconds((MoveTimeSoftLimit.TotalMilliseconds * _increaseMoveTimePer128) / 128);
+        // Verify move times are within limits.
+        if (MoveTimeHardLimit.TotalMilliseconds > _hardLimitMilliseconds) MoveTimeHardLimit = TimeSpan.FromMilliseconds(_hardLimitMilliseconds);
+        if (messenger.Debug) messenger.WriteLine($"info string MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} ms MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0} ms");
+
+        var timeRemaining = TimeRemaining[(int)position.ColorToMove] ?? throw new Exception($"{nameof(TimeRemaining)} for {position.ColorToMove} is null.");
+        timeRemaining -= searchTimeElapsed + _moveTimeReserved;
+        var timeIncrement = TimeIncrement[(int)position.ColorToMove] ?? TimeSpan.Zero;
+        if (MoveTimeHardLimit > timeRemaining) PreventLossOnTime(timeRemaining, timeIncrement);
+
         if (MoveTimeSoftLimit > MoveTimeHardLimit) MoveTimeSoftLimit = MoveTimeHardLimit;
+    }
+
+
+    private void PreventLossOnTime(TimeSpan timeRemaining, TimeSpan timeIncrement)
+    {
+        var movesRemaining = MovesToTimeControl ?? _movesRemainingTimePressure;
+        var millisecondsRemaining = timeRemaining.TotalMilliseconds + (movesRemaining * timeIncrement.TotalMilliseconds);
+        var moveMilliseconds = FastMath.Min(millisecondsRemaining / movesRemaining, timeRemaining.TotalMilliseconds);
+
+        MoveTimeSoftLimit = TimeSpan.FromMilliseconds(moveMilliseconds);
+        MoveTimeHardLimit = MoveTimeSoftLimit;
+        if (messenger.Debug)
+        {
+            messenger.WriteLine("info string Preventing loss on time.");
+            messenger.WriteLine($"info string MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} ms MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0} ms");
+        }
     }
 
 
@@ -127,5 +161,7 @@ public sealed class TimeManagement(Messenger messenger)
         MoveTimeSoftLimit = TimeSpan.MaxValue;
         MoveTimeHardLimit = TimeSpan.MaxValue;
         CanIncreaseMoveTime = true;
+        _softLimitMilliseconds = double.MaxValue;
+        _hardLimitMilliseconds = double.MaxValue;
     }
 }

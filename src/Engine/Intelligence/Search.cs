@@ -81,7 +81,7 @@ public sealed class Search : IDisposable
     private readonly int[] _futilityPruningMargins;
     private readonly ScoredMove[] _rootMoves;
     private readonly ScoredMove[] _bestMoves;
-    private readonly ScoredMove[] _bestMovePlies; // TODO: Rename to _bestMoveIterations.
+    private readonly ScoredMove[] _bestMoveIterations;
     private readonly ScoredMove[] _multiPvMoves;
     private readonly ulong[][][] _principalVariations; // [rootMoveIndex][depth][pvMoveIndex]
 
@@ -167,7 +167,7 @@ public sealed class Search : IDisposable
         // Create scored move and principal variation arrays.
         _rootMoves = new ScoredMove[Position.MaxMoves];
         _bestMoves = new ScoredMove[Position.MaxMoves];
-        _bestMovePlies = new ScoredMove[MaxHorizon + 1];
+        _bestMoveIterations = new ScoredMove[MaxHorizon + 1];
         _multiPvMoves = new ScoredMove[Position.MaxMoves];
         _principalVariations = new ulong[Position.MaxMoves][][];
         for (var rootMoveIndex = 0; rootMoveIndex < Position.MaxMoves; rootMoveIndex++)
@@ -328,12 +328,12 @@ public sealed class Search : IDisposable
                 _bestMoves[moveIndex] = _rootMoves[moveIndex];
             SortMovesByScore(_bestMoves, legalMoveIndex - 1);
             bestMove = _bestMoves[0];
-            _bestMovePlies[_originalHorizon] = bestMove;
+            _bestMoveIterations[_originalHorizon] = bestMove;
 
             // Update principal variation status and determine whether to keep searching.
             if (PvInfoUpdate) UpdateStatus(board, true);
             if (_timeManagement.MateInMoves.HasValue && (bestMove.Score >= StaticScore.Checkmate) && (Evaluation.GetMateMoveCount(bestMove.Score) <= _timeManagement.MateInMoves.Value)) break; // Found checkmate in correct number of moves.
-            _timeManagement.IncreaseMoveTime(_originalHorizon, _bestMovePlies);
+            _timeManagement.IncreaseMoveTime(board.CurrentPosition, _stopwatch.Elapsed, _originalHorizon, _bestMoveIterations);
             if (!_timeManagement.HaveTimeForNextHorizon(_stopwatch.Elapsed)) break; // Do not have time to search next ply.
 
         } while (Continue && (_originalHorizon < _timeManagement.HorizonLimit));
@@ -1688,8 +1688,8 @@ public sealed class Search : IDisposable
         // Reset best moves.
         for (var moveIndex = 0; moveIndex < _bestMoves.Length; moveIndex++)
             _bestMoves[moveIndex] = new ScoredMove(Move.Null, -StaticScore.Max);
-        for (var depth = 0; depth < _bestMovePlies.Length; depth++)
-            _bestMovePlies[depth] = new ScoredMove(Move.Null, -StaticScore.Max);
+        for (var depth = 0; depth < _bestMoveIterations.Length; depth++)
+            _bestMoveIterations[depth] = new ScoredMove(Move.Null, -StaticScore.Max);
 
         // Prepare for next search.
         PvInfoUpdate = true;

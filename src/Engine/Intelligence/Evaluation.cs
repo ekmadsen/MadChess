@@ -1214,7 +1214,7 @@ public sealed class Evaluation
     public static int GetMateMoveCount(int score)
     {
         var plyCount = (score > 0) ? StaticScore.Max - score : -StaticScore.Max - score;
-        // Convert plies to full moves.
+        // Convert ply to full moves.
         var (quotient, remainder) = Math.DivRem(plyCount, 2);
         return quotient + remainder;
     }
