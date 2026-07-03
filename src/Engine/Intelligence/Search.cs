@@ -1545,7 +1545,7 @@ public sealed class Search : IDisposable
             for (var pv = 0; pv < legalPv; pv++)
             {
                 var bestMove = _bestMoves[pv].Move;
-                for (var moveIndex = pv + 1; moveIndex < MultiPv; moveIndex++)
+                for (var moveIndex = pv + 1; moveIndex < legalPv; moveIndex++)
                 {
                     var move = moves[moveIndex].Move;
                     if (Move.Equals(move, bestMove))
