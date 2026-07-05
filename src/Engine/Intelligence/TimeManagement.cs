@@ -34,11 +34,13 @@ public sealed class TimeManagement(Messenger messenger)
     private const int _moveTimePer1024 = 42;
     private const int _incrementTimePer128 = 96;
     private const int _movesRemainingTimePressure = 4;
-    private const int _hardLimitPer128 = 320;
-    private const int _timeBankPer128 = 320;
-    private const int _minToHorizon = 13;
-    private const int _minScoreDecrease = 20;
-    private const int _increaseMoveTimePer128 = 64;
+    private const int _hardLimitPer128 = 384;
+    private const int _timeBankPer128 = 256;
+    private const int _minToHorizon = 17;
+    private const int _smallScoreDecrease = 33;
+    private const int _smallScoreDecreaseTimePer128 = 128;
+    private const int _largeScoreDecrease = 100;
+    private const int _largeScoreDecreaseTimePer128 = 256;
     private const int _haveTimeSearchNextPlyPer128 = 70;
 
     private readonly TimeSpan _moveTimeReserved = TimeSpan.FromMilliseconds(100);
@@ -92,17 +94,18 @@ public sealed class TimeManagement(Messenger messenger)
     {
         if (!CanIncreaseMoveTime || (horizon < _minToHorizon) || (_timeBankMilliseconds == 0)) return;
         var scoreDecrease = bestMoveIterations[horizon - 1].Score - bestMoveIterations[horizon].Score;
-        if (scoreDecrease < _minScoreDecrease) return;
-
+        if (scoreDecrease < _smallScoreDecrease) return;
+        
         // Calculate new move times.
-        var milliseconds = FastMath.Min((_initialSoftLimitMilliseconds * _increaseMoveTimePer128) / 128, _timeBankMilliseconds);
+        var timePer128 = scoreDecrease >= _largeScoreDecrease ? _largeScoreDecreaseTimePer128 : _smallScoreDecreaseTimePer128;
+        var milliseconds = FastMath.Min((_initialSoftLimitMilliseconds * timePer128) / 128, _timeBankMilliseconds);
         MoveTimeSoftLimit += TimeSpan.FromMilliseconds(milliseconds);
         MoveTimeHardLimit += TimeSpan.FromMilliseconds(milliseconds);
         _timeBankMilliseconds -= milliseconds;
         
         if (messenger.Debug)
         {
-            messenger.WriteLine($"Increasing move time because score has decreased at least {_minScoreDecrease} centipawns from previous search iteration.");
+            messenger.WriteLine($"Increasing move time {milliseconds} milliseconds because score has decreased {scoreDecrease} centipawns from previous search iteration.");
             messenger.WriteLine($"info string MoveTimeSoftLimit = {MoveTimeSoftLimit.TotalMilliseconds:0} ms MoveTimeHardLimit = {MoveTimeHardLimit.TotalMilliseconds:0} ms");
         }
 
