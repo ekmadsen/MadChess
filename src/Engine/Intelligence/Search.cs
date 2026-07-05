@@ -551,9 +551,9 @@ public sealed class Search : IDisposable
                 if (cachedDynamicScore >= beta)
                 {
                     // Cached dynamic score causes a beta cutoff.
-                    if ((bestMove != Move.Null) && Move.IsQuiet(bestMove))
+                    if (bestMove != Move.Null)
                     {
-                        // Assume the quiet best move specified by the cached position would have caused a beta cutoff.
+                        // Assume the best move specified by the cached position would have caused a beta cutoff.
                         // Update history heuristic.
                         _moveHistory.UpdateValue(previousMove, bestMove, historyIncrement);
                     }
@@ -764,24 +764,21 @@ public sealed class Search : IDisposable
             if (score >= beta)
             {
                 // Position is not the result of best play by both players.
-                if (Move.IsQuiet(move))
+                // Update move heuristics.
+                _killerMoves.Update(depth, move);
+                _moveHistory.UpdateValue(previousMove, move, historyIncrement);
+
+                moveIndex--; // Decrement move index immediately so as not to include move that caused beta cutoff.
+
+                while (moveIndex >= 0)
                 {
-                    // Update move heuristics.
-                    _killerMoves.Update(depth, move);
-                    _moveHistory.UpdateValue(previousMove, move, historyIncrement);
-
-                    moveIndex--; // Decrement move index immediately so as not to include quiet move that caused beta cutoff.
-
-                    while (moveIndex >= 0)
+                    var priorMove = board.CurrentPosition.Moves[moveIndex];
+                    if (Move.Played(priorMove))
                     {
-                        var priorMove = board.CurrentPosition.Moves[moveIndex];
-                        if (Move.IsQuiet(priorMove) && Move.Played(priorMove))
-                        {
-                            // Update history of prior quiet move that failed to produce cutoff.
-                            _moveHistory.UpdateValue(previousMove, priorMove, -historyIncrement);
-                        }
-                        moveIndex--;
+                        // Update history of prior move that failed to produce cutoff.
+                        _moveHistory.UpdateValue(previousMove, priorMove, -historyIncrement);
                     }
+                    moveIndex--;
                 }
 
                 // Update cache and stats.
@@ -1319,6 +1316,7 @@ public sealed class Search : IDisposable
             {
                 var moveIndex = position.CurrentMoveIndex;
                 var move = position.Moves[moveIndex];
+                Debug.Assert(Move.IsCapture(move));
                 Debug.Assert(Move.CaptureVictim(move) != Piece.None);
                 position.CurrentMoveIndex++;
                 return (move, moveIndex);
@@ -1504,7 +1502,7 @@ public sealed class Search : IDisposable
 
             // Prioritize by best move, killer moves, then move history.
             Move.SetIsBest(ref move, isBest);
-            Move.SetKiller(ref move, _killerMoves.GetValue(depth, move));
+            Move.SetKiller(ref move, Move.IsQuiet(move) ? _killerMoves.GetValue(depth, move) : 0);
             Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
         }
     }
@@ -1524,13 +1522,17 @@ public sealed class Search : IDisposable
             // Prioritize by best move, killer moves, then move history.
             ref var move = ref moves[moveIndex];
             var killerMove = KillerMove.Parse(move);
+            var killerMoveValue = Move.IsQuiet(move)
+                ? killerMove == killerMove1 ? 2 : killerMove == killerMove2 ? 1 : 0
+                : 0;
+
             Move.SetIsBest(ref move, Move.Equals(move, bestMove));
-            Move.SetKiller(ref move, killerMove == killerMove1 ? 2 : killerMove == killerMove2 ? 1 : 0);
+            Move.SetKiller(ref move, killerMoveValue);
             Move.SetHistory(ref move, _moveHistory.GetValue(previousMove, move));
         }
     }
 
-    
+
     private void SortRootMovesByPriority(ScoredMove[] moves, int lastMoveIndex)
     {
         Array.Sort(moves, 0, lastMoveIndex + 1, _scoredMovePriorityComparer);

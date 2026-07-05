@@ -775,8 +775,8 @@ public sealed class UciStream : IDisposable
         _search.PrioritizeMoves(previousMove, _board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
         _search.SortMovesByPriority(_board.CurrentPosition.Moves, lastMoveIndex);
 
-        _messenger.WriteLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer   History              Priority");
-        _messenger.WriteLine("====  =====  ====  ==========  ============  =====  ======  ========  ====================");
+        _messenger.WriteLine("Rank   Move  Best  Capture   History  Cap Victim  Cap Attacker  Promo  Killer              Priority");
+        _messenger.WriteLine("====  =====  ====  =======  ========  ==========  ============  =====  ======  ====================");
 
         var stringBuilder = new StringBuilder();
         var legalMoveNumber = 0;
@@ -796,15 +796,16 @@ public sealed class UciStream : IDisposable
 
             stringBuilder.Append(Move.ToLongAlgebraic(move).PadLeft(7));
             stringBuilder.Append((Move.IsBest(move) ? "True" : string.Empty).PadLeft(6));
+            stringBuilder.Append((Move.IsCapture(move) ? "True" : string.Empty).PadLeft(9));
+
+            stringBuilder.Append(Move.History(move).ToString().PadLeft(10));
 
             stringBuilder.Append(PieceHelper.GetName(Move.CaptureVictim(move)).PadLeft(12));
             stringBuilder.Append(PieceHelper.GetName(Move.CaptureAttacker(move)).PadLeft(14));
 
             var promotedPiece = PieceHelper.GetName(Move.PromotedPiece(move));
             stringBuilder.Append(promotedPiece.PadLeft(7));
-
             stringBuilder.Append(Move.Killer(move).ToString().PadLeft(8));
-            stringBuilder.Append(Move.History(move).ToString().PadLeft(10));
 
             stringBuilder.Append(move.ToString().PadLeft(22));
 
