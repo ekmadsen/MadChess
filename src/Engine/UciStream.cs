@@ -676,13 +676,12 @@ public sealed class UciStream : IDisposable
 
         // Count moves using staged moved generation (as is done when searching moves).
         var toHorizon = horizon - depth;
-        var previousMove = _board.PreviousPosition?.PlayedMove ?? Move.Null;
         _board.CurrentPosition.PrepareMoveGeneration();
         long moves = 0;
 
         while (true)
         {
-            var (move, moveIndex) = _search.GetNextMove(previousMove, _board.CurrentPosition, Evaluation.MiddlegamePhase, Board.AllSquaresMask, depth, Move.Null, KillerMove.Null, KillerMove.Null);
+            var (move, moveIndex) = _search.GetNextMove(_board.CurrentPosition, Evaluation.MiddlegamePhase, Board.AllSquaresMask, depth, Move.Null, KillerMove.Null, KillerMove.Null);
             if (move == Move.Null) break; // All moves have been searched.
 
             var (legalMove, _) = _board.PlayMove(move);
@@ -766,17 +765,16 @@ public sealed class UciStream : IDisposable
     {
         // Get cached position.
         var cachedPosition = _cache.GetPosition(_board.CurrentPosition.Key, _search.Count);
-        var previousMove = _board.PreviousPosition?.PlayedMove ?? Move.Null;
         var bestMove = _cache.GetBestMove(position, cachedPosition.Data);
 
         // Generate and sort moves.
         _board.CurrentPosition.GenerateMoves();
         var lastMoveIndex = _board.CurrentPosition.MoveIndex - 1;
-        _search.PrioritizeMoves(previousMove, _board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
+        _search.PrioritizeMoves(_board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
         _search.SortMovesByPriority(_board.CurrentPosition.Moves, lastMoveIndex);
 
-        _messenger.WriteLine("Rank   Move  Best  Capture   History  Cap Victim  Cap Attacker  Promo  Killer              Priority");
-        _messenger.WriteLine("====  =====  ====  =======  ========  ==========  ============  =====  ======  ====================");
+        _messenger.WriteLine("Rank   Move  Best  Cap Victim   History  Cap Attacker  Promo  Killer              Priority");
+        _messenger.WriteLine("====  =====  ====  ==========  ========  ============  =====  ======  ====================");
 
         var stringBuilder = new StringBuilder();
         var legalMoveNumber = 0;
@@ -796,11 +794,9 @@ public sealed class UciStream : IDisposable
 
             stringBuilder.Append(Move.ToLongAlgebraic(move).PadLeft(7));
             stringBuilder.Append((Move.IsBest(move) ? "True" : string.Empty).PadLeft(6));
-            stringBuilder.Append((Move.IsCapture(move) ? "True" : string.Empty).PadLeft(9));
-
-            stringBuilder.Append(Move.History(move).ToString().PadLeft(10));
 
             stringBuilder.Append(PieceHelper.GetName(Move.CaptureVictim(move)).PadLeft(12));
+            stringBuilder.Append(Move.History(move).ToString().PadLeft(10));
             stringBuilder.Append(PieceHelper.GetName(Move.CaptureAttacker(move)).PadLeft(14));
 
             var promotedPiece = PieceHelper.GetName(Move.PromotedPiece(move));

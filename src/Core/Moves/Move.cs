@@ -21,11 +21,11 @@ namespace ErikTheCoder.MadChess.Core.Moves;
 
 public static class Move
 {
-    // Move.History is allotted 24 bits.
-    // 2 Pow 24 = 16_777_216.
-    // Value may be positive or negative, so max value is 16_777_216 / 2 = 8_388_608.
-    // Account for zero value = 8_388_608 - 1 = 8_388_607.
-    public const int HistoryMaxValue = 8_388_607;
+    // Move.History is allotted 25 bits.
+    // 2 Pow 25 = 33_554_432.
+    // Value may be positive or negative, so max value is 33_554_432 / 2 = 16_777_216.
+    // Account for zero value = 16_777_216 - 1 = 16_777_215.
+    public const int HistoryMaxValue = 16_777_215;
 
     public static readonly ulong Null;
 
@@ -33,17 +33,13 @@ public static class Move
     private static readonly ulong _bestMask;
     private static readonly ulong _bestUnmask;
 
-    private static readonly int _captureShift;
-    private static readonly ulong _captureMask;
-    private static readonly ulong _captureUnmask;
+    private static readonly int _captureVictimShift;
+    private static readonly ulong _captureVictimMask;
+    private static readonly ulong _captureVictimUnmask;
 
     private static readonly int _historyShift;
     private static readonly ulong _historyMask;
     private static readonly ulong _historyUnmask;
-
-    private static readonly int _captureVictimShift;
-    private static readonly ulong _captureVictimMask;
-    private static readonly ulong _captureVictimUnmask;
 
     private static readonly int _captureAttackerShift;
     private static readonly ulong _captureAttackerMask;
@@ -98,10 +94,9 @@ public static class Move
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // B|C|History  (capture or quiet)                    |CapV   |CapA   |Promo  |Kil|!|O|K|E|2|P|To           |From         |Piece
+    // B|CapV   |History  (capture or quiet)                      |CapA   |Promo  |Kil|!|O|K|E|2|P|To           |From         |Piece
 
     // B =     Best Move
-    // C =     Capture
     // CapV =  Capture Victim
     // CapA =  Capture Attacker (inverted)
     // Promo = Promoted Piece
@@ -123,17 +118,13 @@ public static class Move
         _bestMask = Bitwise.CreateULongMask(63);
         _bestUnmask = Bitwise.CreateULongUnmask(63);
 
-        _captureShift = 62;
-        _captureMask = Bitwise.CreateULongMask(62);
-        _captureUnmask = Bitwise.CreateULongUnmask(62);
+        _captureVictimShift = 59;
+        _captureVictimMask = Bitwise.CreateULongMask(59, 62);
+        _captureVictimUnmask = Bitwise.CreateULongUnmask(59, 62);
 
-        _historyShift = 38;
-        _historyMask = Bitwise.CreateULongMask(38, 61);
-        _historyUnmask = Bitwise.CreateULongUnmask(38, 61);
-
-        _captureVictimShift = 34;
-        _captureVictimMask = Bitwise.CreateULongMask(34, 37);
-        _captureVictimUnmask = Bitwise.CreateULongUnmask(34, 37);
+        _historyShift = 34;
+        _historyMask = Bitwise.CreateULongMask(34, 58);
+        _historyUnmask = Bitwise.CreateULongUnmask(34, 58);
 
         _captureAttackerShift = 30;
         _captureAttackerMask = Bitwise.CreateULongMask(30, 33);
@@ -185,9 +176,8 @@ public static class Move
         // Set null move.
         Null = 0;
         SetIsBest(ref Null, false);
-        SetIsCapture(ref Null, false);
-        SetHistory(ref Null, 0);
         SetCaptureVictim(ref Null, Game.Piece.None);
+        SetHistory(ref Null, 0);
         SetCaptureAttacker(ref Null, Game.Piece.None);
         SetPromotedPiece(ref Null, Game.Piece.None);
         SetKiller(ref Null, 0);
@@ -219,22 +209,6 @@ public static class Move
         Debug.Assert(IsBest(move) == isBest);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsCapture(ulong move) => (move & _captureMask) >> _captureShift > 0;
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetIsCapture(ref ulong move, bool isCapture)
-    {
-        var value = isCapture ? 1ul : 0;
-        // Clear
-        move &= _captureUnmask;
-        // Set
-        move |= (value << _captureShift) & _captureMask;
-        // Validate move.
-        Debug.Assert(IsCapture(move) == isCapture);
-    }
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Piece CaptureVictim(ulong move) => (Piece)((move & _captureVictimMask) >> _captureVictimShift);
@@ -249,6 +223,24 @@ public static class Move
         move |= ((ulong)captureVictim << _captureVictimShift) & _captureVictimMask;
         // Validate move.
         Debug.Assert(CaptureVictim(move) == captureVictim);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int History(ulong move) => (int)((move & _historyMask) >> _historyShift) - HistoryMaxValue;
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void SetHistory(ref ulong move, int history)
+    {
+        // Ensure history is >= 0 before shifting into ulong.
+        var value = history + HistoryMaxValue;
+        // Clear
+        move &= _historyUnmask;
+        // Set
+        move |= ((ulong)value << _historyShift) & _historyMask;
+        // Validate move.
+        Debug.Assert(History(move) == history);
     }
 
 
@@ -304,24 +296,6 @@ public static class Move
         move |= ((ulong)killer << _killerShift) & _killerMask;
         // Validate move.
         Debug.Assert(Killer(move) == killer);
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int History(ulong move) => (int) ((move & _historyMask) >> _historyShift) - HistoryMaxValue;
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetHistory(ref ulong move, int history)
-    {
-        // Ensure history is >= 0 before shifting into ulong.
-        var value = history + HistoryMaxValue;
-        // Clear
-        move &= _historyUnmask;
-        // Set
-        move |= ((ulong)value << _historyShift) & _historyMask;
-        // Validate move.
-        Debug.Assert(History(move) == history);
     }
 
 
@@ -688,12 +662,6 @@ public static class Move
 
     public static bool IsValid(ulong move)
     {
-        Debug.Assert(
-            (IsCapture(move) && (CaptureVictim(move) > Game.Piece.None)) ||
-            (!IsCapture(move) && (CaptureVictim(move) == Game.Piece.None)),
-            $"IsCapture(move) = {IsCapture(move)}, CaptureVictim(move) = {CaptureVictim(move)}"
-        );
-
         Debug.Assert(CaptureVictim(move) >= Game.Piece.None, $"CaptureVictim(move) = {CaptureVictim(move)}");
         Debug.Assert(CaptureVictim(move) < Game.Piece.BlackKing, $"CaptureVictim(move) = {CaptureVictim(move)}");
         Debug.Assert(CaptureVictim(move) != Game.Piece.WhiteKing, $"CaptureVictim(move) = {CaptureVictim(move)}");
@@ -738,9 +706,8 @@ public static class Move
         return $"""
                 {ToLongAlgebraic(move)}
                 B       = {IsBest(move)}
-                C       = {IsCapture(move)}
-                History = {History(move)}
                 CapV    = {PieceHelper.GetChar(CaptureVictim(move))}
+                History = {History(move)}
                 CapA    = {PieceHelper.GetChar(CaptureAttacker(move))}
                 Promo   = {PieceHelper.GetChar(PromotedPiece(move))}
                 Kil     = {Killer(move)}
