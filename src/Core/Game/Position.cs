@@ -273,6 +273,7 @@ public sealed class Position
                 Move.SetPiece(ref move, attacker);
                 Move.SetFrom(ref move, fromSquare);
                 Move.SetTo(ref move, EnPassantSquare);
+                Move.SetIsCapture(ref move, true);
                 Move.SetCaptureAttacker(ref move, attacker);
                 Move.SetCaptureVictim(ref move, enPassantVictim);
                 Move.SetIsEnPassantCapture(ref move, true);
@@ -351,6 +352,7 @@ public sealed class Position
                         Move.SetPiece(ref move, attacker);
                         Move.SetFrom(ref move, fromSquare);
                         Move.SetTo(ref move, toSquare);
+                        Move.SetIsCapture(ref move, true);
                         Move.SetCaptureAttacker(ref move, attacker);
                         Move.SetCaptureVictim(ref move, victim);
                         Move.SetIsPawnMove(ref move, true);
@@ -368,6 +370,7 @@ public sealed class Position
                             Move.SetPiece(ref move, attacker);
                             Move.SetFrom(ref move, fromSquare);
                             Move.SetTo(ref move, toSquare);
+                            Move.SetIsCapture(ref move, true);
                             Move.SetCaptureAttacker(ref move, attacker);
                             Move.SetPromotedPiece(ref move, promotedPiece);
                             Move.SetCaptureVictim(ref move, victim);
@@ -418,6 +421,7 @@ public sealed class Position
                     Move.SetTo(ref move, toSquare);
                     if (victim != Piece.None)
                     {
+                        Move.SetIsCapture(ref move, true);
                         Move.SetCaptureAttacker(ref move, attacker);
                         Move.SetCaptureVictim(ref move, victim);
                     }
@@ -463,6 +467,7 @@ public sealed class Position
             Move.SetTo(ref move, toSquare);
             if (victim != Piece.None)
             {
+                Move.SetIsCapture(ref move, true);
                 Move.SetCaptureAttacker(ref move, attacker);
                 Move.SetCaptureVictim(ref move, victim);
             }
@@ -632,12 +637,14 @@ public sealed class Position
         if ((attacker == pawn) && (toSquare == EnPassantSquare))
         {
             // En Passant Capture
+            Move.SetIsCapture(ref move, true);
             Move.SetIsEnPassantCapture(ref move, true);
             Move.SetCaptureAttacker(ref move, attacker);
             Move.SetCaptureVictim(ref move, PieceHelper.GetPieceOfColor(ColorlessPiece.Pawn, ColorPreviouslyMoved));
         }
         else if (victim != Piece.None)
         {
+            Move.SetIsCapture(ref move, true);
             Move.SetCaptureAttacker(ref move, attacker);
             Move.SetCaptureVictim(ref move, victim);
         }
