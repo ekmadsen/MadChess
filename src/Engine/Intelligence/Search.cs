@@ -53,10 +53,11 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
-    private const int _worseningMoves = 2;
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 40;
     private const int _lmrConstPer128 = -64;
+    private const int _lmrMaxHistoryAdjustment = 3;
+    private const int _worseningMoves = 2;
     private const int _recapturesOnlyMaxFromHorizon = 3;
     private const int _forfeitCastlingRightsPenalty = 150;
 
@@ -702,7 +703,7 @@ public sealed class Search : IDisposable
             // Must call IsMoveInDynamicSearchFutile and GetSearchHorizon before board.PlayMove to avoid bugs related to incorrect KingInCheck and ColorToMove.
             if (Move.IsQuiet(move)) quietMoveNumber++;
             var futileMove = IsMoveInDynamicSearchFutile(board.CurrentPosition, phase, depth, toHorizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame, alpha, beta);
-            var searchHorizon = GetSearchHorizon(board, phase, depth, horizon, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame);
+            var searchHorizon = GetSearchHorizon(board, phase, depth, horizon, previousMove, move, legalMoveNumber + 1, quietMoveNumber, drawnEndgame);
 
             // Play move.
             var (legalMove, checkingMove) = board.PlayMove(move);
@@ -1401,7 +1402,7 @@ public sealed class Search : IDisposable
     }
 
 
-    private int GetSearchHorizon(Board board, int phase, int depth, int horizon, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
+    private int GetSearchHorizon(Board board, int phase, int depth, int horizon, ulong previousMove, ulong move, int legalMoveNumber, int quietMoveNumber, bool drawnEndgame)
     {
         if (legalMoveNumber == 1) return horizon; // Do not reduce search horizon of first legal move.
 
@@ -1412,7 +1413,7 @@ public sealed class Search : IDisposable
         }
 
         if (drawnEndgame || board.CurrentPosition.KingInCheck) return horizon; // Do not reduce search horizon of move in drawn endgame or move when king is in check.
-        if ((Move.Killer(move) > 0) || Move.IsCastling(move)) return horizon; // Do not reduce search horizon of killer move or castling.
+        if (Move.IsCastling(move)) return horizon; // Do not reduce search horizon of castling.
 
         if (Move.IsPawnMove(move))
         {
@@ -1420,29 +1421,38 @@ public sealed class Search : IDisposable
             if (rank == 6) return horizon; // Do not reduce search horizon of pawn push to 7th rank.
         }
 
-        var pawnMaterialValue = _evaluation.GetPieceMaterialValue(ColorlessPiece.Pawn, phase);
-        if ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -pawnMaterialValue + 1))
+        int history;
+        if (Move.IsCapture(move))
         {
-            // Reduce search horizon of capture that loses at least a pawn.
-            return horizon - 1;
+            history = _moveHistory.GetValue(previousMove, move, false);
+            var pawnMaterialValue = _evaluation.GetPieceMaterialValue(ColorlessPiece.Pawn, phase);
+
+            if ((history < 0) || ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -pawnMaterialValue + 1)))
+            {
+                // Reduce search horizon of losing capture.
+                return horizon - 1;
+            }
         }
 
-        if (!Move.IsQuiet(move)) return horizon; // Do not reduce search horizon of tactical move.
+        if (!Move.IsQuiet(move)) return horizon;
 
-        // Reduce search horizon of late move.
+        // Reduce search horizon of quiet late move.
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
 
-        // TODO: Reduce search horizon based on move history value proximity to -Move.HistoryMaxValue.
+        // Reduce less for killer move.
+        if (Move.Killer(move) > 0) reduction--;
 
-        if (IsStaticScoreWorsening(board, depth))
-        {
-            // Reduce search horizon of variation that has not shown improvement in recent moves.
-            reduction++;
-        }
+        // Reduce more for variation that has not improved in recent moves.
+        if (IsStaticScoreWorsening(board, depth)) reduction++;
 
-        return horizon - reduction;
+        // Reduce more or less based on move history.
+        history = _moveHistory.GetValue(previousMove, move);
+        reduction -= (history * _lmrMaxHistoryAdjustment) / Move.HistoryMaxValue;
+        
+        // Prevent extension of search horizon.
+        return horizon - FastMath.Max(reduction, 0);
     }
 
 

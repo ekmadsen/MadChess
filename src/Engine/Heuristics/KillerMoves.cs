@@ -17,7 +17,6 @@ using ErikTheCoder.MadChess.Engine.Intelligence;
 namespace ErikTheCoder.MadChess.Engine.Heuristics;
 
 
-// TODO: Refactor KillerMoves as RefutationMoves, including killer moves (from sibling depth) and counter moves (based on previous move piece + to square).
 public sealed class KillerMoves
 {
     private const int _maxDepth = Search.MaxHorizon + Search.MaxQuietDepth;

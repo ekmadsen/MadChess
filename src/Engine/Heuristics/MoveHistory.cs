@@ -23,7 +23,7 @@ public sealed class MoveHistory
     private const int _divisor = Move.HistoryMaxValue / _multiplier;
     private const int _moveHistoryWeight = 1; // _moveHistoryWeight + _counterMoveHistoryWeight = 128.  Divide by 128 == shift bits right 7 places.
     private const int _counterMoveHistoryWeight = 127; // Counter move history is more specific than move history, and consequently, is updated less often.  Therefore, weight it more heavily than move history.
-    private const int _agePer1024 = 995; // Reduces history value by half in 24 iterations.
+    private const int _agePer1024 = 1004; // Reduces history value by half in 36 iterations.
     private readonly int[][][] _moveHistory; // [piece][toSquare][victim]
     private readonly int[][][][] _counterMoveHistory; // [previousPiece][previousToSquare][piece][toSquare]
     private readonly int[] _victimBonusPer128; // [piece]
@@ -68,15 +68,15 @@ public sealed class MoveHistory
         _victimBonusPer128 = new int[(int)ColorlessPiece.King + 1];
         _victimBonusPer128[(int)ColorlessPiece.None] = 0;
         _victimBonusPer128[(int)ColorlessPiece.Pawn] = 0;
-        _victimBonusPer128[(int)ColorlessPiece.Knight] = 18;
-        _victimBonusPer128[(int)ColorlessPiece.Bishop] = 18;
-        _victimBonusPer128[(int)ColorlessPiece.Rook] = 38;
-        _victimBonusPer128[(int)ColorlessPiece.Queen] = 76;
+        _victimBonusPer128[(int)ColorlessPiece.Knight] = 27;
+        _victimBonusPer128[(int)ColorlessPiece.Bishop] = 27;
+        _victimBonusPer128[(int)ColorlessPiece.Rook] = 45;
+        _victimBonusPer128[(int)ColorlessPiece.Queen] = 81;
         _victimBonusPer128[(int)ColorlessPiece.King] = 0;
     }
 
 
-    public int GetValue(ulong previousMove, ulong move)
+    public int GetValue(ulong previousMove, ulong move, bool includeBonus = true)
     {
         // Get move history (for quiet and tactical moves).
         var piece = Move.Piece(move);
@@ -85,7 +85,9 @@ public sealed class MoveHistory
         var moveHistory = _moveHistory[(int)piece][(int)toSquare][(int)victim];
 
         // Get bonus based on victim material value to improve ordering of capture moves.
-        var victimBonus = (_victimBonusPer128[(int)PieceHelper.GetColorlessPiece(victim)] * Move.HistoryMaxValue) / 128;
+        var victimBonus = includeBonus
+            ? (_victimBonusPer128[(int)PieceHelper.GetColorlessPiece(victim)] * Move.HistoryMaxValue) / 128
+            : 0;
 
         if ((previousMove == Move.Null) || !Move.IsQuiet(move)) return FastMath.Clamp(moveHistory + victimBonus, -Move.HistoryMaxValue, Move.HistoryMaxValue);
 
@@ -124,6 +126,8 @@ public sealed class MoveHistory
     }
 
 
+
+    // TODO: Test whether removing aging of history reduces or improves playing strength.
     public void Age()
     {
 
