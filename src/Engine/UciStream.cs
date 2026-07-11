@@ -86,7 +86,6 @@ public sealed class UciStream : IDisposable
     }
 
 
-    // TODO: Implement DisposeAsync method (and update using statement in Program class).
     public void Dispose()
     {
         _search?.Dispose();

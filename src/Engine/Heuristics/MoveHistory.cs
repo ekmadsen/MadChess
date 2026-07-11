@@ -127,7 +127,6 @@ public sealed class MoveHistory
 
 
 
-    // TODO: Test whether removing aging of history reduces or improves playing strength.
     public void Age()
     {
 
