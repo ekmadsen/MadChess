@@ -54,8 +54,8 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 92;
-    private const int _lmrConstPer128 = -144;
+    private const int _lmrScalePer128 = 44;
+    private const int _lmrConstPer128 = -112;
     private const int _lmrMaxHistoryAdjustment = 3;
     private const int _worseningMoves = 2;
     private const int _recapturesOnlyMaxFromHorizon = 3;
@@ -207,7 +207,7 @@ public sealed class Search : IDisposable
             lateMoveReductions[quietMoveNumber] = new int[_lmrMaxIndex + 1];
             for (var toHorizon = 1; toHorizon <= _lmrMaxIndex; toHorizon++)
             {
-                var logReduction = _lmrScalePer128 * Math.Log(quietMoveNumber) * Math.Log(toHorizon) / 128;
+                var logReduction = _lmrScalePer128 * Math.Log2(quietMoveNumber) * Math.Log2(toHorizon) / 128;
                 lateMoveReductions[quietMoveNumber][toHorizon] = (int)Math.Max(logReduction + constReduction, 0);
             }
         }
