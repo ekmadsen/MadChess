@@ -53,9 +53,12 @@ public sealed class Search : IDisposable
     private const int _nullStaticScoreReduction = 180;
     private const int _nullStaticScoreMaxReduction = 4;
     private const int _iidReduction = 4;
+    private const int _losingCaptureReduction = 1;
     private const int _lmrMaxIndex = 64;
-    private const int _lmrScalePer128 = 44;
-    private const int _lmrConstPer128 = -112;
+    private const int _lmrScalePer128 = 40;
+    private const int _lmrConstPer128 = -64;
+    private const int _lmrKillerMoveAddition = 1;
+    private const int _lmrNotImprovingReduction = 1;
     private const int _lmrMaxHistoryAdjustment = 3;
     private const int _worseningMoves = 2;
     private const int _recapturesOnlyMaxFromHorizon = 3;
@@ -716,9 +719,14 @@ public sealed class Search : IDisposable
             }
             legalMoveNumber++;
 
-            if (futileMove && !checkingMove)
+            if (checkingMove && Move.IsCapture(move))
             {
-                // Skip futile move that doesn't check enemy king.
+                // Do not reduce capture that checks enemy king.
+                searchHorizon = horizon;
+            }
+            else if (!checkingMove && futileMove)
+            {
+                // Skip futile move that does not check enemy king.
                 board.UndoMove();
                 continue;
             }
@@ -1421,16 +1429,15 @@ public sealed class Search : IDisposable
             if (rank == 6) return horizon; // Do not reduce search horizon of pawn push to 7th rank.
         }
 
-        int history;
+        var history = _moveHistory.GetValue(previousMove, move, false);
+
         if (Move.IsCapture(move))
         {
-            history = _moveHistory.GetValue(previousMove, move, false);
             var pawnMaterialValue = _evaluation.GetPieceMaterialValue(ColorlessPiece.Pawn, phase);
-
             if ((history < 0) || ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -pawnMaterialValue + 1)))
             {
                 // Reduce search horizon of losing capture.
-                return horizon - 1;
+                return horizon - _losingCaptureReduction;
             }
         }
 
@@ -1442,13 +1449,12 @@ public sealed class Search : IDisposable
         var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
 
         // Reduce less for killer move.
-        if (Move.Killer(move) > 0) reduction--;
+        if (Move.Killer(move) > 0) reduction -= _lmrKillerMoveAddition;
 
         // Reduce more for variation that has not improved in recent moves.
-        if (IsStaticScoreWorsening(board, depth)) reduction++;
+        if (IsStaticScoreWorsening(board, depth)) reduction += _lmrNotImprovingReduction;
 
         // Reduce more or less based on move history.
-        history = _moveHistory.GetValue(previousMove, move);
         reduction -= (history * _lmrMaxHistoryAdjustment) / Move.HistoryMaxValue;
         
         // Prevent extension of search horizon.

@@ -126,7 +126,6 @@ public sealed class MoveHistory
     }
 
 
-
     public void Age()
     {
 
