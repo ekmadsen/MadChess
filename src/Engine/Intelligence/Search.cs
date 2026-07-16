@@ -1421,20 +1421,16 @@ public sealed class Search : IDisposable
             if (rank == 6) return horizon; // Do not reduce search horizon of pawn push to 7th rank.
         }
 
-        var history = _moveHistory.GetValue(previousMove, move, false);
-
+        int history;
         if (Move.IsCapture(move))
         {
-            if (history < 0) return horizon - 1; // Reduce search horizon of capture with poor history.
-            
-            if (board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures)
+            history = _moveHistory.GetValue(previousMove, move, false);
+            var pawnMaterialValue = _evaluation.GetPieceMaterialValue(ColorlessPiece.Pawn, phase);
+
+            if ((history < 0) || ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -pawnMaterialValue + 1)))
             {
-                var pawnMaterialValue = _evaluation.GetPieceMaterialValue(ColorlessPiece.Pawn, phase);
-                if (!DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -pawnMaterialValue + 1))
-                {
-                    // Reduce search horizon of losing capture.
-                    return horizon - 1;
-                }
+                // Reduce search horizon of losing capture.
+                return horizon - 1;
             }
         }
 
@@ -1452,8 +1448,9 @@ public sealed class Search : IDisposable
         if (IsStaticScoreWorsening(board, depth)) reduction++;
 
         // Reduce more or less based on move history.
+        history = _moveHistory.GetValue(previousMove, move);
         reduction -= (history * _lmrMaxHistoryAdjustment) / Move.HistoryMaxValue;
-        
+
         // Prevent extension of search horizon.
         return horizon - FastMath.Max(reduction, 0);
     }
