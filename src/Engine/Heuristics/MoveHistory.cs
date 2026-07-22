@@ -23,7 +23,7 @@ public sealed class MoveHistory
     private const int _divisor = Move.HistoryMaxValue / _multiplier;
     private const int _moveHistoryWeight = 1; // _moveHistoryWeight + _counterMoveHistoryWeight = 128.  Divide by 128 == shift bits right 7 places.
     private const int _counterMoveHistoryWeight = 127; // Counter move history is more specific than move history, and consequently, is updated less often.  Therefore, weight it more heavily than move history.
-    private const int _agePer1024 = 1007;
+    private const int _agePer2048 = 2009; // Reduces history value by half in 36 iterations.
     private readonly int[][][] _moveHistory; // [piece][toSquare][victim]
     private readonly int[][][][] _counterMoveHistory; // [previousPiece][previousToSquare][piece][toSquare]
     private readonly int[] _victimBonusPer128; // [piece]
@@ -140,7 +140,7 @@ public sealed class MoveHistory
                 for (var victim = Piece.None; victim <= Piece.BlackKing; victim++)
                 {
                     var value = _moveHistory[(int)piece][(int)toSquare][(int)victim];
-                    _moveHistory[(int)piece][(int)toSquare][(int)victim] = (_agePer1024 * value) / 1024;
+                    _moveHistory[(int)piece][(int)toSquare][(int)victim] = (_agePer2048 * value) / 2048;
                 }
             }
         }
@@ -155,7 +155,7 @@ public sealed class MoveHistory
                     for (toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
                     {
                         var value = _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare];
-                        _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = (_agePer1024 * value) / 1024;
+                        _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = (_agePer2048 * value) / 2048;
                     }
                 }
             }
