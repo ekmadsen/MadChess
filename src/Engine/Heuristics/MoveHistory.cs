@@ -21,12 +21,14 @@ public sealed class MoveHistory
 {
     private const int _multiplier = 4;
     private const int _divisor = Move.HistoryMaxValue / _multiplier;
-    private const int _moveHistoryWeight = 1; // _moveHistoryWeight + _counterMoveHistoryWeight = 128.  Divide by 128 == shift bits right 7 places.
-    private const int _counterMoveHistoryWeight = 127; // Counter move history is more specific than move history, and consequently, is updated less often.  Therefore, weight it more heavily than move history.
-    private const int _agePer2048 = 2009; // Reduces history value by half in 36 iterations.
+    private const int _moveHistoryWeight = 1; // _moveHistoryWeight + _counterMoveHistoryWeight = a multiple of 2.  Divide by a multiple of 2 == shift bits right a few places.
+    private const int _quietCounterMoveHistoryWeight = 127;  // Counter move history is more specific than move history, and consequently, is updated less often.
+    private const int _captureCounterMoveHistoryWeight = 63; // Therefore, weight it more heavily than move history.
+    private const int _agePer1024 = 1004; // Reduces history value by half in 36 iterations.
     private readonly int[][][] _moveHistory; // [piece][toSquare][victim]
-    private readonly int[][][][] _counterMoveHistory; // [previousPiece][previousToSquare][piece][toSquare]
-    private readonly int[] _victimBonusPer128; // [piece]
+    private readonly int[][][][] _quietCounterMoveHistory; // [previousPiece][previousToSquare][piece][toSquare]
+    private readonly int[][][][][] _captureCounterMoveHistory; // [previousPiece][previousToSquare][previousVictim][piece][toSquare]
+    private readonly int[] _victimBonusPer128; // [colorlessPiece]
 
 
     public MoveHistory()
@@ -38,7 +40,7 @@ public sealed class MoveHistory
         _moveHistory = new int[(int)Piece.BlackKing + 1][][];
         for (piece = Piece.None; piece <= Piece.BlackKing; piece++)
         {
-            _moveHistory[(int)piece] = new int[64][];
+            _moveHistory[(int)piece] = new int[(int)Square.Illegal][];
             for (toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
             {
                 _moveHistory[(int)piece][(int)toSquare] = new int[(int)Piece.BlackKing + 1];
@@ -47,23 +49,44 @@ public sealed class MoveHistory
             }
         }
 
-        // Create counter move history array.
-        _counterMoveHistory = new int[(int)Piece.BlackKing + 1][][][];
+        // Create quiet counter move history array.
+        _quietCounterMoveHistory = new int[(int)Piece.BlackKing + 1][][][];
         for (var previousPiece = Piece.None; previousPiece <= Piece.BlackKing; previousPiece++)
         {
-            _counterMoveHistory[(int)previousPiece] = new int[(int)Square.Illegal + 1][][];
-            for (var previousToSquare = Square.A8; previousToSquare <= Square.Illegal; previousToSquare++)
+            _quietCounterMoveHistory[(int)previousPiece] = new int[(int)Square.Illegal][][];
+            for (var previousToSquare = Square.A8; previousToSquare < Square.Illegal; previousToSquare++)
             {
-                _counterMoveHistory[(int)previousPiece][(int)previousToSquare] = new int[(int)Piece.BlackKing + 1][];
+                _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare] = new int[(int)Piece.BlackKing + 1][];
                 for (piece = Piece.None; piece <= Piece.BlackKing; piece++)
                 {
-                    _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece] = new int[(int)Square.Illegal];
+                    _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece] = new int[(int)Square.Illegal];
                     for (toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
-                        _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = 0;
+                        _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = 0;
                 }
             }
         }
 
+        // Create capture counter move history array.
+        _captureCounterMoveHistory = new int[(int)Square.Illegal][][][][];
+        for (var previousPiece = Piece.None; previousPiece <= Piece.BlackKing; previousPiece++)
+        {
+            _captureCounterMoveHistory[(int)previousPiece] = new int[(int)Square.Illegal][][][];
+            for (var previousToSquare = Square.A8; previousToSquare < Square.Illegal; previousToSquare++)
+            {
+                _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare] = new int[(int)Piece.BlackKing + 1][][];
+                for (var previousVictim = Piece.None; previousVictim <= Piece.BlackKing; previousVictim++)
+                {
+                    _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim] = new int[(int)Piece.BlackKing + 1][];
+                    for (piece = Piece.None; piece <= Piece.BlackKing; piece++)
+                    {
+                        _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim][(int)piece] = new int[(int)Square.Illegal];
+                        for (toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
+                            _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim][(int)piece][(int)toSquare] = 0;
+                    }
+                }
+            }
+        }
+        
         // Create victim bonus array.
         _victimBonusPer128 = new int[(int)ColorlessPiece.King + 1];
         _victimBonusPer128[(int)ColorlessPiece.None] = 0;
@@ -76,27 +99,46 @@ public sealed class MoveHistory
     }
 
 
-    public int GetValue(ulong previousMove, ulong move, bool includeBonus = true)
+    public int GetValue(ulong previousMove, ulong move, bool includeVictimBonus = true)
     {
-        // Get move history (for quiet and tactical moves).
+        // Get move history.
         var piece = Move.Piece(move);
         var toSquare = Move.To(move);
         var victim = Move.CaptureVictim(move);
         var moveHistory = _moveHistory[(int)piece][(int)toSquare][(int)victim];
 
         // Get bonus based on victim material value to improve ordering of capture moves.
-        var victimBonus = includeBonus
+        var victimBonus = includeVictimBonus
             ? (_victimBonusPer128[(int)PieceHelper.GetColorlessPiece(victim)] * Move.HistoryMaxValue) / 128
             : 0;
 
-        if ((previousMove == Move.Null) || !Move.IsQuiet(move)) return FastMath.Clamp(moveHistory + victimBonus, -Move.HistoryMaxValue, Move.HistoryMaxValue);
+        if (previousMove == Move.Null) return FastMath.Clamp(moveHistory + victimBonus, -Move.HistoryMaxValue, Move.HistoryMaxValue);
 
-        // Get counter move history (for quiet moves).
         var previousPiece = Move.Piece(previousMove);
         var previousToSquare = Move.To(previousMove);
-        var counterMoveHistory = _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare];
+        var previousVictim = Move.CaptureVictim(previousMove);
 
-        var value = ((moveHistory * _moveHistoryWeight) + (counterMoveHistory * _counterMoveHistoryWeight)) / (_moveHistoryWeight + _counterMoveHistoryWeight);
+        // Get counter move history.
+        int counterMoveHistory;
+        int counterMoveWeight;
+
+        if (Move.IsQuiet(move))
+        {
+            counterMoveHistory = _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare];
+            counterMoveWeight = _quietCounterMoveHistoryWeight;
+        }
+        else if (Move.IsCapture(move) && Move.IsCapture(previousMove))
+        {
+            counterMoveHistory = _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim][(int)piece][(int)toSquare];
+            counterMoveWeight = _captureCounterMoveHistoryWeight;
+        }
+        else
+        {
+            counterMoveHistory = 0;
+            counterMoveWeight = 1;
+        }
+
+        var value = ((moveHistory * _moveHistoryWeight) + (counterMoveHistory * counterMoveWeight)) / (_moveHistoryWeight + counterMoveWeight);
         return FastMath.Clamp(value + victimBonus, -Move.HistoryMaxValue, Move.HistoryMaxValue);
     }
 
@@ -106,7 +148,7 @@ public sealed class MoveHistory
         // Update value with decay.  Idea from Ethereal chess engine.
         // This function approaches an asymptotic limit of +/- Move.HistoryMaxValue.
 
-        // Update move history (for quiet and tactical moves).
+        // Update move history.
         var absIncrement = FastMath.Abs(increment);
         var piece = Move.Piece(move);
         var toSquare = Move.To(move);
@@ -115,14 +157,25 @@ public sealed class MoveHistory
         value += (increment * _multiplier) - (value * absIncrement / _divisor);
         _moveHistory[(int)piece][(int)toSquare][(int)victim] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
 
-        if ((previousMove == Move.Null) || !Move.IsQuiet(move)) return;
+        if (previousMove == Move.Null) return;
 
-        // Update counter move history (for quiet moves).
+        // Update counter move history.
         var previousPiece = Move.Piece(previousMove);
         var previousToSquare = Move.To(previousMove);
-        value = _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare];
-        value += (increment * _multiplier) - (value * absIncrement / _divisor);
-        _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
+        var previousVictim = Move.CaptureVictim(previousMove);
+
+        if (Move.IsQuiet(move))
+        {
+            value = _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare];
+            value += (increment * _multiplier) - (value * absIncrement / _divisor);
+            _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
+        }
+        else if (Move.IsCapture(move) && Move.IsCapture(previousMove))
+        {
+            value = _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim][(int)piece][(int)toSquare];
+            value += (increment * _multiplier) - (value * absIncrement / _divisor);
+            _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim][(int)piece][(int)toSquare] = FastMath.Clamp(value, -Move.HistoryMaxValue, Move.HistoryMaxValue);
+        }
     }
 
 
@@ -140,26 +193,45 @@ public sealed class MoveHistory
                 for (var victim = Piece.None; victim <= Piece.BlackKing; victim++)
                 {
                     var value = _moveHistory[(int)piece][(int)toSquare][(int)victim];
-                    _moveHistory[(int)piece][(int)toSquare][(int)victim] = (_agePer2048 * value) / 2048;
+                    _moveHistory[(int)piece][(int)toSquare][(int)victim] = (_agePer1024 * value) / 1024;
                 }
             }
         }
 
-        // Age counter move history.
+        // Age quiet counter move history.
         for (var previousPiece = Piece.None; previousPiece <= Piece.BlackKing; previousPiece++)
         {
-            for (var previousToSquare = Square.A8; previousToSquare <= Square.Illegal; previousToSquare++)
+            for (var previousToSquare = Square.A8; previousToSquare < Square.Illegal; previousToSquare++)
             {
                 for (piece = Piece.None; piece <= Piece.BlackKing; piece++)
                 {
                     for (toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
                     {
-                        var value = _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare];
-                        _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = (_agePer2048 * value) / 2048;
+                        var value = _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare];
+                        _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = (_agePer1024 * value) / 1024;
                     }
                 }
             }
         }
+
+        // Age capture counter move history.
+        for (var previousPiece = Piece.None; previousPiece <= Piece.BlackKing; previousPiece++)
+        {
+            for (var previousToSquare = Square.A8; previousToSquare < Square.Illegal; previousToSquare++)
+            {
+                for (var previousVictim = Piece.None; previousVictim <= Piece.BlackKing; previousVictim++)
+                {
+                    for (piece = Piece.None; piece <= Piece.BlackKing; piece++)
+                    {
+                        for (toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
+                        {
+                            var value = _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim][(int)piece][(int)toSquare];
+                            _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim][(int)piece][(int)toSquare] = (_agePer1024 * value) / 1024;
+                        }
+                    }
+                }
+            }
+        }   
     }
 
 
@@ -178,17 +250,33 @@ public sealed class MoveHistory
             }
         }
 
-        // Reset counter move history.
+        // Reset quiet counter move history.
         for (var previousPiece = Piece.None; previousPiece <= Piece.BlackKing; previousPiece++)
         {
-            for (var previousToSquare = Square.A8; previousToSquare <= Square.Illegal; previousToSquare++)
+            for (var previousToSquare = Square.A8; previousToSquare < Square.Illegal; previousToSquare++)
             {
                 for (piece = Piece.None; piece <= Piece.BlackKing; piece++)
                 {
                     for (toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
-                        _counterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = 0;
+                        _quietCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)piece][(int)toSquare] = 0;
                 }
             }
         }
+
+        // Reset capture counter move history.
+        for (var previousPiece = Piece.None; previousPiece <= Piece.BlackKing; previousPiece++)
+        {
+            for (var previousToSquare = Square.A8; previousToSquare < Square.Illegal; previousToSquare++)
+            {
+                for (var previousVictim = Piece.None; previousVictim <= Piece.BlackKing; previousVictim++)
+                {
+                    for (piece = Piece.None; piece <= Piece.BlackKing; piece++)
+                    {
+                        for (toSquare = Square.A8; toSquare < Square.Illegal; toSquare++)
+                            _captureCounterMoveHistory[(int)previousPiece][(int)previousToSquare][(int)previousVictim][(int)piece][(int)toSquare] = 0;
+                    }
+                }
+            }
+        }   
     }
 }

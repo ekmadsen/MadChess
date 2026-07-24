@@ -96,7 +96,7 @@ public static class Move
 
     // 6 6 6 6 5 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
     // 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    // B|C|Promo  |Kil|History  (tactical or quiet)                    |CapV   |CapA   |!|O|K|E|2|P|To           |From         |Piece
+    // B|C|Promo  |Kil|History  (tactical or quiet)                   |CapV   |CapA   |!|O|K|E|2|P|To           |From         |Piece
 
     // B =     Best Move
     // C =     Capture
