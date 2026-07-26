@@ -615,6 +615,7 @@ public sealed class Evaluation
     private bool EvaluateSimpleEndgame(Position position, Color color)
     {
         // TODO: Add detection of unwinnable KBPk endgame, where enemy king prevents pawn from promoting, and bishop is wrong color.
+        // TODO: For KQkr endgames, add inverse bonus for distance between kings.
 
         var enemyColor = 1 - color;
         var pawnCount = Bitwise.CountSetBits(position.GetPawns(color));

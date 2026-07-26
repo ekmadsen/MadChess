@@ -56,7 +56,7 @@ public sealed class Search : IDisposable
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 40;
     private const int _lmrConstPer128 = -64;
-    private const int _lmrMaxHistoryAdjustment = 3;
+    private const int _lmrMaxHistoryAdjustmentPer128 = 320;
     private const int _worseningMoves = 2;
     private const int _recapturesOnlyMaxFromHorizon = 3;
     private const int _forfeitCastlingRightsPenalty = 150;
@@ -1447,7 +1447,7 @@ public sealed class Search : IDisposable
         if (IsStaticScoreWorsening(board, depth)) reduction++;
 
         // Reduce more or less based on move history.
-        reduction -= (history * _lmrMaxHistoryAdjustment) / Move.HistoryMaxValue;
+        reduction -= (history * _lmrMaxHistoryAdjustmentPer128) / (Move.HistoryMaxValue * 128);
 
         // Prevent extension of search horizon.
         return horizon - FastMath.Max(reduction, 0);
