@@ -56,6 +56,8 @@ public sealed class Search : IDisposable
     private const int _lmrMaxIndex = 64;
     private const int _lmrScalePer128 = 40;
     private const int _lmrConstPer128 = -64;
+    private const int _losingCaptureReduction = 1;
+    private const int _losingCaptureMaxHistoryReductionPer128 = 224;
     private const int _lmrMaxHistoryAdjustmentPer128 = 320;
     private const int _worseningMoves = 2;
     private const int _recapturesOnlyMaxFromHorizon = 3;
@@ -1422,6 +1424,7 @@ public sealed class Search : IDisposable
         }
 
         var history = _moveHistory.GetValue(previousMove, move, false);
+        int reduction;
 
         if (Move.IsCapture(move))
         {
@@ -1429,7 +1432,8 @@ public sealed class Search : IDisposable
             if ((history < 0) || ((board.CurrentPosition.MoveGenerationStage == MoveGenerationStage.LosingCaptures) && !DoesMoveMeetStaticExchangeThreshold(board.CurrentPosition, phase, move, true, -pawnMaterialValue + 1)))
             {
                 // Reduce search horizon of losing capture.
-                return horizon - 1;
+                reduction = _losingCaptureReduction - FastMath.Min((history * _losingCaptureMaxHistoryReductionPer128) / (Move.HistoryMaxValue * 128), 0); // Reduce at least _losingCaptureReduction.
+                return horizon - reduction;
             }
         }
 
@@ -1438,7 +1442,7 @@ public sealed class Search : IDisposable
         // Reduce search horizon of quiet late move.
         var quietMoveIndex = FastMath.Min(quietMoveNumber, _lmrMaxIndex);
         var toHorizonIndex = FastMath.Min(horizon - depth, _lmrMaxIndex);
-        var reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
+        reduction = _lateMoveReductions[quietMoveIndex][toHorizonIndex];
 
         // Reduce less for killer move.
         if (Move.Killer(move) > 0) reduction--;
