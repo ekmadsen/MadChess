@@ -41,7 +41,7 @@ public sealed class UciStream : IDisposable
 
     private readonly TimeSpan _maxStopTime = TimeSpan.FromMilliseconds(100);
     private readonly AdvancedConfig _advancedConfig;
-    private readonly Messenger _messenger; // Lifetime managed by caller.
+    private readonly Messenger _messenger;
     private readonly Stopwatch _commandStopwatch;
     private readonly Queue<List<string>> _asyncQueue;
     private readonly Lock _queueLock;
@@ -567,12 +567,12 @@ public sealed class UciStream : IDisposable
 
                 case "depth":
                     _timeManagement.HorizonLimit = FastMath.Min(int.Parse(tokens[tokenIndex + 1]), Search.MaxHorizon);
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
 
                 case "nodes":
                     _timeManagement.NodeLimit = long.Parse(tokens[tokenIndex + 1]);
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
 
                 case "mate":
@@ -580,19 +580,19 @@ public sealed class UciStream : IDisposable
                     _timeManagement.MoveTimeHardLimit = TimeSpan.MaxValue;
                     _timeManagement.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
                     _timeManagement.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
 
                 case "movetime":
                     _timeManagement.MoveTimeHardLimit = TimeSpan.FromMilliseconds(int.Parse(tokens[tokenIndex + 1]));
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
 
                 case "infinite":
                     _timeManagement.MoveTimeHardLimit = TimeSpan.MaxValue;
                     _timeManagement.TimeRemaining[(int)Color.White] = TimeSpan.MaxValue;
                     _timeManagement.TimeRemaining[(int)Color.Black] = TimeSpan.MaxValue;
-                    _timeManagement.CanAdjustMoveTime = false;
+                    _timeManagement.CanIncreaseMoveTime = false;
                     break;
             }
         }
@@ -774,8 +774,8 @@ public sealed class UciStream : IDisposable
         _search.PrioritizeMoves(previousMove, _board.CurrentPosition.Moves, lastMoveIndex, bestMove, 0);
         _search.SortMovesByPriority(_board.CurrentPosition.Moves, lastMoveIndex);
 
-        _messenger.WriteLine("Rank   Move  Best  Cap Victim  Cap Attacker  Promo  Killer   History              Priority");
-        _messenger.WriteLine("====  =====  ====  ==========  ============  =====  ======  ========  ====================");
+        _messenger.WriteLine("Rank   Move  Best  Capture  Promo  Killer  History  Cap Victim  Cap Attacker              Priority");
+        _messenger.WriteLine("====  =====  ====  =======  =====  ======  =======  ==========  ============  ====================");
 
         var stringBuilder = new StringBuilder();
         var legalMoveNumber = 0;
@@ -792,21 +792,21 @@ public sealed class UciStream : IDisposable
 
             stringBuilder.Clear();
             stringBuilder.Append(legalMoveNumber.ToString("00").PadLeft(4));
-
             stringBuilder.Append(Move.ToLongAlgebraic(move).PadLeft(7));
+
             stringBuilder.Append((Move.IsBest(move) ? "True" : string.Empty).PadLeft(6));
+            stringBuilder.Append((Move.IsCapture(move) ? "True" : string.Empty).PadLeft(9));
+
+            var promotedPiece = PieceHelper.GetName(Move.PromotedPiece(move));
+            stringBuilder.Append(promotedPiece.PadLeft(7));
+            stringBuilder.Append(Move.Killer(move).ToString().PadLeft(8));
+
+            stringBuilder.Append(Move.History(move).ToString().PadLeft(9));
 
             stringBuilder.Append(PieceHelper.GetName(Move.CaptureVictim(move)).PadLeft(12));
             stringBuilder.Append(PieceHelper.GetName(Move.CaptureAttacker(move)).PadLeft(14));
 
-            var promotedPiece = PieceHelper.GetName(Move.PromotedPiece(move));
-            stringBuilder.Append(promotedPiece.PadLeft(7));
-
-            stringBuilder.Append(Move.Killer(move).ToString().PadLeft(8));
-            stringBuilder.Append(Move.History(move).ToString().PadLeft(10));
-
             stringBuilder.Append(move.ToString().PadLeft(22));
-
             _messenger.WriteLine(stringBuilder.ToString());
         }
 
@@ -1015,7 +1015,7 @@ public sealed class UciStream : IDisposable
                 _search.PvInfoUpdate = false;
                 _timeManagement.MoveTimeSoftLimit = TimeSpan.MaxValue;
                 _timeManagement.MoveTimeHardLimit = TimeSpan.FromMilliseconds(moveTimeMilliseconds);
-                _timeManagement.CanAdjustMoveTime = false;
+                _timeManagement.CanIncreaseMoveTime = false;
 
                 var bestMove = _search.FindBestMove(_board);
 

@@ -153,12 +153,16 @@ public sealed class Cache
 
         // Validate move is possible in position.
         var validMove = position.ValidateMove(ref bestMove);
-        if (validMove) _stats.CacheValidBestMove++;
-        else _stats.CacheInvalidBestMove++;
-
         Debug.Assert(Move.IsValid(bestMove)); // Validate integrity of ulong move bits.
 
-        return validMove ? bestMove : Move.Null;
+        if (validMove)
+        {
+            _stats.CacheValidBestMove++;
+            return bestMove;
+        }
+
+        _stats.CacheInvalidBestMove++;
+        return Move.Null;
     }
 
 

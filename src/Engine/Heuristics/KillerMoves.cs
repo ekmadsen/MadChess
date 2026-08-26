@@ -9,7 +9,9 @@
 
 
 using System.Runtime.CompilerServices;
+using ErikTheCoder.MadChess.Core.Moves;
 using ErikTheCoder.MadChess.Engine.Intelligence;
+#pragma warning disable IDE0047
 
 
 namespace ErikTheCoder.MadChess.Engine.Heuristics;
@@ -48,7 +50,7 @@ public sealed class KillerMoves
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Update(int depth, ulong move)
     {
-        if (depth > _maxDepth) return;
+        if (!Move.IsQuiet(move) || (depth > _maxDepth)) return;
 
         var killerMove = KillerMove.Parse(move);
         if (killerMove == _killerMoves[depth][0]) return; // Move already is the best killer move.
