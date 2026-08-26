@@ -941,7 +941,7 @@ public sealed class Search : IDisposable
 
         do
         {
-            // Do not retrieve (or update) best move from the cache.  Rely on MVV / LVA move order.
+            // Do not retrieve (or update) best move from the cache.
             var (move, moveIndex) = getNextMove(previousMove, board.CurrentPosition, phase, moveGenerationToSquareMask, depth, Move.Null, killerMove1, killerMove2);
             if (move == Move.Null) break; // All moves have been searched.
 
@@ -1344,7 +1344,6 @@ public sealed class Search : IDisposable
                     if (firstMoveIndex < lastMoveIndex)
                     {
                         // Prioritize and sort captures.
-                        // Do not include history values.  Rely on MVV / LVA move order.
                         PrioritizeMoves(previousMove, position.Moves, firstMoveIndex, lastMoveIndex, bestMove, KillerMove.Null, KillerMove.Null);
                         SortMovesByPriority(position.Moves, firstMoveIndex, lastMoveIndex);
                     }
