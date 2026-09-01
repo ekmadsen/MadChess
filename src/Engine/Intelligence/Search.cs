@@ -571,13 +571,30 @@ public sealed class Search : IDisposable
 
         cachedPosition.Key = board.CurrentPosition.Key;
 
+
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |        Search Step 3: Static Evaluation & Futile Position Pruning         |
+        // |               Search Step 3: Check Extension & Quiet Search               |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
+        if ((toHorizon >= 0) && (horizon < MaxHorizon) && board.CurrentPosition.KingInCheck && (board.PreviousPosition != null) && (board.PreviousPosition.PlayedMove != Move.Null))
+        {
+            if (DoesMoveMeetStaticExchangeThreshold(board.PreviousPosition, board.PreviousPosition.PlayedMove, 0))
+            {
+                // Extend search horizon to examine tactics arising from previous (non-losing) checking move.
+                horizon++;
+                toHorizon++;
+            }
+        }
+
         if (toHorizon <= 0) return GetQuietScore(board, depth, depth, alpha, beta); // Search for a quiet position.
+
+        // +---------------------------------------------------------------------------+
+        // |                                                                           |
+        // |        Search Step 4: Static Evaluation & Futile Position Pruning         |
+        // |                                                                           |
+        // +---------------------------------------------------------------------------+
 
         // Evaluate static score.
         bool drawnEndgame;
@@ -601,7 +618,7 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |                    Search Step 4: Null Move Pruning                       |
+        // |                    Search Step 5: Null Move Pruning                       |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
@@ -622,7 +639,7 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |                Search Step 5: Internal Iterative Deepening                |
+        // |                Search Step 6: Internal Iterative Deepening                |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
@@ -647,7 +664,7 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |                      Search Step 6: Begin Move Loop                       |
+        // |                      Search Step 7: Begin Move Loop                       |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 
@@ -698,7 +715,7 @@ public sealed class Search : IDisposable
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
-            // |         Search Step 7: Futile Move Pruning & Late Move Reductions         |
+            // |         Search Step 8: Futile Move Pruning & Late Move Reductions         |
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
@@ -727,7 +744,7 @@ public sealed class Search : IDisposable
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
-            // |                         Search Step 8: Recursion                          |
+            // |                         Search Step 9: Recursion                          |
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
@@ -761,7 +778,7 @@ public sealed class Search : IDisposable
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
-            // |         Search Step 9: Beta Cutoff or New Principal Variation             |
+            // |          Search Step 10: Beta Cutoff or New Principal Variation           |
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
@@ -822,7 +839,7 @@ public sealed class Search : IDisposable
 
             // +---------------------------------------------------------------------------+
             // |                                                                           |
-            // |             Search Step 10: Principal Variations for Multi-PV             |
+            // |             Search Step 11: Principal Variations for Multi-PV             |
             // |                                                                           |
             // +---------------------------------------------------------------------------+
 
@@ -848,7 +865,7 @@ public sealed class Search : IDisposable
 
         // +---------------------------------------------------------------------------+
         // |                                                                           |
-        // |            Search Step 11: End Move Loop & Return Dynamic Score           |
+        // |            Search Step 12: End Move Loop & Return Dynamic Score           |
         // |                                                                           |
         // +---------------------------------------------------------------------------+
 

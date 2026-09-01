@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.9.12120.119 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{416EFB70-F81B-411B-A37F-369915012188}"
 	ProjectSection(SolutionItems) = preProject
@@ -10,6 +10,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{416EFB70-F
 		docs\ComputerGamesBlitzMatchups.txt = docs\ComputerGamesBlitzMatchups.txt
 		docs\ComputerGamesBullet.txt = docs\ComputerGamesBullet.txt
 		docs\ComputerGamesBulletMatchups.txt = docs\ComputerGamesBulletMatchups.txt
+		docs\ComputerGamesLightning.txt = docs\ComputerGamesLightning.txt
+		docs\ComputerGamesLightningMatchups.txt = docs\ComputerGamesLightningMatchups.txt
+		docs\ComputerGamesRapid.txt = docs\ComputerGamesRapid.txt
+		docs\ComputerGamesRapidMatchups.txt = docs\ComputerGamesRapidMatchups.txt
 		docs\Design.md = docs\Design.md
 		docs\EvalParams.txt = docs\EvalParams.txt
 		docs\LICENSE.md = docs\LICENSE.md
