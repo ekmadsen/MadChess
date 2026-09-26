@@ -1081,7 +1081,7 @@ public sealed class UciStream : IDisposable
         var pgnFilename = tokens[1].Trim();
         var particleSwarmsCount = int.Parse(tokens[2].Trim());
         var particlesPerSwarm = int.Parse(tokens[3].Trim());
-        var winScale = int.Parse(tokens[4].Trim()); // Use 741 for GM2600EloGamesClean.pgn.
+        var winScale = int.Parse(tokens[4].Trim()); // Use 738 for GrandmasterGames2016-2026-100EloMaxDiff.pgn.
         var iterations = int.Parse(tokens[5].Trim());
 
         var particleSwarms = new ParticleSwarms(_advancedConfig, _messenger, pgnFilename, particleSwarmsCount, particlesPerSwarm, winScale);
