@@ -80,6 +80,7 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
             {
                 var particle = particleSwarm.Particles[particleIndex];
+                particle.SetDefaultParameters(); // TODO: Remove particle.SetDefaultParameters();
                 particle.ConfigureEvaluation(evaluation);
             }
         }
@@ -210,8 +211,8 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
         new Parameter(nameof(EvaluationConfig.EgBishopMobilityScale), 0, 256),
         new Parameter(nameof(EvaluationConfig.MgRookMobilityScale), 0, 256),
         new Parameter(nameof(EvaluationConfig.EgRookMobilityScale), 0, 256),
-        new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 128),
-        new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 128),
+        new Parameter(nameof(EvaluationConfig.MgQueenMobilityScale), 0, 256),
+        new Parameter(nameof(EvaluationConfig.EgQueenMobilityScale), 0, 384),
 
         // Pawn Structure
         new Parameter(nameof(EvaluationConfig.MgIsolatedPawn), 0, 64),
