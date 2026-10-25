@@ -548,24 +548,17 @@ public sealed class Search : IDisposable
             // Position is cached and is not a root or repeat position.
             // Determine if cached position includes a dynamic score.
             var cachedDynamicScore = GetCachedDynamicScore(cachedPosition.Data, depth, toHorizon, alpha, beta);
-            if (cachedDynamicScore != StaticScore.NotCached)
+
+            if ((cachedDynamicScore != StaticScore.NotCached) && (!AnalyzeMode || ((beta - alpha) == 1)))
             {
                 // Cached position includes a dynamic score.
-                if (cachedDynamicScore >= beta)
+                // Not in analysis mode examining principal variation (avoid truncating PV line).
                 {
-                    // Cached dynamic score causes a beta cutoff.
-                    if (bestMove != Move.Null)
-                    {
-                        // TODO: Test whether removing _moveHistory.UpdateValue for cached dynamic score beta cutoffs reduces or improves playing strength.
-                        // Assume the best move specified by the cached position would have caused a beta cutoff.
-                        // Update history heuristic.
-                        _moveHistory.UpdateValue(previousMove, bestMove, historyIncrement);
-                    }
+                    // Cached dynamic score causes a score cutoff.
+                    // No need to search position.
+                    _stats.CacheScoreCutoff++;
+                    return cachedDynamicScore;
                 }
-
-                // Cached dynamic score causes a score cutoff.  No need to search position.
-                _stats.CacheScoreCutoff++;
-                return cachedDynamicScore;
             }
         }
 
@@ -1476,12 +1469,10 @@ public sealed class Search : IDisposable
     }
 
 
-    private int GetCachedDynamicScore(ulong cachedPositionData, int depth, int toHorizon, int alpha, int beta)
+    private static int GetCachedDynamicScore(ulong cachedPositionData, int depth, int toHorizon, int alpha, int beta)
     {
         var dynamicScore = CachedPositionData.DynamicScore(cachedPositionData);
         if (dynamicScore == StaticScore.NotCached) return StaticScore.NotCached; // Score is not cached.
-
-        if (AnalyzeMode && ((beta - alpha) > 1)) return StaticScore.NotCached; // Continue searching when analyzing so principal variation isn't truncated.
 
         var cachedToHorizon = CachedPositionData.ToHorizon(cachedPositionData);
         if (cachedToHorizon < toHorizon) return StaticScore.NotCached; // Cached position is shallower than current horizon. Do not use cached score.

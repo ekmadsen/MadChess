@@ -80,7 +80,6 @@ public sealed class ParticleSwarms : List<ParticleSwarm>
             for (var particleIndex = 0; particleIndex < particleSwarm.Particles.Count; particleIndex++)
             {
                 var particle = particleSwarm.Particles[particleIndex];
-                particle.SetDefaultParameters(); // TODO: Remove particle.SetDefaultParameters();
                 particle.ConfigureEvaluation(evaluation);
             }
         }
