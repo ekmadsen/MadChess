@@ -8,6 +8,7 @@
 // +---------------------------------------------------------------------------+
 
 
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErikTheCoder.MadChess.Core.Game;
@@ -273,7 +274,7 @@ public sealed class StaticScore
 
         stringBuilder.AppendLine($"Middlegame   = {phase} of {Evaluation.MiddlegamePhase} ({phaseFraction}%)");
         stringBuilder.AppendLine($"50 Move Rule = {PlySinceCaptureOrPawnMove} ({Search.MaxPlyWithoutCaptureOrPawnMove - PlySinceCaptureOrPawnMove}%)");
-        stringBuilder.Append($"Total Score  = {totalScore:0.00}");
+        stringBuilder.Append(CultureInfo.InvariantCulture, $"Total Score  = {totalScore:0.00}");
 
         return stringBuilder.ToString();
     }
@@ -283,20 +284,20 @@ public sealed class StaticScore
     {
         var paddedEvalParam = evalParam.PadRight(27);
 
-        var mgWhite = (whiteMg / 100d).ToString("0.00").PadLeft(7);
-        var mgBlack = (blackMg / 100d).ToString("0.00").PadLeft(7);
-        var mgDiff = ((whiteMg - blackMg) / 100d).ToString("0.00").PadLeft(7);
+        var mgWhite = (whiteMg / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
+        var mgBlack = (blackMg / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
+        var mgDiff = ((whiteMg - blackMg) / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
 
-        var egWhite = (whiteEg / 100d).ToString("0.00").PadLeft(7);
-        var egBlack = (blackEg / 100d).ToString("0.00").PadLeft(7);
-        var egDiff = ((whiteEg - blackEg) / 100d).ToString("0.00").PadLeft(7);
+        var egWhite = (whiteEg / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
+        var egBlack = (blackEg / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
+        var egDiff = ((whiteEg - blackEg) / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
 
         var white = GetTaperedScore(whiteMg, whiteEg, phase);
         var black = GetTaperedScore(blackMg, blackEg, phase);
 
-        var totalWhite = (white / 100d).ToString("0.00").PadLeft(7);
-        var totalBlack = (black / 100d).ToString("0.00").PadLeft(7);
-        var totalDiff = ((white - black) / 100d).ToString("0.00").PadLeft(7);
+        var totalWhite = (white / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
+        var totalBlack = (black / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
+        var totalDiff = ((white - black) / 100d).ToString("0.00", CultureInfo.InvariantCulture).PadLeft(7);
 
         stringBuilder.AppendLine($"{paddedEvalParam}   {mgWhite}  {mgBlack}  {mgDiff}   {egWhite}  {egBlack}  {egDiff}   {totalWhite}  {totalBlack}  {totalDiff}");
     }

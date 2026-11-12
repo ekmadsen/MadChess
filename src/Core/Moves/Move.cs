@@ -10,6 +10,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using ErikTheCoder.MadChess.Core.Game;
 using ErikTheCoder.MadChess.Core.Utilities;
@@ -488,7 +489,7 @@ public static class Move
 
         // Set case of promoted piece character based on side to move.
         var promotedPiece = longAlgebraic.Length == 5
-            ? PieceHelper.ParseChar(colorToMove == Color.White ? char.ToUpper(longAlgebraic[4]) : char.ToLower(longAlgebraic[4]))
+            ? PieceHelper.ParseChar(colorToMove == Color.White ? char.ToUpper(longAlgebraic[4], CultureInfo.InvariantCulture) : char.ToLower(longAlgebraic[4], CultureInfo.InvariantCulture))
             : Game.Piece.None;
 
         var move = Null;
@@ -563,16 +564,16 @@ public static class Move
                     // Pawn promotion.  Set case of promoted piece character based on side to move.
                     toSquare = Board.GetSquare(standardAlgebraicNoCheck[..2]);
                     promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
-                        ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
-                        : char.ToLower(standardAlgebraicNoCheck[length - 1]));
+                        ? char.ToUpper(standardAlgebraicNoCheck[length - 1], CultureInfo.InvariantCulture)
+                        : char.ToLower(standardAlgebraicNoCheck[length - 1], CultureInfo.InvariantCulture));
                     break;
 
                 case 6:
                     // Pawn promotion with capture.  Set case of promoted piece character based on side to move.
                     toSquare = Board.GetSquare(standardAlgebraicNoCheck[2..4]);
                     promotedPiece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
-                        ? char.ToUpper(standardAlgebraicNoCheck[length - 1])
-                        : char.ToLower(standardAlgebraicNoCheck[length - 1]));
+                        ? char.ToUpper(standardAlgebraicNoCheck[length - 1], CultureInfo.InvariantCulture)
+                        : char.ToLower(standardAlgebraicNoCheck[length - 1], CultureInfo.InvariantCulture));
                     break;
 
                 default:
@@ -584,8 +585,8 @@ public static class Move
         {
             // Piece Move
             piece = PieceHelper.ParseChar(board.CurrentPosition.ColorToMove == Color.White
-                ? char.ToUpper(standardAlgebraicNoCheck[0])
-                : char.ToLower(standardAlgebraicNoCheck[0]));
+                ? char.ToUpper(standardAlgebraicNoCheck[0], CultureInfo.InvariantCulture)
+                : char.ToLower(standardAlgebraicNoCheck[0], CultureInfo.InvariantCulture));
 
             if (standardAlgebraicNoCheck[1] == 'x')
             {
@@ -727,7 +728,7 @@ public static class Move
         var toSquare = To(move);
         var promotedPiece = PromotedPiece(move);
 
-        return $"{Board.SquareLocations[(int)fromSquare]}{Board.SquareLocations[(int)toSquare]}{PieceHelper.GetChar(promotedPiece)?.ToString().ToLower()}";
+        return $"{Board.SquareLocations[(int)fromSquare]}{Board.SquareLocations[(int)toSquare]}{PieceHelper.GetChar(promotedPiece)?.ToString().ToLower(CultureInfo.InvariantCulture)}";
     }
 
 

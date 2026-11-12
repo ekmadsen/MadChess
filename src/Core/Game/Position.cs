@@ -155,7 +155,7 @@ public sealed class Position
         var attackers = 0ul;
 
         // Add pawn attackers.
-        // Attacked by white pawn masks = black pawn attack masks and vice-versa.
+        // Attacked by white pawn masks = black pawn attack masks and vice versa.
         attackers |= GetPawns(Color.White) & Board.PawnAttackMasks[(int)Color.Black][(int)square];
         attackers |= GetPawns(Color.Black) & Board.PawnAttackMasks[(int)Color.White][(int)square];
 

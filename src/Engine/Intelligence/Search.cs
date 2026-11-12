@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -1744,7 +1745,7 @@ public sealed class Search : IDisposable
             var (nodesPerSecond, moveError, blunderError, blunderPer1024) = CalculateLimitStrengthParams(elo);
             var blunderPercent = 100d * blunderPer1024 / 1024d;
 
-            stringBuilder.AppendLine($"{elo,12}{nodesPerSecond.ToString("n0").PadLeft(20)}{moveError,12}{blunderError,15}{blunderPercent.ToString("0.0").PadLeft(17)}");
+            stringBuilder.AppendLine($"{elo,12}{nodesPerSecond.ToString("n0").PadLeft(20)}{moveError,12}{blunderError,15}{blunderPercent.ToString("0.0", CultureInfo.InvariantCulture).PadLeft(17)}");
         }
 
         stringBuilder.AppendLine();

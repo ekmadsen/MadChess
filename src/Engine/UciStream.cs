@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -164,7 +165,7 @@ public sealed class UciStream : IDisposable
         if (tokens.Count == 0) return;
 
         // Determine whether to dispatch command on main thread or async thread.
-        switch (tokens[0].ToLower())
+        switch (tokens[0].ToLower(CultureInfo.InvariantCulture))
         {
             case "go":
                 DispatchOnMainThread(tokens);
@@ -182,7 +183,7 @@ public sealed class UciStream : IDisposable
     {
         var writeMessageLine = true;
 
-        switch (tokens[0].ToLower())
+        switch (tokens[0].ToLower(CultureInfo.InvariantCulture))
         {
             // Standard Commands
             case "uci":
@@ -332,7 +333,7 @@ public sealed class UciStream : IDisposable
                 if (!tokens.IsNullOrEmpty())
                 {
                     // Process command.
-                    switch (tokens[0].ToLower())
+                    switch (tokens[0].ToLower(CultureInfo.InvariantCulture))
                     {
                         case "go":
                             GoAsync();
@@ -388,7 +389,7 @@ public sealed class UciStream : IDisposable
         var optionName = tokens[2];
         var optionValue = tokens.Count > 4 ? tokens[4] : string.Empty;
 
-        switch (optionName.ToLower())
+        switch (optionName.ToLower(CultureInfo.InvariantCulture))
         {
             case "log":
                 _messenger.Log = optionValue.Equals("true", StringComparison.OrdinalIgnoreCase);
@@ -532,7 +533,7 @@ public sealed class UciStream : IDisposable
             var token = tokens[tokenIndex];
 
             // ReSharper disable once SwitchStatementMissingSomeCases
-            switch (token.ToLower())
+            switch (token.ToLower(CultureInfo.InvariantCulture))
             {
                 case "searchmoves":
                     // Restrict search to candidate moves.
@@ -955,7 +956,7 @@ public sealed class UciStream : IDisposable
 
                 for (var index = 0; index < parsedTokens.Count; index++)
                 {
-                    var parsedToken = parsedTokens[index].Trim().ToLower();
+                    var parsedToken = parsedTokens[index].Trim().ToLower(CultureInfo.InvariantCulture);
 
                     // ReSharper disable once SwitchStatementMissingSomeCases
                     switch (parsedToken)
